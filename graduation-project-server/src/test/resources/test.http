@@ -1,0 +1,32 @@
+###
+POST http://localhost:7088/api/user/register
+Content-Type: application/json
+
+{
+  "account": "2007120",
+  "password": "000000"
+}
+
+<> 2025-02-24T174742.200.json
+
+###
+POST http://localhost:7088/api/user/login
+Content-Type: application/json
+
+{
+  "account": "2007120",
+  "password": "000000"
+}
+
+<> 2025-02-24T175805.200.json
+
+###
+POST http://localhost:7088/api/user/edit
+Access-Token: af3edbe2796509abaecdc0e3eadbcc4f648315f6
+Content-Type: application/json
+
+{
+  "name": "张奇文",
+  "email": "avinzhang@tencent.com",
+  "phone": "18165748705"
+}

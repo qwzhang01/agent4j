@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwj.ancient.prose.mapper.RightItemMapper">
+
+    <select id="findByRoleId" resultType="com.iwj.ancient.prose.dto.RoleDto$Item">
+        select
+            rr.roleId,
+            r.id,
+            r.name,
+            r.parentId
+        from
+            oms_role_right rr
+        left join oms_right_item r ON r.id = rr.rightId
+        where rr.roleId in
+        <foreach collection="roleIds" open="(" close=")" item="rId" index="i" separator=",">
+            #{rId}
+        </foreach>
+    </select>
+
+    <select id="findByAccountId" resultType="java.lang.String">
+        select
+            r.itemCode
+        from
+            oms_role_right rr
+        left join oms_account_role ac on ac.roleId = rr.roleId
+        left join oms_right_item r on r.id = rr.rightId
+        where ac.accountId = #{accountId}
+    </select>
+
+</mapper>

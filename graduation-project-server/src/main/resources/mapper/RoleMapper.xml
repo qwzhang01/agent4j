@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwj.ancient.prose.mapper.RoleMapper">
+    <select id="findByAccountId" resultType="com.iwj.ancient.prose.entity.Role">
+        select
+            r.*
+        from
+            oms_account_role ac
+        left join oms_role r on r.id = ac.roleId
+        where ac.accountId = #{accountId}
+        order by r.name desc
+    </select>
+</mapper>

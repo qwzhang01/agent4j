@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwj.ancient.prose.mapper.LogMessageMapper">
+
+    <select id="list" resultType="com.iwj.ancient.prose.dto.LogMessageDto$List">
+        select
+
+            a.id,
+            m.title,
+            m .profile,
+            a.createTime,
+            IF(a.type = 'read', true, false) as readFlag
+
+        from oms_log_message_action a
+        left join oms_log_message m on m.id = a.messageId
+
+        where a.userId = #{userId}
+
+        <if test="type == 'all'">
+            and a.type in ('read', 'unRead')
+        </if>
+        <if test="type == 'read'">
+            and a.type = 'read'
+        </if>
+        <if test="type == 'unRead'">
+            and a.type = 'unRead'
+        </if>
+
+        order by a.id desc
+    </select>
+
+</mapper>
