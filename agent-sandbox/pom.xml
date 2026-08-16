@@ -10,9 +10,9 @@
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>agent-model</artifactId>
-    <name>Agent Model Adapter</name>
-    <description>Model provider adapters (Mock, OpenAI-compatible, etc.)</description>
+    <artifactId>agent-sandbox</artifactId>
+    <name>Agent Sandbox</name>
+    <description>Sandbox for isolated execution of LLM-generated code</description>
 
     <dependencies>
         <dependency>

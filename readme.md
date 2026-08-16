@@ -4,11 +4,11 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 3 ✅ 已完成
+## 当前阶段：Stage 4 ✅ 已完成
 
 ### 已完成
 
-- [x] Maven 多模块项目骨架（agent-core / agent-model / agent-plugin / examples）
+- [x] Maven 多模块项目骨架（agent-core / agent-model / agent-plugin / agent-sandbox / examples）
 - [x] 核心数据结构：`ChatMessage` / `ModelRequest` / `ModelResponse` / `ToolCall` / `StreamEvent`
 - [x] 核心接口：`ModelClient` / `Tool` / `ToolRegistry` / `ToolExecutor` / `Agent` / `AgentLoop`
 - [x] 默认实现：`InMemoryToolRegistry` / `DefaultToolExecutor` / `ReActAgentLoop` / `SimpleAgent`
@@ -23,14 +23,20 @@
   - Java SPI 发现机制（ServiceLoader）
   - 插件生命周期：load -> unload -> reload
   - 故障隔离：一个插件失败不影响其他
-  - 示例插件：`SearchToolPlugin` / `CalculatorToolPlugin`
-- [x] 单元测试：34 个（3 Agent + 12 装饰器 + 19 插件），全绿
-- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample`
+- [x] **Agent 自进化**：4 个插件管理 Tool（inspect / list / load / unload）
+  - 模型在对话中自我管理能力
+- [x] **沙箱系统**：`Sandbox` / `ClassLoaderSandbox` / `ProcessSandbox`
+  - 内存编译（Java Compiler API，零磁盘 IO）
+  - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
+  - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
+  - 超时自动终止（死循环 2 秒被 kill）
+- [x] 单元测试：55 个（15 Agent/装饰器 + 29 插件 + 11 沙箱），全绿
+- [x] 示例：`MockAgentExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample`
 
 ### 下一步
 
-- [ ] 阶段 4：沙箱与隔离执行
-- [ ] 写第一篇文章草稿（基于已有研究素材）
+- [ ] 写第一篇文章草稿（基于已有 Stage 1-4 的代码和研究素材）
+- [ ] 阶段 5：Workflow 和 Graph Runtime
 
 ## 模块结构
 
@@ -39,6 +45,7 @@ java-agent-framework/
 ├── agent-core/          # 核心接口与数据结构（零依赖）
 ├── agent-model/          # 模型适配器（Mock, OpenAI, Anthropic）
 ├── agent-plugin/         # 插件系统（SPI 发现 + 热加载/卸载）
+├── agent-sandbox/        # 沙箱系统（ClassLoader + 进程隔离）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM

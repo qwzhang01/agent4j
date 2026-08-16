@@ -11,8 +11,8 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.seven.agent</groupId>
-    <artifactId>java-agent-framework</artifactId>
+    <groupId>io.github.qwzhang01</groupId>
+    <artifactId>seven-agent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Java Agent Framework</name>
@@ -22,6 +22,7 @@
         <module>agent-core</module>
         <module>agent-model</module>
         <module>agent-plugin</module>
+        <module>agent-sandbox</module>
         <module>examples</module>
     </modules>
 
@@ -29,6 +30,7 @@
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.17.2</jackson.version>
         <slf4j.version>2.0.13</slf4j.version>
@@ -38,18 +40,23 @@
         <dependencies>
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.seven.agent</groupId>
+                <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.seven.agent</groupId>
+                <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.seven.agent</groupId>
+                <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-sandbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -100,8 +107,9 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
+                        <source>17</source>
+                        <target>17</target>
+                        <release>17</release>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -112,5 +120,16 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

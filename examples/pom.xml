@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.seven.agent</groupId>
-        <artifactId>java-agent-framework</artifactId>
+        <groupId>io.github.qwzhang01</groupId>
+        <artifactId>seven-agent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
@@ -16,16 +16,20 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.seven.agent</groupId>
+            <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.seven.agent</groupId>
+            <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-model</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.seven.agent</groupId>
+            <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-plugin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-sandbox</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
