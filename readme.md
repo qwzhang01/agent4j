@@ -1,41 +1,120 @@
-### 基于Spring Boot的公共课选课系统设计与实现
-#### 相关技术：
-微信小程序、SpringBoot、Vue、MySQL、TDesign、JavaScript
-#### 功能模块：
-##### 客户端
-用户注册登录
-用户课程浏览
-用户选课操作
-用户退课操作
-用户选课记录查看
-用户成绩查询
-##### 后台系统
-管理员用户管理
-管理员课程管理
-管理员选课管理
-管理员退课管理
-管理员评价管理
-管理员成绩录入
+# Java Agent Framework
 
-#### 详细功能：
-（1）用户端
-用户注册与登录：用户可以通过学号注册账号，并登录系统；
-课程浏览：用户可以浏览平台上提供的所有公共课程列表，包括课程名称、简介、授课教师、上课时间等信息；
-课程搜索：用户可以根据关键词搜索感兴趣的课程，提高查找效率；
-选课操作：用户可以对自己感兴趣的课程进行选课操作，系统应能检查课程容量是否允许加入；
-退课操作：用户可以在一定时间内取消已选课程，释放名额给其他学生；
-个人信息管理：用户可以修改个人资料，如头像、昵称、联系方式等；
-选课记录查看：用户可以查看自己已经选择的课程列表，包括课程进度、考试安排等信息；
-课程评价与反馈：用户在完成课程后可以对课程进行评价和提出反馈意见，帮助改进课程质量；
-成绩查询：用户可以在结课后查询该公共课成绩；
-消息通知：系统会向用户发送选课成功、退课成功等重要操作的通知。
-	
-（2）管理端
-用户管理：管理员可以查看所有注册用户的信息，包括用户的基本资料、选课记录等；
-课程管理：管理员可以添加、编辑或删除课程信息，设置课程容量、上课时间和地点等；
-选课管理：管理员可以查看所有学生的选课情况，对选课数据进行分析，以便做出调整；
-退课管理：管理员可以处理学生的退课请求，审核退课原因，决定是否批准；
-评价管理：管理员可以查看用户对课程的评价和反馈，采取措施改善教学质量和课程内容；
-数据统计与分析：管理员可以利用平台的数据统计功能，生成各类报表，如选课人数统计、课程受欢迎程度排名等；
-消息推送：管理员可以通过平台向用户发送公告或重要通知，确保信息传达给每一位用户；
-成绩录入：管理员可以录入每个学生的最终成绩。
+> A persistent, observable, governable, hot-pluggable Java Agent Runtime.
+>
+> **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
+
+## 当前阶段：Stage 1-2 ✅ 已完成
+
+### 已完成
+
+- [x] Maven 多模块项目骨架（agent-core / agent-model / examples）
+- [x] 核心数据结构：`ChatMessage` / `ModelRequest` / `ModelResponse` / `ToolCall` / `StreamEvent`
+- [x] 核心接口：`ModelClient` / `Tool` / `ToolRegistry` / `ToolExecutor` / `Agent` / `AgentLoop`
+- [x] 默认实现：`InMemoryToolRegistry` / `DefaultToolExecutor` / `ReActAgentLoop` / `SimpleAgent`
+- [x] Mock 实现：`MockModelClient`（脚本模式 + 规则模式）/ `EchoTool` / `CurrentTimeTool`
+- [x] **OpenAiModelClient**：Java 21 HttpClient + SSE 流式，兼容 OpenAI / Azure / Ollama / 火山方舟
+- [x] **RetryModelClient** 装饰器：指数退避 + 错误码分类
+- [x] **TimeoutModelClient** 装饰器：CompletableFuture.orTimeout
+- [x] **FallbackModelClient** 装饰器：多级链式降级
+- [x] **StructuredOutputModelClient** 装饰器：JSON schema 强制 + 验证重试
+- [x] 单元测试：15 个（3 Agent + 12 装饰器），全绿
+- [x] 示例：`MockAgentExample` + `DecoratedModelClientExample`
+
+### 下一步
+
+- [ ] 阶段 3：插件化与热插拔系统
+- [ ] 写第一篇文章草稿（基于已有研究素材）
+
+## 模块结构
+
+```
+java-agent-framework/
+├── agent-core/          # 核心接口与数据结构（零依赖）
+├── agent-model/          # 模型适配器（Mock, OpenAI, ...）
+├── examples/            # 示例代码
+├── notes/               # 学习笔记（按阶段组织）
+└── pom.xml              # 父 POM
+```
+
+### 后续模块（按 18 周路线逐步创建）
+
+```
+agent-plugin/            # 阶段 3：插件化与热插拔
+agent-sandbox/           # 阶段 4：沙箱与隔离执行
+agent-workflow/          # 阶段 5：工作流图引擎
+agent-memory/            # 阶段 8：记忆与上下文
+agent-runtime/           # 阶段 6：运行时与 Checkpoint
+agent-scheduler/         # 阶段 7：异步任务调度器
+agent-security/          # 阶段 9：安全与审计
+agent-mcp/               # 阶段 10：MCP 集成
+agent-channel/           # 阶段 12：频道级共享 Agent
+agent-trace-export/      # 阶段 14：RL 轨迹导出
+agent-product/           # 阶段 13：声明式产品层
+agent-observability/     # 阶段 18：可观测性
+```
+
+## 快速开始
+
+```bash
+# 编译
+cd projects/java-agent-framework
+mvn clean compile
+
+# 运行示例
+mvn exec:java -pl examples -Dexec.mainClass=com.seven.agent.examples.MockAgentExample
+
+# 运行测试
+mvn test
+```
+
+## 核心接口速览
+
+```
+ModelClient            # 统一模型调用入口（sync + streaming）
+  └─ MockModelClient   # 不依赖真实 LLM 的测试实现
+
+Tool                   # 工具接口（name + schema + execute）
+ToolRegistry           # 工具注册表（in-memory 实现）
+ToolExecutor           # 工具执行器（错误包装 + 日志）
+
+Agent                  # Agent 入口
+AgentConfig            # Agent 静态配置（prompt + model + tools）
+AgentState             # Agent 运行时状态（messages + steps + status）
+AgentLoop              # ReAct 循环（核心执行逻辑）
+  └─ ReActAgentLoop    # 默认实现
+```
+
+## 设计决策
+
+### 为什么不直接用 LangChain4j / Spring AI？
+
+> 不是重复造轮子，是通过造轮子理解轮子。
+>
+> Java 生态三大框架（LangChain4j / Spring AI / AgentScope Java）在故障恢复和持久化执行上均有空白。
+> 自己实现一遍是理解 Agent 架构全貌的最佳路径。
+
+### 为什么 ToolRegistry 和 ToolExecutor 分开？
+
+- Registry 是元数据（"什么工具存在"）
+- Executor 是行为（"如何安全执行"）
+- 后续 Executor 会增加 timeout、policy check、audit log、sandbox
+
+### 为什么 AgentState 是 mutable？
+
+- 简化 stage 1-2 的实现
+- Stage 6 会增加 snapshot/checkpoint 机制
+- Stage 14 会增加 trajectory 导出
+
+## 学习路线
+
+对应 [18 周学习规划](../seven-we-meida/01-inbox/2026-08-11_Java-Agent-Framework学习规划.md)：
+
+| 阶段 | 模块 | 状态 |
+|------|------|------|
+| 1. 模型调用层 | agent-core / agent-model | ✅ 进行中 |
+| 2. 最小 Agent Loop | agent-core | ✅ 进行中 |
+| 3. 插件化与热插拔 | agent-plugin | ⬜ |
+| 4. 沙箱与隔离执行 | agent-sandbox | ⬜ |
+| 5. Workflow Graph | agent-workflow | ⬜ |
+| ... | ... | ⬜ |
