@@ -4,26 +4,32 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 1-2 ✅ 已完成
+## 当前阶段：Stage 3 ✅ 已完成
 
 ### 已完成
 
-- [x] Maven 多模块项目骨架（agent-core / agent-model / examples）
+- [x] Maven 多模块项目骨架（agent-core / agent-model / agent-plugin / examples）
 - [x] 核心数据结构：`ChatMessage` / `ModelRequest` / `ModelResponse` / `ToolCall` / `StreamEvent`
 - [x] 核心接口：`ModelClient` / `Tool` / `ToolRegistry` / `ToolExecutor` / `Agent` / `AgentLoop`
 - [x] 默认实现：`InMemoryToolRegistry` / `DefaultToolExecutor` / `ReActAgentLoop` / `SimpleAgent`
 - [x] Mock 实现：`MockModelClient`（脚本模式 + 规则模式）/ `EchoTool` / `CurrentTimeTool`
-- [x] **OpenAiModelClient**：Java 21 HttpClient + SSE 流式，兼容 OpenAI / Azure / Ollama / 火山方舟
+- [x] **OpenAiModelClient**：Java HttpClient + SSE 流式，兼容 OpenAI / Azure / Ollama / 火山方舟
+- [x] **AnthropicModelClient**：Claude Messages API 适配器
 - [x] **RetryModelClient** 装饰器：指数退避 + 错误码分类
 - [x] **TimeoutModelClient** 装饰器：CompletableFuture.orTimeout
 - [x] **FallbackModelClient** 装饰器：多级链式降级
 - [x] **StructuredOutputModelClient** 装饰器：JSON schema 强制 + 验证重试
-- [x] 单元测试：15 个（3 Agent + 12 装饰器），全绿
-- [x] 示例：`MockAgentExample` + `DecoratedModelClientExample`
+- [x] **插件系统**：`Plugin` / `ToolPlugin` / `PluginRegistry` / `PluginManager`
+  - Java SPI 发现机制（ServiceLoader）
+  - 插件生命周期：load -> unload -> reload
+  - 故障隔离：一个插件失败不影响其他
+  - 示例插件：`SearchToolPlugin` / `CalculatorToolPlugin`
+- [x] 单元测试：34 个（3 Agent + 12 装饰器 + 19 插件），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample`
 
 ### 下一步
 
-- [ ] 阶段 3：插件化与热插拔系统
+- [ ] 阶段 4：沙箱与隔离执行
 - [ ] 写第一篇文章草稿（基于已有研究素材）
 
 ## 模块结构
@@ -31,7 +37,8 @@
 ```
 java-agent-framework/
 ├── agent-core/          # 核心接口与数据结构（零依赖）
-├── agent-model/          # 模型适配器（Mock, OpenAI, ...）
+├── agent-model/          # 模型适配器（Mock, OpenAI, Anthropic）
+├── agent-plugin/         # 插件系统（SPI 发现 + 热加载/卸载）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -40,7 +47,6 @@ java-agent-framework/
 ### 后续模块（按 18 周路线逐步创建）
 
 ```
-agent-plugin/            # 阶段 3：插件化与热插拔
 agent-sandbox/           # 阶段 4：沙箱与隔离执行
 agent-workflow/          # 阶段 5：工作流图引擎
 agent-memory/            # 阶段 8：记忆与上下文

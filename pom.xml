@@ -21,6 +21,7 @@
     <modules>
         <module>agent-core</module>
         <module>agent-model</module>
+        <module>agent-plugin</module>
         <module>examples</module>
     </modules>
 
@@ -44,6 +45,11 @@
             <dependency>
                 <groupId>com.seven.agent</groupId>
                 <artifactId>agent-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.seven.agent</groupId>
+                <artifactId>agent-plugin</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
