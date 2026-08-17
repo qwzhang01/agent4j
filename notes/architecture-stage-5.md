@@ -2,7 +2,8 @@
 
 > 对应阶段：Stage 5 - Workflow 和 Graph Runtime
 > 状态：✅ 已实现（2026-08-17，23 个测试全绿；验收示例 WorkflowSupportFlowExample 三路流程跑通）
-> 实现备注：路由语义为「条件边优先唯一命中，无条件边仅兜底」；实现中发现 otherwise 边与命中条件边会形成二义性，已在 GraphRuntime.route 中修复
+> 实现备注：路由语义为「条件边优先唯一命中，无条件边仅兜底」；实现中发现 otherwise 边与命中条件边会形成二义性，已在
+> GraphRuntime.route 中修复
 > 模块：`agent-workflow`（新增），依赖 `agent-core`
 
 ---
@@ -31,14 +32,14 @@ Graph Runtime = 把两者粘起来的执行平面：
 
 ## 2. 核心抽象（6 个）
 
-| 抽象 | 角色 | 一句话 |
-|---|---|---|
-| `Workflow` | 图定义 | nodes + edges + START/END，**不可变、可复用**，定义一次执行 N 次 |
-| `WorkflowNode` | 节点接口 | `id()` + `execute(ctx)`，行为单元 |
-| `Edge` | 边 | `from -> to` + 可选条件 `Predicate<WorkflowState>` |
-| `WorkflowState` | 共享状态 | 黑板模式（blackboard），全图唯一可变状态 |
-| `GraphRuntime` | 执行器 | 从 START 走到 END 的解释器循环 |
-| `ExecutionResult` | 终态 | status + output + state 快照 + step trace |
+| 抽象                | 角色   | 一句话                                              |
+|-------------------|------|--------------------------------------------------|
+| `Workflow`        | 图定义  | nodes + edges + START/END，**不可变、可复用**，定义一次执行 N 次 |
+| `WorkflowNode`    | 节点接口 | `id()` + `execute(ctx)`，行为单元                     |
+| `Edge`            | 边    | `from -> to` + 可选条件 `Predicate<WorkflowState>`   |
+| `WorkflowState`   | 共享状态 | 黑板模式（blackboard），全图唯一可变状态                        |
+| `GraphRuntime`    | 执行器  | 从 START 走到 END 的解释器循环                            |
+| `ExecutionResult` | 终态   | status + output + state 快照 + step trace          |
 
 ### 2.1 节点类型体系
 
@@ -170,9 +171,12 @@ return ExecutionResult(SUCCEEDED / FAILED, 末节点输出, state, trace)
 
 **特殊节点的执行语义**：
 
-- `AgentNode`：调用 `agent.run(input, agentState)`，返回文本写黑板。input 从黑板取（上游节点输出或初始输入），AgentState 按节点 id 持有（保持节点内多轮上下文）。
-- `ParallelNode`：`CompletableFuture.supplyAsync` 并行跑分支（每个分支是子节点序列），`JoinPolicy.ALL_OF` 等全部完成聚合为 Map，`ANY_OF` 取首个完成。
-- `HumanApprovalNode`：调用 `ApprovalService.approve(request)`，v1 同步阻塞（Mock 自动批 / 控制台交互），reject 则整个 Workflow 以 FAILED 终止。
+- `AgentNode`：调用 `agent.run(input, agentState)`，返回文本写黑板。input 从黑板取（上游节点输出或初始输入），AgentState 按节点
+  id 持有（保持节点内多轮上下文）。
+- `ParallelNode`：`CompletableFuture.supplyAsync` 并行跑分支（每个分支是子节点序列），`JoinPolicy.ALL_OF` 等全部完成聚合为
+  Map，`ANY_OF` 取首个完成。
+- `HumanApprovalNode`：调用 `ApprovalService.approve(request)`，v1 同步阻塞（Mock 自动批 / 控制台交互），reject 则整个
+  Workflow 以 FAILED 终止。
 
 ---
 
@@ -183,7 +187,8 @@ return ExecutionResult(SUCCEEDED / FAILED, 末节点输出, state, trace)
 图结构（谁连谁、什么条件）用 POJO 表达，与执行分离。
 
 - **为什么**：Stage 13 声明式搭建（YAML 定义 Agent）、DAG 可视化、图版本管理，都依赖"图可以被当成数据"。
-- **取舍**：v1 节点行为是 Java 对象（lambda/类），不可序列化；v2 加 `NodeDescriptor` 注册表（名字 -> 工厂），行为按名字解析，图即 100% 可序列化。
+- **取舍**：v1 节点行为是 Java 对象（lambda/类），不可序列化；v2 加 `NodeDescriptor` 注册表（名字 -> 工厂），行为按名字解析，图即
+  100% 可序列化。
 
 ### D2. Agent 是一种节点（AgentNode）
 
@@ -212,11 +217,11 @@ return ExecutionResult(SUCCEEDED / FAILED, 末节点输出, state, trace)
 
 ### D7. 治理语义与 Agent 层同构（复用已验证模式）
 
-| 语义 | Agent 层（已有） | Workflow 层（Stage 5） |
-|---|---|---|
-| 步数保护 | `AgentState.hasStepsRemaining` | `maxSteps` 环保护 |
-| 重试 | `RetryModelClient` 指数退避 | `RetryPolicy` 节点级重试 |
-| 执行记录 | AgentState step 记录 | `StepRecord` trace（Stage 14 trajectory 消费） |
+| 语义   | Agent 层（已有）                    | Workflow 层（Stage 5）                        |
+|------|--------------------------------|--------------------------------------------|
+| 步数保护 | `AgentState.hasStepsRemaining` | `maxSteps` 环保护                             |
+| 重试   | `RetryModelClient` 指数退避        | `RetryPolicy` 节点级重试                        |
+| 执行记录 | AgentState step 记录             | `StepRecord` trace（Stage 14 trajectory 消费） |
 
 同一套治理概念在两层行为一致，这是框架内部一致性的来源。
 
@@ -276,13 +281,13 @@ agent-workflow/
 
 ## 8. 实现里程碑（每步可运行、可测试）
 
-| # | 里程碑 | 交付 | 验证 |
-|---|---|---|---|
-| M5.1 | 骨架 + 线性执行 | 模块 + 6 核心抽象 + builder + GraphRuntime 主循环 | 2-3 节点线性流跑通，trace 正确 |
-| M5.2 | 条件路由 | 条件边 + otherwise 兜底 + 死端检测 + 环保护 | 多条件路由测试 + 成环图被 maxSteps 拦截 |
-| M5.3 | 智能节点 | AgentNode（接 MockModelClient）+ ToolNode | Mock 脚本驱动意图分类，三路各一测试 |
-| M5.4 | 控制流 | RetryPolicy + onError 边 + ParallelNode(fork/join) | flaky 节点重试测试 + 并行聚合测试 |
-| M5.5 | 人审 + 验收 | HumanApprovalNode（mock/console）+ 验收示例 | 三路流程 demo + 全部单测绿 |
+| #    | 里程碑       | 交付                                                | 验证                         |
+|------|-----------|---------------------------------------------------|----------------------------|
+| M5.1 | 骨架 + 线性执行 | 模块 + 6 核心抽象 + builder + GraphRuntime 主循环          | 2-3 节点线性流跑通，trace 正确       |
+| M5.2 | 条件路由      | 条件边 + otherwise 兜底 + 死端检测 + 环保护                   | 多条件路由测试 + 成环图被 maxSteps 拦截 |
+| M5.3 | 智能节点      | AgentNode（接 MockModelClient）+ ToolNode            | Mock 脚本驱动意图分类，三路各一测试       |
+| M5.4 | 控制流       | RetryPolicy + onError 边 + ParallelNode(fork/join) | flaky 节点重试测试 + 并行聚合测试      |
+| M5.5 | 人审 + 验收   | HumanApprovalNode（mock/console）+ 验收示例             | 三路流程 demo + 全部单测绿          |
 
 ## 9. 测试策略
 

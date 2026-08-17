@@ -12,15 +12,8 @@ import io.github.qwzhang01.agent.workflow.WorkflowNode;
  */
 public final class ActionNode implements WorkflowNode {
 
-    /** Node behavior with checked exceptions allowed. */
-    @FunctionalInterface
-    public interface NodeAction {
-        Object execute(NodeContext ctx) throws Exception;
-    }
-
     private final String id;
     private final NodeAction action;
-
     private ActionNode(String id, NodeAction action) {
         this.id = id;
         this.action = action;
@@ -40,5 +33,13 @@ public final class ActionNode implements WorkflowNode {
         Object out = action.execute(ctx);
         // Allow lambdas to return a full NodeResult (e.g. explicit jumps)
         return out instanceof NodeResult nr ? nr : NodeResult.of(out);
+    }
+
+    /**
+     * Node behavior with checked exceptions allowed.
+     */
+    @FunctionalInterface
+    public interface NodeAction {
+        Object execute(NodeContext ctx) throws Exception;
     }
 }

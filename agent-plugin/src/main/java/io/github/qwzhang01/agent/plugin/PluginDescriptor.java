@@ -14,4 +14,5 @@ public record PluginDescriptor(
         String name,
         String version,
         String description
-) {}
+) {
+}

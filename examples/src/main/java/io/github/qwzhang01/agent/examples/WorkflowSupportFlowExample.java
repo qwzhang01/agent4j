@@ -6,11 +6,7 @@ import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.SimpleAgent;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
-import io.github.qwzhang01.agent.workflow.ExecutionResult;
-import io.github.qwzhang01.agent.workflow.GraphRuntime;
-import io.github.qwzhang01.agent.workflow.MockApprovalService;
-import io.github.qwzhang01.agent.workflow.StepRecord;
-import io.github.qwzhang01.agent.workflow.Workflow;
+import io.github.qwzhang01.agent.workflow.*;
 import io.github.qwzhang01.agent.workflow.nodes.ActionNode;
 import io.github.qwzhang01.agent.workflow.nodes.AgentNode;
 import io.github.qwzhang01.agent.workflow.nodes.HumanApprovalNode;
@@ -28,7 +24,8 @@ import io.github.qwzhang01.agent.workflow.nodes.ToolNode;
  * blackboard routing, and the step trace - all without a real LLM
  * (MockModelClient scripted mode).
  * <p>
- * Run: mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.WorkflowSupportFlowExample
+ * Run: mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples
+ * .WorkflowSupportFlowExample
  */
 public class WorkflowSupportFlowExample {
 
@@ -57,7 +54,9 @@ public class WorkflowSupportFlowExample {
         }
     }
 
-    /** Build a fresh flow per scenario (scripted MockModelClient is consumed once). */
+    /**
+     * Build a fresh flow per scenario (scripted MockModelClient is consumed once).
+     */
     private static Workflow buildFlow(String mockedIntent) {
         // The "intent agent": scripted mock returns a fixed classification
         MockModelClient model = MockModelClient.scripted().respondText(mockedIntent);
@@ -87,10 +86,23 @@ public class WorkflowSupportFlowExample {
 
     private static Tool ticketLookupTool() {
         return new Tool() {
-            @Override public String getName() { return "ticket_lookup"; }
-            @Override public String getDescription() { return "look up a ticket by keyword"; }
-            @Override public String getParametersSchema() { return null; }
-            @Override public String execute(JsonNode arguments) {
+            @Override
+            public String getName() {
+                return "ticket_lookup";
+            }
+
+            @Override
+            public String getDescription() {
+                return "look up a ticket by keyword";
+            }
+
+            @Override
+            public String getParametersSchema() {
+                return null;
+            }
+
+            @Override
+            public String execute(JsonNode arguments) {
                 return "ticket#42: status=OPEN, will ship tomorrow";
             }
         };

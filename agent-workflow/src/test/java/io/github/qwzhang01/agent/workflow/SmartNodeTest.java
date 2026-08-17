@@ -11,7 +11,8 @@ import io.github.qwzhang01.agent.workflow.nodes.AgentNode;
 import io.github.qwzhang01.agent.workflow.nodes.ToolNode;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * M5.3 - smart nodes: AgentNode (LLM decision point) and ToolNode
@@ -20,6 +21,37 @@ import static org.junit.jupiter.api.Assertions.*;
 class SmartNodeTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static Tool fixedTool(String name, String result) {
+        return new Tool() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public String getDescription() {
+                return name;
+            }
+
+            @Override
+            public String getParametersSchema() {
+                return null;
+            }
+
+            @Override
+            public String execute(JsonNode arguments) {
+                return result;
+            }
+        };
+    }
+
+    private static Agent newEchoAgent() {
+        return new SimpleAgent(new AgentConfig(
+                "echo-agent", "sys",
+                MockModelClient.scripted().respondText("transferred to human"),
+                null, 5));
+    }
 
     @Test
     void agentNodeOutputDrivesConditionalRouting() {
@@ -45,13 +77,28 @@ class SmartNodeTest {
         assertEquals("ticket#42: status=OPEN", result.output());
     }
 
+    // ============ Helpers ============
+
     @Test
     void toolNodeExecutesDeterministicToolWithArgs() {
         Tool greet = new Tool() {
-            @Override public String getName() { return "greet"; }
-            @Override public String getDescription() { return "greets a person"; }
-            @Override public String getParametersSchema() { return null; }
-            @Override public String execute(JsonNode arguments) {
+            @Override
+            public String getName() {
+                return "greet";
+            }
+
+            @Override
+            public String getDescription() {
+                return "greets a person";
+            }
+
+            @Override
+            public String getParametersSchema() {
+                return null;
+            }
+
+            @Override
+            public String execute(JsonNode arguments) {
                 return "hello, " + arguments.get("name").asText();
             }
         };
@@ -87,23 +134,5 @@ class SmartNodeTest {
         // Same Workflow + same AgentNode instance: agent state persists
         assertEquals("first", new GraphRuntime().run(wf, "q1").output());
         assertEquals("second", new GraphRuntime().run(wf, "q2").output());
-    }
-
-    // ============ Helpers ============
-
-    private static Tool fixedTool(String name, String result) {
-        return new Tool() {
-            @Override public String getName() { return name; }
-            @Override public String getDescription() { return name; }
-            @Override public String getParametersSchema() { return null; }
-            @Override public String execute(JsonNode arguments) { return result; }
-        };
-    }
-
-    private static Agent newEchoAgent() {
-        return new SimpleAgent(new AgentConfig(
-                "echo-agent", "sys",
-                MockModelClient.scripted().respondText("transferred to human"),
-                null, 5));
     }
 }

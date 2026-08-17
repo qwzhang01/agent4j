@@ -17,31 +17,6 @@ class ControlFlowTest {
 
     // ============ Retry ============
 
-    /** Fails the first N executions, then succeeds. */
-    private static final class FlakyNode implements WorkflowNode {
-        private final AtomicInteger calls = new AtomicInteger();
-        private final int failFirstN;
-
-        FlakyNode(String id, int failFirstN) {
-            this.id = id;
-            this.failFirstN = failFirstN;
-        }
-
-        private final String id;
-
-        @Override public String id() { return id; }
-
-        @Override
-        public NodeResult execute(NodeContext ctx) {
-            if (calls.incrementAndGet() <= failFirstN) {
-                throw new IllegalStateException("flaky failure #" + calls.get());
-            }
-            return NodeResult.of("recovered");
-        }
-
-        int calls() { return calls.get(); }
-    }
-
     @Test
     void retryPolicyRecoversFlakyNode() {
         FlakyNode flaky = new FlakyNode("flaky", 2);
@@ -76,8 +51,6 @@ class ControlFlowTest {
         assertEquals(StepRecord.Status.FAILED, result.trace().get(0).status());
     }
 
-    // ============ onError edges ============
-
     @Test
     void onErrorEdgeRoutesFailureToRecoveryNode() {
         Workflow wf = Workflow.builder("error-route")
@@ -98,7 +71,7 @@ class ControlFlowTest {
         assertEquals("recover", result.trace().get(1).nodeId());
     }
 
-    // ============ Parallel ============
+    // ============ onError edges ============
 
     @Test
     void parallelAllOfJoinsEveryBranch() {
@@ -137,6 +110,8 @@ class ControlFlowTest {
         // 2 x 100ms branches ran concurrently: must be faster than sequential
         assertTrue(elapsed < 190, "branches did not run in parallel (elapsed=" + elapsed + "ms)");
     }
+
+    // ============ Parallel ============
 
     @Test
     void parallelAnyOfTakesFirstFinished() {
@@ -184,5 +159,36 @@ class ControlFlowTest {
 
         assertFalse(result.isSucceeded());
         assertTrue(result.errorMessage().contains("branch exploded"));
+    }
+
+    /**
+     * Fails the first N executions, then succeeds.
+     */
+    private static final class FlakyNode implements WorkflowNode {
+        private final AtomicInteger calls = new AtomicInteger();
+        private final int failFirstN;
+        private final String id;
+
+        FlakyNode(String id, int failFirstN) {
+            this.id = id;
+            this.failFirstN = failFirstN;
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public NodeResult execute(NodeContext ctx) {
+            if (calls.incrementAndGet() <= failFirstN) {
+                throw new IllegalStateException("flaky failure #" + calls.get());
+            }
+            return NodeResult.of("recovered");
+        }
+
+        int calls() {
+            return calls.get();
+        }
     }
 }

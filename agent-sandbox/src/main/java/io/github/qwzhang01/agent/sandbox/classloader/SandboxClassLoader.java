@@ -1,6 +1,9 @@
 package io.github.qwzhang01.agent.sandbox.classloader;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Custom ClassLoader that blocks access to dangerous packages/classes.
@@ -21,10 +24,10 @@ public class SandboxClassLoader extends ClassLoader {
     private final Set<String> blockedClasses;
 
     /**
-     * @param parent the parent ClassLoader (usually the application ClassLoader)
+     * @param parent          the parent ClassLoader (usually the application ClassLoader)
      * @param compiledClasses bytecode from InMemoryCompiler
      * @param blockedPackages package prefixes to block (e.g. "java.io.File")
-     * @param blockedClasses specific class names to block
+     * @param blockedClasses  specific class names to block
      */
     public SandboxClassLoader(ClassLoader parent,
                               Map<String, byte[]> compiledClasses,

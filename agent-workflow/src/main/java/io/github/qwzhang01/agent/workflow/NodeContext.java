@@ -6,9 +6,16 @@ package io.github.qwzhang01.agent.workflow;
  * Provides:
  * - {@link #state()}: the shared blackboard (whole-workflow state)
  * - {@link #input()}: the output of the previously executed node
- *   (or the workflow input for the first node)
+ * (or the workflow input for the first node)
  */
 public interface NodeContext {
+
+    /**
+     * Internal factory.
+     */
+    static NodeContext of(WorkflowState state, Object input) {
+        return new Impl(state, input);
+    }
 
     /**
      * The shared blackboard state of the current workflow run.
@@ -37,13 +44,6 @@ public interface NodeContext {
     }
 
     /**
-     * Internal factory.
-     */
-    static NodeContext of(WorkflowState state, Object input) {
-        return new Impl(state, input);
-    }
-
-    /**
      * Default implementation.
      */
     final class Impl implements NodeContext {
@@ -55,7 +55,14 @@ public interface NodeContext {
             this.input = input;
         }
 
-        @Override public WorkflowState state() { return state; }
-        @Override public Object input() { return input; }
+        @Override
+        public WorkflowState state() {
+            return state;
+        }
+
+        @Override
+        public Object input() {
+            return input;
+        }
     }
 }

@@ -29,12 +29,12 @@ while (true) {}                                // 死循环卡死 Agent
 
 四种典型限制：
 
-| 限制 | 例子 |
-|------|------|
-| 文件隔离 | 不能读写沙箱目录之外的文件 |
-| 网络隔离 | 不能访问非白名单域名 |
+| 限制   | 例子             |
+|------|----------------|
+| 文件隔离 | 不能读写沙箱目录之外的文件  |
+| 网络隔离 | 不能访问非白名单域名     |
 | 进程隔离 | 不能启动子进程、执行系统命令 |
-| 资源限制 | 超时 kill、内存上限 |
+| 资源限制 | 超时 kill、内存上限   |
 
 ---
 
@@ -72,7 +72,8 @@ Application ClassLoader（加载你的应用类）
 SandboxClassLoader（我们自定义的，加载 LLM 代码）
 ```
 
-**沙箱利用点**：重写 `loadClass`，在委托之前检查类名是否在拦截列表，是则抛 `SecurityException`。LLM 代码由 SandboxClassLoader 加载，它引用的所有类（如 `java.lang.Runtime`）也要经过 SandboxClassLoader，因此被拦截。
+**沙箱利用点**：重写 `loadClass`，在委托之前检查类名是否在拦截列表，是则抛 `SecurityException`。LLM 代码由
+SandboxClassLoader 加载，它引用的所有类（如 `java.lang.Runtime`）也要经过 SandboxClassLoader，因此被拦截。
 
 **局限**：ClassLoader 隔离不是安全边界。攻击者可以用反射、`Unsafe`、JNI 逃逸。但对 LLM 生成的代码（非对抗性）足够了。
 
@@ -87,11 +88,13 @@ JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 // 全程零磁盘 IO
 ```
 
-关键点：`JavaCompiler.getTask()` 接受自定义的 `JavaFileManager`，我们重写 `getJavaFileForOutput` 让编译产物（字节码）写进 `Map<String, byte[]>` 而不是 `.class` 文件。
+关键点：`JavaCompiler.getTask()` 接受自定义的 `JavaFileManager`，我们重写 `getJavaFileForOutput`
+让编译产物（字节码）写进 `Map<String, byte[]>` 而不是 `.class` 文件。
 
 ### 2.4 受检异常的编译期拦截
 
-实测发现一个有趣现象：拦截 `java.io.File` 后，代码里 `Runtime.getRuntime().exec("ls")`（声明抛 `IOException`）在**编译阶段**就失败了。因为编译器需要解析 `IOException`（在 `java.io` 拦截列表里），无法解析受检异常 -> 编译失败。
+实测发现一个有趣现象：拦截 `java.io.File` 后，代码里 `Runtime.getRuntime().exec("ls")`（声明抛 `IOException`）在**编译阶段**
+就失败了。因为编译器需要解析 `IOException`（在 `java.io` 拦截列表里），无法解析受检异常 -> 编译失败。
 
 **编译期拦截比运行期拦截更早、更彻底** -- 危险代码根本没机会生成字节码。
 
@@ -144,14 +147,14 @@ public interface Sandbox {
 
 ### 3.3 SandboxSpec（配置，Builder 模式）
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| timeout | Duration | 10 秒 | 执行超时 |
-| workingDirectory | String | 系统临时目录 | 进程沙箱的工作目录 |
-| environment | Map | 空 | 传给子进程的环境变量 |
-| memoryLimitBytes | long | 256MB | 内存上限（进程沙箱用） |
-| blockedPackages | List | 见下 | 拦截的包前缀 |
-| blockedClasses | List | 空 | 拦截的具体类名 |
+| 字段               | 类型       | 默认值    | 说明          |
+|------------------|----------|--------|-------------|
+| timeout          | Duration | 10 秒   | 执行超时        |
+| workingDirectory | String   | 系统临时目录 | 进程沙箱的工作目录   |
+| environment      | Map      | 空      | 传给子进程的环境变量  |
+| memoryLimitBytes | long     | 256MB  | 内存上限（进程沙箱用） |
+| blockedPackages  | List     | 见下     | 拦截的包前缀      |
+| blockedClasses   | List     | 空      | 拦截的具体类名     |
 
 默认拦截列表（`defaultBlockedPackages()`）：
 
@@ -199,7 +202,8 @@ public record SandboxResult(
 └── CompilationException 编译失败异常（含行号错误信息）
 ```
 
-关键机制：编译器写 `.class` 内容时调 `openOutputStream()`，我们返回一个 `ByteArrayOutputStream`，它的 `close()` 被重写为"把累积的字节放进 Map"。
+关键机制：编译器写 `.class` 内容时调 `openOutputStream()`，我们返回一个 `ByteArrayOutputStream`，它的 `close()` 被重写为"
+把累积的字节放进 Map"。
 
 ### 3.6 SandboxClassLoader（沙箱类加载器）
 
@@ -243,6 +247,7 @@ execute(className, code, spec)
 ```
 
 异常映射：
+
 - `SecurityException` -> `SandboxResult.blocked()`
 - `InvocationTargetException` -> 解包 cause，`SandboxResult.error()`
 - `TimeoutException` -> `SandboxResult.timeout()`
@@ -288,26 +293,26 @@ registry.register(new SandboxTool(sandbox));
 
 ## 四、类与概念的关系
 
-| 概念 | 对应类 | 关系说明 |
-|------|--------|---------|
-| 沙箱 | `Sandbox` | 接口即概念，定义"安全执行"契约 |
-| 隔离策略 | `ClassLoaderSandbox` / `ProcessSandbox` | 同一接口的两个策略实现（策略模式） |
-| 安全策略 | `SandboxSpec.blockedPackages` | 声明式拦截列表，可配置 |
-| 类加载隔离 | `SandboxClassLoader` | 拦截的执行者，重写 loadClass |
-| 运行时编译 | `InMemoryCompiler` | 让"LLM 写代码 -> 执行"零磁盘 IO |
-| 资源限制 | `SandboxSpec.timeout` + Future/waitFor | 超时是唯一真正落地的资源限制 |
-| 执行结果 | `SandboxResult` | 屏蔽两种方案的差异，统一返回格式 |
-| Agent 接入点 | `SandboxTool` | 沙箱能力暴露为模型可调用的工具 |
-| 配置构建 | `SandboxSpec.Builder` | Builder 模式处理多可选字段 |
+| 概念        | 对应类                                     | 关系说明                   |
+|-----------|-----------------------------------------|------------------------|
+| 沙箱        | `Sandbox`                               | 接口即概念，定义"安全执行"契约       |
+| 隔离策略      | `ClassLoaderSandbox` / `ProcessSandbox` | 同一接口的两个策略实现（策略模式）      |
+| 安全策略      | `SandboxSpec.blockedPackages`           | 声明式拦截列表，可配置            |
+| 类加载隔离     | `SandboxClassLoader`                    | 拦截的执行者，重写 loadClass    |
+| 运行时编译     | `InMemoryCompiler`                      | 让"LLM 写代码 -> 执行"零磁盘 IO |
+| 资源限制      | `SandboxSpec.timeout` + Future/waitFor  | 超时是唯一真正落地的资源限制         |
+| 执行结果      | `SandboxResult`                         | 屏蔽两种方案的差异，统一返回格式       |
+| Agent 接入点 | `SandboxTool`                           | 沙箱能力暴露为模型可调用的工具        |
+| 配置构建      | `SandboxSpec.Builder`                   | Builder 模式处理多可选字段      |
 
 设计模式清单：
 
-| 模式 | 用在哪 |
-|------|--------|
-| 策略模式 | Sandbox 接口 + 两个实现，可替换隔离策略 |
-| Builder | SandboxSpec 多字段可选配置 |
-| 模板方法雏形 | 两个实现都遵循 compile -> execute -> capture 流程 |
-| 适配器 | SandboxTool 把 Sandbox 适配成 Tool |
+| 模式      | 用在哪                                      |
+|---------|------------------------------------------|
+| 策略模式    | Sandbox 接口 + 两个实现，可替换隔离策略                |
+| Builder | SandboxSpec 多字段可选配置                      |
+| 模板方法雏形  | 两个实现都遵循 compile -> execute -> capture 流程 |
+| 适配器     | SandboxTool 把 Sandbox 适配成 Tool           |
 
 ---
 
@@ -532,7 +537,8 @@ SandboxResult { success=false, timedOut=true,
 
 ### 为什么做两个实现而不是一个？
 
-两种方案互补：ClassLoader 版快但隔离弱（适合 LLM 代码快速迭代），Process 版慢但隔离强（适合完全不可信代码）。接口统一（`Sandbox`），调用方按需选择，也验证了策略模式。
+两种方案互补：ClassLoader 版快但隔离弱（适合 LLM 代码快速迭代），Process 版慢但隔离强（适合完全不可信代码）。接口统一（`Sandbox`
+），调用方按需选择，也验证了策略模式。
 
 ### 为什么约定 `public static String run()`？
 
@@ -542,28 +548,33 @@ SandboxResult { success=false, timedOut=true,
 
 ### 为什么拦截 java.lang.reflect 和 ClassLoader？
 
-反射可以绕过拦截：`Class.forName("java.io.File")` 默认用调用者的类加载器（SandboxClassLoader），会走拦截检查；但 `ClassLoader.getSystemClassLoader()` 拿到系统加载器后 `loadClass` 就绕过了。拦截这两个包堵住主要逃逸路径。
+反射可以绕过拦截：`Class.forName("java.io.File")`
+默认用调用者的类加载器（SandboxClassLoader），会走拦截检查；但 `ClassLoader.getSystemClassLoader()`
+拿到系统加载器后 `loadClass` 就绕过了。拦截这两个包堵住主要逃逸路径。
 
 ### 为什么 stdout 捕获用 System.setOut 重定向？
 
-进程内沙箱和主进程共享 stdout，只能重定向。局限：全局静态替换在并发场景会互相干扰（两个沙箱同时跑会串输出）。生产方案应该用自定义 `PrintStream` 按线程隔离。这是已知的技术债，单线程场景够用。
+进程内沙箱和主进程共享
+stdout，只能重定向。局限：全局静态替换在并发场景会互相干扰（两个沙箱同时跑会串输出）。生产方案应该用自定义 `PrintStream`
+按线程隔离。这是已知的技术债，单线程场景够用。
 
 ### SecurityManager 哪去了？
 
-Java 传统方案是 `SecurityManager`，但它在 **Java 17 已废弃**（JEP 411），没有替代品。所以只能用 ClassLoader 拦截 + 进程隔离的组合。这也是为什么 dsh 用 VM 沙箱（isolated-vm）而不是 Java 原生机制。
+Java 传统方案是 `SecurityManager`，但它在 **Java 17 已废弃**（JEP 411），没有替代品。所以只能用 ClassLoader 拦截 +
+进程隔离的组合。这也是为什么 dsh 用 VM 沙箱（isolated-vm）而不是 Java 原生机制。
 
 ---
 
 ## 八、验证对照
 
-| 学习规划验收项 | 状态 | 实现 |
-|---|---|---|
-| 沙箱中执行用户代码 | ✅ | ClassLoaderSandbox + ProcessSandbox |
-| 代码无法访问沙箱外文件系统 | ✅ | 拦截 java.io.File / nio.file（编译期或运行期） |
-| 代码无法访问未授权网络 | ✅ | 拦截 java.net |
-| 超时自动终止 | ✅ | Future.get(timeout) / waitFor + destroyForcibly |
-| 沙箱可复用 | ⬜ | 未做池化（每次新建，后续加） |
-| 内存配额 | ⬜ | SandboxSpec 有字段但未真正生效（进程沙箱可用 -Xmx） |
+| 学习规划验收项       | 状态 | 实现                                              |
+|---------------|----|-------------------------------------------------|
+| 沙箱中执行用户代码     | ✅  | ClassLoaderSandbox + ProcessSandbox             |
+| 代码无法访问沙箱外文件系统 | ✅  | 拦截 java.io.File / nio.file（编译期或运行期）             |
+| 代码无法访问未授权网络   | ✅  | 拦截 java.net                                     |
+| 超时自动终止        | ✅  | Future.get(timeout) / waitFor + destroyForcibly |
+| 沙箱可复用         | ⬜  | 未做池化（每次新建，后续加）                                  |
+| 内存配额          | ⬜  | SandboxSpec 有字段但未真正生效（进程沙箱可用 -Xmx）              |
 
 ---
 
@@ -619,7 +630,8 @@ graph TB
     Model -->|"最终答案"| Loop --> Agent --> User
 ```
 
-完整链路：**用户提问 -> 模型写代码并调 sandbox_execute -> 沙箱编译/加载/拦截/执行/超时控制 -> 结果返回模型 -> 模型给用户答案**。
+完整链路：**用户提问 -> 模型写代码并调 sandbox_execute -> 沙箱编译/加载/拦截/执行/超时控制 -> 结果返回模型 -> 模型给用户答案
+**。
 
 这是 Coding Agent 的核心能力：模型写代码，沙箱保证安全。
 
@@ -649,4 +661,10 @@ Stage 5（Workflow Graph）
 
 ## 十二、面试表达
 
-> 我们的 Agent 框架在 Stage 4 实现了双层沙箱来安全执行 LLM 生成的 Java 代码。快路径用 Java Compiler API 在内存中编译（零磁盘 IO），再用自定义 ClassLoader 加载字节码 -- 它重写了 loadClass，在双亲委派之前检查拦截列表，java.io、java.net、Runtime、ProcessBuilder、reflect 全部拦掉，实测危险代码在编译期或运行期都会被 SecurityException 阻断。慢路径用 ProcessBuilder 起 javac/java 子进程，靠 waitFor 超时加 destroyForcibly 强杀实现真正的进程级隔离。两条路径统一实现 Sandbox 接口，再通过 SandboxTool 适配成模型可调用的工具 -- 模型写代码、调 sandbox_execute、拿结果继续推理，这就是 Coding Agent 的最小闭环。局限也很清楚：ClassLoader 隔离不是安全边界（SecurityManager 在 17 已废弃，JEP 411），反射和 Unsafe 可以逃逸，所以对抗性场景必须走进程或容器隔离。
+> 我们的 Agent 框架在 Stage 4 实现了双层沙箱来安全执行 LLM 生成的 Java 代码。快路径用 Java Compiler API 在内存中编译（零磁盘
+> IO），再用自定义 ClassLoader 加载字节码 -- 它重写了
+> loadClass，在双亲委派之前检查拦截列表，java.io、java.net、Runtime、ProcessBuilder、reflect 全部拦掉，实测危险代码在编译期或运行期都会被
+> SecurityException 阻断。慢路径用 ProcessBuilder 起 javac/java 子进程，靠 waitFor 超时加 destroyForcibly
+> 强杀实现真正的进程级隔离。两条路径统一实现 Sandbox 接口，再通过 SandboxTool 适配成模型可调用的工具 -- 模型写代码、调
+> sandbox_execute、拿结果继续推理，这就是 Coding Agent 的最小闭环。局限也很清楚：ClassLoader 隔离不是安全边界（SecurityManager
+> 在 17 已废弃，JEP 411），反射和 Unsafe 可以逃逸，所以对抗性场景必须走进程或容器隔离。

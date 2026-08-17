@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Represents a tool call requested by the model.
  *
- * @param id       unique call id assigned by the model
- * @param name     tool name to invoke
+ * @param id        unique call id assigned by the model
+ * @param name      tool name to invoke
  * @param arguments JSON arguments as a parsed node (may be null if no args)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)

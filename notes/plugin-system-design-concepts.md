@@ -41,6 +41,7 @@ SPI 是 Java 标准的插件发现机制，定义在 `java.util.ServiceLoader` �
 #### 原理
 
 在 `META-INF/services/` 目录下放置一个文件：
+
 - 文件名 = 接口的全限定名
 - 文件内容 = 实现类的全限定名（每行一个）
 
@@ -99,7 +100,8 @@ public interface Plugin {
 public interface ToolPlugin extends Plugin {}
 ```
 
-不增加任何方法。作用是**类型标记**：`ServiceLoader.load(ToolPlugin.class)` 只找标记了 `ToolPlugin` 的类，不找其他 `Plugin` 实现。
+不增加任何方法。作用是**类型标记**：`ServiceLoader.load(ToolPlugin.class)` 只找标记了 `ToolPlugin` 的类，不找其他 `Plugin`
+实现。
 
 Java 标准库中的例子：`Serializable` 和 `Cloneable` 是标记接口，不定义方法，只标记"这个类可以被序列化/克隆"。
 
@@ -118,6 +120,7 @@ public record PluginDescriptor(
 ```
 
 `record` 是 Java 16 正式引入的语法，用于定义不可变值对象。编译器自动生成：
+
 - 全参构造函数
 - getter（`name()` 而非 `getName()`）
 - `equals()` / `hashCode()` / `toString()`
@@ -153,7 +156,8 @@ public Optional<PluginState> getState(String name) {
 
 **PluginManager 是 PluginRegistry 的门面。**
 
-PluginRegistry 负责生命周期管理（load/unload/reload），PluginRegistry 只管"怎么加载和卸载"。PluginManager 在其之上增加 SPI 发现和批量操作，对外提供简化的 API。
+PluginRegistry 负责生命周期管理（load/unload/reload），PluginRegistry 只管"怎么加载和卸载"。PluginManager 在其之上增加 SPI
+发现和批量操作，对外提供简化的 API。
 
 ```java
 // PluginManager（门面）
@@ -186,6 +190,7 @@ DETECTED --load()成功--> LOADED --unload()--> UNLOADED --load()--> LOADED
 ```
 
 状态转移规则在 PluginRegistry 的 `load` 和 `unload` 方法中实现：
+
 - `load` 成功 -> `LOADED`
 - `load` 失败 -> `FAILED`
 - `unload` 无论成功失败 -> `UNLOADED`
@@ -252,10 +257,10 @@ try {
 
 #### 故障隔离的两个层次
 
-| 层次 | 实现方式 | 保护范围 |
-|------|---------|---------|
-| 异常隔离（已实现） | try-catch 包裹 onLoad | 一个插件抛异常不传播到其他插件 |
-| 类隔离（未实现） | 自定义 ClassLoader | 插件 A 和 B 的依赖版本冲突不影响彼此 |
+| 层次        | 实现方式                | 保护范围                  |
+|-----------|---------------------|-----------------------|
+| 异常隔离（已实现） | try-catch 包裹 onLoad | 一个插件抛异常不传播到其他插件       |
+| 类隔离（未实现）  | 自定义 ClassLoader     | 插件 A 和 B 的依赖版本冲突不影响彼此 |
 
 本阶段只做了异常隔离。类隔离需要自定义 ClassLoader，留到后续阶段。
 
@@ -265,7 +270,8 @@ try {
 
 ### 4.4 显式优于隐式（Explicit over Implicit）
 
-`PluginContext` 显式传入 `ToolRegistry`，而不是通过全局变量或静态方法获取。这使插件依赖清晰可测，也便于未来扩展（加 `getMemoryStore()` 等方法时只改接口不改签名）。
+`PluginContext` 显式传入 `ToolRegistry`
+，而不是通过全局变量或静态方法获取。这使插件依赖清晰可测，也便于未来扩展（加 `getMemoryStore()` 等方法时只改接口不改签名）。
 
 ### 4.5 工具即能力（Tool as Capability）
 
@@ -315,22 +321,23 @@ PluginManager（门面，SPI 发现 + 批量操作）
 
 ### 5.2 职责划分
 
-| 类 | 职责 | 不做什么 |
-|----|------|---------|
-| `Plugin` | 定义插件契约 | 不关心怎么发现、怎么加载 |
-| `PluginDescriptor` | 存元数据 | 不含逻辑 |
-| `PluginState` | 标记状态 | 不含转移逻辑（转移在 Registry 里） |
-| `PluginContext` | 提供注册表访问 | 不管理生命周期 |
-| `ToolPlugin` | SPI 类型标记 | 不增加方法 |
-| `PluginRegistry` | 执行生命周期 | 不做 SPI 发现 |
-| `PluginManager` | SPI 发现 + 批量操作 | 不直接调 onLoad/onUnload |
+| 类                  | 职责            | 不做什么                   |
+|--------------------|---------------|------------------------|
+| `Plugin`           | 定义插件契约        | 不关心怎么发现、怎么加载           |
+| `PluginDescriptor` | 存元数据          | 不含逻辑                   |
+| `PluginState`      | 标记状态          | 不含转移逻辑（转移在 Registry 里） |
+| `PluginContext`    | 提供注册表访问       | 不管理生命周期                |
+| `ToolPlugin`       | SPI 类型标记      | 不增加方法                  |
+| `PluginRegistry`   | 执行生命周期        | 不做 SPI 发现              |
+| `PluginManager`    | SPI 发现 + 批量操作 | 不直接调 onLoad/onUnload   |
 
 ### 5.3 为什么 PluginRegistry 和 PluginManager 分两层
 
 - **PluginRegistry**：管生命周期（load/unload/reload）。不管插件怎么来的。
 - **PluginManager**：管 SPI 发现 + 批量操作。委托给 PluginRegistry。
 
-换发现机制（如远程仓库下载插件）时，只改 PluginManager，不改 PluginRegistry。换生命周期策略（如加 DISABLED 状态）时，只改 PluginRegistry，不改 PluginManager。单一职责，互不影响。
+换发现机制（如远程仓库下载插件）时，只改 PluginManager，不改 PluginRegistry。换生命周期策略（如加 DISABLED 状态）时，只改
+PluginRegistry，不改 PluginManager。单一职责，互不影响。
 
 ---
 
@@ -424,12 +431,12 @@ PluginRegistry.unload(name)
 
 ### 7.2 四个工具
 
-| 工具 | 参数 | 返回 | 模型什么时候调 |
-|------|------|------|--------------|
-| `plugin_inspect` | 无 | 当前所有插件状态 JSON | "我有什么能力？" |
-| `plugin_list` | 无 | 所有已发现插件 + 可加载数量 | "还有什么可用？" |
-| `plugin_load` | `{name}` | `{success, message/error}` | "我需要这个能力" |
-| `plugin_unload` | `{name}` | `{success, message/error}` | "不需要了/有 bug" |
+| 工具               | 参数       | 返回                         | 模型什么时候调      |
+|------------------|----------|----------------------------|--------------|
+| `plugin_inspect` | 无        | 当前所有插件状态 JSON              | "我有什么能力？"    |
+| `plugin_list`    | 无        | 所有已发现插件 + 可加载数量            | "还有什么可用？"    |
+| `plugin_load`    | `{name}` | `{success, message/error}` | "我需要这个能力"    |
+| `plugin_unload`  | `{name}` | `{success, message/error}` | "不需要了/有 bug" |
 
 ### 7.3 自进化完整流程
 
@@ -465,14 +472,14 @@ Step 6: 模型生成最终回答
 
 ### 7.4 与 DeepSeek Harness 的对比
 
-| 维度 | dsh tool-cordis | 本框架 |
-|------|----------------|---------|
-| inspect | 查看服务、插件、工具、API | 查看插件状态 |
-| define | 模型写代码定义新插件 | 未实现（需要沙箱） |
-| run | 启动已定义的插件 | `plugin_load` 加载已发现的插件 |
-| stop | 停止运行中的插件 | `plugin_unload` 卸载插件 |
-| 发现机制 | 动态定义（模型写代码） | SPI 预发现（classpath 扫描） |
-| 安全隔离 | VM 沙箱执行 | 无（插件是预编译的 Java 类） |
+| 维度      | dsh tool-cordis | 本框架                    |
+|---------|-----------------|------------------------|
+| inspect | 查看服务、插件、工具、API  | 查看插件状态                 |
+| define  | 模型写代码定义新插件      | 未实现（需要沙箱）              |
+| run     | 启动已定义的插件        | `plugin_load` 加载已发现的插件 |
+| stop    | 停止运行中的插件        | `plugin_unload` 卸载插件   |
+| 发现机制    | 动态定义（模型写代码）     | SPI 预发现（classpath 扫描）  |
+| 安全隔离    | VM 沙箱执行         | 无（插件是预编译的 Java 类）      |
 
 关键差异：dsh 的模型可以**写代码定义新插件**，本框架的模型只能**从预发现的插件中选择加载**。要实现动态定义需要 Stage 4（沙箱）。
 
@@ -545,8 +552,13 @@ agent-plugin/src/test/java/com/seven/agent/plugin/
 
 ## 十、面试表达
 
-> 我的 Agent 框架用 Java SPI 实现了插件发现，插件通过 ServiceLoader 从 classpath 自动扫描。插件生命周期由 PluginRegistry 管理，采用可逆注册设计：onLoad 注册工具，onUnload 注销，两者对称。故障隔离通过 try-catch 实现：一个插件 onLoad 失败只标记 FAILED，不传播异常，其他插件照常加载。
+> 我的 Agent 框架用 Java SPI 实现了插件发现，插件通过 ServiceLoader 从 classpath 自动扫描。插件生命周期由 PluginRegistry
+> 管理，采用可逆注册设计：onLoad 注册工具，onUnload 注销，两者对称。故障隔离通过 try-catch 实现：一个插件 onLoad 失败只标记
+> FAILED，不传播异常，其他插件照常加载。
 >
-> 在此之上，我把插件管理操作包装成 4 个模型可调用的 Tool（inspect/list/load/unload），让 Agent 在对话过程中自己决定加载和卸载什么能力。这是"Agent 自进化"的最小闭环：模型发现需要搜索能力 -> 加载 search-tool 插件 -> 使用 -> 用完卸载。
+> 在此之上，我把插件管理操作包装成 4 个模型可调用的 Tool（inspect/list/load/unload），让 Agent
+> 在对话过程中自己决定加载和卸载什么能力。这是"Agent 自进化"的最小闭环：模型发现需要搜索能力 -> 加载 search-tool 插件 ->
+> 使用 -> 用完卸载。
 >
-> 对标 DeepSeek Harness 的 tool-cordis，dsh 更进一步：模型可以写代码动态定义新插件（cordis_define），在 VM 沙箱中执行。我的框架目前只能从预发现的插件中选择，动态定义需要 Stage 4 沙箱支持。
+> 对标 DeepSeek Harness 的 tool-cordis，dsh 更进一步：模型可以写代码动态定义新插件（cordis_define），在 VM
+> 沙箱中执行。我的框架目前只能从预发现的插件中选择，动态定义需要 Stage 4 沙箱支持。

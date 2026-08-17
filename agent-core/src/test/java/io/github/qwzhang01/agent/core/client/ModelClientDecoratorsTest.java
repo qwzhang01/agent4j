@@ -1,16 +1,17 @@
 package io.github.qwzhang01.agent.core.client;
 
-import io.github.qwzhang01.agent.core.model.*;
+import io.github.qwzhang01.agent.core.model.ModelRequest;
+import io.github.qwzhang01.agent.core.model.ModelResponse;
+import io.github.qwzhang01.agent.core.model.StreamEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests for ModelClient decorators: Retry, Timeout, Fallback, StructuredOutput.
@@ -18,6 +19,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class ModelClientDecoratorsTest {
 
     // ============ RetryModelClient ============
+
+    private static ModelResponse throwResponse(ModelException.ErrorCode code, String message) {
+        // Encode error info in a special ModelResponse; CountingMock will throw it
+        return new ModelResponse("__THROW__:" + code.name() + ":" + message,
+                null, "__THROW__", null);
+    }
 
     @Test
     void retry_shouldSucceedOnFirstAttempt() {
@@ -55,6 +62,8 @@ class ModelClientDecoratorsTest {
         assertEquals(1, mock.callCount.get());
     }
 
+    // ============ TimeoutModelClient ============
+
     @Test
     void retry_shouldExhaustMaxRetries() {
         var mock = new CountingMock();
@@ -68,8 +77,6 @@ class ModelClientDecoratorsTest {
         assertEquals(3, mock.callCount.get()); // initial + 2 retries
     }
 
-    // ============ TimeoutModelClient ============
-
     @Test
     void timeout_shouldReturnIfFastEnough() {
         var mock = new CountingMock();
@@ -80,6 +87,8 @@ class ModelClientDecoratorsTest {
 
         assertEquals("fast", response.content());
     }
+
+    // ============ FallbackModelClient ============
 
     @Test
     void timeout_shouldThrowOnExceed() {
@@ -105,8 +114,6 @@ class ModelClientDecoratorsTest {
                 () -> client.chat(ModelRequest.builder().build()));
         assertEquals(ModelException.ErrorCode.TIMEOUT, ex.getCode());
     }
-
-    // ============ FallbackModelClient ============
 
     @Test
     void fallback_shouldUsePrimaryWhenHealthy() {
@@ -140,6 +147,8 @@ class ModelClientDecoratorsTest {
         assertEquals(1, fallback.callCount.get());
     }
 
+    // ============ StructuredOutputModelClient ============
+
     @Test
     void fallback_shouldChainMultipleFallbacks() {
         var primary = new CountingMock();
@@ -156,8 +165,6 @@ class ModelClientDecoratorsTest {
 
         assertEquals("fb2-ok", response.content());
     }
-
-    // ============ StructuredOutputModelClient ============
 
     @Test
     void structuredOutput_shouldPassThroughValidJson() {
@@ -190,6 +197,8 @@ class ModelClientDecoratorsTest {
         assertEquals(2, mock.callCount.get());
     }
 
+    // ============ Helpers ============
+
     @Test
     void structuredOutput_shouldReturnErrorAfterMaxRetries() {
         var mock = new CountingMock();
@@ -204,14 +213,6 @@ class ModelClientDecoratorsTest {
 
         ModelResponse response = client.chat(request);
         assertEquals("error", response.finishReason());
-    }
-
-    // ============ Helpers ============
-
-    private static ModelResponse throwResponse(ModelException.ErrorCode code, String message) {
-        // Encode error info in a special ModelResponse; CountingMock will throw it
-        return new ModelResponse("__THROW__:" + code.name() + ":" + message,
-                null, "__THROW__", null);
     }
 
     /**

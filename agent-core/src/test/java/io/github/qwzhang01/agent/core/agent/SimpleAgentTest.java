@@ -3,16 +3,20 @@ package io.github.qwzhang01.agent.core.agent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.qwzhang01.agent.core.client.ModelClient;
-import io.github.qwzhang01.agent.core.model.*;
-import io.github.qwzhang01.agent.core.tool.*;
+import io.github.qwzhang01.agent.core.model.ModelRequest;
+import io.github.qwzhang01.agent.core.model.ModelResponse;
+import io.github.qwzhang01.agent.core.model.StreamEvent;
+import io.github.qwzhang01.agent.core.model.ToolCall;
+import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
+import io.github.qwzhang01.agent.core.tool.Tool;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for the ReAct Agent Loop with an inline mock model client.
@@ -83,9 +87,14 @@ class SimpleAgentTest {
     static class InlineMock implements ModelClient {
         private final Queue<ModelResponse> responses = new LinkedBlockingQueue<>();
 
-        static InlineMock scripted() { return new InlineMock(); }
+        static InlineMock scripted() {
+            return new InlineMock();
+        }
 
-        InlineMock addResponse(ModelResponse r) { responses.add(r); return this; }
+        InlineMock addResponse(ModelResponse r) {
+            responses.add(r);
+            return this;
+        }
 
         @Override
         public ModelResponse chat(ModelRequest request) {
@@ -106,9 +115,21 @@ class SimpleAgentTest {
      * Minimal echo tool for testing.
      */
     static class EchoToolInline implements Tool {
-        @Override public String getName() { return "echo"; }
-        @Override public String getDescription() { return "Echoes input"; }
-        @Override public String getParametersSchema() { return "{}"; }
+        @Override
+        public String getName() {
+            return "echo";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Echoes input";
+        }
+
+        @Override
+        public String getParametersSchema() {
+            return "{}";
+        }
+
         @Override
         public String execute(JsonNode arguments) {
             String input = arguments != null && arguments.has("input")

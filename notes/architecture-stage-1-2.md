@@ -587,16 +587,16 @@ examples/src/main/java/com/seven/agent/examples/
 
 ## 设计原则总结
 
-| 原则 | 体现 |
-|------|------|
-| **接口优先** | ModelClient / Tool / ToolRegistry / ToolExecutor / Agent / AgentLoop 全是接口 |
-| **装饰器模式** | Retry / Timeout / Fallback / StructuredOutput 四层装饰器可自由组合 |
-| **Registry-Executor 分离** | 元数据管理 vs 安全执行分离，为 Policy/Sandbox 留口子 |
-| **函数式 AgentLoop** | `execute(config, state) → state`，不是 Thread/Runnable |
-| **Sealed Interface** | StreamEvent 封闭类型，编译器保证模式匹配穷尽性 |
-| **Mutable State + Snapshot** | AgentState 可变但支持 snapshot()，为 Checkpoint 预留 |
-| **Builder 模式** | ModelRequest 用 Builder 构建，支持流式 API |
-| **错误码分类** | ModelException.ErrorCode 区分可重试/不可重试 |
+| 原则                           | 体现                                                                        |
+|------------------------------|---------------------------------------------------------------------------|
+| **接口优先**                     | ModelClient / Tool / ToolRegistry / ToolExecutor / Agent / AgentLoop 全是接口 |
+| **装饰器模式**                    | Retry / Timeout / Fallback / StructuredOutput 四层装饰器可自由组合                  |
+| **Registry-Executor 分离**     | 元数据管理 vs 安全执行分离，为 Policy/Sandbox 留口子                                      |
+| **函数式 AgentLoop**            | `execute(config, state) → state`，不是 Thread/Runnable                       |
+| **Sealed Interface**         | StreamEvent 封闭类型，编译器保证模式匹配穷尽性                                             |
+| **Mutable State + Snapshot** | AgentState 可变但支持 snapshot()，为 Checkpoint 预留                               |
+| **Builder 模式**               | ModelRequest 用 Builder 构建，支持流式 API                                        |
+| **错误码分类**                    | ModelException.ErrorCode 区分可重试/不可重试                                       |
 
 ---
 

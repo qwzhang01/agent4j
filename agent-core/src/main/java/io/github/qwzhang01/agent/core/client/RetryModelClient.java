@@ -37,7 +37,7 @@ public class RetryModelClient implements ModelClient {
     }
 
     public RetryModelClient(ModelClient delegate, int maxRetries,
-                             Duration initialBackoff, double backoffMultiplier) {
+                            Duration initialBackoff, double backoffMultiplier) {
         this.delegate = delegate;
         this.maxRetries = maxRetries;
         this.initialBackoff = initialBackoff;

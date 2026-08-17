@@ -9,16 +9,6 @@ package io.github.qwzhang01.agent.core.client;
  */
 public class ModelException extends RuntimeException {
 
-    public enum ErrorCode {
-        NETWORK_ERROR,
-        TIMEOUT,
-        RATE_LIMITED,
-        AUTH_ERROR,
-        INVALID_REQUEST,
-        MODEL_ERROR,
-        UNKNOWN
-    }
-
     private final ErrorCode code;
 
     public ModelException(ErrorCode code, String message) {
@@ -33,5 +23,15 @@ public class ModelException extends RuntimeException {
 
     public ErrorCode getCode() {
         return code;
+    }
+
+    public enum ErrorCode {
+        NETWORK_ERROR,
+        TIMEOUT,
+        RATE_LIMITED,
+        AUTH_ERROR,
+        INVALID_REQUEST,
+        MODEL_ERROR,
+        UNKNOWN
     }
 }

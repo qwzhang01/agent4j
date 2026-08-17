@@ -73,12 +73,12 @@ public class AnthropicModelClient implements ModelClient {
     }
 
     public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
-                               String defaultModel, int defaultMaxTokens) {
+                                String defaultModel, int defaultMaxTokens) {
         this(baseUrl, apiKey, apiVersion, defaultModel, defaultMaxTokens, Duration.ofSeconds(60));
     }
 
     public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
-                               String defaultModel, int defaultMaxTokens, Duration timeout) {
+                                String defaultModel, int defaultMaxTokens, Duration timeout) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.apiKey = apiKey;
         this.apiVersion = apiVersion;

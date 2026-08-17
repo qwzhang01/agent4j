@@ -3,12 +3,12 @@ package io.github.qwzhang01.agent.sandbox;
 /**
  * Result of sandbox execution.
  *
- * @param success    whether execution completed without error
- * @param stdout     captured standard output
- * @param stderr     captured standard error
- * @param exitCode   process exit code (-1 for ClassLoader sandbox)
- * @param timedOut   whether execution was killed due to timeout
- * @param error      error message if execution failed
+ * @param success  whether execution completed without error
+ * @param stdout   captured standard output
+ * @param stderr   captured standard error
+ * @param exitCode process exit code (-1 for ClassLoader sandbox)
+ * @param timedOut whether execution was killed due to timeout
+ * @param error    error message if execution failed
  */
 public record SandboxResult(
         boolean success,

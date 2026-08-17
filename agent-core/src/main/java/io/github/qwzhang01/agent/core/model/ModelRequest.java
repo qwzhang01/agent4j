@@ -1,16 +1,17 @@
 package io.github.qwzhang01.agent.core.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Request sent to a model provider.
  *
- * @param model         model identifier (e.g. "gpt-4o", "doubao-pro")
- * @param messages      conversation messages
- * @param tools         available tool definitions (JSON schema), null if no tools
- * @param temperature   sampling temperature (0-2), null for provider default
+ * @param model          model identifier (e.g. "gpt-4o", "doubao-pro")
+ * @param messages       conversation messages
+ * @param tools          available tool definitions (JSON schema), null if no tools
+ * @param temperature    sampling temperature (0-2), null for provider default
  * @param maxTokens      max output tokens, null for provider default
  * @param stream         whether to stream the response
  * @param responseFormat response format spec (e.g. JSON schema), null for free text
@@ -42,9 +43,11 @@ public record ModelRequest(
         public static ResponseFormat text() {
             return new ResponseFormat("text", null);
         }
+
         public static ResponseFormat json() {
             return new ResponseFormat("json_object", null);
         }
+
         public static ResponseFormat jsonSchema(String schema) {
             return new ResponseFormat("json_schema", schema);
         }

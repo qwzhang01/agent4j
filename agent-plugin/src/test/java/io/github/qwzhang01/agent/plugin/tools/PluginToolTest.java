@@ -1,12 +1,12 @@
 package io.github.qwzhang01.agent.plugin.tools;
 
-import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
-import io.github.qwzhang01.agent.plugin.PluginManager;
-import io.github.qwzhang01.agent.plugin.PluginRegistry;
-import io.github.qwzhang01.agent.plugin.PluginState;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
+import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
+import io.github.qwzhang01.agent.plugin.PluginManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -198,14 +198,19 @@ class PluginToolTest {
         public void onLoad(io.github.qwzhang01.agent.plugin.PluginContext context) {
             context.getToolRegistry().register(new io.github.qwzhang01.agent.core.tool.Tool() {
                 @Override
-                public String getName() { return "echo_test"; }
+                public String getName() {
+                    return "echo_test";
+                }
 
                 @Override
-                public String getDescription() { return "Echo test tool"; }
+                public String getDescription() {
+                    return "Echo test tool";
+                }
 
                 @Override
                 public String getParametersSchema() {
-                    return "{\"name\":\"echo_test\",\"parameters\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}}}}";
+                    return "{\"name\":\"echo_test\",\"parameters\":{\"type\":\"object\"," +
+                            "\"properties\":{\"text\":{\"type\":\"string\"}}}}";
                 }
 
                 @Override

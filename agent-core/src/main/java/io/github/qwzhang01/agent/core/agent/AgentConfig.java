@@ -35,9 +35,23 @@ public class AgentConfig {
         this.maxSteps = maxSteps;
     }
 
-    public String getName() { return name; }
-    public String getSystemPrompt() { return systemPrompt; }
-    public ModelClient getModelClient() { return modelClient; }
-    public ToolRegistry getToolRegistry() { return toolRegistry; }
-    public int getMaxSteps() { return maxSteps; }
+    public String getName() {
+        return name;
+    }
+
+    public String getSystemPrompt() {
+        return systemPrompt;
+    }
+
+    public ModelClient getModelClient() {
+        return modelClient;
+    }
+
+    public ToolRegistry getToolRegistry() {
+        return toolRegistry;
+    }
+
+    public int getMaxSteps() {
+        return maxSteps;
+    }
 }

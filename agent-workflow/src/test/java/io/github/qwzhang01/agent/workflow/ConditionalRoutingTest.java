@@ -10,7 +10,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ConditionalRoutingTest {
 
-    /** Router flow: intent node writes a key, edges route by it. */
+    /**
+     * Router flow: intent node writes a key, edges route by it.
+     */
     private WorkflowBuilder.EdgeSpec routerFlowBuilder() {
         return Workflow.builder("router-flow")
                 .node(ActionNode.of("intent", ctx -> String.valueOf(ctx.input()).toUpperCase()))

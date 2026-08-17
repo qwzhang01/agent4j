@@ -1,11 +1,12 @@
 package io.github.qwzhang01.agent.examples;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.SimpleAgent;
 import io.github.qwzhang01.agent.core.client.ModelClient;
-import io.github.qwzhang01.agent.core.model.ChatMessage;
-import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
@@ -15,9 +16,6 @@ import io.github.qwzhang01.agent.plugin.tools.PluginInspectTool;
 import io.github.qwzhang01.agent.plugin.tools.PluginListTool;
 import io.github.qwzhang01.agent.plugin.tools.PluginLoadTool;
 import io.github.qwzhang01.agent.plugin.tools.PluginUnloadTool;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Demonstrates Agent self-evolution: the model inspects its own capabilities,

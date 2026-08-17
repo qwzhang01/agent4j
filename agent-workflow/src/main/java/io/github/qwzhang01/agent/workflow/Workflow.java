@@ -38,6 +38,10 @@ public final class Workflow {
 
     // ============ Accessors ============
 
+    public static WorkflowBuilder builder(String name) {
+        return new WorkflowBuilder(name);
+    }
+
     public String name() {
         return name;
     }
@@ -54,24 +58,26 @@ public final class Workflow {
         return nodes.containsKey(id);
     }
 
-    /** Normal routing edges leaving the given node (or START). */
+    /**
+     * Normal routing edges leaving the given node (or START).
+     */
     public List<Edge> outgoingEdges(String from) {
         return outgoingEdges.getOrDefault(from, List.of());
     }
 
-    /** Error edges (onError) leaving the given node. Empty = none. */
+    /**
+     * Error edges (onError) leaving the given node. Empty = none.
+     */
     public List<Edge> errorEdges(String from) {
         return errorEdges.getOrDefault(from, List.of());
     }
 
-    /** Retry policy registered for a node; RetryPolicy.NONE by default. */
-    public RetryPolicy retryPolicyFor(String nodeId) {
-        return retryPolicies.getOrDefault(nodeId, RetryPolicy.NONE);
-    }
-
     // ============ Builder ============
 
-    public static WorkflowBuilder builder(String name) {
-        return new WorkflowBuilder(name);
+    /**
+     * Retry policy registered for a node; RetryPolicy.NONE by default.
+     */
+    public RetryPolicy retryPolicyFor(String nodeId) {
+        return retryPolicies.getOrDefault(nodeId, RetryPolicy.NONE);
     }
 }

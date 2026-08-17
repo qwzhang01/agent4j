@@ -23,8 +23,11 @@ type SandboxMode =
 ```
 
 关键设计点：
-- 网络和进程策略**故意不在词汇表里**。要用容器/microVM 隔离网络时，是替换整个能力 seam 的 Provider（`ctx.shell`、`ctx.fs`），不是给沙箱加开关。
-- `danger-full-access` 也在类型里，因为消费方需要先解析完整策略，再决定是否绕过沙箱（直接 spawn 原始 argv，不调 `ctx.sandbox`）。
+
+- 网络和进程策略**故意不在词汇表里**。要用容器/microVM 隔离网络时，是替换整个能力 seam 的 Provider（`ctx.shell`、`ctx.fs`
+  ），不是给沙箱加开关。
+- `danger-full-access` 也在类型里，因为消费方需要先解析完整策略，再决定是否绕过沙箱（直接 spawn 原始
+  argv，不调 `ctx.sandbox`）。
 
 ### 1.2 诚实的强制执行报告
 
@@ -37,6 +40,7 @@ type SandboxEnforcement =
 ```
 
 两个现实中的 partial 案例：
+
 - 旧 Landlock ABI 只能限制自身公开的访问类别
 - Windows ACL 受限令牌必须保留 Everyone（进程初始化需要），所以授予 Everyone 写权限的对象仍可写；NTFS 硬链接也能绕过
 
@@ -54,7 +58,8 @@ interface SandboxPolicy {
 }
 ```
 
-这意味着两个消费方可以同一瞬间按不同策略限制进程：bash 跑 `read-only`，同时受限子 agent 保持自己的状态目录可写。一次获批的升权重试只是"用更宽策略发起新调用"，不需要改 Provider 状态。
+这意味着两个消费方可以同一瞬间按不同策略限制进程：bash 跑 `read-only`，同时受限子 agent
+保持自己的状态目录可写。一次获批的升权重试只是"用更宽策略发起新调用"，不需要改 Provider 状态。
 
 ### 1.4 confine 范式：包装 argv，不执行
 
@@ -65,6 +70,7 @@ abstract confine(argv: readonly string[], policy: SandboxPolicy): ConfinedArgv
 ```
 
 返回的 `ConfinedArgv` 包含：
+
 - `argv`：替换用 argv（runner + profile + `--` + 原始 argv）
 - `enforcement`：强制执行完整度
 - `denialSignatures`：该后端"拒绝"方言（见 1.5）
@@ -79,6 +85,7 @@ abstract confine(argv: readonly string[], policy: SandboxPolicy): ConfinedArgv
 **拒绝（denial）= 沙箱正常工作，拦住了命令**
 
 每个后端的拒绝文本不同（方言）：
+
 - bwrap 只读绑定下写文件 -> `EROFS` 文本
 - Landlock -> `EACCES`
 - Seatbelt -> `EPERM`
@@ -94,7 +101,8 @@ RunnerFailureRule 判定条件（全部满足）：
 3. 剩余 stderr 中存在一行大小写不敏感地命中 fatalSignatures
 ```
 
-单独的退出码**永远不能**证明 runner 失败（Landlock launcher 的 `LAUNCHER_FAILURE_EXIT=125`，但被包装的子进程自己也可能以 125 退出）。
+单独的退出码**永远不能**证明 runner 失败（Landlock launcher 的 `LAUNCHER_FAILURE_EXIT=125`，但被包装的子进程自己也可能以
+125 退出）。
 
 消费方先查 runnerFailureRules（基础设施故障，向用户报沙箱坏了），再查 denialSignatures（限制生效，引导模型走升权流程）。
 
@@ -102,7 +110,8 @@ RunnerFailureRule 判定条件（全部满足）：
 
 没有可用后端时，`confine` 抛 `SandboxUnavailableError`（错误码 `SANDBOX_UNAVAILABLE`），**绝不静默放行**：
 
-> "sandbox mode \"<mode>\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined."
+> "sandbox mode \"<mode>\" is requested but no sandbox backend is usable on this host; refusing to run the command
+> unconfined."
 
 不支持的平台、runner 缺失、内核不满足要求 -- 一律拒绝执行受限命令。要么真正受限地跑，要么不跑。
 
@@ -129,18 +138,21 @@ explicit approved mode          // 用户批准的一次性升权
 
 沙箱家族严格遵循 dsh 的 Capability Seam 模式：
 
-| 角色 | 包 | 职责 |
-|------|-----|------|
-| **Service Definition** | `sandbox/sandbox` | 定义 `ctx.sandbox` 服务约定：`SandboxProvider` 接口、SandboxMode/Enforcement/Policy 词汇、`SANDBOX_UNAVAILABLE` 错误。只依赖 cordis 和错误基类，不依赖任何后端 |
-| **Provider** | `sandbox/sandbox-local` | 本地平台后端实现：探测并缓存 runner（Linux bwrap 优先、退 Landlock；macOS Seatbelt；Windows ACL），把模式映射成各后端的授权 profile |
-| **策略归属方** | `sandbox/sandbox-policy` | `ctx.sandboxPolicy` 服务：部署默认 + 会话覆盖解析，逐调用下发完整策略 |
-| **Consumer** | `shell/bash-sandbox` 等 | 调 resolve 拿策略、调 confine 拿包装 argv、自己 spawn、用两类签名做结果归因 |
+| 角色                     | 包                        | 职责                                                                                                                             |
+|------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **Service Definition** | `sandbox/sandbox`        | 定义 `ctx.sandbox` 服务约定：`SandboxProvider` 接口、SandboxMode/Enforcement/Policy 词汇、`SANDBOX_UNAVAILABLE` 错误。只依赖 cordis 和错误基类，不依赖任何后端 |
+| **Provider**           | `sandbox/sandbox-local`  | 本地平台后端实现：探测并缓存 runner（Linux bwrap 优先、退 Landlock；macOS Seatbelt；Windows ACL），把模式映射成各后端的授权 profile                               |
+| **策略归属方**              | `sandbox/sandbox-policy` | `ctx.sandboxPolicy` 服务：部署默认 + 会话覆盖解析，逐调用下发完整策略                                                                                 |
+| **Consumer**           | `shell/bash-sandbox` 等   | 调 resolve 拿策略、调 confine 拿包装 argv、自己 spawn、用两类签名做结果归因                                                                           |
 
-另有 `sandbox/sandbox-windows-acl`：Windows 受限令牌 runner 的独立包（每个工作区一个确定性写 SID + 常驻 ACE，每个活跃会话/工作区对一个随机私有临时目录 + 独立 SID + 可撤销 ACE）。
+另有 `sandbox/sandbox-windows-acl`：Windows 受限令牌 runner 的独立包（每个工作区一个确定性写 SID + 常驻
+ACE，每个活跃会话/工作区对一个随机私有临时目录 + 独立 SID + 可撤销 ACE）。
 
 ### 2.2 为什么容器不在这个 seam 里
 
-dsh 明确划分了边界：**这个 seam 只支持"与宿主共享文件系统和内核"的限制**（bwrap、Landlock、Seatbelt 都是同内核的进程限制）。容器、microVM、远程执行是**整个能力 seam 的替代 Provider**（替换 `ctx.shell`、`ctx.fs` 的实现），不是 `ctx.sandbox` 的后端。
+dsh 明确划分了边界：**这个 seam 只支持"与宿主共享文件系统和内核"的限制**（bwrap、Landlock、Seatbelt
+都是同内核的进程限制）。容器、microVM、远程执行是**整个能力 seam 的替代 Provider**（替换 `ctx.shell`、`ctx.fs`
+的实现），不是 `ctx.sandbox` 的后端。
 
 ```
 同一内核的进程限制（本 seam）：
@@ -156,14 +168,15 @@ dsh 明确划分了边界：**这个 seam 只支持"与宿主共享文件系统�
 
 ### 2.3 平台后端矩阵
 
-| 平台 | 后端 | 机制 | enforcement |
-|------|------|------|-------------|
-| Linux | bwrap（优先） | bubblewrap 用户态命名空间，只读 bind + `/dev/null` sink | full |
-| Linux | Landlock（bwrap 缺失时） | 自研 landlock-run 启动器，内核 LSM | full（新 ABI）/ partial（旧 ABI） |
-| macOS | Seatbelt | `sandbox-exec`（Apple 已标 deprecated 但仍提供），默认允许 + `(deny file-write*)` + 写白名单 | full（依赖 deprecated CLI） |
-| Windows | ACL 受限令牌 | 确定性工作区 SID + 随机会话临时 SID + 可撤销 ACE | **partial**（Everyone 保留 + 硬链接缺口） |
+| 平台      | 后端                  | 机制                                                                          | enforcement                      |
+|---------|---------------------|-----------------------------------------------------------------------------|----------------------------------|
+| Linux   | bwrap（优先）           | bubblewrap 用户态命名空间，只读 bind + `/dev/null` sink                               | full                             |
+| Linux   | Landlock（bwrap 缺失时） | 自研 landlock-run 启动器，内核 LSM                                                  | full（新 ABI）/ partial（旧 ABI）      |
+| macOS   | Seatbelt            | `sandbox-exec`（Apple 已标 deprecated 但仍提供），默认允许 + `(deny file-write*)` + 写白名单 | full（依赖 deprecated CLI）          |
+| Windows | ACL 受限令牌            | 确定性工作区 SID + 随机会话临时 SID + 可撤销 ACE                                           | **partial**（Everyone 保留 + 硬链接缺口） |
 
-探测逻辑：多候选项按序功能探测（`probeTimeoutMs` 限时），单候选项直接选。runner 选择在 Provider 生命周期内缓存 -- 装了新 runner 要重载插件才生效。
+探测逻辑：多候选项按序功能探测（`probeTimeoutMs` 限时），单候选项直接选。runner 选择在 Provider 生命周期内缓存 -- 装了新
+runner 要重载插件才生效。
 
 ### 2.4 landlock-run：原生启动器
 
@@ -178,9 +191,11 @@ landlock-run 自己启动
   -> 调用方（Node 进程）不受任何限制
 ```
 
-发布形态：入口包（JS，解析二进制路径）+ 平台包（`linux-x64` / `linux-arm64`，npm `os`/`cpu` 字段保证只装匹配平台）。**有意不提供安装时构建回退** -- 平台包不存在的宿主上路径就是不存在，探测报 `unusable`，消费方失败闭合。
+发布形态：入口包（JS，解析二进制路径）+ 平台包（`linux-x64` / `linux-arm64`，npm `os`/`cpu` 字段保证只装匹配平台）。*
+*有意不提供安装时构建回退** -- 平台包不存在的宿主上路径就是不存在，探测报 `unusable`，消费方失败闭合。
 
 API 刻意精简：
+
 - `launcherPath()`：启动器绝对路径
 - `probe()`：功能探测，返回 `full | partial | unusable`
 - `grantArgs({readOnly, readWrite})`：授权参数；**未授予的一切都被拒绝**
@@ -188,9 +203,11 @@ API 刻意精简：
 
 ### 2.5 模型体验（上下文贡献）
 
-模型不会收到能力清单，而是在运行时上下文快照中收到一段 `sandbox:policy` 贡献（三种模式各一段固定文案），例如 workspace-write：
+模型不会收到能力清单，而是在运行时上下文快照中收到一段 `sandbox:policy` 贡献（三种模式各一段固定文案），例如
+workspace-write：
 
-> Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: "<workspace root>". Some platform temporary areas may also be writable.
+> Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files
+> under the session workspace: "<workspace root>". Some platform temporary areas may also be writable.
 
 Token/KV Cache 纪律：策略未变化不重复注入；模式切换时变化内容**追加**在已缓存前缀之后，不破坏 KV Cache。
 
@@ -307,62 +324,70 @@ setSandboxMode(session, 'workspace-write')
 
 ### 4.1 对比矩阵
 
-| 维度 | dsh 沙箱 | Claude Code | OpenAI Code Interpreter | Docker 方案 | 我们的 Java 沙箱（Stage 4） |
-|------|----------|-------------|------------------------|-------------|---------------------------|
-| 隔离层级 | OS 进程限制（同内核） | OS 进程限制（同内核） | 容器/Jail（独立环境） | 容器（独立环境） | 进程内 ClassLoader / 子进程 |
-| 后端 | bwrap / Landlock / Seatbelt / ACL | Seatbelt（macOS）+ bubblewrap（Linux） | gVisor/沙箱 jail | Docker runtime | 自定义 ClassLoader + ProcessBuilder |
-| 策略词汇 | 3 模式，只管文件效果 | 类似 3 模式（文件为主） | 全隔离（无共享 FS） | 完全容器化 | 拦截类列表（文件/网络/进程/反射） |
-| 策略携带 | 逐调用传入，Provider 无状态 | 会话级配置 | 环境级固定 | 容器级固定 | SandboxSpec 随调用传入 |
-| 诚实的执行报告 | full/partial 如实报告并要求消费方检查 | 未显式暴露 | 不适用（全隔离） | 不适用 | 未实现（隐式 full） |
-| 拒绝归因 | 后端专用拒绝方言 + 结构化 runner 失败规则 | 单一错误文本 | 不适用 | 容器错误 | SecurityException 文本 |
-| 失败语义 | fail-closed，绝不静默放行 | fail-closed | 不适用 | 启动失败即失败 | fail-closed（抛异常） |
-| 进程派生覆盖 | 覆盖（Landlock 跨 execve 继承） | 覆盖（Seatbelt/bwrap 特性） | 天然覆盖 | 天然覆盖 | 不覆盖（子进程可逃逸） |
-| 模式可运行时切换 | 是（日志事件，可回放/跨重启） | 是（配置切换） | 否 | 否 | 否（spec 构建时固定） |
-| 模型感知策略 | 是（sandbox:policy 上下文贡献） | 是（系统提示告知） | 否 | 否 | 是（工具描述中说明限制） |
+| 维度       | dsh 沙箱                            | Claude Code                        | OpenAI Code Interpreter | Docker 方案      | 我们的 Java 沙箱（Stage 4）             |
+|----------|-----------------------------------|------------------------------------|-------------------------|----------------|----------------------------------|
+| 隔离层级     | OS 进程限制（同内核）                      | OS 进程限制（同内核）                       | 容器/Jail（独立环境）           | 容器（独立环境）       | 进程内 ClassLoader / 子进程            |
+| 后端       | bwrap / Landlock / Seatbelt / ACL | Seatbelt（macOS）+ bubblewrap（Linux） | gVisor/沙箱 jail          | Docker runtime | 自定义 ClassLoader + ProcessBuilder |
+| 策略词汇     | 3 模式，只管文件效果                       | 类似 3 模式（文件为主）                      | 全隔离（无共享 FS）             | 完全容器化          | 拦截类列表（文件/网络/进程/反射）               |
+| 策略携带     | 逐调用传入，Provider 无状态                | 会话级配置                              | 环境级固定                   | 容器级固定          | SandboxSpec 随调用传入                |
+| 诚实的执行报告  | full/partial 如实报告并要求消费方检查         | 未显式暴露                              | 不适用（全隔离）                | 不适用            | 未实现（隐式 full）                     |
+| 拒绝归因     | 后端专用拒绝方言 + 结构化 runner 失败规则        | 单一错误文本                             | 不适用                     | 容器错误           | SecurityException 文本             |
+| 失败语义     | fail-closed，绝不静默放行                | fail-closed                        | 不适用                     | 启动失败即失败        | fail-closed（抛异常）                 |
+| 进程派生覆盖   | 覆盖（Landlock 跨 execve 继承）          | 覆盖（Seatbelt/bwrap 特性）              | 天然覆盖                    | 天然覆盖           | 不覆盖（子进程可逃逸）                      |
+| 模式可运行时切换 | 是（日志事件，可回放/跨重启）                   | 是（配置切换）                            | 否                       | 否              | 否（spec 构建时固定）                    |
+| 模型感知策略   | 是（sandbox:policy 上下文贡献）           | 是（系统提示告知）                          | 否                       | 否              | 是（工具描述中说明限制）                     |
 
 ### 4.2 设计哲学差异
 
 **dsh：精确边界 + 诚实报告**
+
 - 词汇刻意收窄（只管文件），把网络/进程隔离留给"替换整条能力"的兄弟实现
 - full/partial 如实报告，要求消费方显式决策，不夸大安全边界
 - 拒绝方言按后端区分，runner 失败与任务失败严格分离
 - 大量不变量以运行时断言强制执行（封闭词汇校验、fail-closed、per-call 策略）
 
 **Claude Code：产品化取舍**
+
 - 同样的 Seatbelt/bubblewrap 后端，但作为产品不向用户暴露 partial 这类细微差别
 - 策略粒度更粗（会话级），换取配置简单
 
 **Code Interpreter / Docker：环境隔离**
+
 - 不与宿主共享内核/文件系统，天然覆盖网络/进程/文件
 - 代价：重（容器启动）、慢（冷启动秒级）、跨平台一致性要额外做
 - dsh 的判断：这类隔离应该是能力 Provider 的替换，不是沙箱 seam 的后端
 
 **我们的 Java 沙箱：学习型最小实现**
+
 - ClassLoader 隔离与 OS 级隔离是**不同层**的东西：dsh 拦的是系统调用（写文件那一下），我们拦的是类加载（File 类根本加载不进来）
 - ClassLoader 方案无法覆盖进程派生（LLM 代码起子进程不受限）、无法拦原生调用
-- 对应关系：dsh 的 confine-argv 范式 ~= 我们 Sandbox 接口的策略化扩展方向；dsh 的 per-call policy ~= 我们 SandboxSpec 逐调用传入；dsh 的 fail-closed ~= 我们 SecurityException 直抛
+- 对应关系：dsh 的 confine-argv 范式 ~= 我们 Sandbox 接口的策略化扩展方向；dsh 的 per-call policy ~= 我们 SandboxSpec
+  逐调用传入；dsh 的 fail-closed ~= 我们 SecurityException 直抛
 
 ### 4.3 最值得借鉴的三点
 
-1. **把"沙箱坏了"和"被拒绝"当两个正交概念**。我们的 Java 版只有一个笼统的 SecurityException。dsh 用结构化规则区分基础设施故障与限制生效，让模型能分别走"报修"和"申请升权"两条路。
+1. **把"沙箱坏了"和"被拒绝"当两个正交概念**。我们的 Java 版只有一个笼统的 SecurityException。dsh
+   用结构化规则区分基础设施故障与限制生效，让模型能分别走"报修"和"申请升权"两条路。
 
-2. **诚实的 enforcement 报告**。声称 full/partial 并要求消费方检查，比统一宣称"已隔离"诚实。我们的 ClassLoader 沙箱实际上就是 partial（可反射逃逸），应该在结果里如实标注。
+2. **诚实的 enforcement 报告**。声称 full/partial 并要求消费方检查，比统一宣称"已隔离"诚实。我们的 ClassLoader 沙箱实际上就是
+   partial（可反射逃逸），应该在结果里如实标注。
 
-3. **策略是数据不是配置**。模式切换 = 日志事件 = 可回放可审计；策略随调用携带 = 无全局锁 = 并发会话互不干扰。我们的 SandboxSpec 已经是数据化的，但还缺"事件溯源"这一步。
+3. **策略是数据不是配置**。模式切换 = 日志事件 = 可回放可审计；策略随调用携带 = 无全局锁 = 并发会话互不干扰。我们的
+   SandboxSpec 已经是数据化的，但还缺"事件溯源"这一步。
 
 ---
 
 ## 五、附：与本框架的映射表
 
-| dsh 概念 | dsh 类/包 | 本框架对应（现状或方向） |
-|----------|-----------|------------------------|
-| SandboxMode 3 模式 | `sandbox` 包类型 | SandboxSpec 隐式（拦截列表），可引入显式模式 |
-| per-call policy | `SandboxPolicy` | `SandboxSpec`（已逐调用传入 ✅） |
-| enforcement 报告 | `SandboxEnforcement` | 未实现（方向：ClassLoader 版报 partial） |
-| confine-argv | `SandboxProvider.confine` | `Sandbox.execute`（我们直接执行，dsh 只包装） |
-| 拒绝方言 | `denialSignatures` | SecurityException message（单一） |
-| runner 失败规则 | `RunnerFailureRule` | 未区分（统一当执行失败） |
-| fail-closed | `SANDBOX_UNAVAILABLE` | 编译/加载失败即返回 error ✅ |
-| 平台后端矩阵 | sandbox-local | 两个实现（ClassLoader/Process），无 OS 级后端 |
-| 模式事件溯源 | `sandbox/mode` 事件 | 未实现（spec 静态） |
-| 模型可见策略 | `sandbox:policy` 贡献 | SandboxTool 描述文本（弱版本） |
+| dsh 概念           | dsh 类/包                   | 本框架对应（现状或方向）                       |
+|------------------|---------------------------|------------------------------------|
+| SandboxMode 3 模式 | `sandbox` 包类型             | SandboxSpec 隐式（拦截列表），可引入显式模式       |
+| per-call policy  | `SandboxPolicy`           | `SandboxSpec`（已逐调用传入 ✅）            |
+| enforcement 报告   | `SandboxEnforcement`      | 未实现（方向：ClassLoader 版报 partial）     |
+| confine-argv     | `SandboxProvider.confine` | `Sandbox.execute`（我们直接执行，dsh 只包装）  |
+| 拒绝方言             | `denialSignatures`        | SecurityException message（单一）      |
+| runner 失败规则      | `RunnerFailureRule`       | 未区分（统一当执行失败）                       |
+| fail-closed      | `SANDBOX_UNAVAILABLE`     | 编译/加载失败即返回 error ✅                 |
+| 平台后端矩阵           | sandbox-local             | 两个实现（ClassLoader/Process），无 OS 级后端 |
+| 模式事件溯源           | `sandbox/mode` 事件         | 未实现（spec 静态）                       |
+| 模型可见策略           | `sandbox:policy` 贡献       | SandboxTool 描述文本（弱版本）              |

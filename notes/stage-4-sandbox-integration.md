@@ -9,16 +9,16 @@
 
 ## 一、参与者总览
 
-| 参与者 | 角色 | 在链路中的位置 |
-|--------|------|---------------|
-| 模型（LLM） | 决策者 | 决定"要执行代码"，发出 toolCall |
-| `ReActAgentLoop` | 调度者 | 检测 toolCalls，分发执行，回收结果 |
-| `DefaultToolExecutor` | 执行分发 | 从 ToolRegistry 查找 `sandbox_execute` 对应的 Tool |
-| `ToolRegistry` | 注册表 | 持有 SandboxTool 实例 |
-| `SandboxTool` | 适配器 | 实现 `Tool` 接口，把 Sandbox 适配为模型可调用的工具 |
-| `ClassLoaderSandbox` / `ProcessSandbox` | 沙箱本体 | 编译、加载/子进程、执行、超时控制 |
-| `SandboxResult` | 结果载体 | record，屏蔽两种实现的差异 |
-| `AgentState.messages` | 上下文 | 工具结果最终落点，供模型下一轮读取 |
+| 参与者                                     | 角色   | 在链路中的位置                                      |
+|-----------------------------------------|------|----------------------------------------------|
+| 模型（LLM）                                 | 决策者  | 决定"要执行代码"，发出 toolCall                        |
+| `ReActAgentLoop`                        | 调度者  | 检测 toolCalls，分发执行，回收结果                       |
+| `DefaultToolExecutor`                   | 执行分发 | 从 ToolRegistry 查找 `sandbox_execute` 对应的 Tool |
+| `ToolRegistry`                          | 注册表  | 持有 SandboxTool 实例                            |
+| `SandboxTool`                           | 适配器  | 实现 `Tool` 接口，把 Sandbox 适配为模型可调用的工具           |
+| `ClassLoaderSandbox` / `ProcessSandbox` | 沙箱本体 | 编译、加载/子进程、执行、超时控制                            |
+| `SandboxResult`                         | 结果载体 | record，屏蔽两种实现的差异                             |
+| `AgentState.messages`                   | 上下文  | 工具结果最终落点，供模型下一轮读取                            |
 
 两种使用方式对比：
 
@@ -148,12 +148,12 @@ Sandbox 不知道调用者是谁
 
 ## 四、谁终止，四种情况
 
-| 情况 | 触发条件 | ClassLoaderSandbox 的终止动作 | ProcessSandbox 的终止动作 |
-|------|---------|------------------------------|--------------------------|
-| 正常完成 | `run()` 返回 | future 正常完成，取返回值 | 子进程退出，waitFor 返回，exitCode=0 |
-| 业务异常 | 代码抛异常 | catch InvocationTargetException，解包 cause 转 `SandboxResult.error` | 子进程非零退出，stderr 含异常栈 |
-| 访问控制拒绝 | 代码触碰拦截类 | 加载时抛 SecurityException -> `SandboxResult.blocked` | （无此机制，靠工作目录约束） |
-| 超时 | 超过 spec.timeout | **主线程** `future.cancel(true)` 中断沙箱线程 + `executor.shutdownNow()`；死循环不响应中断时线程泄漏为 daemon 线程 | **主线程** `process.destroyForcibly()` 发送 SIGKILL，内核保证终止 |
+| 情况     | 触发条件            | ClassLoaderSandbox 的终止动作                                                                 | ProcessSandbox 的终止动作                                  |
+|--------|-----------------|------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| 正常完成   | `run()` 返回      | future 正常完成，取返回值                                                                         | 子进程退出，waitFor 返回，exitCode=0                           |
+| 业务异常   | 代码抛异常           | catch InvocationTargetException，解包 cause 转 `SandboxResult.error`                         | 子进程非零退出，stderr 含异常栈                                   |
+| 访问控制拒绝 | 代码触碰拦截类         | 加载时抛 SecurityException -> `SandboxResult.blocked`                                        | （无此机制，靠工作目录约束）                                        |
+| 超时     | 超过 spec.timeout | **主线程** `future.cancel(true)` 中断沙箱线程 + `executor.shutdownNow()`；死循环不响应中断时线程泄漏为 daemon 线程 | **主线程** `process.destroyForcibly()` 发送 SIGKILL，内核保证终止 |
 
 **终止权设计**：
 
@@ -170,7 +170,8 @@ finally 块保证无论哪种路径：
   - 清理临时目录（ProcessSandbox）
 ```
 
-ClassLoader 版超时的已知局限：`cancel(true)` 只是中断信号，不响应中断的死循环代码所在线程无法真正停止，会以 daemon 线程形式存续（不阻止 JVM 退出，但占用 CPU）。这是进程内沙箱的固有缺陷，进程版通过 SIGKILL 无此问题。
+ClassLoader 版超时的已知局限：`cancel(true)` 只是中断信号，不响应中断的死循环代码所在线程无法真正停止，会以 daemon
+线程形式存续（不阻止 JVM 退出，但占用 CPU）。这是进程内沙箱的固有缺陷，进程版通过 SIGKILL 无此问题。
 
 ---
 
@@ -199,7 +200,9 @@ AgentState.messages（追加一条 role=TOOL 的消息）
 
 **结果唯一消费者是模型**。人类用户看到的最终回答，是模型基于这个工具结果生成的自然语言，不是 SandboxResult 本身。
 
-关键点：**沙箱执行失败不会中断 Agent 循环**。无论编译失败、业务异常、拦截还是超时，SandboxResult 都以 `success=false` + error 描述的形式返回，模型读到失败信息后自行决策（换一种写法 / 向用户说明限制）。这与 DefaultToolExecutor 包装工具异常的设计一致--工具失败是业务信息，不是系统故障。
+关键点：**沙箱执行失败不会中断 Agent 循环**。无论编译失败、业务异常、拦截还是超时，SandboxResult 都以 `success=false` + error
+描述的形式返回，模型读到失败信息后自行决策（换一种写法 / 向用户说明限制）。这与 DefaultToolExecutor
+包装工具异常的设计一致--工具失败是业务信息，不是系统故障。
 
 ---
 
@@ -251,7 +254,8 @@ Mock 模型第 2 轮：读到失败，如实回答
 实测：Completed in 2 steps
 ```
 
-场景 2 展示了完整闭环的关键价值：**约束拒绝不是异常，是模型的输入**。模型拿到 blocked 信息后，向用户解释限制而不是崩溃--这正是 dsh "拒绝与基础设施故障正交分类"设计想达到的效果（我们当前以编译失败文本近似实现，拒绝归因体系见 stage-4 笔记后续路线）。
+场景 2 展示了完整闭环的关键价值：**约束拒绝不是异常，是模型的输入**。模型拿到 blocked 信息后，向用户解释限制而不是崩溃--这正是
+dsh "拒绝与基础设施故障正交分类"设计想达到的效果（我们当前以编译失败文本近似实现，拒绝归因体系见 stage-4 笔记后续路线）。
 
 ### 运行方式
 
@@ -306,4 +310,9 @@ agent-sandbox/src/main/java/io/github/qwzhang01/agent/sandbox/
 
 ## 九、面试表达
 
-> 我们的沙箱通过 SandboxTool 适配成模型可调用的工具接入 Agent 循环：模型返回 sandbox_execute 的 toolCall，AgentLoop 经 ToolExecutor 从 ToolRegistry 分发到 SandboxTool，再委托给 Sandbox 接口的两个实现之一。ClassLoader 版在同 JVM 的独立线程中以受限类加载器执行，超时由主线程 Future.cancel 行使终止权；进程版在子进程中执行，超时由 destroyForcibly 发送 SIGKILL。执行结果无论成败都封装为 SandboxResult 转成 JSON 工具消息写回 AgentState，由模型在下一轮读取后自行决策--拦截和失败是模型的输入而不是系统异常。端到端两场景实测：正常计算 2 步完成；代码触碰文件系统时在编译期被拦截，模型如实向用户说明限制。
+> 我们的沙箱通过 SandboxTool 适配成模型可调用的工具接入 Agent 循环：模型返回 sandbox_execute 的 toolCall，AgentLoop 经
+> ToolExecutor 从 ToolRegistry 分发到 SandboxTool，再委托给 Sandbox 接口的两个实现之一。ClassLoader 版在同 JVM
+> 的独立线程中以受限类加载器执行，超时由主线程 Future.cancel 行使终止权；进程版在子进程中执行，超时由 destroyForcibly 发送
+> SIGKILL。执行结果无论成败都封装为 SandboxResult 转成 JSON 工具消息写回
+> AgentState，由模型在下一轮读取后自行决策--拦截和失败是模型的输入而不是系统异常。端到端两场景实测：正常计算 2
+> 步完成；代码触碰文件系统时在编译期被拦截，模型如实向用户说明限制。

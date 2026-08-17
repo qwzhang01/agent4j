@@ -46,7 +46,9 @@ public final class WorkflowBuilder {
         return node(node, null);
     }
 
-    /** Register a node with a node-level retry policy. */
+    /**
+     * Register a node with a node-level retry policy.
+     */
     public WorkflowBuilder node(WorkflowNode node, RetryPolicy retryPolicy) {
         if (nodes.put(node.id(), node) != null) {
             throw new WorkflowException("Duplicate node id: '" + node.id() + "'");
@@ -70,7 +72,9 @@ public final class WorkflowBuilder {
         return spec;
     }
 
-    /** Unconditional error edge: taken when the node fails and retries are exhausted. */
+    /**
+     * Unconditional error edge: taken when the node fails and retries are exhausted.
+     */
     public WorkflowBuilder onError(String from, String to) {
         errorEdges.add(new Edge(from, to, null));
         return this;
@@ -159,14 +163,18 @@ public final class WorkflowBuilder {
             this.to = to;
         }
 
-        /** Conditional edge: traversable when the predicate matches the blackboard. */
+        /**
+         * Conditional edge: traversable when the predicate matches the blackboard.
+         */
         public WorkflowBuilder when(Predicate<WorkflowState> condition) {
             edges.add(new Edge(from, to, condition));
             resolved = true;
             return WorkflowBuilder.this;
         }
 
-        /** Unconditional edge (fallthrough / default route). */
+        /**
+         * Unconditional edge (fallthrough / default route).
+         */
         public WorkflowBuilder otherwise() {
             edges.add(new Edge(from, to, null));
             resolved = true;

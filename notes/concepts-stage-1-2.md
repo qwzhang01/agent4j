@@ -173,12 +173,12 @@ public record ModelResponse(
 
 **finishReason 是关键**：
 
-| finishReason | 含义 | Agent Loop 行为 |
-|---|---|---|
-| `"stop"` | 模型说完了 | 提取 content，结束循环 |
-| `"tool_calls"` | 模型要调工具 | 执行工具，继续循环 |
-| `"length"` | 超过 max_tokens | 结束循环（可能答案不完整） |
-| `"error"` | 出错了 | 结束循环 |
+| finishReason   | 含义            | Agent Loop 行为   |
+|----------------|---------------|-----------------|
+| `"stop"`       | 模型说完了         | 提取 content，结束循环 |
+| `"tool_calls"` | 模型要调工具        | 执行工具，继续循环       |
+| `"length"`     | 超过 max_tokens | 结束循环（可能答案不完整）   |
+| `"error"`      | 出错了           | 结束循环            |
 
 **谁创建它**：`ModelClient.chat()` 返回它（真实实现如 OpenAiModelClient 解析 HTTP 响应构造）。
 
@@ -483,7 +483,8 @@ public interface ToolExecutor {
      → 模型会看到这个错误文本，自己决定怎么办
 ```
 
-**为什么异常不抛出而是包装成文本**：工具失败是"正常的业务情况"，模型应该知道失败了并决定怎么办（换个工具？换个参数？直接道歉？）。如果抛异常，Agent 循环就断了。
+**为什么异常不抛出而是包装成文本**：工具失败是"正常的业务情况"，模型应该知道失败了并决定怎么办（换个工具？换个参数？直接道歉？）。如果抛异常，Agent
+循环就断了。
 
 ---
 

@@ -14,8 +14,6 @@ package io.github.qwzhang01.agent.workflow;
  */
 public record StepRecord(String nodeId, Status status, long durationMs, int attempts, String summary) {
 
-    public enum Status { SUCCESS, FAILED }
-
     public static StepRecord success(String nodeId, long durationMs, int attempts, String summary) {
         return new StepRecord(nodeId, Status.SUCCESS, durationMs, attempts, summary);
     }
@@ -23,4 +21,6 @@ public record StepRecord(String nodeId, Status status, long durationMs, int atte
     public static StepRecord failed(String nodeId, long durationMs, int attempts, String error) {
         return new StepRecord(nodeId, Status.FAILED, durationMs, attempts, error);
     }
+
+    public enum Status {SUCCESS, FAILED}
 }

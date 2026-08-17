@@ -23,13 +23,13 @@ manager.unload("search-tool");  // 人手动卸载
 
 dsh 的 `tool-cordis` 包注册了 5 个模型可调用的工具：
 
-| 工具 | 作用 |
-|------|------|
-| `cordis_inspect` | 模型查看自己的运行时状态 |
-| `cordis_define` | 模型写代码定义新插件 |
-| `cordis_run` | 模型启动已定义的插件 |
-| `cordis_stop` | 模型停止运行中的插件 |
-| `cordis_undefine` | 模型删除插件定义 |
+| 工具                | 作用           |
+|-------------------|--------------|
+| `cordis_inspect`  | 模型查看自己的运行时状态 |
+| `cordis_define`   | 模型写代码定义新插件   |
+| `cordis_run`      | 模型启动已定义的插件   |
+| `cordis_stop`     | 模型停止运行中的插件   |
+| `cordis_undefine` | 模型删除插件定义     |
 
 核心思想：**插件管理本身就是一组工具，模型在对话中按需调用。**
 
@@ -93,12 +93,12 @@ dsh 不只有 tool-cordis，还有 4 层配合：
 
 ### 2.3 对比 Stage 3 的区别
 
-| 维度 | Stage 3 | Stage 3.5 |
-|------|---------|-----------|
-| 谁调 PluginManager | 人在代码里调 | 模型在对话中调 |
-| 什么时候加载 | 启动时或人手动 | 模型自己判断需要时 |
-| 模型知道插件系统吗 | 不知道 | 知道（通过 inspect/list 工具） |
-| 触发方式 | 代码调用 | 模型决策 + 工具调用 |
+| 维度               | Stage 3 | Stage 3.5              |
+|------------------|---------|------------------------|
+| 谁调 PluginManager | 人在代码里调  | 模型在对话中调                |
+| 什么时候加载           | 启动时或人手动 | 模型自己判断需要时              |
+| 模型知道插件系统吗        | 不知道     | 知道（通过 inspect/list 工具） |
+| 触发方式             | 代码调用    | 模型决策 + 工具调用            |
 
 ---
 
@@ -108,12 +108,12 @@ dsh 不只有 tool-cordis，还有 4 层配合：
 
 把 PluginManager 的操作包装成 4 个 `Tool` 实现，模型通过 ReAct 循环调用：
 
-| 工具 | 参数 | 返回 | 模型什么时候调 |
-|------|------|------|--------------|
-| `plugin_inspect` | 无 | 当前所有插件状态 JSON | "我有什么能力？" |
-| `plugin_list` | 无 | 所有已发现插件 + 可加载数量 | "还有什么可用？" |
-| `plugin_load` | name | success/error | "我需要这个能力" |
-| `plugin_unload` | name | success/error | "不需要了" |
+| 工具               | 参数   | 返回              | 模型什么时候调   |
+|------------------|------|-----------------|-----------|
+| `plugin_inspect` | 无    | 当前所有插件状态 JSON   | "我有什么能力？" |
+| `plugin_list`    | 无    | 所有已发现插件 + 可加载数量 | "还有什么可用？" |
+| `plugin_load`    | name | success/error   | "我需要这个能力" |
+| `plugin_unload`  | name | success/error   | "不需要了"    |
 
 ### 3.2 为什么是 4 个而不是更多
 
@@ -308,17 +308,18 @@ Tools in Registry:
 
 ## 六、与 dsh tool-cordis 的对比
 
-| 维度 | dsh tool-cordis | 本框架 Stage 3.5 |
-|------|----------------|-----------------|
-| inspect | `cordis_inspect` 查看服务、插件、工具、API | `plugin_inspect` 查看插件状态 |
-| define | `cordis_define` 模型写代码定义新插件 | 未实现（需要沙箱） |
-| run | `cordis_run` 启动已定义的插件 | `plugin_load` 加载已发现的插件 |
-| stop | `cordis_stop` 停止运行中的插件 | `plugin_unload` 卸载插件 |
-| undefine | `cordis_undefine` 删除插件定义 | 未实现 |
-| 发现机制 | 动态定义（模型写代码） | SPI 预发现（classpath 扫描） |
-| 安全隔离 | VM 沙箱执行 | 无（插件是预编译的 Java 类） |
+| 维度       | dsh tool-cordis                 | 本框架 Stage 3.5           |
+|----------|---------------------------------|-------------------------|
+| inspect  | `cordis_inspect` 查看服务、插件、工具、API | `plugin_inspect` 查看插件状态 |
+| define   | `cordis_define` 模型写代码定义新插件      | 未实现（需要沙箱）               |
+| run      | `cordis_run` 启动已定义的插件           | `plugin_load` 加载已发现的插件  |
+| stop     | `cordis_stop` 停止运行中的插件          | `plugin_unload` 卸载插件    |
+| undefine | `cordis_undefine` 删除插件定义        | 未实现                     |
+| 发现机制     | 动态定义（模型写代码）                     | SPI 预发现（classpath 扫描）   |
+| 安全隔离     | VM 沙箱执行                         | 无（插件是预编译的 Java 类）       |
 
-**关键差异**：dsh 的模型可以**写代码定义新插件**，本框架的模型只能**从预发现的插件中选择加载**。这是"预定义能力集"vs"动态创造能力"的区别。
+**关键差异**：dsh 的模型可以**写代码定义新插件**，本框架的模型只能**从预发现的插件中选择加载**。这是"预定义能力集"vs"
+动态创造能力"的区别。
 
 要实现 dsh 那样的动态定义，需要 Stage 4（沙箱）来安全执行模型写的代码。
 
@@ -350,14 +351,14 @@ inspect 回答"我现在有什么"。list 回答"我还能获得什么"。关注
 
 ## 八、验证对照
 
-| 能力 | 状态 | 实现 |
-|------|------|------|
-| 模型查看自己的能力 | ✅ | `plugin_inspect` |
-| 模型发现可用能力 | ✅ | `plugin_list` |
-| 模型加载能力 | ✅ | `plugin_load` |
-| 模型卸载能力 | ✅ | `plugin_unload` |
-| 模型定义新能力 | ⬜ | 需要 Stage 4 沙箱 |
-| 模型写代码创建插件 | ⬜ | 需要 Stage 4 沙箱 |
+| 能力        | 状态 | 实现               |
+|-----------|----|------------------|
+| 模型查看自己的能力 | ✅  | `plugin_inspect` |
+| 模型发现可用能力  | ✅  | `plugin_list`    |
+| 模型加载能力    | ✅  | `plugin_load`    |
+| 模型卸载能力    | ✅  | `plugin_unload`  |
+| 模型定义新能力   | ⬜  | 需要 Stage 4 沙箱    |
+| 模型写代码创建插件 | ⬜  | 需要 Stage 4 沙箱    |
 
 ---
 

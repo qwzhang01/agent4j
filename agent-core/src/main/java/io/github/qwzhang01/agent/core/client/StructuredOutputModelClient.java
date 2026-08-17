@@ -15,9 +15,9 @@ import java.util.stream.Stream;
  * <p>
  * Two mechanisms:
  * 1. Request-level: sets responseFormat on the request so the provider
- *    natively enforces JSON output (if supported).
+ * natively enforces JSON output (if supported).
  * 2. Validation-level: after receiving the response, validates that the
- *    content is valid JSON. If invalid, retries with a correction prompt.
+ * content is valid JSON. If invalid, retries with a correction prompt.
  * <p>
  * If the provider does not support structured output natively, the validation
  * + retry mechanism still ensures the final result is valid JSON.
@@ -99,7 +99,7 @@ public class StructuredOutputModelClient implements ModelClient {
         newMessages.add(io.github.qwzhang01.agent.core.model.ChatMessage.assistant(badOutput));
         newMessages.add(io.github.qwzhang01.agent.core.model.ChatMessage.user(
                 "Your previous response was not valid JSON. " +
-                "Please respond with ONLY valid JSON, no markdown, no explanation."));
+                        "Please respond with ONLY valid JSON, no markdown, no explanation."));
 
         return ModelRequest.builder()
                 .model(original.model())

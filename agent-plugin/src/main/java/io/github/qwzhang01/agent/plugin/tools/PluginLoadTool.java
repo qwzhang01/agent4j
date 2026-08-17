@@ -1,10 +1,10 @@
 package io.github.qwzhang01.agent.plugin.tools;
 
-import io.github.qwzhang01.agent.core.tool.Tool;
-import io.github.qwzhang01.agent.plugin.PluginManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.qwzhang01.agent.core.tool.Tool;
+import io.github.qwzhang01.agent.plugin.PluginManager;
 
 /**
  * Tool that lets the model load a plugin by name.
@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * For example: "I need to search the web" -> load("search-tool").
  * <p>
  * Arguments:
- *   name: string - the plugin name to load
+ * name: string - the plugin name to load
  */
 public class PluginLoadTool implements Tool {
 

@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 
 /**

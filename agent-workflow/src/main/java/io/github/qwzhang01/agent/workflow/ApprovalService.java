@@ -13,7 +13,7 @@ public interface ApprovalService {
      * Ask for an approval decision.
      *
      * @return true to approve (workflow continues), false to reject
-     *         (node throws ApprovalRejectedException)
+     * (node throws ApprovalRejectedException)
      */
     boolean approve(Request request);
 
@@ -24,5 +24,6 @@ public interface ApprovalService {
      * @param summary what the approver is being asked to approve
      * @param payload workflow input / business data for the approver to inspect
      */
-    record Request(String nodeId, String summary, Object payload) {}
+    record Request(String nodeId, String summary, Object payload) {
+    }
 }

@@ -664,19 +664,19 @@ flowchart LR
 > 横轴 = 触发者，纵轴 = 被触发者
 > ✅ = 会触发，❌ = 不会触发，🔀 = 条件触发
 
-| 触发者 ↓ \ 被触发者 → | SimpleAgent | ReActAgentLoop | ModelClient | ToolExecutor | ToolRegistry | Tool | LLM Provider |
-|---|---|---|---|---|---|---|---|
-| **main()** | ✅ 创建+调用 | ❌ | ✅ 创建 | ❌ | ✅ 创建 | ❌ | ❌ |
-| **SimpleAgent** | - | ✅ 调用 execute() | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **ReActAgentLoop** | ❌ | - | ✅ 调用 chat() | ✅ 调用 execute() | ❌ | ❌ | ❌ |
-| **StructuredOutput** | ❌ | ❌ | ✅ delegate | ❌ | ❌ | ❌ | ❌ |
-| **Fallback** | ❌ | ❌ | ✅ primary + fallbacks | ❌ | ❌ | ❌ | ❌ |
-| **Timeout** | ❌ | ❌ | ✅ delegate | ❌ | ❌ | ❌ | ❌ |
-| **Retry** | ❌ | ❌ | ✅ delegate | ❌ | ❌ | ❌ | ❌ |
-| **DefaultToolExecutor** | ❌ | ❌ | ❌ | - | ✅ getTool() | ✅ execute() | ❌ |
-| **OpenAiModelClient** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ HTTP POST |
-| **AnthropicModelClient** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ HTTP POST |
-| **MockModelClient** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ (无外部调用) |
+| 触发者 ↓ \ 被触发者 →           | SimpleAgent | ReActAgentLoop | ModelClient           | ToolExecutor   | ToolRegistry | Tool        | LLM Provider |
+|--------------------------|-------------|----------------|-----------------------|----------------|--------------|-------------|--------------|
+| **main()**               | ✅ 创建+调用     | ❌              | ✅ 创建                  | ❌              | ✅ 创建         | ❌           | ❌            |
+| **SimpleAgent**          | -           | ✅ 调用 execute() | ❌                     | ❌              | ❌            | ❌           | ❌            |
+| **ReActAgentLoop**       | ❌           | -              | ✅ 调用 chat()           | ✅ 调用 execute() | ❌            | ❌           | ❌            |
+| **StructuredOutput**     | ❌           | ❌              | ✅ delegate            | ❌              | ❌            | ❌           | ❌            |
+| **Fallback**             | ❌           | ❌              | ✅ primary + fallbacks | ❌              | ❌            | ❌           | ❌            |
+| **Timeout**              | ❌           | ❌              | ✅ delegate            | ❌              | ❌            | ❌           | ❌            |
+| **Retry**                | ❌           | ❌              | ✅ delegate            | ❌              | ❌            | ❌           | ❌            |
+| **DefaultToolExecutor**  | ❌           | ❌              | ❌                     | -              | ✅ getTool()  | ✅ execute() | ❌            |
+| **OpenAiModelClient**    | ❌           | ❌              | ❌                     | ❌              | ❌            | ❌           | ✅ HTTP POST  |
+| **AnthropicModelClient** | ❌           | ❌              | ❌                     | ❌              | ❌            | ❌           | ✅ HTTP POST  |
+| **MockModelClient**      | ❌           | ❌              | ❌                     | ❌              | ❌            | ❌           | ❌ (无外部调用)    |
 
 ---
 

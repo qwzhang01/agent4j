@@ -35,12 +35,16 @@ public final class AgentNode implements WorkflowNode {
         this.inputFn = inputFn;
     }
 
-    /** Input defaults to String.valueOf(ctx.input()). */
+    /**
+     * Input defaults to String.valueOf(ctx.input()).
+     */
     public static AgentNode of(String id, Agent agent) {
         return new AgentNode(id, agent, null);
     }
 
-    /** Custom input extraction, e.g. from blackboard variables. */
+    /**
+     * Custom input extraction, e.g. from blackboard variables.
+     */
     public static AgentNode of(String id, Agent agent, Function<NodeContext, String> inputFn) {
         return new AgentNode(id, agent, inputFn);
     }

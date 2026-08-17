@@ -27,4 +27,5 @@ package io.github.qwzhang01.agent.plugin;
  * }
  * }</pre>
  */
-public interface ToolPlugin extends Plugin {}
+public interface ToolPlugin extends Plugin {
+}

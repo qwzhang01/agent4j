@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.core.client;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
+
 import java.util.stream.Stream;
 
 /**
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
  * - {@link #stream} streaming call
  * - tool calling (conveyed via ModelRequest.tools / ModelResponse.toolCalls)
  * - Timeout / Retry / Fallback (via decorators: {@link TimeoutModelClient},
- *   {@link RetryModelClient}, {@link FallbackModelClient})
+ * {@link RetryModelClient}, {@link FallbackModelClient})
  * - Structured Output (via ModelRequest.responseFormat + {@link StructuredOutputModelClient})
  */
 public interface ModelClient {

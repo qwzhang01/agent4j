@@ -121,7 +121,9 @@ public final class ParallelNode implements WorkflowNode {
             this.id = id;
         }
 
-        /** Add a branch: one or more nodes run sequentially within the branch. */
+        /**
+         * Add a branch: one or more nodes run sequentially within the branch.
+         */
         public Builder branch(String name, WorkflowNode first, WorkflowNode... rest) {
             List<WorkflowNode> nodes = new ArrayList<>();
             nodes.add(first);

@@ -27,12 +27,16 @@ public final class ToolNode implements WorkflowNode {
         this.argsFn = argsFn;
     }
 
-    /** No arguments. */
+    /**
+     * No arguments.
+     */
     public static ToolNode of(String id, Tool tool) {
         return new ToolNode(id, tool, null);
     }
 
-    /** Arguments extracted from the context, e.g. blackboard variables. */
+    /**
+     * Arguments extracted from the context, e.g. blackboard variables.
+     */
     public static ToolNode of(String id, Tool tool, Function<NodeContext, JsonNode> argsFn) {
         return new ToolNode(id, tool, argsFn);
     }

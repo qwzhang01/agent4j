@@ -16,8 +16,6 @@ import java.util.List;
  */
 public record ExecutionResult(Status status, Object output, String errorMessage, WorkflowState state) {
 
-    public enum Status { SUCCEEDED, FAILED }
-
     public static ExecutionResult success(Object output, WorkflowState state) {
         return new ExecutionResult(Status.SUCCEEDED, output, null, state);
     }
@@ -30,8 +28,12 @@ public record ExecutionResult(Status status, Object output, String errorMessage,
         return status == Status.SUCCEEDED;
     }
 
-    /** Step trace of this run (delegates to the blackboard). */
+    /**
+     * Step trace of this run (delegates to the blackboard).
+     */
     public List<StepRecord> trace() {
         return state.getTrace();
     }
+
+    public enum Status {SUCCEEDED, FAILED}
 }

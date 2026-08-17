@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 
 /**
@@ -18,16 +19,6 @@ public record ModelResponse(
         String finishReason,
         TokenUsage usage
 ) {
-    public boolean hasToolCalls() {
-        return toolCalls != null && !toolCalls.isEmpty();
-    }
-
-    public boolean isFinished() {
-        return !"tool_calls".equals(finishReason);
-    }
-
-    // ============ Factory ============
-
     public static ModelResponse text(String content) {
         return new ModelResponse(content, null, "stop", null);
     }
@@ -36,12 +27,23 @@ public record ModelResponse(
         return new ModelResponse(null, calls, "tool_calls", null);
     }
 
+    // ============ Factory ============
+
     public static ModelResponse error(String message) {
         return new ModelResponse(null, null, "error", null);
+    }
+
+    public boolean hasToolCalls() {
+        return toolCalls != null && !toolCalls.isEmpty();
+    }
+
+    public boolean isFinished() {
+        return !"tool_calls".equals(finishReason);
     }
 
     // ============ Nested ============
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record TokenUsage(int promptTokens, int completionTokens, int totalTokens) {}
+    public record TokenUsage(int promptTokens, int completionTokens, int totalTokens) {
+    }
 }

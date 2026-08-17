@@ -20,20 +20,28 @@ import java.util.List;
  */
 public class GraphRuntime {
 
-    private static final Logger log = LoggerFactory.getLogger(GraphRuntime.class);
-
     public static final int DEFAULT_MAX_STEPS = 25;
-
+    private static final Logger log = LoggerFactory.getLogger(GraphRuntime.class);
     private int maxSteps = DEFAULT_MAX_STEPS;
+
+    static String summarize(Object output) {
+        if (output == null) {
+            return "null";
+        }
+        var s = String.valueOf(output);
+        return s.length() > 120 ? s.substring(0, 117) + "..." : s;
+    }
+
+    // ============ Public API ============
 
     public GraphRuntime maxSteps(int maxSteps) {
         this.maxSteps = maxSteps;
         return this;
     }
 
-    // ============ Public API ============
-
-    /** Run the workflow with the given blackboard state. */
+    /**
+     * Run the workflow with the given blackboard state.
+     */
     public ExecutionResult run(Workflow workflow, WorkflowState state) {
         try {
             return doRun(workflow, state);
@@ -43,12 +51,16 @@ public class GraphRuntime {
         }
     }
 
-    /** Convenience: run with a fresh WorkflowState carrying the given input. */
+    // ============ Main Loop ============
+
+    /**
+     * Convenience: run with a fresh WorkflowState carrying the given input.
+     */
     public ExecutionResult run(Workflow workflow, Object input) {
         return run(workflow, WorkflowState.of(input));
     }
 
-    // ============ Main Loop ============
+    // ============ Node Execution (retry wrapper) ============
 
     private ExecutionResult doRun(Workflow workflow, WorkflowState state) {
         Object lastOutput = state.getInput();
@@ -106,17 +118,6 @@ public class GraphRuntime {
         log.info("[{}] Completed in {} step(s), {} trace record(s)",
                 workflow.name(), steps, state.getTrace().size());
         return ExecutionResult.success(lastOutput, state);
-    }
-
-    // ============ Node Execution (retry wrapper) ============
-
-    private record ExecOutcome(NodeResult result, Exception failure, long durationMs, int attempts) {
-        static ExecOutcome ok(NodeResult r, long dur, int attempts) {
-            return new ExecOutcome(r, null, dur, attempts);
-        }
-        static ExecOutcome error(Exception e, long dur, int attempts) {
-            return new ExecOutcome(null, e, dur, attempts);
-        }
     }
 
     private ExecOutcome executeWithRetry(Workflow workflow, WorkflowNode node, NodeContext ctx) {
@@ -193,11 +194,13 @@ public class GraphRuntime {
         }
     }
 
-    static String summarize(Object output) {
-        if (output == null) {
-            return "null";
+    private record ExecOutcome(NodeResult result, Exception failure, long durationMs, int attempts) {
+        static ExecOutcome ok(NodeResult r, long dur, int attempts) {
+            return new ExecOutcome(r, null, dur, attempts);
         }
-        var s = String.valueOf(output);
-        return s.length() > 120 ? s.substring(0, 117) + "..." : s;
+
+        static ExecOutcome error(Exception e, long dur, int attempts) {
+            return new ExecOutcome(null, e, dur, attempts);
+        }
     }
 }

@@ -1,11 +1,10 @@
 package io.github.qwzhang01.agent.examples.plugins;
 
-import io.github.qwzhang01.agent.core.model.ChatRole;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.plugin.PluginContext;
 import io.github.qwzhang01.agent.plugin.PluginDescriptor;
 import io.github.qwzhang01.agent.plugin.ToolPlugin;
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Example ToolPlugin that registers a "calculate" tool.

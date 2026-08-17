@@ -1,19 +1,19 @@
 package io.github.qwzhang01.agent.sandbox.tools;
 
-import io.github.qwzhang01.agent.core.tool.Tool;
-import io.github.qwzhang01.agent.sandbox.Sandbox;
-import io.github.qwzhang01.agent.sandbox.SandboxResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.qwzhang01.agent.core.tool.Tool;
+import io.github.qwzhang01.agent.sandbox.Sandbox;
+import io.github.qwzhang01.agent.sandbox.SandboxResult;
 
 /**
  * Tool wrapper for Sandbox, allowing the model to execute code.
  * <p>
  * The model calls this tool to run Java code in the sandbox:
  * {
- *   "class_name": "Generated",
- *   "code": "public class Generated { public static String run() { return \"hello\"; } }"
+ * "class_name": "Generated",
+ * "code": "public class Generated { public static String run() { return \"hello\"; } }"
  * }
  * <p>
  * Returns the execution result (stdout / error / blocked).

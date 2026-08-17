@@ -40,11 +40,11 @@ public class InMemoryToolRegistry implements ToolRegistry {
         for (Tool tool : tools.values()) {
             // Build a simple JSON schema string for the model
             String schema = String.format("""
-                    {
-                      "name": "%s",
-                      "description": "%s",
-                      "parameters": %s
-                    }""".trim(),
+                            {
+                              "name": "%s",
+                              "description": "%s",
+                              "parameters": %s
+                            }""".trim(),
                     tool.getName(),
                     tool.getDescription().replace("\"", "\\\""),
                     tool.getParametersSchema() != null ? tool.getParametersSchema() : "{}"

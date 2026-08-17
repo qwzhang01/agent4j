@@ -19,11 +19,11 @@ import io.github.qwzhang01.agent.sandbox.tools.SandboxTool;
  * End-to-end demo: the MODEL (not the developer) triggers sandbox execution.
  * <p>
  * Complete chain:
- *   model toolCall(sandbox_execute)
- *     -> ReActAgentLoop -> DefaultToolExecutor -> SandboxTool
- *     -> ClassLoaderSandbox (compile / load with blocked-list / run / timeout)
- *     -> SandboxResult -> JSON tool message back to model
- *     -> model reads result -> final answer
+ * model toolCall(sandbox_execute)
+ * -> ReActAgentLoop -> DefaultToolExecutor -> SandboxTool
+ * -> ClassLoaderSandbox (compile / load with blocked-list / run / timeout)
+ * -> SandboxResult -> JSON tool message back to model
+ * -> model reads result -> final answer
  * <p>
  * Scenario: user asks to compute sum 1-100.
  * Mock model "writes" Java code and calls sandbox_execute,

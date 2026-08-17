@@ -84,8 +84,8 @@ public class SandboxExample {
                     }
                 }
                 """, io.github.qwzhang01.agent.sandbox.SandboxSpec.builder()
-                        .timeout(java.time.Duration.ofSeconds(2))
-                        .build());
+                .timeout(java.time.Duration.ofSeconds(2))
+                .build());
         System.out.println("Success: " + r5.success());
         System.out.println("TimedOut: " + r5.timedOut() + "\n");
 

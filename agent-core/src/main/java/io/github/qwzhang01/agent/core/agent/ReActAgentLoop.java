@@ -1,7 +1,10 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.client.ModelClient;
-import io.github.qwzhang01.agent.core.model.*;
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ModelRequest;
+import io.github.qwzhang01.agent.core.model.ModelResponse;
+import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
@@ -9,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Default ReAct (Reason-Act) AgentLoop implementation.

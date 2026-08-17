@@ -38,7 +38,8 @@ registry.register(new EchoTool());
 
 SPI 是 Java 标准的插件发现机制，定义在 `java.util.ServiceLoader` 中。
 
-**原理**：在 `META-INF/services/` 目录下放置一个文件，文件名是接口的全限定名，文件内容是实现类的全限定名。`ServiceLoader` 会扫描 classpath 上的这些文件，自动实例化声明的类。
+**原理**：在 `META-INF/services/` 目录下放置一个文件，文件名是接口的全限定名，文件内容是实现类的全限定名。`ServiceLoader`
+会扫描 classpath 上的这些文件，自动实例化声明的类。
 
 **文件示例**：
 
@@ -59,20 +60,23 @@ for (ToolPlugin plugin : loader) {
 }
 ```
 
-**关键点**：调用方不需要 import 具体实现类，不需要 new，不需要知道实现类在哪里。ServiceLoader 负责发现和实例化。这就是"零胶水代码"的含义。
+**关键点**：调用方不需要 import 具体实现类，不需要 new，不需要知道实现类在哪里。ServiceLoader 负责发现和实例化。这就是"
+零胶水代码"的含义。
 
 **SPI vs API 的区别**：
 
 - API（Application Programming Interface）：你调用别人提供的接口。
 - SPI（Service Provider Interface）：别人实现你定义的接口，你来发现和调用。
 
-在本项目中，`ToolPlugin` 是我们定义的 SPI 接口，`SearchToolPlugin` 是别人（或我们自己写的另一个模块）提供的实现。`ServiceLoader` 负责发现实现。
+在本项目中，`ToolPlugin` 是我们定义的 SPI 接口，`SearchToolPlugin`
+是别人（或我们自己写的另一个模块）提供的实现。`ServiceLoader` 负责发现实现。
 
 ### 2.2 装饰器模式（Decorator Pattern）
 
 Stage 1-2 已使用。核心思想：装饰器和被装饰对象实现同一接口，装饰器内部持有被装饰对象的引用，在调用前后增加自己的逻辑。
 
-本阶段的插件系统不使用装饰器模式，但使用了类似的思想：插件和框架通过同一接口（`Plugin`）交互，插件在 `onLoad` 中向框架注册能力，在 `onUnload` 中撤销注册。
+本阶段的插件系统不使用装饰器模式，但使用了类似的思想：插件和框架通过同一接口（`Plugin`）交互，插件在 `onLoad`
+中向框架注册能力，在 `onUnload` 中撤销注册。
 
 ### 2.3 注册是可逆的（Reversible Registration）
 
@@ -125,11 +129,11 @@ public interface Plugin {
 
 三个方法的职责：
 
-| 方法 | 调用时机 | 插件做什么 |
-|------|---------|-----------|
-| `descriptor()` | 任何时候 | 返回自己的元数据（名称、版本、描述） |
-| `onLoad(context)` | 加载时 | 通过 context 拿到 ToolRegistry，注册工具 |
-| `onUnload(context)` | 卸载时 | 通过 context 拿到 ToolRegistry，注销工具 |
+| 方法                  | 调用时机 | 插件做什么                           |
+|---------------------|------|---------------------------------|
+| `descriptor()`      | 任何时候 | 返回自己的元数据（名称、版本、描述）              |
+| `onLoad(context)`   | 加载时  | 通过 context 拿到 ToolRegistry，注册工具 |
+| `onUnload(context)` | 卸载时  | 通过 context 拿到 ToolRegistry，注销工具 |
 
 `onLoad` 和 `onUnload` 必须对称：`onLoad` 注册了什么，`onUnload` 就注销什么。
 
@@ -178,7 +182,9 @@ public interface PluginContext {
 
 插件通过 PluginContext 访问框架的注册表。目前只暴露 `ToolRegistry`，后续阶段会增加 Memory Store、Policy Engine 等。
 
-**为什么不直接传 ToolRegistry？** 因为 PluginContext 是一个扩展点。现在只有 `getToolRegistry()`，以后加 `getMemoryStore()`、`getPolicyEngine()` 时，只改 PluginContext 接口，不改 Plugin 接口的签名。如果直接传 ToolRegistry，以后加新能力就要改 Plugin 接口的方法签名，破坏向后兼容。
+**为什么不直接传 ToolRegistry？** 因为 PluginContext 是一个扩展点。现在只有 `getToolRegistry()`
+，以后加 `getMemoryStore()`、`getPolicyEngine()` 时，只改 PluginContext 接口，不改 Plugin 接口的签名。如果直接传
+ToolRegistry，以后加新能力就要改 Plugin 接口的方法签名，破坏向后兼容。
 
 ### 3.5 ToolPlugin
 
@@ -186,9 +192,11 @@ public interface PluginContext {
 public interface ToolPlugin extends Plugin {}
 ```
 
-标记接口（Marker Interface），不增加任何方法。作用是让 SPI 按类型发现：`ServiceLoader.load(ToolPlugin.class)` 只找工具插件，不找其他类型插件。
+标记接口（Marker Interface），不增加任何方法。作用是让 SPI 按类型发现：`ServiceLoader.load(ToolPlugin.class)`
+只找工具插件，不找其他类型插件。
 
-**为什么有 Plugin 还要 ToolPlugin？** 因为后续阶段会有 MemoryPlugin、PolicyPlugin、ModelAdapterPlugin 等。它们都 extends Plugin，但各自有标记接口。SPI 按标记接口分类发现。
+**为什么有 Plugin 还要 ToolPlugin？** 因为后续阶段会有 MemoryPlugin、PolicyPlugin、ModelAdapterPlugin 等。它们都 extends
+Plugin，但各自有标记接口。SPI 按标记接口分类发现。
 
 ### 3.6 PluginRegistry
 
@@ -251,7 +259,8 @@ public int discover() {
 }
 ```
 
-调用 `ServiceLoader.load(ToolPlugin.class)` 扫描 classpath 上所有 `META-INF/services/com.seven.agent.plugin.ToolPlugin` 文件，实例化其中声明的类。
+调用 `ServiceLoader.load(ToolPlugin.class)` 扫描 classpath 上所有 `META-INF/services/com.seven.agent.plugin.ToolPlugin`
+文件，实例化其中声明的类。
 
 **loadAll 方法**：
 
@@ -409,7 +418,8 @@ public class SearchToolPlugin implements ToolPlugin {
 
 ### 为什么 onUnload 失败也标记 UNLOADED？
 
-`onUnload` 的职责是清理（注销工具）。如果清理失败，工具可能还残留在注册表中。但插件本身已经不可用了，标记为 UNLOADED 表示"这个插件不再活跃"。
+`onUnload` 的职责是清理（注销工具）。如果清理失败，工具可能还残留在注册表中。但插件本身已经不可用了，标记为 UNLOADED 表示"
+这个插件不再活跃"。
 
 如果标记为 FAILED，管理员可能以为插件还在运行，造成混淆。
 
@@ -419,7 +429,8 @@ public class SearchToolPlugin implements ToolPlugin {
 
 学习规划中提到了"加载 -> 启用 -> 禁用 -> 卸载"四态。但 Stage 3 选择最小版，只有 LOADED / UNLOADED 两态。
 
-DISABLED 的语义是"插件已加载但暂停使用"。这需要 ToolRegistry 支持"临时隐藏工具"，而不是"移除工具"。这增加了 ToolRegistry 的复杂度。
+DISABLED 的语义是"插件已加载但暂停使用"。这需要 ToolRegistry 支持"临时隐藏工具"，而不是"移除工具"。这增加了 ToolRegistry
+的复杂度。
 
 选择：先做两态。DISABLED 留到后续阶段，需要时再加。
 
@@ -427,7 +438,8 @@ DISABLED 的语义是"插件已加载但暂停使用"。这需要 ToolRegistry �
 
 学习规划中提到"自定义 ClassLoader、JPMS 模块化"。这涉及插件类加载隔离，防止插件 A 和插件 B 的依赖版本冲突。
 
-但 ClassLoader 隔离的实现复杂度高（需要处理类加载委托模型、资源隔离、卸载时的类 GC），且 Stage 3 的最小版用 SPI + 同一 ClassLoader 就能跑通。
+但 ClassLoader 隔离的实现复杂度高（需要处理类加载委托模型、资源隔离、卸载时的类 GC），且 Stage 3 的最小版用 SPI + 同一
+ClassLoader 就能跑通。
 
 选择：同 ClassLoader，不做隔离。后续阶段如果遇到版本冲突问题再加。
 
@@ -435,7 +447,8 @@ DISABLED 的语义是"插件已加载但暂停使用"。这需要 ToolRegistry �
 
 ## 七、与 Stage 1-2 的关系
 
-Stage 3 没有修改 Stage 1-2 的任何接口。`ToolRegistry` 的 `register` 和 `unregister` 方法在 Stage 1-2 就已定义。Stage 3 新增的是 Plugin / PluginRegistry / PluginManager 这一层，它在 ToolRegistry 之上，通过调用 ToolRegistry 的方法实现动态注册/注销。
+Stage 3 没有修改 Stage 1-2 的任何接口。`ToolRegistry` 的 `register` 和 `unregister` 方法在 Stage 1-2 就已定义。Stage 3
+新增的是 Plugin / PluginRegistry / PluginManager 这一层，它在 ToolRegistry 之上，通过调用 ToolRegistry 的方法实现动态注册/注销。
 
 ```
 Stage 1-2:
@@ -489,9 +502,9 @@ agent-plugin/src/test/java/com/seven/agent/plugin/
 
 ## 九、验证对照
 
-| 学习规划验收要求 | 状态 | 实现 |
-|---|---|---|
-| 动态加载一个新 Tool 插件并立即可用 | ✅ | `PluginManager.load()` |
-| 动态卸载一个插件，进行中的 Run 不受影响 | ✅ | `PluginManager.unload()`，Agent 只看 ToolRegistry |
-| 一个插件抛出异常时，其他插件和 Agent 正常运行 | ✅ | PluginRegistry catch 异常，标记 FAILED |
-| 插件升级时旧版本和新版本能短暂共存 | ⬜ | 未实现（最小版不含版本管理） |
+| 学习规划验收要求                   | 状态 | 实现                                             |
+|----------------------------|----|------------------------------------------------|
+| 动态加载一个新 Tool 插件并立即可用       | ✅  | `PluginManager.load()`                         |
+| 动态卸载一个插件，进行中的 Run 不受影响     | ✅  | `PluginManager.unload()`，Agent 只看 ToolRegistry |
+| 一个插件抛出异常时，其他插件和 Agent 正常运行 | ✅  | PluginRegistry catch 异常，标记 FAILED              |
+| 插件升级时旧版本和新版本能短暂共存          | ⬜  | 未实现（最小版不含版本管理）                                 |

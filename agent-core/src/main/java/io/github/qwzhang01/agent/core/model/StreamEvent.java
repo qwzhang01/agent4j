@@ -10,20 +10,24 @@ public sealed interface StreamEvent {
     /**
      * A chunk of text content from the model.
      */
-    record ContentDelta(String delta) implements StreamEvent {}
+    record ContentDelta(String delta) implements StreamEvent {
+    }
 
     /**
      * A tool call (may arrive incrementally or complete).
      */
-    record ToolCallEvent(ToolCall toolCall) implements StreamEvent {}
+    record ToolCallEvent(ToolCall toolCall) implements StreamEvent {
+    }
 
     /**
      * Stream completed.
      */
-    record Done(ModelResponse finalResponse) implements StreamEvent {}
+    record Done(ModelResponse finalResponse) implements StreamEvent {
+    }
 
     /**
      * Error during streaming.
      */
-    record Error(String message, Throwable cause) implements StreamEvent {}
+    record Error(String message, Throwable cause) implements StreamEvent {
+    }
 }

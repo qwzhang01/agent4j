@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,32 +20,17 @@ public class AgentState {
 
     // ============ Status ============
 
-    public enum Status {
-        /** Initial state, not yet running */
-        IDLE,
-        /** Agent is running (calling model or executing tools) */
-        RUNNING,
-        /** Agent is waiting for tool execution to complete */
-        EXECUTING_TOOL,
-        /** Agent finished normally */
-        DONE,
-        /** Agent hit max steps */
-        MAX_STEPS_EXCEEDED,
-        /** Agent encountered an error */
-        ERROR
-    }
+    private final List<ChatMessage> messages = new ArrayList<>();
 
     // ============ Fields ============
-
-    private final List<ChatMessage> messages = new ArrayList<>();
     private int currentStep = 0;
     private int maxSteps = 10;
     private Status status = Status.IDLE;
     private String lastError;
+    public AgentState() {
+    }
 
     // ============ Constructors ============
-
-    public AgentState() {}
 
     public AgentState(String systemPrompt, String userInput) {
         if (systemPrompt != null) {
@@ -53,11 +39,11 @@ public class AgentState {
         messages.add(ChatMessage.user(userInput));
     }
 
-    // ============ Methods ============
-
     public List<ChatMessage> getMessages() {
         return messages;
     }
+
+    // ============ Methods ============
 
     public void addMessage(ChatMessage message) {
         messages.add(message);
@@ -103,8 +89,6 @@ public class AgentState {
         return status == Status.DONE || status == Status.ERROR || status == Status.MAX_STEPS_EXCEEDED;
     }
 
-    // ============ Snapshot (for stage 6 Checkpoint) ============
-
     /**
      * Create a snapshot of the current state.
      * Stage 6 will serialize this to CheckpointStore.
@@ -117,5 +101,34 @@ public class AgentState {
         copy.status = this.status;
         copy.lastError = this.lastError;
         return copy;
+    }
+
+    // ============ Snapshot (for stage 6 Checkpoint) ============
+
+    public enum Status {
+        /**
+         * Initial state, not yet running
+         */
+        IDLE,
+        /**
+         * Agent is running (calling model or executing tools)
+         */
+        RUNNING,
+        /**
+         * Agent is waiting for tool execution to complete
+         */
+        EXECUTING_TOOL,
+        /**
+         * Agent finished normally
+         */
+        DONE,
+        /**
+         * Agent hit max steps
+         */
+        MAX_STEPS_EXCEEDED,
+        /**
+         * Agent encountered an error
+         */
+        ERROR
     }
 }

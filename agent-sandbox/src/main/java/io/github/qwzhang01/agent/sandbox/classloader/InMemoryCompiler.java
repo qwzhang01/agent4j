@@ -1,7 +1,10 @@
 package io.github.qwzhang01.agent.sandbox.classloader;
 
 import javax.tools.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Compiles Java source code in-memory using javax.tools.JavaCompiler.
@@ -26,7 +29,7 @@ public class InMemoryCompiler {
     /**
      * Compile a single Java source file.
      *
-     * @param className the fully-qualified class name (e.g. "Generated")
+     * @param className  the fully-qualified class name (e.g. "Generated")
      * @param sourceCode the Java source code
      * @return Map of class name -> bytecode bytes
      * @throws CompilationException if compilation fails
@@ -104,8 +107,8 @@ public class InMemoryCompiler {
 
         @Override
         public JavaFileObject getJavaFileForOutput(Location location, String className,
-                                                    JavaFileObject.Kind kind,
-                                                    javax.tools.FileObject sibling) {
+                                                   JavaFileObject.Kind kind,
+                                                   javax.tools.FileObject sibling) {
             return new InMemoryClassFile(className, kind);
         }
 

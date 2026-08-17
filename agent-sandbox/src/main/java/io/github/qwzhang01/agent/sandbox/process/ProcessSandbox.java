@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Sandbox implementation using process isolation (方案1).
@@ -36,6 +38,12 @@ public class ProcessSandbox implements Sandbox {
 
     public ProcessSandbox(SandboxSpec defaultSpec) {
         this.defaultSpec = defaultSpec;
+    }
+
+    // Helper to create SandboxResult (avoids name collision with static method)
+    private static SandboxResult SandboxResult(boolean success, String stdout, String stderr,
+                                               int exitCode, boolean timedOut, String error) {
+        return new SandboxResult(success, stdout, stderr, exitCode, timedOut, error);
     }
 
     @Override
@@ -99,7 +107,7 @@ public class ProcessSandbox implements Sandbox {
      * Run a process with timeout and capture output.
      */
     private SandboxResult runProcess(List<String> command, Path workingDir,
-                                       SandboxSpec spec, String label) {
+                                     SandboxSpec spec, String label) {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(workingDir.toFile());
 
@@ -171,16 +179,13 @@ public class ProcessSandbox implements Sandbox {
             Files.walk(dir)
                     .sorted(Comparator.reverseOrder())
                     .forEach(p -> {
-                        try { Files.delete(p); } catch (IOException ignored) {}
+                        try {
+                            Files.delete(p);
+                        } catch (IOException ignored) {
+                        }
                     });
         } catch (IOException e) {
             log.warn("Failed to cleanup sandbox dir: {}", dir, e);
         }
-    }
-
-    // Helper to create SandboxResult (avoids name collision with static method)
-    private static SandboxResult SandboxResult(boolean success, String stdout, String stderr,
-                                                 int exitCode, boolean timedOut, String error) {
-        return new SandboxResult(success, stdout, stderr, exitCode, timedOut, error);
     }
 }

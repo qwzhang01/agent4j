@@ -35,13 +35,6 @@ public class SandboxSpec {
         this.blockedClasses = builder.blockedClasses;
     }
 
-    public Duration getTimeout() { return timeout; }
-    public String getWorkingDirectory() { return workingDirectory; }
-    public Map<String, String> getEnvironment() { return environment; }
-    public long getMemoryLimitBytes() { return memoryLimitBytes; }
-    public List<String> getBlockedPackages() { return blockedPackages; }
-    public List<String> getBlockedClasses() { return blockedClasses; }
-
     /**
      * Default blocked packages for Java sandbox.
      * These packages contain classes that can access the OS.
@@ -65,6 +58,30 @@ public class SandboxSpec {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public Duration getTimeout() {
+        return timeout;
+    }
+
+    public String getWorkingDirectory() {
+        return workingDirectory;
+    }
+
+    public Map<String, String> getEnvironment() {
+        return environment;
+    }
+
+    public long getMemoryLimitBytes() {
+        return memoryLimitBytes;
+    }
+
+    public List<String> getBlockedPackages() {
+        return blockedPackages;
+    }
+
+    public List<String> getBlockedClasses() {
+        return blockedClasses;
     }
 
     public static class Builder {

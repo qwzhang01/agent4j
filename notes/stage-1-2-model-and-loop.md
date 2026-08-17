@@ -26,6 +26,7 @@ Agent --depends on--> ModelClient (interface)
 如果把这些直接写在 ModelClient 实现里，每个 provider 都要重写一遍。
 
 装饰器方案：
+
 ```
 StructuredOutput   <- 外层：验证 JSON
   └─ Fallback       <- 主模型挂了切备用
@@ -38,14 +39,14 @@ StructuredOutput   <- 外层：验证 JSON
 
 #### 3. Retry 的错误码分类策略
 
-| 错误码 | 重试 | 理由 |
-|--------|------|------|
-| TIMEOUT | ✅ | 网络抖动，重试可能恢复 |
-| RATE_LIMITED | ✅ | 等待后限流解除 |
-| NETWORK_ERROR | ✅ | 瞬时网络故障 |
-| MODEL_ERROR | ✅ | 服务端错误，可能恢复 |
-| AUTH_ERROR | ❌ | 不会自己变好 |
-| INVALID_REQUEST | ❌ | 客户端错误，重试无用 |
+| 错误码             | 重试 | 理由          |
+|-----------------|----|-------------|
+| TIMEOUT         | ✅  | 网络抖动，重试可能恢复 |
+| RATE_LIMITED    | ✅  | 等待后限流解除     |
+| NETWORK_ERROR   | ✅  | 瞬时网络故障      |
+| MODEL_ERROR     | ✅  | 服务端错误，可能恢复  |
+| AUTH_ERROR      | ❌  | 不会自己变好      |
+| INVALID_REQUEST | ❌  | 客户端错误，重试无用  |
 
 #### 4. Structured Output 的两层保障
 
@@ -55,6 +56,7 @@ StructuredOutput   <- 外层：验证 JSON
 #### 5. StreamEvent 为什么用 sealed interface？
 
 Java 21 的 sealed interface 让事件类型封闭：
+
 - 只有 ContentDelta / ToolCallEvent / Done / Error 四种
 - 模式匹配时编译器保证穷尽性
 - 比 sealed class 更符合"事件"的语义
@@ -62,6 +64,7 @@ Java 21 的 sealed interface 让事件类型封闭：
 #### 6. OpenAiModelClient 的 SSE 流式解析
 
 OpenAI 流式响应格式（SSE）：
+
 ```
 data: {"choices":[{"delta":{"content":"Hello"}}]}
 data: {"choices":[{"delta":{"content":" world"}}]}
@@ -73,16 +76,16 @@ Java HttpClient 的 `BodyHandlers.ofLines()` 返回 `Stream<String>`，
 
 ### 验收对照
 
-| 阶段 1 验收要求 | 状态 | 实现 |
-|----------------|------|------|
-| Chat Completion | ✅ | `ModelClient.chat()` + `OpenAiModelClient` |
-| Streaming | ✅ | `ModelClient.stream()` + SSE 解析 |
-| Tool Calling | ✅ | `ModelRequest.tools` + `ModelResponse.toolCalls` |
-| Structured Output | ✅ | `ResponseFormat` + `StructuredOutputModelClient` |
-| Timeout | ✅ | `TimeoutModelClient` 装饰器 |
-| Retry | ✅ | `RetryModelClient` 装饰器（指数退避 + 错误码分类） |
-| Fallback | ✅ | `FallbackModelClient` 装饰器（多级链式降级） |
-| Model Provider 抽象 | ✅ | `MockModelClient` + `OpenAiModelClient` 两种实现可切换 |
+| 阶段 1 验收要求         | 状态 | 实现                                               |
+|-------------------|----|--------------------------------------------------|
+| Chat Completion   | ✅  | `ModelClient.chat()` + `OpenAiModelClient`       |
+| Streaming         | ✅  | `ModelClient.stream()` + SSE 解析                  |
+| Tool Calling      | ✅  | `ModelRequest.tools` + `ModelResponse.toolCalls` |
+| Structured Output | ✅  | `ResponseFormat` + `StructuredOutputModelClient` |
+| Timeout           | ✅  | `TimeoutModelClient` 装饰器                         |
+| Retry             | ✅  | `RetryModelClient` 装饰器（指数退避 + 错误码分类）             |
+| Fallback          | ✅  | `FallbackModelClient` 装饰器（多级链式降级）                |
+| Model Provider 抽象 | ✅  | `MockModelClient` + `OpenAiModelClient` 两种实现可切换  |
 
 **阶段 1 验收标准达成**：✅ 能够通过统一接口切换至少两种模型调用方式，并处理超时、重试和结构化输出失败。
 
@@ -114,6 +117,7 @@ User Input
 - **Executor**：负责安全执行（错误包装、超时、审计、沙箱）
 
 后续 Executor 会变成 Pipeline：
+
 ```
 ToolCall -> Policy Check -> Timeout -> Sandbox -> Execute -> Audit Log
 ```
@@ -144,15 +148,15 @@ AgentState execute(AgentConfig, AgentState)
 
 ### 验收对照
 
-| 阶段 2 验收要求 | 状态 | 实现 |
-|----------------|------|------|
-| 接收用户问题 | ✅ | `SimpleAgent.run(userInput)` |
-| 选择工具 | ✅ | 模型返回 `toolCalls`，AgentLoop 处理 |
-| 执行工具 | ✅ | `DefaultToolExecutor.execute()` |
-| 结果交回模型 | ✅ | `ChatMessage.tool()` 加入 messages |
-| 生成最终答案 | ✅ | `finishReason="stop"` 时退出 |
-| 错误时安全退出 | ✅ | `AgentState.Status.ERROR` + `lastError` |
-| 超限时安全退出 | ✅ | `AgentState.Status.MAX_STEPS_EXCEEDED` |
+| 阶段 2 验收要求 | 状态 | 实现                                      |
+|-----------|----|-----------------------------------------|
+| 接收用户问题    | ✅  | `SimpleAgent.run(userInput)`            |
+| 选择工具      | ✅  | 模型返回 `toolCalls`，AgentLoop 处理           |
+| 执行工具      | ✅  | `DefaultToolExecutor.execute()`         |
+| 结果交回模型    | ✅  | `ChatMessage.tool()` 加入 messages        |
+| 生成最终答案    | ✅  | `finishReason="stop"` 时退出               |
+| 错误时安全退出   | ✅  | `AgentState.Status.ERROR` + `lastError` |
+| 超限时安全退出   | ✅  | `AgentState.Status.MAX_STEPS_EXCEEDED`  |
 
 **阶段 2 验收标准达成**：✅
 
@@ -163,6 +167,7 @@ AgentState execute(AgentConfig, AgentState)
 ### 2026-08-12（Day 1）
 
 **完成**：
+
 - Maven 多模块项目骨架
 - 核心接口定义：ModelClient / Tool / Agent / AgentLoop / AgentState
 - 默认实现：ReActAgentLoop / SimpleAgent / InMemoryToolRegistry / DefaultToolExecutor
@@ -173,6 +178,7 @@ AgentState execute(AgentConfig, AgentState)
 ### 2026-08-13（Day 2）
 
 **完成**：
+
 - **RetryModelClient** 装饰器：指数退避 + 错误码分类（AUTH/INVALID 不重试，TIMEOUT/NETWORK/MODEL_ERROR 重试）
 - **TimeoutModelClient** 装饰器：CompletableFuture.orTimeout 强制超时
 - **FallbackModelClient** 装饰器：多级链式降级（主模型 -> 备用1 -> 备用2）
@@ -184,6 +190,7 @@ AgentState execute(AgentConfig, AgentState)
 - 总测试 15 个全绿
 
 **学到**：
+
 - 装饰器模式是 ModelClient 生产化的最佳方案：每个装饰器只做一件事，可自由组合
 - Retry 的关键不是"重试几次"，而是"哪些错误值得重试"——错误码分类是核心
 - Structured Output 需要两层保障：provider 原生支持 + 应用层验证兜底
@@ -197,5 +204,6 @@ AgentState execute(AgentConfig, AgentState)
 > 验证级在收到响应后校验，失败则追加修正提示重试。"
 
 **下一步**：
+
 - 阶段 3：插件化与热插拔系统
 - 或：写第一篇文章草稿（基于已有研究素材）

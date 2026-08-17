@@ -23,20 +23,26 @@
 - [x] **FallbackModelClient** 装饰器：多级链式降级
 - [x] **StructuredOutputModelClient** 装饰器：JSON schema 强制 + 验证重试
 - [x] **插件系统**：`Plugin` / `ToolPlugin` / `PluginRegistry` / `PluginManager`
-  - Java SPI 发现机制（ServiceLoader）
-  - 插件生命周期：load -> unload -> reload
-  - 故障隔离：一个插件失败不影响其他
+    - Java SPI 发现机制（ServiceLoader）
+    - 插件生命周期：load -> unload -> reload
+    - 故障隔离：一个插件失败不影响其他
 - [x] **Agent 自进化**：4 个插件管理 Tool（inspect / list / load / unload）
-  - 模型在对话中自我管理能力
+    - 模型在对话中自我管理能力
 - [x] **沙箱系统**：`Sandbox` / `ClassLoaderSandbox` / `ProcessSandbox`
-  - 内存编译（Java Compiler API，零磁盘 IO）
-  - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
-  - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
-  - 超时自动终止（死循环 2 秒被 kill）
+    - 内存编译（Java Compiler API，零磁盘 IO）
+    - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
+    - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
+    - 超时自动终止（死循环 2 秒被 kill）
 - [x] 单元测试：78 个（15 Agent/装饰器 + 29 插件 + 11 沙箱 + 23 Workflow），全绿
-- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample`
-- [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent 沙箱技术全景 / java-agent-06 进程级沙箱原理）
-- [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge` 条件路由 / `WorkflowState` 黑板 / `GraphRuntime` 解释器 / `ExecutionResult`）+ 7 种节点（`ActionNode` / `AgentNode` 复用 agent-core Agent / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode` fork-join / `JoinPolicy`）+ 治理（节点级 `RetryPolicy`、`onError` 失败路由、maxSteps 环保护、路由二义性/死端检测）+ 可插拔 `ApprovalService`（Mock/Console）+ `StepRecord` trace（Stage 14 trajectory 数据源）
+- [x] 
+  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample`
+- [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
+  沙箱技术全景 / java-agent-06 进程级沙箱原理）
+- [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
+  条件路由 / `WorkflowState` 黑板 / `GraphRuntime` 解释器 / `ExecutionResult`）+ 7 种节点（`ActionNode` / `AgentNode` 复用
+  agent-core Agent / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode` fork-join / `JoinPolicy`）+
+  治理（节点级 `RetryPolicy`、`onError` 失败路由、maxSteps 环保护、路由二义性/死端检测）+ 可插拔 `ApprovalService`
+  （Mock/Console）+ `StepRecord` trace（Stage 14 trajectory 数据源）
 
 ### 下一步（Stage 6：State、Checkpoint 和长任务）
 
@@ -75,7 +81,8 @@ agent-observability/     # 阶段 18：可观测性
 
 ## 快速开始
 
-> 需要 JDK 17（若 `JAVA_HOME` 指向低版本，命令前加 `JAVA_HOME=$(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)`）。
+> 需要 JDK 17（若 `JAVA_HOME`
+> 指向低版本，命令前加 `JAVA_HOME=$(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)`）。
 
 ```bash
 # 编译
@@ -139,12 +146,12 @@ ExecutionResult        # 终态（status + output + error + state）
 
 对应 [18 周学习规划](../seven-we-meida/01-inbox/2026-08-11_Java-Agent-Framework学习规划.md)：
 
-| 阶段 | 模块 | 状态 |
-|------|------|------|
-| 1. 模型调用层 | agent-core / agent-model | ✅ 完成 |
-| 2. 最小 Agent Loop | agent-core | ✅ 完成 |
-| 3. 插件化与热插拔 | agent-plugin | ✅ 完成 |
-| 4. 沙箱与隔离执行 | agent-sandbox | ✅ 完成 |
-| 5. Workflow Graph | agent-workflow | ✅ 完成 |
-| 6. State/Checkpoint | agent-runtime | ⬜ 下一步 |
-| ... | ... | ⬜ |
+| 阶段                  | 模块                       | 状态    |
+|---------------------|--------------------------|-------|
+| 1. 模型调用层            | agent-core / agent-model | ✅ 完成  |
+| 2. 最小 Agent Loop    | agent-core               | ✅ 完成  |
+| 3. 插件化与热插拔          | agent-plugin             | ✅ 完成  |
+| 4. 沙箱与隔离执行          | agent-sandbox            | ✅ 完成  |
+| 5. Workflow Graph   | agent-workflow           | ✅ 完成  |
+| 6. State/Checkpoint | agent-runtime            | ⬜ 下一步 |
+| ...                 | ...                      | ⬜     |
