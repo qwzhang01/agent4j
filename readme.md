@@ -4,7 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 4 ✅ 已完成
+## 当前阶段：Stage 5 ✅ 已完成（Workflow 和 Graph Runtime）
+
+> Stage 1-5 已完成（2026-08-16 ~ 08-17）。
+> Stage 5 设计文档：[notes/architecture-stage-5.md](notes/architecture-stage-5.md)
 
 ### 已完成
 
@@ -30,13 +33,17 @@
   - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
   - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
   - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：55 个（15 Agent/装饰器 + 29 插件 + 11 沙箱），全绿
-- [x] 示例：`MockAgentExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample`
+- [x] 单元测试：78 个（15 Agent/装饰器 + 29 插件 + 11 沙箱 + 23 Workflow），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample`
+- [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent 沙箱技术全景 / java-agent-06 进程级沙箱原理）
+- [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge` 条件路由 / `WorkflowState` 黑板 / `GraphRuntime` 解释器 / `ExecutionResult`）+ 7 种节点（`ActionNode` / `AgentNode` 复用 agent-core Agent / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode` fork-join / `JoinPolicy`）+ 治理（节点级 `RetryPolicy`、`onError` 失败路由、maxSteps 环保护、路由二义性/死端检测）+ 可插拔 `ApprovalService`（Mock/Console）+ `StepRecord` trace（Stage 14 trajectory 数据源）
 
-### 下一步
+### 下一步（Stage 6：State、Checkpoint 和长任务）
 
-- [ ] 写第一篇文章草稿（基于已有 Stage 1-4 的代码和研究素材）
-- [ ] 阶段 5：Workflow 和 Graph Runtime
+- [ ] 核心抽象：`RunState` / `Checkpoint` / `CheckpointStore` / `RunManager` / `ResumeToken`
+- [ ] 人工审批前暂停、审批后从原位置恢复（不重跑已完成节点）
+- [ ] Cancellation / Timeout / 幂等性
+- [ ] 文章：java-agent-02~05 存量草稿按节奏补发（不急）
 
 ## 模块结构
 
@@ -46,6 +53,7 @@ java-agent-framework/
 ├── agent-model/          # 模型适配器（Mock, OpenAI, Anthropic）
 ├── agent-plugin/         # 插件系统（SPI 发现 + 热加载/卸载）
 ├── agent-sandbox/        # 沙箱系统（ClassLoader + 进程隔离）
+├── agent-workflow/      # 工作流图引擎（Workflow/GraphRuntime/7 种节点）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -54,11 +62,9 @@ java-agent-framework/
 ### 后续模块（按 18 周路线逐步创建）
 
 ```
-agent-sandbox/           # 阶段 4：沙箱与隔离执行
-agent-workflow/          # 阶段 5：工作流图引擎
-agent-memory/            # 阶段 8：记忆与上下文
 agent-runtime/           # 阶段 6：运行时与 Checkpoint
 agent-scheduler/         # 阶段 7：异步任务调度器
+agent-memory/            # 阶段 8：记忆与上下文
 agent-security/          # 阶段 9：安全与审计
 agent-mcp/               # 阶段 10：MCP 集成
 agent-channel/           # 阶段 12：频道级共享 Agent
@@ -69,13 +75,16 @@ agent-observability/     # 阶段 18：可观测性
 
 ## 快速开始
 
+> 需要 JDK 17（若 `JAVA_HOME` 指向低版本，命令前加 `JAVA_HOME=$(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)`）。
+
 ```bash
 # 编译
 cd projects/java-agent-framework
 mvn clean compile
 
-# 运行示例
-mvn exec:java -pl examples -Dexec.mainClass=com.seven.agent.examples.MockAgentExample
+# 运行示例（首次需先 mvn install -DskipTests 安装 SNAPSHOT）
+mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
+mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.WorkflowSupportFlowExample
 
 # 运行测试
 mvn test
@@ -96,6 +105,13 @@ AgentConfig            # Agent 静态配置（prompt + model + tools）
 AgentState             # Agent 运行时状态（messages + steps + status）
 AgentLoop              # ReAct 循环（核心执行逻辑）
   └─ ReActAgentLoop    # 默认实现
+
+Workflow               # 不可变图定义（nodes + edges，定义一次执行 N 次）
+WorkflowBuilder        # fluent API（node / edge.when / otherwise / onError）
+WorkflowNode           # 节点接口（id + execute）
+WorkflowState          # 黑板：全图共享可变状态 + trace
+GraphRuntime           # 解释器：START 走到 END（路由 -> 执行 -> 写黑板）
+ExecutionResult        # 终态（status + output + error + state）
 ```
 
 ## 设计决策
@@ -125,9 +141,10 @@ AgentLoop              # ReAct 循环（核心执行逻辑）
 
 | 阶段 | 模块 | 状态 |
 |------|------|------|
-| 1. 模型调用层 | agent-core / agent-model | ✅ 进行中 |
-| 2. 最小 Agent Loop | agent-core | ✅ 进行中 |
-| 3. 插件化与热插拔 | agent-plugin | ⬜ |
-| 4. 沙箱与隔离执行 | agent-sandbox | ⬜ |
-| 5. Workflow Graph | agent-workflow | ⬜ |
+| 1. 模型调用层 | agent-core / agent-model | ✅ 完成 |
+| 2. 最小 Agent Loop | agent-core | ✅ 完成 |
+| 3. 插件化与热插拔 | agent-plugin | ✅ 完成 |
+| 4. 沙箱与隔离执行 | agent-sandbox | ✅ 完成 |
+| 5. Workflow Graph | agent-workflow | ✅ 完成 |
+| 6. State/Checkpoint | agent-runtime | ⬜ 下一步 |
 | ... | ... | ⬜ |
