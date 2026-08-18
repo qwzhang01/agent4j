@@ -1,7 +1,6 @@
 package io.github.qwzhang01.agent.plugin;
 
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,12 +12,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for PluginManager: SPI discovery + batch operations.
  * <p>
- * Uses the plugins declared in
- * META-INF/services/io.github.qwzhang01.agent.plugin.ToolPlugin
- * (SearchToolPlugin + CalculatorToolPlugin from examples module).
- * <p>
- * Note: These tests depend on the examples module being on the classpath.
- * If running from agent-plugin module alone, discover() will find 0 plugins.
+ * Uses {@link TestSpiPlugin} declared in
+ * {@code META-INF/services/io.github.qwzhang01.agent.plugin.ToolPlugin}
+ * on the test classpath, so discovery does not depend on the examples module.
  */
 class PluginManagerTest {
 
@@ -35,11 +31,8 @@ class PluginManagerTest {
     @DisplayName("discover() finds plugins via SPI")
     void testDiscover() {
         int count = manager.discover();
-        // May be 0 if examples module is not on classpath
-        assertTrue(count >= 0);
-        if (count > 0) {
-            assertFalse(manager.getDiscoveredPlugins().isEmpty());
-        }
+        assertTrue(count >= 1, "test classpath must include TestSpiPlugin via META-INF/services");
+        assertFalse(manager.getDiscoveredPlugins().isEmpty());
     }
 
     @Test
@@ -94,10 +87,8 @@ class PluginManagerTest {
     void testFullCycle() {
         // Discover
         manager.discover();
-        if (manager.getDiscoveredPlugins().isEmpty()) {
-            // Examples module not on classpath - skip this test
-            Assumptions.assumeTrue(false, "No plugins discovered (examples not on classpath)");
-        }
+        assertFalse(manager.getDiscoveredPlugins().isEmpty(),
+                "TestSpiPlugin must be discoverable from agent-plugin test resources");
 
         // Load all
         manager.loadAll();

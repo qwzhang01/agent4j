@@ -37,6 +37,21 @@ public class WorkflowState {
         return new WorkflowState(input);
     }
 
+    /**
+     * Reconstruct a blackboard from a checkpoint snapshot
+     * ({@code FileCheckpointStore} / crash recovery).
+     */
+    public static WorkflowState restore(Object input, Map<String, Object> variables, List<StepRecord> trace) {
+        WorkflowState state = new WorkflowState(input);
+        if (variables != null) {
+            variables.forEach(state::put);
+        }
+        if (trace != null) {
+            trace.forEach(state::record);
+        }
+        return state;
+    }
+
     // ============ Input Zone ============
 
     public Object getInput() {

@@ -34,6 +34,8 @@ public class EventBroker {
     private final Map<String, Object> eventPayloads = new ConcurrentHashMap<>();
     /** Keys that have fired, regardless of whether a payload was attached. */
     private final Set<String> firedKeys = ConcurrentHashMap.newKeySet();
+    /** runId + eventKey -> trigger, kept after fire/timeout so nodes can inspect. */
+    private final Map<String, EventTrigger> triggersByRunAndKey = new ConcurrentHashMap<>();
 
     public EventBroker(RunManager runManager) {
         this.runManager = runManager;
@@ -44,6 +46,7 @@ public class EventBroker {
      */
     public EventTrigger subscribe(EventTrigger trigger) {
         subscriptions.computeIfAbsent(trigger.eventKey(), k -> new CopyOnWriteArrayList<>()).add(trigger);
+        triggersByRunAndKey.put(indexKey(trigger.runId(), trigger.eventKey()), trigger);
         log.info("[event] Subscribed run '{}' to event '{}'", trigger.runId(), trigger.eventKey());
         return trigger;
     }
@@ -79,6 +82,35 @@ public class EventBroker {
                         trigger.runId(), eventKey, e.getMessage());
             }
         }
+    }
+
+    /**
+     * Mark a wait as timed out and drop the subscription so a late fire
+     * cannot resume a failed run.
+     */
+    public void timeout(EventTrigger trigger) {
+        trigger.markTimedOut();
+        List<EventTrigger> list = subscriptions.get(trigger.eventKey());
+        if (list != null) {
+            list.remove(trigger);
+            if (list.isEmpty()) {
+                subscriptions.remove(trigger.eventKey());
+            }
+        }
+        log.warn("[event] Timed out run '{}' waiting for '{}'", trigger.runId(), trigger.eventKey());
+    }
+
+    public EventTrigger getTrigger(String runId, String eventKey) {
+        return triggersByRunAndKey.get(indexKey(runId, eventKey));
+    }
+
+    public boolean isTimedOut(String runId, String eventKey) {
+        EventTrigger trigger = getTrigger(runId, eventKey);
+        return trigger != null && (trigger.wasTimedOut() || trigger.isTimedOut(java.time.Instant.now()));
+    }
+
+    private static String indexKey(String runId, String eventKey) {
+        return runId + "\0" + eventKey;
     }
 
     /** Get the payload of a fired event (null if none was attached). */

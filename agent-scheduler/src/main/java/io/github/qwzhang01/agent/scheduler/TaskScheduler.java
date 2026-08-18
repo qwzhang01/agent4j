@@ -78,7 +78,9 @@ public class TaskScheduler {
 
     public void shutdown() {
         running = false;
-        executor.shutdown();
+        futures.values().forEach(f -> f.cancel(false));
+        futures.clear();
+        executor.shutdownNow();
         log.info("[scheduler] Shut down");
     }
 
@@ -119,9 +121,10 @@ public class TaskScheduler {
             futures.put(sr.resumeId(), future);
             log.info("[scheduler] Scheduled recurring resume for run '{}', interval={}ms", runId, interval.toMillis());
         } else {
-            executor.schedule(
+            java.util.concurrent.ScheduledFuture<?> future = executor.schedule(
                     () -> doResume(runId, sr.resumeId()),
                     delayMs, TimeUnit.MILLISECONDS);
+            futures.put(sr.resumeId(), future);
             log.info("[scheduler] Scheduled resume for run '{}' in {}ms", runId, delayMs);
         }
         return sr;
@@ -178,9 +181,12 @@ public class TaskScheduler {
 
         if (timeout != null) {
             executor.schedule(() -> {
+                if (!running) {
+                    return;
+                }
                 if (!trigger.isFired()) {
                     log.warn("[scheduler] Event '{}' timed out for run '{}'", eventKey, runId);
-                    // The run will be resumed; the node should check for timeout
+                    eventBroker.timeout(trigger);
                     try {
                         runManager.resume(runId);
                     } catch (Exception e) {
@@ -217,6 +223,28 @@ public class TaskScheduler {
         return eventBroker.getPayload(eventKey);
     }
 
+    /** Whether a wait-for-event registration has timed out. */
+    public boolean isEventTimedOut(String runId, String eventKey) {
+        return eventBroker.isTimedOut(runId, eventKey);
+    }
+
+    /**
+     * After a scheduler restart: re-register a one-shot resume for every
+     * still-PAUSED run. Crash-recovery path for Stage 7.
+     *
+     * @return number of runs re-scheduled
+     */
+    public int restorePausedRuns(Duration delay) {
+        int n = 0;
+        for (var run : runManager.listRuns()) {
+            if (run.getStatus() == io.github.qwzhang01.agent.workflow.runtime.RunState.PAUSED) {
+                scheduleResume(run.getRunId(), delay);
+                n++;
+            }
+        }
+        return n;
+    }
+
     // ============ Async Task Queue ============
 
     /** Enqueue an async task produced by an Agent. */
@@ -249,7 +277,11 @@ public class TaskScheduler {
         if (budget == null) {
             return true;  // no budget set = unlimited
         }
-        return budget.consume(tokens);
+        boolean ok = budget.consume(tokens);
+        if (!ok) {
+            runManager.fail(runId, "token_exceeded");
+        }
+        return ok;
     }
 
     public TokenBudget getBudget(String runId) {

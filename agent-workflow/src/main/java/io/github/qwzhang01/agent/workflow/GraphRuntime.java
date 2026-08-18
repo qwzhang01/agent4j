@@ -124,16 +124,19 @@ public class GraphRuntime {
             // Max steps guard (preserved from Stage 5)
             // --------------------------------------------
             if (++steps > maxSteps) {
+                String msg = "Max steps (" + maxSteps + ") exceeded at node '" + cursor
+                        + "' - possible cycle in the graph";
                 run.setStatus(RunState.FAILED);
-                return ExecutionResult.failed(
-                        "Max steps (" + maxSteps + ") exceeded at node '" + cursor
-                                + "' - possible cycle in the graph", state);
+                run.setErrorMessage(msg);
+                return ExecutionResult.failed(msg, state);
             }
 
             WorkflowNode node = workflow.node(cursor);
             if (node == null) {
+                String msg = "Unknown node: '" + cursor + "'";
                 run.setStatus(RunState.FAILED);
-                return ExecutionResult.failed("Unknown node: '" + cursor + "'", state);
+                run.setErrorMessage(msg);
+                return ExecutionResult.failed(msg, state);
             }
 
             // --------------------------------------------
@@ -176,8 +179,10 @@ public class GraphRuntime {
                     continue;
                 }
                 run.setStatus(RunState.FAILED);
-                return ExecutionResult.failed("Node '" + node.id() + "' failed after "
-                        + outcome.attempts() + " attempt(s): " + outcome.failure().getMessage(), state);
+                String msg = "Node '" + node.id() + "' failed after "
+                        + outcome.attempts() + " attempt(s): " + outcome.failure().getMessage();
+                run.setErrorMessage(msg);
+                return ExecutionResult.failed(msg, state);
             }
 
             // --------------------------------------------

@@ -8,6 +8,7 @@ import io.github.qwzhang01.agent.workflow.WorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -154,6 +155,34 @@ public class RunManager {
     /** Get a run by id (null if not found). */
     public Run getRun(String runId) {
         return activeRuns.get(runId);
+    }
+
+    /**
+     * Snapshot of currently tracked runs. Needed so a caller can cancel a
+     * still-running start() (runId is generated internally and otherwise
+     * only returned when start() completes).
+     */
+    public List<Run> listRuns() {
+        return List.copyOf(activeRuns.values());
+    }
+
+    /**
+     * Force a run into FAILED without executing further nodes.
+     * Used by Stage 7 token-budget enforcement on a paused run.
+     *
+     * @return true if the run was found and moved to FAILED
+     */
+    public boolean fail(String runId, String reason) {
+        Run run = activeRuns.get(runId);
+        if (run == null || run.getStatus().isTerminal()) {
+            return false;
+        }
+        run.setStatus(RunState.FAILED);
+        run.setErrorMessage(reason);
+        String node = run.getCursor() != null ? run.getCursor() : "?";
+        run.getState().record(io.github.qwzhang01.agent.workflow.StepRecord.failed(node, 0, 0, reason));
+        log.info("[{}] Run failed: {}", runId, reason);
+        return true;
     }
 
     /** Get the checkpoint store (for testing / inspection). */

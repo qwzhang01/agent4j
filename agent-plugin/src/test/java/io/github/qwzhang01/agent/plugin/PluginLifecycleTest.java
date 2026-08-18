@@ -114,6 +114,8 @@ class PluginLifecycleTest {
         // Unload should not throw (best-effort)
         registry.unload("fail-unload");
         assertEquals(PluginState.UNLOADED, registry.getState("fail-unload").orElse(null));
+        assertEquals(0, toolRegistry.listTools().size(),
+                "tools registered by the plugin must be removed even if onUnload throws");
     }
 
     // ============ Query ============

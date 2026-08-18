@@ -66,9 +66,9 @@ public class ProcessSandbox implements Sandbox {
             Path sourceFile = sandboxDir.resolve(className + ".java");
             Files.writeString(sourceFile, code);
 
-            // 3. Compile with javac
+            // 3. Compile with javac from the running JDK (not PATH)
             SandboxResult compileResult = runProcess(
-                    List.of("javac", sourceFile.toString()),
+                    List.of(javacBinary(), sourceFile.toString()),
                     sandboxDir,
                     spec,
                     "javac"
@@ -86,7 +86,7 @@ public class ProcessSandbox implements Sandbox {
 
             // 4. Run with java
             SandboxResult runResult = runProcess(
-                    List.of("java", "-cp", sandboxDir.toString(), className),
+                    List.of(javaBinary(), "-cp", sandboxDir.toString(), className),
                     sandboxDir,
                     spec,
                     "java"
@@ -101,6 +101,25 @@ public class ProcessSandbox implements Sandbox {
                 cleanupSandboxDir(sandboxDir);
             }
         }
+    }
+
+    private static String javaBinary() {
+        return Path.of(System.getProperty("java.home"), "bin", "java").toString();
+    }
+
+    private static String javacBinary() {
+        Path home = Path.of(System.getProperty("java.home"));
+        Path javac = home.resolve("bin").resolve("javac");
+        if (Files.isExecutable(javac)) {
+            return javac.toString();
+        }
+        Path sibling = home.getParent() != null
+                ? home.getParent().resolve("bin").resolve("javac")
+                : null;
+        if (sibling != null && Files.isExecutable(sibling)) {
+            return sibling.toString();
+        }
+        return "javac";
     }
 
     /**

@@ -24,6 +24,7 @@ public final class EventTrigger {
     private final Instant registeredAt;
     private final Duration timeout;
     private volatile Instant firedAt;
+    private volatile Instant timedOutAt;
 
     public EventTrigger(String triggerId, String runId, String eventKey,
                         Instant registeredAt, Duration timeout) {
@@ -51,8 +52,17 @@ public final class EventTrigger {
         this.firedAt = Instant.now();
     }
 
+    /** Called by EventBroker when the wait times out without a fire. */
+    public void markTimedOut() {
+        this.timedOutAt = Instant.now();
+    }
+
     public boolean isFired() {
         return firedAt != null;
+    }
+
+    public boolean wasTimedOut() {
+        return timedOutAt != null;
     }
 
     public boolean isTimedOut(Instant now) {

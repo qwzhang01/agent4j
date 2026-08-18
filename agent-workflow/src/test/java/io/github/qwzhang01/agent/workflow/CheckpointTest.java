@@ -3,10 +3,13 @@ package io.github.qwzhang01.agent.workflow;
 import io.github.qwzhang01.agent.workflow.nodes.ActionNode;
 import io.github.qwzhang01.agent.workflow.nodes.HumanApprovalNode;
 import io.github.qwzhang01.agent.workflow.runtime.CheckpointStore;
+import io.github.qwzhang01.agent.workflow.runtime.FileCheckpointStore;
 import io.github.qwzhang01.agent.workflow.runtime.InMemoryCheckpointStore;
 import io.github.qwzhang01.agent.workflow.runtime.RunManager;
-import io.github.qwzhang01.agent.workflow.runtime.ResumeToken;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -171,11 +174,10 @@ class CheckpointTest {
 
     @Test
     void cancelStopsAtNextNodeBoundary() throws Exception {
-        // A workflow with a slow node that we can cancel mid-flight
         Workflow wf = Workflow.builder("cancellable")
                 .node(ActionNode.of("fast", ctx -> "fast-done"))
                 .node(ActionNode.of("slow", ctx -> {
-                    Thread.sleep(200);
+                    Thread.sleep(400);
                     return "slow-done";
                 }))
                 .node(ActionNode.of("after", ctx -> "after-done"))
@@ -186,25 +188,48 @@ class CheckpointTest {
                 .build();
 
         RunManager mgr = new RunManager();
-
-        // Start in a separate thread (start blocks until pause/end/cancel)
-        final ExecutionResult[] holder = new ExecutionResult[1];
-        Thread runner = new Thread(() -> {
-            holder[0] = mgr.start(wf, "input");
-        });
+        AtomicReference<ExecutionResult> holder = new AtomicReference<>();
+        Thread runner = new Thread(() -> holder.set(mgr.start(wf, "input")), "cancel-test-runner");
         runner.start();
 
-        // Wait for "fast" to complete, then cancel
-        Thread.sleep(100);
-        // Find the runId (we only have one active run)
-        // Since we don't know the runId, we need to get it from the RunManager
-        // For testing, we can use getRun with a known pattern or iterate
+        long deadline = System.currentTimeMillis() + 2000;
+        while (mgr.listRuns().isEmpty() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        assertFalse(mgr.listRuns().isEmpty(), "run must be registered before start() returns");
+        String runId = mgr.listRuns().get(0).getRunId();
+        assertTrue(mgr.cancel(runId));
 
-        // Actually, let's use a different approach: start the run, get the runId from the first result
-        // Let me simplify this test...
         runner.join(5000);
-        // Without cancellation, this should succeed (slow node completes in 200ms)
-        assertTrue(holder[0].isSucceeded());
+        assertFalse(runner.isAlive(), "runner thread should finish after cancel");
+        assertNotNull(holder.get());
+        assertTrue(holder.get().isCancelled(),
+                "expected CANCELLED, got " + holder.get().status());
+        assertNull(holder.get().state().get("after"), "node after the cancel boundary must not run");
+    }
+
+    @Test
+    void resumeFromFileCheckpointAfterNewRunManager() throws Exception {
+        var dir = Files.createTempDirectory("agent-cp-");
+        try {
+            CheckpointStore store = new FileCheckpointStore(dir);
+            MockApprovalService approval = MockApprovalService.autoApprove();
+            Workflow wf = approvalWorkflow(approval);
+
+            RunManager mgr1 = new RunManager(store);
+            ExecutionResult r1 = mgr1.start(wf, "refund#file");
+            assertTrue(r1.isPaused());
+            String runId = r1.resumeToken().runId();
+            approval.setDecision(runId, "approval", true);
+
+            // Simulate process restart: new RunManager, same files, no in-memory Run
+            RunManager mgr2 = new RunManager(store);
+            ExecutionResult r2 = mgr2.resume(runId, wf);
+            assertTrue(r2.isSucceeded());
+            assertEquals("refund executed for: prepared:refund#file", r2.output());
+        } finally {
+            FileCheckpointStore.deleteRecursively(dir);
+        }
     }
 
     @Test

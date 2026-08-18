@@ -3,6 +3,8 @@ package io.github.qwzhang01.agent.core.agent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.qwzhang01.agent.core.client.ModelClient;
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
@@ -79,6 +81,25 @@ class SimpleAgentTest {
         assertTrue(result.contains("max steps"), "Should indicate max steps. Got: " + result);
     }
 
+    @Test
+    void shouldNotDuplicateUserMessageOnFreshRun() {
+        var client = new CapturingMock();
+        client.response = ModelResponse.text("ok");
+
+        AgentConfig config = new AgentConfig("test", "you are a bot", client, null, 5);
+        Agent agent = new SimpleAgent(config);
+        agent.run("Hi");
+
+        long userCount = client.lastRequest.messages().stream()
+                .filter(m -> m.role() == ChatRole.USER)
+                .count();
+        assertEquals(1, userCount, "fresh run() must not send the user message twice");
+        assertEquals("Hi", client.lastRequest.messages().stream()
+                .filter(m -> m.role() == ChatRole.USER)
+                .map(ChatMessage::content)
+                .findFirst().orElseThrow());
+    }
+
     // ============ Inline Mock ============
 
     /**
@@ -108,6 +129,22 @@ class SimpleAgentTest {
         public java.util.stream.Stream<StreamEvent> stream(ModelRequest request) {
             ModelResponse r = chat(request);
             return java.util.stream.Stream.of(new StreamEvent.Done(r));
+        }
+    }
+
+    static class CapturingMock implements ModelClient {
+        ModelRequest lastRequest;
+        ModelResponse response = ModelResponse.text("ok");
+
+        @Override
+        public ModelResponse chat(ModelRequest request) {
+            lastRequest = request;
+            return response;
+        }
+
+        @Override
+        public java.util.stream.Stream<StreamEvent> stream(ModelRequest request) {
+            return java.util.stream.Stream.of(new StreamEvent.Done(chat(request)));
         }
     }
 

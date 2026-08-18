@@ -1,9 +1,11 @@
 package io.github.qwzhang01.agent.plugin;
 
+import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +63,7 @@ public class PluginRegistry {
             }
         }
 
-        PluginContext context = new SimplePluginContext(toolRegistry);
+        TrackingPluginContext context = new TrackingPluginContext(toolRegistry);
         PluginEntry entry = new PluginEntry(plugin, context, PluginState.DETECTED, null);
         plugins.put(name, entry);
 
@@ -104,9 +106,10 @@ public class PluginRegistry {
         } catch (Exception e) {
             log.error("Plugin {} failed to unload: {}", name, e.getMessage(), e);
             // Still mark as unloaded - best effort
+        } finally {
+            entry.context.cleanupOrphanTools();
+            entry.state = PluginState.UNLOADED;
         }
-
-        entry.state = PluginState.UNLOADED;
     }
 
     /**
@@ -158,12 +161,56 @@ public class PluginRegistry {
     // ============ Inner ============
 
     /**
-     * Simple PluginContext that only wraps a ToolRegistry.
+     * PluginContext that records tools registered through it, so unload can
+     * still drop them if {@code onUnload} throws before unregistering.
      */
-    private record SimplePluginContext(ToolRegistry toolRegistry) implements PluginContext {
+    private static final class TrackingPluginContext implements PluginContext {
+        private final ToolRegistry delegate;
+        private final List<String> registeredNames = new ArrayList<>();
+        private final ToolRegistry view;
+
+        TrackingPluginContext(ToolRegistry delegate) {
+            this.delegate = delegate;
+            this.view = new ToolRegistry() {
+                @Override
+                public void register(Tool tool) {
+                    delegate.register(tool);
+                    registeredNames.add(tool.getName());
+                }
+
+                @Override
+                public void unregister(String name) {
+                    delegate.unregister(name);
+                    registeredNames.remove(name);
+                }
+
+                @Override
+                public java.util.Optional<Tool> getTool(String name) {
+                    return delegate.getTool(name);
+                }
+
+                @Override
+                public List<Tool> listTools() {
+                    return delegate.listTools();
+                }
+
+                @Override
+                public List<String> getToolSchemas() {
+                    return delegate.getToolSchemas();
+                }
+            };
+        }
+
         @Override
         public ToolRegistry getToolRegistry() {
-            return toolRegistry;
+            return view;
+        }
+
+        void cleanupOrphanTools() {
+            for (String name : List.copyOf(registeredNames)) {
+                delegate.unregister(name);
+            }
+            registeredNames.clear();
         }
     }
 
@@ -172,11 +219,11 @@ public class PluginRegistry {
      */
     private static class PluginEntry {
         final Plugin plugin;
-        final PluginContext context;
+        final TrackingPluginContext context;
         PluginState state;
         Throwable error;
 
-        PluginEntry(Plugin plugin, PluginContext context, PluginState state, Throwable error) {
+        PluginEntry(Plugin plugin, TrackingPluginContext context, PluginState state, Throwable error) {
             this.plugin = plugin;
             this.context = context;
             this.state = state;

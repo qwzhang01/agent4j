@@ -1,5 +1,8 @@
 package io.github.qwzhang01.agent.core.agent;
 
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 
 /**
@@ -22,11 +25,8 @@ public class SimpleAgent implements Agent {
 
     public SimpleAgent(AgentConfig config) {
         this.config = config;
-        // Default loop: ReAct with tool executor from registry
         ToolRegistry registry = config.getToolRegistry();
-        this.loop = registry != null
-                ? new ReActAgentLoop(registry)
-                : new ReActAgentLoop(new io.github.qwzhang01.agent.core.tool.DefaultToolExecutor(registry));
+        this.loop = new ReActAgentLoop(registry != null ? registry : new InMemoryToolRegistry());
     }
 
     public SimpleAgent(AgentConfig config, AgentLoop loop) {
@@ -36,34 +36,27 @@ public class SimpleAgent implements Agent {
 
     @Override
     public String run(String userInput) {
-        AgentState state = new AgentState(config.getSystemPrompt(), userInput);
-        return run(userInput, state);
+        return run(userInput, new AgentState());
     }
 
     @Override
     public String run(String userInput, AgentState state) {
-        // For multi-turn: add the new user message to existing state
-        if (!state.getMessages().isEmpty()) {
-            state.addMessage(io.github.qwzhang01.agent.core.model.ChatMessage.user(userInput));
-        } else {
-            // Fresh state: init with system prompt + user input
-            state.addMessage(io.github.qwzhang01.agent.core.model.ChatMessage.system(config.getSystemPrompt()));
-            state.addMessage(io.github.qwzhang01.agent.core.model.ChatMessage.user(userInput));
+        if (state.getMessages().isEmpty() && config.getSystemPrompt() != null) {
+            state.addMessage(ChatMessage.system(config.getSystemPrompt()));
         }
+        state.addMessage(ChatMessage.user(userInput));
 
         state.setMaxSteps(config.getMaxSteps());
         loop.execute(config, state);
 
-        // Extract final assistant response
         var messages = state.getMessages();
         for (int i = messages.size() - 1; i >= 0; i--) {
             var msg = messages.get(i);
-            if (msg.role() == io.github.qwzhang01.agent.core.model.ChatRole.ASSISTANT && msg.content() != null) {
+            if (msg.role() == ChatRole.ASSISTANT && msg.content() != null) {
                 return msg.content();
             }
         }
 
-        // No final answer found
         return switch (state.getStatus()) {
             case MAX_STEPS_EXCEEDED -> "[Agent reached max steps without a final answer]";
             case ERROR -> "[Agent error: " + state.getLastError() + "]";

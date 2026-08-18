@@ -55,19 +55,15 @@ public final class WaitEventNode implements WorkflowNode {
         }
 
         if (ctx.isResuming()) {
-            // Resume path: check if the event fired
             if (scheduler.hasEventFired(eventKey)) {
                 Object payload = scheduler.getEventPayload(eventKey);
                 return NodeResult.of(payload != null ? payload : "event:" + eventKey);
             }
-            // Event not fired (maybe timeout) -> fail or re-pause
-            if (timeout != null) {
+            if (scheduler.isEventTimedOut(ctx.runId(), eventKey)) {
                 throw new WorkflowException("Event '" + eventKey + "' timed out");
             }
-            // Re-pause
             throw new PauseException(id, "event '" + eventKey + "' not yet fired, re-pausing");
         } else {
-            // First execution: subscribe and pause
             scheduler.waitForEvent(ctx.runId(), eventKey, timeout);
             throw new PauseException(id, "waiting for event '" + eventKey + "'");
         }
