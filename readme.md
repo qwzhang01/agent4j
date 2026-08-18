@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 5 ✅ 已完成（Workflow 和 Graph Runtime）
+## 当前阶段：Stage 6 ✅ 已完成（State、Checkpoint 和长任务）
 
-> Stage 1-5 已完成（2026-08-16 ~ 08-17）。
+> Stage 1-6 已完成（2026-08-16 ~ 08-18）。
+> Stage 6 设计文档：[notes/architecture-stage-6.md](notes/architecture-stage-6.md)
 > Stage 5 设计文档：[notes/architecture-stage-5.md](notes/architecture-stage-5.md)
 
 ### 已完成
@@ -44,11 +45,11 @@
   治理（节点级 `RetryPolicy`、`onError` 失败路由、maxSteps 环保护、路由二义性/死端检测）+ 可插拔 `ApprovalService`
   （Mock/Console）+ `StepRecord` trace（Stage 14 trajectory 数据源）
 
-### 下一步（Stage 6：State、Checkpoint 和长任务）
+### 下一步（Stage 7：异步任务调度器）
 
-- [ ] 核心抽象：`RunState` / `Checkpoint` / `CheckpointStore` / `RunManager` / `ResumeToken`
-- [ ] 人工审批前暂停、审批后从原位置恢复（不重跑已完成节点）
-- [ ] Cancellation / Timeout / 幂等性
+- [ ] `TaskScheduler` / `AsyncTaskQueue` / `ScheduledResume` / `EventTrigger` / `ResumePolicy`
+- [ ] Agent 自驱动的任务调度（数小时/数天长任务）
+- [ ] 定时恢复 + 事件驱动恢复
 - [ ] 文章：java-agent-02~05 存量草稿按节奏补发（不急）
 
 ## 模块结构
