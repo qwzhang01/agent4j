@@ -85,6 +85,10 @@ public class RunManager {
 
     /**
      * Resume a paused run (in-memory: Run is still cached).
+     * <p>
+     * Guard: only PAUSED runs can be resumed. Resuming a terminal run
+     * (SUCCEEDED/FAILED/CANCELLED) would re-execute nodes - a duplicate
+     * execution bug (found in Stage 7 code review).
      *
      * @return ExecutionResult (SUCCEEDED / FAILED / PAUSED / CANCELLED)
      */
@@ -93,6 +97,10 @@ public class RunManager {
         if (run == null) {
             throw new WorkflowException("Run not found in memory: '" + runId
                     + "'. Use resume(runId, workflow) for checkpoint recovery.");
+        }
+        if (run.getStatus().isTerminal()) {
+            throw new WorkflowException("Run '" + runId + "' is already "
+                    + run.getStatus() + " - only PAUSED runs can be resumed");
         }
         log.info("[{}] Resuming from cursor='{}'", runId, run.getCursor());
         run.setStatus(RunState.RUNNING);
@@ -119,6 +127,10 @@ public class RunManager {
             log.info("[{}] Restored from checkpoint, cursor='{}'", runId, run.getCursor());
         } else {
             log.info("[{}] Resuming from in-memory run, cursor='{}'", runId, run.getCursor());
+        }
+        if (run.getStatus().isTerminal()) {
+            throw new WorkflowException("Run '" + runId + "' is already "
+                    + run.getStatus() + " - only PAUSED runs can be resumed");
         }
         run.setStatus(RunState.RUNNING);
         return executeAndPersist(run);

@@ -11,25 +11,44 @@ import java.util.UUID;
  * Registered by a node (e.g. WaitEventNode) via
  * {@code ctx.scheduler().waitForEvent(runId, eventKey)}.
  * When {@code EventBroker.fire(eventKey)} is called, the scheduler resumes the Run.
- *
- * @param triggerId    unique id
- * @param runId        the Run to resume
- * @param eventKey     the event to wait for (e.g. "ci-passed:pr-123")
- * @param registeredAt when this trigger was registered
- * @param timeout      how long to wait before failing (null = no timeout)
- * @param firedAt      when the event fired (null = not yet fired)
+ * <p>
+ * Mutable class (not a record): {@code firedAt} is set by EventBroker when the
+ * event fires, so timeout watchers can check {@link #isFired()} to avoid a
+ * racy second resume.
  */
-public record EventTrigger(
-        String triggerId,
-        String runId,
-        String eventKey,
-        Instant registeredAt,
-        Duration timeout,
-        Instant firedAt
-) {
+public final class EventTrigger {
+
+    private final String triggerId;
+    private final String runId;
+    private final String eventKey;
+    private final Instant registeredAt;
+    private final Duration timeout;
+    private volatile Instant firedAt;
+
+    public EventTrigger(String triggerId, String runId, String eventKey,
+                        Instant registeredAt, Duration timeout) {
+        this.triggerId = triggerId;
+        this.runId = runId;
+        this.eventKey = eventKey;
+        this.registeredAt = registeredAt;
+        this.timeout = timeout;
+    }
+
     public static EventTrigger of(String runId, String eventKey, Duration timeout) {
         return new EventTrigger(UUID.randomUUID().toString(), runId, eventKey,
-                Instant.now(), timeout, null);
+                Instant.now(), timeout);
+    }
+
+    public String triggerId() { return triggerId; }
+    public String runId() { return runId; }
+    public String eventKey() { return eventKey; }
+    public Instant registeredAt() { return registeredAt; }
+    public Duration timeout() { return timeout; }
+    public Instant firedAt() { return firedAt; }
+
+    /** Called by EventBroker when the event fires. */
+    public void markFired() {
+        this.firedAt = Instant.now();
     }
 
     public boolean isFired() {

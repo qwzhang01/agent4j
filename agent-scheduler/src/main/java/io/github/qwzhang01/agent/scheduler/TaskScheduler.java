@@ -46,6 +46,7 @@ public class TaskScheduler {
     private final EventBroker eventBroker;
     private final AsyncTaskQueue taskQueue;
     private final Map<String, ScheduledResume> scheduledResumes = new ConcurrentHashMap<>();
+    private final Map<String, java.util.concurrent.ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
     private final Map<String, TokenBudget> runBudgets = new ConcurrentHashMap<>();
 
     private volatile boolean running = false;
@@ -112,9 +113,10 @@ public class TaskScheduler {
 
         long delayMs = Math.max(0, Duration.between(Instant.now(), fireAt).toMillis());
         if (recurring && interval != null) {
-            executor.scheduleAtFixedRate(
+            java.util.concurrent.ScheduledFuture<?> future = executor.scheduleAtFixedRate(
                     () -> doResume(runId, sr.resumeId()),
                     delayMs, interval.toMillis(), TimeUnit.MILLISECONDS);
+            futures.put(sr.resumeId(), future);
             log.info("[scheduler] Scheduled recurring resume for run '{}', interval={}ms", runId, interval.toMillis());
         } else {
             executor.schedule(
@@ -128,13 +130,31 @@ public class TaskScheduler {
     private void doResume(String runId, String resumeId) {
         if (!running) return;
         try {
+            // Skip (and cancel recurring timers for) terminal runs - prevents
+            // duplicate execution and idle spinning after the run finished.
+            var run = runManager.getRun(runId);
+            if (run != null && run.getStatus().isTerminal()) {
+                log.debug("[scheduler] Run '{}' already {}, cancelling resume '{}'",
+                        runId, run.getStatus(), resumeId);
+                cancelFuture(resumeId);
+                scheduledResumes.remove(resumeId);
+                return;
+            }
             log.info("[scheduler] Auto-resuming run '{}'", runId);
             runManager.resume(runId);
-            if (!scheduledResumes.get(resumeId).recurring()) {
+            ScheduledResume sr = scheduledResumes.get(resumeId);
+            if (sr != null && !sr.recurring()) {
                 scheduledResumes.remove(resumeId);
             }
         } catch (Exception e) {
             log.error("[scheduler] Failed to auto-resume run '{}': {}", runId, e.getMessage());
+        }
+    }
+
+    private void cancelFuture(String resumeId) {
+        java.util.concurrent.ScheduledFuture<?> f = futures.remove(resumeId);
+        if (f != null) {
+            f.cancel(false);
         }
     }
 

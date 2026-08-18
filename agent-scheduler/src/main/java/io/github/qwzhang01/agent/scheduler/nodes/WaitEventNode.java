@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.scheduler.nodes;
 import io.github.qwzhang01.agent.scheduler.TaskScheduler;
 import io.github.qwzhang01.agent.workflow.NodeContext;
 import io.github.qwzhang01.agent.workflow.NodeResult;
+import io.github.qwzhang01.agent.workflow.WorkflowException;
 import io.github.qwzhang01.agent.workflow.WorkflowNode;
 import io.github.qwzhang01.agent.workflow.runtime.PauseException;
 
@@ -61,7 +62,7 @@ public final class WaitEventNode implements WorkflowNode {
             }
             // Event not fired (maybe timeout) -> fail or re-pause
             if (timeout != null) {
-                throw new IllegalStateException("Event '" + eventKey + "' timed out");
+                throw new WorkflowException("Event '" + eventKey + "' timed out");
             }
             // Re-pause
             throw new PauseException(id, "event '" + eventKey + "' not yet fired, re-pausing");

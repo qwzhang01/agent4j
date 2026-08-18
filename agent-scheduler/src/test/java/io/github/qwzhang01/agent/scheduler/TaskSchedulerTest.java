@@ -114,6 +114,54 @@ class TaskSchedulerTest {
         assertEquals(io.github.qwzhang01.agent.workflow.runtime.RunState.SUCCEEDED, run.getStatus());
     }
 
+    @Test
+    void eventFiredWithoutPayloadStillResumes() throws Exception {
+        // Regression (Bug 1): fire(key) with no payload must still be visible
+        // via hasEventFired(), otherwise the node re-pauses or times out.
+        Workflow wf = Workflow.builder("no-payload-flow")
+                .node(io.github.qwzhang01.agent.scheduler.nodes.WaitEventNode.of("wait", "signal-only"))
+                .node(ActionNode.of("after", ctx -> "signal received"))
+                .edge(Workflow.START, "wait")
+                .edge("wait", "after")
+                .edge("after", Workflow.END)
+                .build();
+
+        ExecutionResult r1 = runManager.start(wf, "input");
+        assertTrue(r1.isPaused());
+
+        scheduler.fireEvent("signal-only");  // no payload
+        Thread.sleep(300);
+
+        var run = runManager.getRun(r1.resumeToken().runId());
+        assertNotNull(run);
+        assertEquals(io.github.qwzhang01.agent.workflow.runtime.RunState.SUCCEEDED, run.getStatus(),
+                "run should complete even when the event carries no payload");
+    }
+
+    @Test
+    void resumeTerminalRunIsRejected() throws Exception {
+        // Regression (Bug 2): a SUCCEEDED run must not be resumable
+        // (would re-execute nodes from a stale cursor).
+        Workflow pauseWf = Workflow.builder("pause-flow")
+                .node(io.github.qwzhang01.agent.scheduler.nodes.WaitEventNode.of("wait", "evt"))
+                .edge(Workflow.START, "wait")
+                .edge("wait", Workflow.END)
+                .build();
+        ExecutionResult paused = runManager.start(pauseWf, "input");
+        assertTrue(paused.isPaused());
+        String pid = paused.resumeToken().runId();
+
+        scheduler.fireEvent("evt");
+        Thread.sleep(300);
+
+        var run = runManager.getRun(pid);
+        assertEquals(io.github.qwzhang01.agent.workflow.runtime.RunState.SUCCEEDED, run.getStatus());
+
+        // Now resume the terminal run -> must throw
+        assertThrows(io.github.qwzhang01.agent.workflow.WorkflowException.class,
+                () -> runManager.resume(pid));
+    }
+
     // ============ M7.3: Async Task Queue ============
 
     @Test
