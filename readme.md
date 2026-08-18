@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 6 ✅ 已完成（State、Checkpoint 和长任务）
+## 当前阶段：Stage 7 ✅ 已完成（异步任务调度器）
 
-> Stage 1-6 已完成（2026-08-16 ~ 08-18）。
+> Stage 1-7 已完成（2026-08-16 ~ 08-18）。
+> Stage 7 设计文档：[notes/architecture-stage-7.md](notes/architecture-stage-7.md)
 > Stage 6 设计文档：[notes/architecture-stage-6.md](notes/architecture-stage-6.md)
 > Stage 5 设计文档：[notes/architecture-stage-5.md](notes/architecture-stage-5.md)
 

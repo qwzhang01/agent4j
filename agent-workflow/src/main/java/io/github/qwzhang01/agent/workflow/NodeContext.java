@@ -44,6 +44,18 @@ public interface NodeContext {
     }
 
     /**
+     * Stage 7: the TaskScheduler, if available. Null when not using
+     * agent-scheduler module (Stage 5-6 compat).
+     * <p>
+     * Returns Object to avoid a circular dependency (agent-scheduler
+     * depends on agent-workflow, not vice versa). Nodes cast to their
+     * expected scheduler type.
+     */
+    default Object scheduler() {
+        return null;
+    }
+
+    /**
      * Typed view of {@link #input()}. Casts when possible, converts
      * via Jackson otherwise (e.g. Map -> POJO, record -> Map).
      */
@@ -62,12 +74,17 @@ public interface NodeContext {
 
     /** Stage 5 compat: no runId, not resuming. */
     static NodeContext of(WorkflowState state, Object input) {
-        return new Impl(state, input, null, false);
+        return new Impl(state, input, null, false, null);
     }
 
     /** Stage 6: with runId and resume flag. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming) {
-        return new Impl(state, input, runId, isResuming);
+        return new Impl(state, input, runId, isResuming, null);
+    }
+
+    /** Stage 7: with runId, resume flag, and scheduler. */
+    static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming, Object scheduler) {
+        return new Impl(state, input, runId, isResuming, scheduler);
     }
 
     /**
@@ -78,17 +95,20 @@ public interface NodeContext {
         private final Object input;
         private final String runId;
         private final boolean resuming;
+        private final Object scheduler;
 
-        Impl(WorkflowState state, Object input, String runId, boolean isResuming) {
+        Impl(WorkflowState state, Object input, String runId, boolean isResuming, Object scheduler) {
             this.state = state;
             this.input = input;
             this.runId = runId;
             this.resuming = isResuming;
+            this.scheduler = scheduler;
         }
 
         @Override public WorkflowState state() { return state; }
         @Override public Object input() { return input; }
         @Override public String runId() { return runId; }
         @Override public boolean isResuming() { return resuming; }
+        @Override public Object scheduler() { return scheduler; }
     }
 }

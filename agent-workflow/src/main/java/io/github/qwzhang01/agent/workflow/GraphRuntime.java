@@ -33,6 +33,9 @@ public class GraphRuntime {
     public static final int DEFAULT_MAX_STEPS = 25;
     private int maxSteps = DEFAULT_MAX_STEPS;
 
+    /** Stage 7: scheduler passed to nodes via NodeContext (null in Stage 5-6). */
+    private Object scheduler;
+
     static String summarize(Object output) {
         if (output == null) {
             return "null";
@@ -45,6 +48,12 @@ public class GraphRuntime {
 
     public GraphRuntime maxSteps(int maxSteps) {
         this.maxSteps = maxSteps;
+        return this;
+    }
+
+    /** Stage 7: set the scheduler, available to nodes via ctx.scheduler(). */
+    public GraphRuntime scheduler(Object scheduler) {
+        this.scheduler = scheduler;
         return this;
     }
 
@@ -130,7 +139,7 @@ public class GraphRuntime {
             // --------------------------------------------
             // Execute node (with retry, catch pause)
             // --------------------------------------------
-            NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming);
+            NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming, scheduler);
             resuming = false;  // only the first node (resume target) gets isResuming=true
 
             ExecOutcome outcome;

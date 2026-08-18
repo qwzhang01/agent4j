@@ -43,7 +43,7 @@ public class RunManager {
 
     private static final Logger log = LoggerFactory.getLogger(RunManager.class);
 
-    private final GraphRuntime runtime;
+    private GraphRuntime runtime;
     private final CheckpointStore store;
     private final Map<String, Run> activeRuns = new ConcurrentHashMap<>();
 
@@ -61,6 +61,11 @@ public class RunManager {
     public RunManager(GraphRuntime runtime, CheckpointStore store) {
         this.runtime = runtime;
         this.store = store;
+    }
+
+    /** Stage 7: allow swapping the runtime (e.g. to inject a scheduler). */
+    public void setRuntime(GraphRuntime runtime) {
+        this.runtime = runtime;
     }
 
     // ============ Lifecycle ============
