@@ -3,6 +3,7 @@
 > 对应阶段：Stage 7 - 异步任务调度器
 > 两个问题：① 调度可以由 LLM 发起吗（可以，但要看清「发起」的确切含义）② 现在我们的框架里，LLM 产生调度的链路长什么样（诚实答案：参数还是静态的，链路有一个缺口待补）
 > 配套：概念与数据流见 [stage-7-scheduler.md](stage-7-scheduler.md)
+> 状态更新：阶段 B 已实现 -- `DynamicSchedulerNode` 已落地（6 个测试全绿），治理闸门（key 校验 + delay 区间）内置于节点
 
 ---
 
@@ -108,7 +109,7 @@ String execute(JsonNode arguments, ToolExecutionContext ctx);
 
 ## 二、当前链路分析：LLM 怎么产生调度（诚实现状）
 
-### 现状的诚实答案：LLM 还没有真正参与调度参数的决定
+### 实现前的诚实答案：LLM 还没有真正参与调度参数的决定（现已由 DynamicSchedulerNode 补齐，保留原文作为决策背景）
 
 看当前验收示例的代码：
 
@@ -243,8 +244,11 @@ LLM 参与点：T1（决定等什么）+ T2（意图驱动路由）
 ### 链路演进的三个阶段总结
 
 ```text
-阶段 A（已实现）：人驱动    eventKey/delay 图定义时写死，LLM 不参与
-阶段 B（最小改动）：LLM 驱动参数    DynamicWaitEventNode 从黑板读 LLM 意图，零新机制
+阶段 A（已完成）：人驱动          eventKey/delay 图定义时写死，LLM 不参与
+阶段 B（✅ 已实现）：LLM 驱动参数  DynamicSchedulerNode 从黑板读 LLM 意图（intentKey），
+                   支持 wait_event / schedule 双动作，治理闸门内置（keyValidator + [minDelay, maxDelay]），
+                   6 个测试覆盖：LLM 定 eventKey 注册恢复 / LLM 定 delay 自动恢复 /
+                   非法 key 拒绝 / 越界 delay 拒绝 / 缺意图快速失败 / LLM 产出子任务入队
 阶段 C（Stage 9）：LLM 驱动工具    ToolExecutionContext 让 LLM 在 ReAct 循环里直接调调度工具
 ```
 
@@ -252,4 +256,4 @@ LLM 参与点：T1（决定等什么）+ T2（意图驱动路由）
 
 ## 三、一句话总结
 
-**LLM 发起调度 = LLM 产出「等什么/等多久」的意图和参数，确定性代码补上 runId 完成注册，调度器到点自动恢复。** 当前框架处于「阶段 A：人驱动」--调度节点参数静态；补齐只需一个 DynamicWaitEventNode（从黑板读 LLM 意图），即可达到「阶段 B：LLM 驱动参数」；完整的工具化发起（阶段 C）留给 Stage 9 Tool Governance，在那里同时收紧四道治理闸门（频率下限/时长上限/注入防御/成本联动）。
+**LLM 发起调度 = LLM 产出「等什么/等多久」的意图和参数，确定性代码补上 runId 完成注册，调度器到点自动恢复。** 阶段 B 已由 `DynamicSchedulerNode` 落地：LLM（上游 AgentNode）把意图写黑板，调度节点读黑板完成注册，闸门（key 校验 + delay 区间）在注册前强制执行；完整的工具化发起（阶段 C）留给 Stage 9 Tool Governance，在那里同时收紧四道治理闸门（频率下限/时长上限/注入防御/成本联动）。

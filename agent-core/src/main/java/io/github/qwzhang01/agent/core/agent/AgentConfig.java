@@ -21,18 +21,29 @@ public class AgentConfig {
     private final ModelClient modelClient;
     private final ToolRegistry toolRegistry;
     private final int maxSteps;
+    private final ContextBuilder contextBuilder;
 
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient, ToolRegistry toolRegistry) {
-        this(name, systemPrompt, modelClient, toolRegistry, 10);
+        this(name, systemPrompt, modelClient, toolRegistry, 10, null);
     }
 
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
                        ToolRegistry toolRegistry, int maxSteps) {
+        this(name, systemPrompt, modelClient, toolRegistry, maxSteps, null);
+    }
+
+    /**
+     * Full constructor with context builder (Stage 8).
+     * Pass {@code null} for contextBuilder to use the default passthrough behavior.
+     */
+    public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
+                       ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder) {
         this.name = name;
         this.systemPrompt = systemPrompt;
         this.modelClient = modelClient;
         this.toolRegistry = toolRegistry;
         this.maxSteps = maxSteps;
+        this.contextBuilder = contextBuilder;
     }
 
     public String getName() {
@@ -53,5 +64,13 @@ public class AgentConfig {
 
     public int getMaxSteps() {
         return maxSteps;
+    }
+
+    /**
+     * Context builder for memory/context management (Stage 8).
+     * Null means passthrough (Stage 1-7 behavior).
+     */
+    public ContextBuilder getContextBuilder() {
+        return contextBuilder;
     }
 }

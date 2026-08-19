@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Default ReAct (Reason-Act) AgentLoop implementation.
@@ -112,8 +113,13 @@ public class ReActAgentLoop implements AgentLoop {
     // ============ Private Helpers ============
 
     private ModelRequest buildRequest(AgentConfig config, AgentState state) {
+        // Stage 8: use ContextBuilder if configured, otherwise passthrough (backward compatible)
+        List<ChatMessage> messages = config.getContextBuilder() != null
+                ? config.getContextBuilder().build(config, state)
+                : new ArrayList<>(state.getMessages());
+
         var builder = ModelRequest.builder()
-                .messages(new ArrayList<>(state.getMessages()));
+                .messages(messages);
 
         // Attach tool schemas if registry has tools
         ToolRegistry registry = config.getToolRegistry();

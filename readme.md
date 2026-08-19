@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 7 ✅ 已完成（异步任务调度器）
+## 当前阶段：Stage 8 ✅ 已完成（Memory、Context 与共享记忆治理）
 
-> Stage 1-7 已完成（2026-08-16 ~ 08-18）。
+> Stage 1-8 已完成（2026-08-16 ~ 08-19）。
+> Stage 8 设计文档：[notes/architecture-stage-8.md](notes/architecture-stage-8.md)
 > Stage 7 设计文档：[notes/architecture-stage-7.md](notes/architecture-stage-7.md)
 > Stage 6 设计文档：[notes/architecture-stage-6.md](notes/architecture-stage-6.md)
 > Stage 5 设计文档：[notes/architecture-stage-5.md](notes/architecture-stage-5.md)
@@ -35,9 +36,9 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：78 个（15 Agent/装饰器 + 29 插件 + 11 沙箱 + 23 Workflow），全绿
+- [x] 单元测试：178 个（16 core + 29 插件 + 13 沙箱 + 33 Workflow + 21 调度器 + 66 记忆），全绿
 - [x] 
-  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample`
+  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample`
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -45,13 +46,24 @@
   agent-core Agent / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode` fork-join / `JoinPolicy`）+
   治理（节点级 `RetryPolicy`、`onError` 失败路由、maxSteps 环保护、路由二义性/死端检测）+ 可插拔 `ApprovalService`
   （Mock/Console）+ `StepRecord` trace（Stage 14 trajectory 数据源）
+- [x] **Memory 与共享记忆治理**（agent-memory 模块，Stage 8）：三横一纵记忆模型（Working=AgentState /
+  Session=ChatSession / Long-term=MemoryStore + MemoryScope 一纵：agent/user/session/task/channel，共享=scope
+  取值不另造系统）+ 记忆流水线（写入端 `MemoryExtractor` -> `MemoryPolicy` 闸门 -> `MemoryStore` / 读取端
+  `MemoryRetriever` -> `MemoryContextBuilder`，轮中 `ContextCompressor` pi 式 compaction）+ 16 核心抽象
+  （`MemoryEntry` / `MemoryScope` / `MemoryProvenance` / `MemoryType` / `MemoryStatus` / `MemoryQuery` /
+  `MemoryStore` / `InMemoryMemoryStore` / `MemoryRetriever` / `MemoryExtractor` / `MemoryPolicy` / `MemoryAdmin` /
+  `ContextBuilder` / `PassthroughContextBuilder` / `ContextBudget` / `ContextCompressor`）+ `CompressingContextBuilder`
+  / `MemoryContextBuilder` + `MemoryTools`（save_memory / search_memory 模型自决存取）+ 治理闭环（channel scope
+  默认 PENDING_REVIEW + `MemoryAdmin` approve/reject/supersede/update/delete/setTtl + 污染防御三道闸：
+  importance 门槛 + 频控 + supersede 不物理删）+ `AgentConfig`/`ReActAgentLoop` 挂接 `ContextBuilder`（向后兼容，
+  null 透传）+ 3 验收示例（`MemoryExample` 多轮记忆 / `CompressionExample` 压缩 / `ChannelMemoryExample` 频道治理）
 
-### 下一步（Stage 7：异步任务调度器）
+### 下一步（Stage 9：Tool Governance、安全与审计）
 
-- [ ] `TaskScheduler` / `AsyncTaskQueue` / `ScheduledResume` / `EventTrigger` / `ResumePolicy`
-- [ ] Agent 自驱动的任务调度（数小时/数天长任务）
-- [ ] 定时恢复 + 事件驱动恢复
-- [ ] 文章：java-agent-02~05 存量草稿按节奏补发（不急）
+- [ ] Tool Schema 设计、Permission 模型、Approval 流程
+- [ ] Policy 引擎、Rate Limit、Audit 日志
+- [ ] Prompt Injection 防御、工具结果安全过滤
+- [ ] 文章：java-agent-02~08 存量草稿按节奏补发（不急）
 
 ## 模块结构
 
@@ -62,6 +74,8 @@ java-agent-framework/
 ├── agent-plugin/         # 插件系统（SPI 发现 + 热加载/卸载）
 ├── agent-sandbox/        # 沙箱系统（ClassLoader + 进程隔离）
 ├── agent-workflow/      # 工作流图引擎（Workflow/GraphRuntime/7 种节点）
+├── agent-scheduler/     # 异步任务调度器（定时/事件恢复 + 任务队列）
+├── agent-memory/        # 记忆与上下文（三横一纵 + 共享记忆治理）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -155,5 +169,8 @@ ExecutionResult        # 终态（status + output + error + state）
 | 3. 插件化与热插拔          | agent-plugin             | ✅ 完成  |
 | 4. 沙箱与隔离执行          | agent-sandbox            | ✅ 完成  |
 | 5. Workflow Graph   | agent-workflow           | ✅ 完成  |
-| 6. State/Checkpoint | agent-runtime            | ⬜ 下一步 |
+| 6. State/Checkpoint | agent-workflow/runtime   | ✅ 完成  |
+| 7. 异步任务调度器     | agent-scheduler          | ✅ 完成  |
+| 8. Memory/记忆治理   | agent-memory             | ✅ 完成  |
+| 9. Tool Governance  | agent-security           | ⬜ 下一步 |
 | ...                 | ...                      | ⬜     |

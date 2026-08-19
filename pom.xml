@@ -25,6 +25,7 @@
         <module>agent-sandbox</module>
         <module>agent-workflow</module>
         <module>agent-scheduler</module>
+        <module>agent-memory</module>
         <module>examples</module>
     </modules>
 
@@ -69,6 +70,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-scheduler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-memory</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
