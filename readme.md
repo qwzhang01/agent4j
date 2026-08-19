@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 8 ✅ 已完成（Memory、Context 与共享记忆治理）
+## 当前阶段：Stage 9 ✅ 已完成（Tool Governance、安全与审计）
 
-> Stage 1-8 已完成（2026-08-16 ~ 08-19）。
+> Stage 1-9 已完成（2026-08-16 ~ 08-19）。
+> Stage 9 设计文档：[notes/architecture-stage-9.md](notes/architecture-stage-9.md)
 > Stage 8 设计文档：[notes/architecture-stage-8.md](notes/architecture-stage-8.md)
 > Stage 7 设计文档：[notes/architecture-stage-7.md](notes/architecture-stage-7.md)
 > Stage 6 设计文档：[notes/architecture-stage-6.md](notes/architecture-stage-6.md)
@@ -36,9 +37,9 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：178 个（16 core + 29 插件 + 13 沙箱 + 33 Workflow + 21 调度器 + 66 记忆），全绿
+- [x] 单元测试：213 个（16 core + 29 插件 + 13 沙箱 + 33 Workflow + 21 调度器 + 66 记忆 + 35 安全），全绿
 - [x] 
-  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample`
+  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample`
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -57,13 +58,21 @@
   默认 PENDING_REVIEW + `MemoryAdmin` approve/reject/supersede/update/delete/setTtl + 污染防御三道闸：
   importance 门槛 + 频控 + supersede 不物理删）+ `AgentConfig`/`ReActAgentLoop` 挂接 `ContextBuilder`（向后兼容，
   null 透传）+ 3 验收示例（`MemoryExample` 多轮记忆 / `CompressionExample` 压缩 / `ChannelMemoryExample` 频道治理）
+- [x] **Tool Governance 与安全审计**（agent-security 模块，Stage 9）：治理四件套（执行前 `PermissionChecker`
+  权限三档 AUTO/REQUIRES_APPROVAL/DENY + `ToolApprovalService` 审批 / 执行后 `ResultSanitizer` 注入防御 +
+  `AuditLogger` 全链路审计含拒绝事件）+ `GovernedToolExecutor` 装饰器包装 `DefaultToolExecutor`（不替换，向后兼容
+  null 透传）+ `ToolPolicy` 策略（运行时可改权限）+ `ConsoleApprovalService`（autoApprove/autoReject/console/callback
+  四模式）+ `InjectionPattern` 三特征（角色伪造/指令覆盖/敏感外发）+ `DefaultResultSanitizer` 三净化策略
+  （SANITIZE 替换/TRUNCATE 截断/BLOCK 整体替换）+ `SimpleRateLimiter` 计数窗口限流（可选）+ `AuditEvent` 全状态
+  （APPROVED/DENIED/EXECUTED/FAILED/SANITIZED）+ 2 验收示例（`SecurityExample` 权限三档+审批+审计 /
+  `InjectionDefenseExample` 三净化策略）
 
-### 下一步（Stage 9：Tool Governance、安全与审计）
+### 下一步（Stage 10：MCP 与外部生态集成）
 
-- [ ] Tool Schema 设计、Permission 模型、Approval 流程
-- [ ] Policy 引擎、Rate Limit、Audit 日志
-- [ ] Prompt Injection 防御、工具结果安全过滤
-- [ ] 文章：java-agent-02~08 存量草稿按节奏补发（不急）
+- [ ] MCP Client 连接外部 MCP Server
+- [ ] MCP Tool 映射：MCP 工具 -> 框架 Tool 接口
+- [ ] A2A 协议：Agent Card / Task / Message
+- [ ] 文章：java-agent-02~09 存量草稿按节奏补发（不急）
 
 ## 模块结构
 
@@ -76,6 +85,7 @@ java-agent-framework/
 ├── agent-workflow/      # 工作流图引擎（Workflow/GraphRuntime/7 种节点）
 ├── agent-scheduler/     # 异步任务调度器（定时/事件恢复 + 任务队列）
 ├── agent-memory/        # 记忆与上下文（三横一纵 + 共享记忆治理）
+├── agent-security/      # 工具治理（权限/审批/审计/注入防御）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -172,5 +182,6 @@ ExecutionResult        # 终态（status + output + error + state）
 | 6. State/Checkpoint | agent-workflow/runtime   | ✅ 完成  |
 | 7. 异步任务调度器     | agent-scheduler          | ✅ 完成  |
 | 8. Memory/记忆治理   | agent-memory             | ✅ 完成  |
-| 9. Tool Governance  | agent-security           | ⬜ 下一步 |
+| 9. Tool Governance  | agent-security           | ✅ 完成  |
+| 10. MCP 集成        | agent-mcp                | ⬜ 下一步 |
 | ...                 | ...                      | ⬜     |
