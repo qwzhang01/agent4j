@@ -27,6 +27,7 @@
         <module>agent-scheduler</module>
         <module>agent-memory</module>
         <module>agent-security</module>
+        <module>agent-mcp</module>
         <module>examples</module>
     </modules>
 
@@ -81,6 +82,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-mcp</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
