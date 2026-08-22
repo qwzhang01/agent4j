@@ -4,14 +4,15 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 11 ✅ 已完成（Multi-Agent 与 A2A 编排）
+## 当前阶段：Stage 12 ✅ 已完成（频道级共享 Agent、Agent Identity 与 Ambient 模式）
 
-> Stage 1-11 已完成（2026-08-16 ~ 08-22）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 1-12 已完成（2026-08-16 ~ 08-22），424 测试全绿。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
 > Stage 4 沙箱 = ClassLoader + Process（无 Docker / WASM / 资源池）。
 > Stage 10 MCP = stdio v1 + 真实官方 Server 互通 + 进程管理自愈（SSE 留 v2）。
 > Stage 11 编排 = 静态并行派发 + A2A 进程内实现（LLM 驱动分派 / HTTP 传输留 v2）。
 > 多模态接入说明：[notes/architecture-multimodal.md](notes/architecture-multimodal.md)
+> Stage 12 设计文档：[notes/architecture-stage-12.md](notes/architecture-stage-12.md)（新增 agent-channel 模块蓝图）
 > Stage 11 设计文档：[notes/architecture-stage-11.md](notes/architecture-stage-11.md)
 > Stage 10 设计文档：[notes/architecture-stage-10.md](notes/architecture-stage-10.md)
 > Stage 9 设计文档：[notes/architecture-stage-9.md](notes/architecture-stage-9.md)
@@ -44,8 +45,8 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：348 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 52 MCP + 45 编排），全绿
-- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample` / `MultiAgentExample`（2 内部 + 1 外部 A2A 编排）
+- [x] 单元测试：424 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 52 MCP + 45 编排 + 76 channel），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -91,12 +92,53 @@
     （握手 3s / 14 工具 / 3 调用全通）· `StdioTransport` stderr drainer（防管道死锁）· `ManagedMcpClient` 自愈装饰器（崩溃检测 ->
     `McpRestartPolicy` 预算 -> 重启重握手 -> 单次重试，强杀后 2.5s 自动复活）· `McpClient` 工厂化 + `reconnect`/`ping`
 
-### 下一步（Stage 12：频道级共享 Agent、Agent Identity 与 Ambient 模式）
+- [x] **Agent Identity 身份层**（agent-channel 模块，Stage 12 M12.1）：三方身份解析（channelId + userId + agentId ->
+    有效身份）· `IdentityResolver` 核心规则：有效权限 = 授予 scope ∩ 发起人频道角色权限（**交集**，绝不是并集或用户全集）·
+    fail-closed 五条件（UNKNOWN_AGENT / ACCOUNT_NOT_YET_VALID / ACCOUNT_EXPIRED / USER_NOT_IN_CHANNEL /
+    EMPTY_PERMISSION_INTERSECTION，任一命中拒绝启动 Run 并抛 `IdentityResolutionException`）· `IdentityScope` 三维资源范围
+    （capabilities / memoryScopes / dataClassifications，字符串形式与 MemoryScope 兼容保持身份层零依赖）·
+    `ServiceAccount`（授予 scope + 有效期 + 预算占位 UNLIMITED=-1 留 Stage 18）· `IdentityDecision` 审计双向留痕
+    （允许与拒绝都发 decision，denied is intelligence 对齐 Stage 9 D6；`Consumer<IdentityDecision>` sink 注入，
+    模块不依赖 agent-security，同 orchestrator D5 边界纪律）· `ResolvedIdentity`（actor = "svc:{accountId}"
+    审计归属服务身份而非用户；v1 诚实边界：memoryScopes/dataClassifications 仅授予侧、只 capabilities 走交集）
+- [x] **频道共享会话**（agent-channel 模块，Stage 12 M12.2）：`SharedAgentSession` 容器（D1 组合不继承——包任意现有 Agent 零改动入驻，
+    频道语义全在容器层不污染 Agent 接口）· `ChannelContext`（成员名单=成员资格 SSOT）+ `ChannelMessage`（说话人归属 + mention 检测，
+    `autoDetect` 要求 `@agentId` 后跟分隔符防 `@eng-bots` 误触发）· speak 路由：mention -> 身份解析（M12.1 fail-closed 闸门，
+    非成员连进历史都不行）-> `[from userId] text` 进**共享 AgentState**；非 mention -> 只进频道历史不唤醒 Agent · 多人交替 speak
+    共享一个对话上下文（B 的请求能看到 A 的发言，测试用 RecordingModelClient 捕获模型实见消息证明）· `channelMemoryContext` 工厂
+    （D2：channel scope 挂进 Stage 8 MemoryContextBuilder 检索列表，共享记忆不是新系统；跨频道记忆隔离实证 channel:sales 不泄漏）
+- [x] **任务接力与执行可见**（agent-channel collab 包，Stage 12 M12.3）：`ExecutionVisibility` 事件流（D6 推不打轮询：八类
+    VisibilityEvent 发布/订阅，listener 异常隔离）· `TaskBoard` 事件流**物化视图**（订阅同一事件流是唯一写入路径，board 与外部订阅者
+    同源；复用 Stage 7 `TaskStatus` 状态机不另造枚举）· `ChannelTask` 轻量视图 + `TaskHandoff` 接力审计 record · `handoff` 三件套
+    移交（D5：共享 AgentState 不重建 + 注入 `[handoff]` system 交接便签让模型知道接力棒换了手 / channel+task scope 记忆天然共享零动作 /
+    board owner 经事件变更；守卫：未知任务/非 owner 移交他人任务/接手人非成员/终态任务全部 IAE fail-fast）· 任务生命周期 API
+    （startTask/waitingHuman/resumeTask/completeTask/failTask，每个动作发布事件）· speak 回复后发布 AGENT_REPLIED（团队实时看到 Agent
+    在干什么）
+- [x] **Ambient 主动模式**（agent-channel ambient 包，Stage 12 M12.4）：`AmbientInstruction` 常驻指令（sealed Trigger =
+    SCHEDULED(interval) | OnEvent(eventKey) + condition 判定 + message 产出 + Importance 三级——是"有判断有声音的 Agent 指令"不是哑
+    cron 脚本）· `AmbientEngine` 运行器（**默认 disabled 安全默认值**：register 只登记不武装，enable 才挂调度/订阅；管线 = 条件不满足→
+    全静音连 digest 都不进 → NoisePolicy 闸 → NOTIFY 以 **AgentIdentity** 推送（actor=agentId 非事件源）+ NOTIFICATION_SENT 进
+    事件流全频道可见；sink 异常隔离）· `NoisePolicy` 四道闸（D7：频控防风暴含 CRITICAL 重复 / 分级判定 INFO 永远 digest、WARN+ 实时 /
+    每日预算只拦 realtime（digest 不占预算）/ 静默窗口 22-08 跨午夜 WARN 转 digest、**CRITICAL 双豁免**（预算+静默窗——服务挂了凌晨也推）；
+    digest 队列 drainDigest 由装配层择机汇总）· `ProactiveNotification` 推送 record（归属 = Agent 服务身份）· **D3 复用诚实边界**：
+    Stage 7 EventBroker 回调绑死 RunManager.resume(runId)，Ambient 指令不是 run——复用机制（ScheduledExecutorService + 订阅/触发
+    语义）而非绑 run 的实现，统一到 EventBroker 待 v2 支持 非 run 订阅者
+- [x] **Stage 12 验收示例与收口**（M12.5）：`ChannelAgentExample`（T0-T3+T5 全景：部署→alice 发起（身份解析+频道记忆
+    注入实证——响应主动引用"频道记忆：发布窗口冻结"）→handoff 三件套→bob 接续（"接续 alice 的调研"上下文连续）→看板与
+    handoff 审计→carol 成员无角色/stranger 非成员两种 fail-closed 拒绝→SUCCEEDED 终态）· `AmbientExample`（默认关闭零推送→
+    enable 事件触发条件判定推送→频控吞重复→静默窗 CRITICAL 突破/WARN 进 digest→定时 INFO 巡检进 digest（**digest=1 正是
+    频控对 digest 也生效的实证**）→全部推送 actor=eng-bot）· 规划验收 5 条全过，12/18 阶段，下一步 Stage 13 上层产品搭建层
 
-- [ ] SharedAgentSession：一个 Agent 被频道内多人共享，任务可接力
-- [ ] AgentIdentity：独立服务身份（不借用用户账户），身份隔离架构
-- [ ] AmbientInstruction / ScheduledTask / EventSubscription：主动监控与定时运行
-- [ ] TaskBoard / ExecutionVisibility：执行过程对团队可见
+### 下一步（Stage 12：频道级共享 Agent、Agent Identity 与 Ambient 模式 📐 已规划）
+
+> 设计蓝图：[notes/architecture-stage-12.md](notes/architecture-stage-12.md) · 新增 `agent-channel` 模块，
+> 复用 Stage 7 调度底座 + Stage 8 channel scope 记忆 + Stage 9 治理（组装阶段）
+
+- [x] M12.1 AgentIdentity / ServiceAccount / IdentityScope / IdentityResolver（三方身份，权限交集 + fail-closed）
+- [x] M12.2 ChannelContext / SharedAgentSession（Agent + 频道容器，多人共享上下文）
+- [x] M12.3 TaskHandoff（state+记忆+进度三件套移交）+ ExecutionVisibility / TaskBoard
+- [x] M12.4 AmbientEngine（包装 TaskScheduler/EventBroker）+ NoisePolicy 四道闸（默认关闭）
+- [x] M12.5 验收示例 ChannelAgentExample / AmbientExample + 收口
 - [ ] 文章：java-agent-02~10 存量草稿按节奏补发（不急）
 
 ## 模块结构
@@ -113,6 +155,7 @@ java-agent-framework/
 ├── agent-security/      # 工具治理（权限/审批/审计/注入防御）
 ├── agent-mcp/          # MCP 客户端与 A2A 协议基础（连外部工具服务器）
 ├── agent-orchestrator/ # 多 Agent 编排（Supervisor/Worker/A2A 桥接）
+├── agent-channel/      # 频道级共享 Agent（身份/共享会话/Ambient，Stage 12）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -209,5 +252,6 @@ ExecutionResult        # 终态（status + output + error + state）
 | 8. Memory/记忆治理   | agent-memory             | ✅ 完成  |
 | 9. Tool Governance  | agent-security           | ✅ 完成  |
 | 10. MCP 集成        | agent-mcp                | ✅ 完成  |
-| 11. Multi-Agent    | agent-multiagent         | ⬜ 下一步 |
-| ...                 | ...                      | ⬜     |
+| 11. Multi-Agent    | agent-orchestrator       | ✅ 完成  |
+| 12. 频道共享 Agent/Identity/Ambient | agent-channel | ✅ 完成  |
+| 13. 上层产品搭建层 | agent-product            | ⬜ 下一步 |

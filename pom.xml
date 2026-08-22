@@ -29,6 +29,7 @@
         <module>agent-security</module>
         <module>agent-mcp</module>
         <module>agent-orchestrator</module>
+        <module>agent-channel</module>
         <module>examples</module>
     </modules>
 
@@ -93,6 +94,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-orchestrator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-channel</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
