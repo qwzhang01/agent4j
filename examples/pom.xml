@@ -52,6 +52,10 @@
             <artifactId>agent-mcp</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-orchestrator</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
         </dependency>
