@@ -114,6 +114,31 @@ class DynamicSchedulerNodeTest {
         assertEquals(RunState.SUCCEEDED, run.getStatus());
     }
 
+    @Test
+    void earlyManualResumeOfLlmScheduleRePauses() {
+        Agent decideAgent = new SimpleAgent(new AgentConfig(
+                "decide-agent", "sys",
+                MockModelClient.scripted().respondText(
+                        "{\"action\":\"schedule\",\"delay_seconds\":7200}"),
+                null, 5));
+
+        Workflow wf = Workflow.builder("early-llm-schedule")
+                .node(AgentNode.of("decide", decideAgent))
+                .node(DynamicSchedulerNode.of("check-later", "decide"))
+                .node(ActionNode.of("done", ctx -> "should-not-run"))
+                .edge(Workflow.START, "decide")
+                .edge("decide", "check-later")
+                .edge("check-later", "done")
+                .edge("done", Workflow.END)
+                .build();
+
+        var r1 = runManager.start(wf, "check later");
+        assertTrue(r1.isPaused());
+        var r2 = runManager.resume(r1.resumeToken().runId());
+        assertTrue(r2.isPaused(), "manual resume before the LLM-chosen delay must re-pause");
+        assertNull(runManager.getRun(r1.resumeToken().runId()).getState().get("done"));
+    }
+
     // ============ Governance gates ============
 
     @Test

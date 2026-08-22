@@ -48,6 +48,8 @@ public class TaskScheduler {
     private final Map<String, ScheduledResume> scheduledResumes = new ConcurrentHashMap<>();
     private final Map<String, java.util.concurrent.ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
     private final Map<String, TokenBudget> runBudgets = new ConcurrentHashMap<>();
+    /** runIds whose scheduled-resume timer callback has actually run. */
+    private final java.util.Set<String> firedScheduledRunIds = ConcurrentHashMap.newKeySet();
 
     private volatile boolean running = false;
 
@@ -144,6 +146,7 @@ public class TaskScheduler {
                 return;
             }
             log.info("[scheduler] Auto-resuming run '{}'", runId);
+            firedScheduledRunIds.add(runId);
             runManager.resume(runId);
             ScheduledResume sr = scheduledResumes.get(resumeId);
             if (sr != null && !sr.recurring()) {
@@ -184,14 +187,15 @@ public class TaskScheduler {
                 if (!running) {
                     return;
                 }
-                if (!trigger.isFired()) {
-                    log.warn("[scheduler] Event '{}' timed out for run '{}'", eventKey, runId);
-                    eventBroker.timeout(trigger);
-                    try {
-                        runManager.resume(runId);
-                    } catch (Exception e) {
-                        log.error("[scheduler] Failed to resume after timeout: {}", e.getMessage());
-                    }
+                if (!trigger.tryMarkTimedOut()) {
+                    return;
+                }
+                log.warn("[scheduler] Event '{}' timed out for run '{}'", eventKey, runId);
+                eventBroker.timeout(trigger);
+                try {
+                    runManager.resume(runId);
+                } catch (Exception e) {
+                    log.error("[scheduler] Failed to resume after timeout: {}", e.getMessage());
                 }
             }, timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
@@ -229,6 +233,15 @@ public class TaskScheduler {
     }
 
     /**
+     * Whether the scheduled-resume timer for this run has actually fired
+     * (the scheduler callback ran). Wall-clock expiry alone is not enough:
+     * a manual {@code resume()} before the timer must re-pause.
+     */
+    public boolean hasScheduledResumeFired(String runId) {
+        return firedScheduledRunIds.contains(runId);
+    }
+
+    /**
      * Schedule a callback that is <em>not</em> a workflow resume.
      * Used by {@link GenerationTaskCoordinator} to poll video tasks.
      */
@@ -259,11 +272,9 @@ public class TaskScheduler {
      */
     public int restorePausedRuns(Duration delay) {
         int n = 0;
-        for (var run : runManager.listRuns()) {
-            if (run.getStatus() == io.github.qwzhang01.agent.workflow.runtime.RunState.PAUSED) {
-                scheduleResume(run.getRunId(), delay);
-                n++;
-            }
+        for (String runId : runManager.listPausedRunIds()) {
+            scheduleResume(runId, delay);
+            n++;
         }
         return n;
     }

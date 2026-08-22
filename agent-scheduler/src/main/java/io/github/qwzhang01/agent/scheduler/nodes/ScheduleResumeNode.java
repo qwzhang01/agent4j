@@ -13,7 +13,8 @@ import java.time.Duration;
  * <p>
  * On first execution: registers a scheduled resume with the scheduler
  * and throws PauseException. The scheduler auto-resumes after the delay.
- * On resume: passes through (the scheduled resume happened).
+ * On resume: passes through only if the timer has actually fired;
+ * a manual resume before expiry re-pauses (same as {@link WaitEventNode}).
  * <p>
  * Usage:
  * <pre>{@code
@@ -55,7 +56,9 @@ public final class ScheduleResumeNode implements WorkflowNode {
         }
 
         if (ctx.isResuming()) {
-            // Resume path: the scheduled resume happened
+            if (!scheduler.hasScheduledResumeFired(ctx.runId())) {
+                throw new PauseException(id, "scheduled resume not yet due, re-pausing");
+            }
             return NodeResult.of("resumed after " + delay);
         } else {
             // First execution: schedule and pause

@@ -1,6 +1,12 @@
 package io.github.qwzhang01.agent.mcp.transport;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Transport layer abstraction for MCP (Stage 10 D2).
@@ -38,6 +44,47 @@ public interface McpTransport extends AutoCloseable {
      * @throws IOException if the transport is closed or the server dies
      */
     String receive() throws IOException;
+
+    /**
+     * Block until one complete JSON-RPC message is received, or the timeout elapses.
+     *
+     * @throws IOException if the transport is closed, the server dies, or the wait times out
+     */
+    default String receive(Duration timeout) throws IOException {
+        if (timeout == null || timeout.isZero() || timeout.isNegative()) {
+            return receive();
+        }
+        ExecutorService pool = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "mcp-receive");
+            t.setDaemon(true);
+            return t;
+        });
+        try {
+            return pool.submit(() -> {
+                try {
+                    return receive();
+                } catch (IOException e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            }).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            throw new IOException("MCP receive timed out after " + timeout);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof java.util.concurrent.CompletionException && cause.getCause() instanceof IOException io) {
+                throw io;
+            }
+            if (cause instanceof IOException io) {
+                throw io;
+            }
+            throw new IOException("MCP receive failed: " + (cause != null ? cause.getMessage() : e.getMessage()), cause);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("MCP receive interrupted", e);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 
     /**
      * Check whether the transport is still open.

@@ -5,6 +5,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.PrintStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -245,5 +251,51 @@ class ClassLoaderSandboxTest {
 
         assertFalse(result.success());
         assertTrue(result.timedOut());
+    }
+
+    @Test
+    @DisplayName("Concurrent execute: stdout stays isolated and System.out is not swapped")
+    void concurrentExecuteDoesNotMixStdoutOrReplaceSystemOut() throws Exception {
+        PrintStream globalOut = System.out;
+        String codeA = """
+                public class GenA {
+                    public static String run() {
+                        System.out.println("AAA");
+                        long n = 0;
+                        for (int i = 0; i < 200000; i++) { n += i; }
+                        return "ret-A-" + (n % 10);
+                    }
+                }
+                """;
+        String codeB = """
+                public class GenB {
+                    public static String run() {
+                        System.out.println("BBB");
+                        long n = 0;
+                        for (int i = 0; i < 200000; i++) { n += i; }
+                        return "ret-B-" + (n % 10);
+                    }
+                }
+                """;
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<SandboxResult> fa = pool.submit(() -> sandbox.execute("GenA", codeA));
+            Future<SandboxResult> fb = pool.submit(() -> sandbox.execute("GenB", codeB));
+            SandboxResult ra = fa.get(5, TimeUnit.SECONDS);
+            SandboxResult rb = fb.get(5, TimeUnit.SECONDS);
+
+            assertSame(globalOut, System.out, "execute must not replace the global System.out");
+            assertTrue(ra.success(), ra.error());
+            assertTrue(rb.success(), rb.error());
+            assertTrue(ra.stdout().contains("AAA"));
+            assertTrue(ra.stdout().contains("ret-A-"));
+            assertFalse(ra.stdout().contains("BBB"));
+            assertTrue(rb.stdout().contains("BBB"));
+            assertTrue(rb.stdout().contains("ret-B-"));
+            assertFalse(rb.stdout().contains("AAA"));
+        } finally {
+            pool.shutdownNow();
+        }
     }
 }

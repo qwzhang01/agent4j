@@ -41,5 +41,10 @@
             <artifactId>agent-model</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-security</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

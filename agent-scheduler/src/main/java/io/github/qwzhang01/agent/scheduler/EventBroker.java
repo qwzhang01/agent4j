@@ -74,7 +74,11 @@ public class EventBroker {
         }
         log.info("[event] Fire '{}': resuming {} run(s)", eventKey, triggers.size());
         for (EventTrigger trigger : triggers) {
-            trigger.markFired();
+            if (!trigger.tryMarkFired()) {
+                log.debug("[event] Fire '{}': trigger for run '{}' already claimed, skip resume",
+                        eventKey, trigger.runId());
+                continue;
+            }
             try {
                 runManager.resume(trigger.runId());
             } catch (Exception e) {
@@ -89,7 +93,7 @@ public class EventBroker {
      * cannot resume a failed run.
      */
     public void timeout(EventTrigger trigger) {
-        trigger.markTimedOut();
+        trigger.tryMarkTimedOut();
         List<EventTrigger> list = subscriptions.get(trigger.eventKey());
         if (list != null) {
             list.remove(trigger);

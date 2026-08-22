@@ -5,10 +5,13 @@ import io.github.qwzhang01.agent.workflow.nodes.HumanApprovalNode;
 import io.github.qwzhang01.agent.workflow.runtime.CheckpointStore;
 import io.github.qwzhang01.agent.workflow.runtime.FileCheckpointStore;
 import io.github.qwzhang01.agent.workflow.runtime.InMemoryCheckpointStore;
+import io.github.qwzhang01.agent.workflow.runtime.PauseException;
 import io.github.qwzhang01.agent.workflow.runtime.RunManager;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -250,6 +253,62 @@ class CheckpointTest {
         approval.setDecision(runId, "approval", true);
         ExecutionResult r2 = mgr.resume(runId);
         assertTrue(r2.isCancelled());
+    }
+
+    @Test
+    void concurrentResumeExecutesOnce() throws Exception {
+        AtomicInteger work = new AtomicInteger();
+        Workflow wf = Workflow.builder("single-flight")
+                .node(new WorkflowNode() {
+                    @Override
+                    public String id() {
+                        return "pause";
+                    }
+
+                    @Override
+                    public NodeResult execute(NodeContext ctx) throws Exception {
+                        if (!ctx.isResuming()) {
+                            throw new PauseException("pause", "wait");
+                        }
+                        Thread.sleep(200);
+                        work.incrementAndGet();
+                        return NodeResult.of("done");
+                    }
+                })
+                .edge(Workflow.START, "pause")
+                .edge("pause", Workflow.END)
+                .build();
+
+        RunManager mgr = new RunManager();
+        ExecutionResult paused = mgr.start(wf, "in");
+        assertTrue(paused.isPaused());
+        String runId = paused.resumeToken().runId();
+
+        CountDownLatch go = new CountDownLatch(1);
+        AtomicInteger succeeded = new AtomicInteger();
+        AtomicInteger rejected = new AtomicInteger();
+        Runnable resume = () -> {
+            try {
+                go.await();
+                ExecutionResult result = mgr.resume(runId);
+                if (result.isSucceeded()) {
+                    succeeded.incrementAndGet();
+                }
+            } catch (Exception e) {
+                rejected.incrementAndGet();
+            }
+        };
+        Thread t1 = new Thread(resume, "resume-1");
+        Thread t2 = new Thread(resume, "resume-2");
+        t1.start();
+        t2.start();
+        go.countDown();
+        t1.join(3000);
+        t2.join(3000);
+
+        assertEquals(1, work.get(), "single-flight: only one execute");
+        assertEquals(1, succeeded.get());
+        assertEquals(1, rejected.get());
     }
 
     // ============ Helpers ============

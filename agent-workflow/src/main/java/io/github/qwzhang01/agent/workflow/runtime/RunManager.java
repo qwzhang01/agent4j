@@ -8,11 +8,14 @@ import io.github.qwzhang01.agent.workflow.WorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Lifecycle manager for workflow Runs: start / pause / resume / cancel.
@@ -47,6 +50,8 @@ public class RunManager {
     private GraphRuntime runtime;
     private final CheckpointStore store;
     private final Map<String, Run> activeRuns = new ConcurrentHashMap<>();
+    /** Per-run single-flight: at most one execute() in flight for a given runId. */
+    private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
     // ============ Constructors ============
 
@@ -81,7 +86,7 @@ public class RunManager {
         Run run = new Run(runId, workflow, WorkflowState.of(input));
         activeRuns.put(runId, run);
         log.info("[{}] Run started, workflow='{}'", runId, workflow.name());
-        return executeAndPersist(run);
+        return withSingleFlight(runId, () -> executeAndPersist(run));
     }
 
     /**
@@ -94,18 +99,20 @@ public class RunManager {
      * @return ExecutionResult (SUCCEEDED / FAILED / PAUSED / CANCELLED)
      */
     public ExecutionResult resume(String runId) {
-        Run run = activeRuns.get(runId);
-        if (run == null) {
-            throw new WorkflowException("Run not found in memory: '" + runId
-                    + "'. Use resume(runId, workflow) for checkpoint recovery.");
-        }
-        if (run.getStatus().isTerminal()) {
-            throw new WorkflowException("Run '" + runId + "' is already "
-                    + run.getStatus() + " - only PAUSED runs can be resumed");
-        }
-        log.info("[{}] Resuming from cursor='{}'", runId, run.getCursor());
-        run.setStatus(RunState.RUNNING);
-        return executeAndPersist(run);
+        return withSingleFlight(runId, () -> {
+            Run run = activeRuns.get(runId);
+            if (run == null) {
+                throw new WorkflowException("Run not found in memory: '" + runId
+                        + "'. Use resume(runId, workflow) for checkpoint recovery.");
+            }
+            if (run.getStatus().isTerminal()) {
+                throw new WorkflowException("Run '" + runId + "' is already "
+                        + run.getStatus() + " - only PAUSED runs can be resumed");
+            }
+            log.info("[{}] Resuming from cursor='{}'", runId, run.getCursor());
+            run.setStatus(RunState.RUNNING);
+            return executeAndPersist(run);
+        });
     }
 
     /**
@@ -117,24 +124,26 @@ public class RunManager {
      * @return ExecutionResult
      */
     public ExecutionResult resume(String runId, Workflow workflow) {
-        Run run = activeRuns.get(runId);
-        if (run == null) {
-            Optional<Checkpoint> cp = store.load(runId);
-            if (cp.isEmpty()) {
-                throw new WorkflowException("No checkpoint found for run: '" + runId + "'");
+        return withSingleFlight(runId, () -> {
+            Run run = activeRuns.get(runId);
+            if (run == null) {
+                Optional<Checkpoint> cp = store.load(runId);
+                if (cp.isEmpty()) {
+                    throw new WorkflowException("No checkpoint found for run: '" + runId + "'");
+                }
+                run = Run.fromCheckpoint(cp.get(), workflow);
+                activeRuns.put(runId, run);
+                log.info("[{}] Restored from checkpoint, cursor='{}'", runId, run.getCursor());
+            } else {
+                log.info("[{}] Resuming from in-memory run, cursor='{}'", runId, run.getCursor());
             }
-            run = Run.fromCheckpoint(cp.get(), workflow);
-            activeRuns.put(runId, run);
-            log.info("[{}] Restored from checkpoint, cursor='{}'", runId, run.getCursor());
-        } else {
-            log.info("[{}] Resuming from in-memory run, cursor='{}'", runId, run.getCursor());
-        }
-        if (run.getStatus().isTerminal()) {
-            throw new WorkflowException("Run '" + runId + "' is already "
-                    + run.getStatus() + " - only PAUSED runs can be resumed");
-        }
-        run.setStatus(RunState.RUNNING);
-        return executeAndPersist(run);
+            if (run.getStatus().isTerminal()) {
+                throw new WorkflowException("Run '" + runId + "' is already "
+                        + run.getStatus() + " - only PAUSED runs can be resumed");
+            }
+            run.setStatus(RunState.RUNNING);
+            return executeAndPersist(run);
+        });
     }
 
     /**
@@ -167,6 +176,32 @@ public class RunManager {
     }
 
     /**
+     * Run ids that are PAUSED: in-memory first (same-instance source of truth),
+     * then any CheckpointStore entries not already tracked. Used by
+     * {@code TaskScheduler.restorePausedRuns} after a JVM restart when
+     * {@code activeRuns} is empty but disk still has PAUSED checkpoints.
+     */
+    public List<String> listPausedRunIds() {
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        for (Run run : activeRuns.values()) {
+            if (run.getStatus() == RunState.PAUSED) {
+                ids.add(run.getRunId());
+            }
+        }
+        for (String runId : store.listRunIds()) {
+            if (activeRuns.containsKey(runId)) {
+                continue;
+            }
+            store.load(runId).ifPresent(cp -> {
+                if (cp.status() == RunState.PAUSED) {
+                    ids.add(runId);
+                }
+            });
+        }
+        return List.copyOf(ids);
+    }
+
+    /**
      * Force a run into FAILED without executing further nodes.
      * Used by Stage 7 token-budget enforcement on a paused run.
      *
@@ -191,6 +226,21 @@ public class RunManager {
     }
 
     // ============ Internal ============
+
+    /**
+     * Reject a second concurrent execute for the same runId. Does not wait:
+     * fire / timeout / timer / manual resume must not double-thread execute.
+     */
+    private ExecutionResult withSingleFlight(String runId, Supplier<ExecutionResult> action) {
+        if (!inFlight.add(runId)) {
+            throw new WorkflowException("Run '" + runId + "' is already executing");
+        }
+        try {
+            return action.get();
+        } finally {
+            inFlight.remove(runId);
+        }
+    }
 
     private ExecutionResult executeAndPersist(Run run) {
         ExecutionResult result = runtime.execute(run);

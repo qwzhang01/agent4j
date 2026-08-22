@@ -27,6 +27,14 @@ public class MockMcpTransport implements McpTransport {
         responses.put(method, responseJson);
     }
 
+    /**
+     * Push a raw incoming message (notification or out-of-order response)
+     * that will be returned by {@link #receive()} before any later send() reply.
+     */
+    public void enqueueIncoming(String json) {
+        responseQueue.add(json);
+    }
+
     @Override
     public void open() {
         open = true;

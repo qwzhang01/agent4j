@@ -4,6 +4,9 @@ import io.github.qwzhang01.agent.workflow.ExecutionResult;
 import io.github.qwzhang01.agent.workflow.GraphRuntime;
 import io.github.qwzhang01.agent.workflow.Workflow;
 import io.github.qwzhang01.agent.workflow.nodes.ActionNode;
+import io.github.qwzhang01.agent.workflow.WorkflowState;
+import io.github.qwzhang01.agent.workflow.runtime.Checkpoint;
+import io.github.qwzhang01.agent.workflow.runtime.InMemoryCheckpointStore;
 import io.github.qwzhang01.agent.workflow.runtime.RunManager;
 import io.github.qwzhang01.agent.workflow.runtime.RunState;
 import org.junit.jupiter.api.AfterEach;
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -292,6 +296,113 @@ class TaskSchedulerTest {
         assertEquals(1, scheduler.restorePausedRuns(Duration.ofMillis(80)));
 
         awaitRunStatus(runManager, runId, RunState.SUCCEEDED, 2000);
+    }
+
+    @Test
+    void restorePausedRunsDiscoversStoreWhenMemoryEmpty() {
+        InMemoryCheckpointStore store = new InMemoryCheckpointStore();
+        store.save(new Checkpoint("cp-disk", "disk-run", RunState.PAUSED, "wait",
+                WorkflowState.of("x"), System.currentTimeMillis(), 1, null));
+
+        RunManager emptyMemory = new RunManager(store);
+        assertTrue(emptyMemory.listRuns().isEmpty(), "memory activeRuns must be empty");
+        assertEquals(List.of("disk-run"), emptyMemory.listPausedRunIds());
+
+        ScheduledExecutorService fresh = Executors.newScheduledThreadPool(1, r -> {
+            Thread t = new Thread(r, "test-restore-from-store");
+            t.setDaemon(true);
+            return t;
+        });
+        TaskScheduler isolated = new TaskScheduler(emptyMemory, fresh);
+        isolated.start();
+        try {
+            assertEquals(1, isolated.restorePausedRuns(Duration.ofHours(2)));
+            assertTrue(isolated.getScheduledResumes().values().stream()
+                    .anyMatch(sr -> "disk-run".equals(sr.runId())));
+        } finally {
+            isolated.shutdown();
+        }
+    }
+
+    @Test
+    void earlyManualResumeOfScheduleNodeRePauses() {
+        Workflow wf = Workflow.builder("early-schedule")
+                .node(io.github.qwzhang01.agent.scheduler.nodes.ScheduleResumeNode.of(
+                        "wait", Duration.ofHours(2)))
+                .node(ActionNode.of("done", ctx -> "should-not-run"))
+                .edge(Workflow.START, "wait")
+                .edge("wait", "done")
+                .edge("done", Workflow.END)
+                .build();
+
+        ExecutionResult r1 = runManager.start(wf, "input");
+        assertTrue(r1.isPaused());
+        String runId = r1.resumeToken().runId();
+        assertFalse(scheduler.hasScheduledResumeFired(runId));
+
+        ExecutionResult r2 = runManager.resume(runId);
+        assertTrue(r2.isPaused(), "manual resume before the timer must re-pause");
+        assertNull(runManager.getRun(runId).getState().get("done"));
+    }
+
+    @Test
+    void fireAndTimeoutRaceDoesNotDoubleAdvance() throws Exception {
+        AtomicInteger work = new AtomicInteger();
+        Workflow wf = Workflow.builder("fire-timeout-race")
+                .node(io.github.qwzhang01.agent.scheduler.nodes.WaitEventNode.of(
+                        "wait", "race-evt", Duration.ofHours(1)))
+                .node(ActionNode.of("work", ctx -> {
+                    work.incrementAndGet();
+                    try {
+                        Thread.sleep(150);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    return "ok";
+                }))
+                .edge(Workflow.START, "wait")
+                .edge("wait", "work")
+                .edge("work", Workflow.END)
+                .build();
+
+        ExecutionResult r1 = runManager.start(wf, "input");
+        assertTrue(r1.isPaused());
+        String runId = r1.resumeToken().runId();
+        EventTrigger trigger = scheduler.getEventBroker().getTrigger(runId, "race-evt");
+        assertNotNull(trigger);
+
+        CountDownLatch go = new CountDownLatch(1);
+        Thread fire = new Thread(() -> {
+            try {
+                go.await();
+                scheduler.fireEvent("race-evt");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "race-fire");
+        Thread timeout = new Thread(() -> {
+            try {
+                go.await();
+                if (trigger.tryMarkTimedOut()) {
+                    scheduler.getEventBroker().timeout(trigger);
+                    try {
+                        runManager.resume(runId);
+                    } catch (Exception ignored) {
+                        // terminal / already executing is the expected loser path
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "race-timeout");
+        fire.start();
+        timeout.start();
+        go.countDown();
+        fire.join(3000);
+        timeout.join(3000);
+
+        Thread.sleep(400);
+        assertTrue(work.get() <= 1, "fire+timeout must not execute the next node twice, got " + work.get());
     }
 
     @Test

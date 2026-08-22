@@ -85,6 +85,15 @@ public class StdioTransport implements McpTransport {
         return line;
     }
 
+    /**
+     * Same as {@link #receive()} but fails with {@link IOException} if no line
+     * arrives within {@code timeout}.
+     */
+    @Override
+    public String receive(java.time.Duration timeout) throws IOException {
+        return McpTransport.super.receive(timeout);
+    }
+
     @Override
     public boolean isOpen() {
         return process != null && process.isAlive();

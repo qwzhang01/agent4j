@@ -93,7 +93,10 @@ public final class DynamicSchedulerNode implements WorkflowNode {
                 }
                 throw new PauseException(id, "event '" + eventKey + "' not yet fired, re-pausing");
             }
-            // "schedule": the timer fired (that is why we are resuming) -> pass through
+            // "schedule": pass through only after the timer actually fired
+            if (!scheduler.hasScheduledResumeFired(ctx.runId())) {
+                throw new PauseException(id, "scheduled resume not yet due, re-pausing");
+            }
             return NodeResult.of("resumed after " + intent.get("delay_seconds") + "s");
         }
 

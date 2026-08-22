@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -147,6 +148,67 @@ class McpClientTest {
         // Not connected -- disconnect should not throw
         c.disconnect();
         assertFalse(c.isConnected());
+    }
+
+    // ============ Stray / timeout guards ============
+
+    @Test
+    void sendRequest_matchingIdStillSucceedsAfterFewStrays() throws IOException {
+        transport.enqueueIncoming("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}");
+        transport.enqueueIncoming("{\"jsonrpc\":\"2.0\",\"id\":999,\"result\":{}}");
+
+        List<McpToolSchema> tools = client.listTools();
+        assertEquals(2, tools.size());
+        assertEquals("echo", tools.get(0).name());
+    }
+
+    @Test
+    void sendRequest_tooManyStrayNotifications_throws() {
+        client.setMaxStrayMessages(3);
+        for (int i = 0; i < 4; i++) {
+            transport.enqueueIncoming("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/flood\"}");
+        }
+        IOException ex = assertThrows(IOException.class, client::listTools);
+        assertTrue(ex.getMessage().contains("stray"), ex.getMessage());
+    }
+
+    @Test
+    void sendRequest_receiveTimeout_throws() {
+        McpServerDescriptor desc = McpServerDescriptor.stdio("hang", "hang");
+        McpClient hanging = new McpClient(desc, new HangingTransport());
+        hanging.setReceiveTimeout(Duration.ofMillis(150));
+        IOException ex = assertThrows(IOException.class, hanging::connect);
+        assertTrue(ex.getMessage().toLowerCase().contains("timed out"), ex.getMessage());
+    }
+
+    private static final class HangingTransport implements io.github.qwzhang01.agent.mcp.transport.McpTransport {
+        @Override
+        public void open() {
+        }
+
+        @Override
+        public void send(String json) {
+        }
+
+        @Override
+        public String receive() throws IOException {
+            try {
+                Thread.sleep(60_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("interrupted");
+            }
+            return "{}";
+        }
+
+        @Override
+        public boolean isOpen() {
+            return true;
+        }
+
+        @Override
+        public void close() {
+        }
     }
 
     // ============ McpServerDescriptor ============

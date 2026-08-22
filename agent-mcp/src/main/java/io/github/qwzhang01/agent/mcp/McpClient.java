@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -43,11 +44,18 @@ public class McpClient {
     private static final Logger log = LoggerFactory.getLogger(McpClient.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** Max unmatched notifications / out-of-order responses before sendRequest fails. */
+    public static final int DEFAULT_MAX_STRAY_MESSAGES = 32;
+    /** How long sendRequest waits for one receive() before failing. */
+    public static final Duration DEFAULT_RECEIVE_TIMEOUT = Duration.ofSeconds(30);
+
     private final McpServerDescriptor descriptor;
     private final Supplier<McpTransport> transportFactory;
     private McpTransport transport;  // mutable: swapped on reconnect()
     private final AtomicLong nextId = new AtomicLong(1);
     private volatile boolean initialized = false;
+    private volatile int maxStrayMessages = DEFAULT_MAX_STRAY_MESSAGES;
+    private volatile Duration receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
     /**
      * Create a client with a stdio transport (descriptor.command -> StdioTransport).
@@ -247,28 +255,54 @@ public class McpClient {
 
     // ============ Internal Helpers ============
 
+    public McpClient setMaxStrayMessages(int maxStrayMessages) {
+        if (maxStrayMessages < 1) {
+            throw new IllegalArgumentException("maxStrayMessages must be >= 1");
+        }
+        this.maxStrayMessages = maxStrayMessages;
+        return this;
+    }
+
+    public McpClient setReceiveTimeout(Duration receiveTimeout) {
+        this.receiveTimeout = Objects.requireNonNull(receiveTimeout, "receiveTimeout");
+        return this;
+    }
+
     private JsonRpcResponse sendRequest(String method, JsonNode params) throws IOException {
         long id = nextId.getAndIncrement();
         JsonRpcRequest request = new JsonRpcRequest(id, method, params);
 
         transport.send(request.toJson());
 
-        // v1: synchronous -- block until we get a response with matching id
-        // (We assume responses come in order; for interleaved notifications,
-        // v2 would need a response queue keyed by id)
+        // Synchronous: wait for the matching id. Stray notifications / out-of-order
+        // responses are skipped up to maxStrayMessages; receive() is bounded by timeout.
+        // Id comparison is String.valueOf so Integer vs Long still match.
+        int stray = 0;
+        int strayLimit = maxStrayMessages;
         while (true) {
-            String respJson = transport.receive();
-            JsonRpcResponse response = JsonRpcResponse.fromJson(respJson);
+            String respJson = transport.receive(receiveTimeout);
+            JsonRpcResponse response;
+            try {
+                response = JsonRpcResponse.fromJson(respJson);
+            } catch (RuntimeException e) {
+                stray++;
+                if (stray > strayLimit) {
+                    throw new IOException("Too many stray MCP messages (limit="
+                            + strayLimit + ") while waiting for id=" + id, e);
+                }
+                log.debug("Received unparseable/stray message (expected id={}): {}", id, respJson);
+                continue;
+            }
 
-            // Check if this is the response to our request (by id)
-            // Compare as strings to handle Integer vs Long type mismatch
-            // (Jackson parses small JSON numbers as Integer, our id is Long)
             if (response.id() != null
                     && String.valueOf(response.id()).equals(String.valueOf(id))) {
                 return response;
             }
-            // Otherwise it's a stray notification or out-of-order response
-            // In v1, we just log and continue (notifications have no id)
+            stray++;
+            if (stray > strayLimit) {
+                throw new IOException("Too many stray MCP messages (limit="
+                        + strayLimit + ") while waiting for id=" + id);
+            }
             log.debug("Received out-of-order message (expected id={}): {}", id, respJson);
         }
     }

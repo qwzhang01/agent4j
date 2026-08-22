@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.scheduler;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An event-driven resume: automatically resume a paused Run when an external
@@ -25,6 +26,8 @@ public final class EventTrigger {
     private final Duration timeout;
     private volatile Instant firedAt;
     private volatile Instant timedOutAt;
+    /** 0 = pending, 1 = fired, 2 = timed out. CAS so fire and timeout cannot both win. */
+    private final AtomicInteger outcome = new AtomicInteger(0);
 
     public EventTrigger(String triggerId, String runId, String eventKey,
                         Instant registeredAt, Duration timeout) {
@@ -47,22 +50,48 @@ public final class EventTrigger {
     public Duration timeout() { return timeout; }
     public Instant firedAt() { return firedAt; }
 
-    /** Called by EventBroker when the event fires. */
-    public void markFired() {
-        this.firedAt = Instant.now();
+    /**
+     * Atomically claim this trigger as fired.
+     *
+     * @return true if this caller won (was still pending)
+     */
+    public boolean tryMarkFired() {
+        if (outcome.compareAndSet(0, 1)) {
+            this.firedAt = Instant.now();
+            return true;
+        }
+        return false;
     }
 
-    /** Called by EventBroker when the wait times out without a fire. */
+    /**
+     * Atomically claim this trigger as timed out.
+     *
+     * @return true if this caller won (was still pending)
+     */
+    public boolean tryMarkTimedOut() {
+        if (outcome.compareAndSet(0, 2)) {
+            this.timedOutAt = Instant.now();
+            return true;
+        }
+        return false;
+    }
+
+    /** Called by EventBroker when the event fires. Prefer {@link #tryMarkFired()}. */
+    public void markFired() {
+        tryMarkFired();
+    }
+
+    /** Called by EventBroker when the wait times out without a fire. Prefer {@link #tryMarkTimedOut()}. */
     public void markTimedOut() {
-        this.timedOutAt = Instant.now();
+        tryMarkTimedOut();
     }
 
     public boolean isFired() {
-        return firedAt != null;
+        return outcome.get() == 1 || firedAt != null;
     }
 
     public boolean wasTimedOut() {
-        return timedOutAt != null;
+        return outcome.get() == 2 || timedOutAt != null;
     }
 
     public boolean isTimedOut(Instant now) {

@@ -92,6 +92,28 @@ class GenerationTaskCoordinatorTest {
         assertEquals(1, scheduler.getTaskQueue().totalEnqueued());
     }
 
+    @Test
+    void trackVideoDedupsSameTaskId() {
+        AtomicInteger statusCalls = new AtomicInteger();
+        VideoGenerationClient client = new VideoGenerationClient() {
+            @Override
+            public VideoTask submit(VideoGenRequest request) {
+                return new VideoTask("vid-dup", VideoTask.STATUS_QUEUED, null, null, null, null);
+            }
+
+            @Override
+            public VideoTask status(String taskId) {
+                statusCalls.incrementAndGet();
+                return new VideoTask(taskId, VideoTask.STATUS_RUNNING, null, null, 10, null);
+            }
+        };
+        var coordinator = new GenerationTaskCoordinator(
+                scheduler, client, Duration.ofHours(1), Duration.ofHours(1));
+        coordinator.trackVideo("vid-dup");
+        coordinator.trackVideo("vid-dup");
+        assertEquals(1, scheduler.getTaskQueue().totalEnqueued());
+    }
+
     private static void awaitRunStatus(RunManager mgr, String runId, RunState expected, long timeoutMs) {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {

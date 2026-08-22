@@ -62,6 +62,9 @@ public class SharedAgentSession {
     private final ExecutionVisibility visibility;
     private final TaskBoard board = new TaskBoard();
     private final List<TaskHandoff> handoffs = new CopyOnWriteArrayList<>();
+    /** Optional assembly hook: bind ResolvedIdentity to a PermissionChecker (no security dep). */
+    private final Consumer<ResolvedIdentity> identityBinder;
+    private volatile ResolvedIdentity lastResolvedIdentity;
 
     /**
      * @param agent           any Agent implementation (wrapped, never modified)
@@ -75,9 +78,24 @@ public class SharedAgentSession {
                               ChannelContext channel,
                               ChannelRolePermissions rolePermissions,
                               Consumer<IdentityDecision> auditSink) {
+        this(agent, account, channel, rolePermissions, auditSink, null);
+    }
+
+    /**
+     * @param identityBinder  optional hook invoked with the resolved identity
+     *                        before the agent runs; assembly wires this to a
+     *                        PermissionChecker (channel does not depend on security)
+     */
+    public SharedAgentSession(Agent agent,
+                              ServiceAccount account,
+                              ChannelContext channel,
+                              ChannelRolePermissions rolePermissions,
+                              Consumer<IdentityDecision> auditSink,
+                              Consumer<ResolvedIdentity> identityBinder) {
         this.agent = Objects.requireNonNull(agent, "agent must not be null");
         this.account = Objects.requireNonNull(account, "account must not be null");
         this.channel = Objects.requireNonNull(channel, "channel must not be null");
+        this.identityBinder = identityBinder;
         Objects.requireNonNull(rolePermissions, "rolePermissions must not be null");
 
         // Membership gate + role lookup, combined into the M12.1 contract:
@@ -135,6 +153,10 @@ public class SharedAgentSession {
         // Fail-closed identity gate (M12.1 consumption point)
         ResolvedIdentity identity = resolver.resolve(
                 channel.channelId(), message.userId(), account.identity().agentId());
+        lastResolvedIdentity = identity;
+        if (identityBinder != null) {
+            identityBinder.accept(identity);
+        }
 
         history.add(message);
 
@@ -185,6 +207,14 @@ public class SharedAgentSession {
      */
     public AgentIdentity identity() {
         return account.identity();
+    }
+
+    /**
+     * The identity from the most recent successful {@link #speak} (null before the first).
+     * Assembly / tests use this plus {@code identityBinder} to constrain tools.
+     */
+    public ResolvedIdentity lastResolvedIdentity() {
+        return lastResolvedIdentity;
     }
 
     // ============ Tasks & Collaboration (M12.3) ============

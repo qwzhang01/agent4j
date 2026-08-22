@@ -28,6 +28,8 @@ public class GenerationTaskCoordinator {
     private final Duration pollInterval;
     private final Duration timeout;
     private final Map<String, VideoGenerationClient.VideoTask> completed = new ConcurrentHashMap<>();
+    /** taskId -> tracking flag; putIfAbsent so one task starts at most one poll chain. */
+    private final Map<String, Boolean> tracking = new ConcurrentHashMap<>();
 
     public GenerationTaskCoordinator(TaskScheduler scheduler, VideoGenerationClient client) {
         this(scheduler, client, Duration.ofSeconds(5), Duration.ofMinutes(10));
@@ -57,6 +59,10 @@ public class GenerationTaskCoordinator {
     }
 
     public void trackVideo(String taskId) {
+        if (tracking.putIfAbsent(taskId, Boolean.TRUE) != null) {
+            log.debug("[generation] Already tracking '{}', skip duplicate poll", taskId);
+            return;
+        }
         AsyncTask queued = AsyncTask.of("generation", taskId, TaskPriority.NORMAL, "video-generation");
         scheduler.enqueueTask(queued);
         Instant deadline = Instant.now().plus(timeout);
