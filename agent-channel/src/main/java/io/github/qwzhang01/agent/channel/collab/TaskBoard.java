@@ -96,7 +96,7 @@ public class TaskBoard implements ExecutionVisibility.Listener {
     private void mutate(String taskId, java.util.function.UnaryOperator<ChannelTask> fn) {
         tasks.computeIfPresent(taskId, (id, t) -> fn.apply(t));
         if (!tasks.containsKey(taskId)) {
-            log.debug("[board] Ignoring {} for unknown task {}", "event", taskId);
+            log.debug("[board] Ignoring event for unknown task {}", taskId);
         }
     }
 }

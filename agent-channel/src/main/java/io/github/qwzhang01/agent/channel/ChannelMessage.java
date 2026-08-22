@@ -65,6 +65,7 @@ public record ChannelMessage(
      */
     public static ChannelMessage autoDetect(String channelId, String userId, String text, String agentId) {
         Objects.requireNonNull(agentId, "agentId must not be null");
+        Objects.requireNonNull(text, "text must not be null");
         String prefix = "@" + agentId;
         boolean mentions = text.startsWith(prefix)
                 && (text.length() == prefix.length() || isSeparator(text.charAt(prefix.length())));

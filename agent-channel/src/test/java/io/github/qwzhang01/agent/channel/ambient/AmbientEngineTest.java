@@ -263,4 +263,15 @@ class AmbientEngineTest {
         engine.shutdown();
         assertFalse(engine.isEnabled());
     }
+
+    @Test
+    @DisplayName("enable() after shutdown fails fast: shutdown is terminal")
+    void lifecycle_enableAfterShutdown_rejected() {
+        AmbientEngine local = new AmbientEngine(session(), neverQuiet(5, Duration.ZERO));
+        local.shutdown();
+
+        assertThrows(IllegalStateException.class, local::enable,
+                "a re-enable would hit a RejectedExecutionException deep in the "
+                        + "executor - fail fast with clear semantics instead");
+    }
 }

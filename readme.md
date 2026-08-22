@@ -6,7 +6,7 @@
 
 ## 当前阶段：Stage 12 ✅ 已完成（频道级共享 Agent、Agent Identity 与 Ambient 模式）
 
-> Stage 1-12 已完成（2026-08-16 ~ 08-22），424 测试全绿。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 1-12 已完成（2026-08-16 ~ 08-22），426 测试全绿（含 Stage 12 完成后自查修复，详见架构笔记 §13 审查记录）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
 > Stage 4 沙箱 = ClassLoader + Process（无 Docker / WASM / 资源池）。
 > Stage 10 MCP = stdio v1 + 真实官方 Server 互通 + 进程管理自愈（SSE 留 v2）。
@@ -45,7 +45,7 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：424 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 52 MCP + 45 编排 + 76 channel），全绿
+- [x] 单元测试：426 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 52 MCP + 45 编排 + 78 channel），全绿
 - [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）

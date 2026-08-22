@@ -261,6 +261,39 @@ class SharedAgentSessionCollabTest {
                 "the board (also a subscriber) still got the event");
     }
 
+    // ============ Concurrency guard (review finding) ============
+
+    @Test
+    @DisplayName("concurrent speaks are serialized: no exception, no lost turn")
+    void concurrentSpeaks_serialized() throws InterruptedException {
+        var script = MockModelClient.scripted();
+        for (int i = 0; i < 8; i++) {
+            script.respondText("r" + i);
+        }
+        SharedAgentSession session = session(
+                new RecordingModelClient(script), "alice", "bob");
+
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            Thread t = new Thread(() -> {
+                session.speak(ChannelMessage.mention(CHANNEL, idx % 2 == 0 ? "alice" : "bob",
+                        "@eng-bot 并发轮 " + idx + "-a"));
+                session.speak(ChannelMessage.mention(CHANNEL, idx % 2 == 0 ? "bob" : "alice",
+                        "@eng-bot 并发轮 " + idx + "-b"));
+            });
+            t.start();
+            threads.add(t);
+        }
+        for (Thread t : threads) {
+            t.join(5000);
+        }
+
+        long userTurns = session.sharedState().getMessages().stream()
+                .filter(m -> m.role() == ChatRole.USER).count();
+        assertEquals(8, userTurns, "every concurrent turn must land - serialized, none lost");
+    }
+
     // ============ Helpers ============
 
     private static String flatten(List<ChatMessage> messages) {

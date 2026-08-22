@@ -183,6 +183,39 @@ dispatchBySkill("review", payload):
        // fail-closed：明确报错 + 列出可用技能，绝不静默 no-op
 ```
 
+### 场景 E：业务示例——前端/后端并行开发 → 联调（多波次编排 + D8）
+
+真实业务往往不是一次 `dispatchAll` 能表达的："对好契约 → 并行开发 → 联调"是三阶段，阶段间有依赖。**`dispatchAll` = 并行派发一个"波次"；跨波次的顺序编排是调用方 / Workflow 的事（D8：编排不替代 Workflow，二者正交组合）。**
+
+```
+阶段 1（串行）：对接口契约
+  spec = dispatchBySkill("api-design", "设计前后端接口契约")   // 一个 worker 干
+阶段 2（并行）：前端 + 后端同时开发
+  dev = dispatchAll([fe(按契约实现前端), be(按契约实现后端)],
+                    ConcatAggregator, BEST_EFFORT)             // 这里并行！wall clock ≈ max
+阶段 3（串行）：两边都完成后联调
+  dispatchBySkill("integration", "前端=dev[0].output 后端=dev[1].output")
+```
+
+```java
+// 阶段 1：契约对齐（静态编排 v1：调用方分阶段派活）
+WorkerResult spec = supervisor.dispatchBySkill("api-design", "设计接口契约");
+
+// 阶段 2：并行开发（两个 worker 同时跑，总耗时 ≈ 慢的那个）
+SupervisorResult dev = supervisor.dispatchAll(List.of(
+        WorkerTask.of("fe", "frontend", spec.output()),
+        WorkerTask.of("be", "backend", spec.output())),
+        new ConcatAggregator(), FailurePolicy.bestEffort());
+
+// 阶段 3：联调（等两边结果都收齐后再派）
+WorkerResult integ = supervisor.dispatchBySkill("integration",
+        "前端=" + dev.results().get(0).output() + " 后端=" + dev.results().get(1).output());
+```
+
+**两个要点：**
+1. 阶段之间的"顺序依赖"是确定性控制流（归调用方/Workflow），阶段内部的"多责任并行"是 Multi-Agent（归 dispatchAll）。v1 由调用方分阶段；v2 由 LLM 驱动 Supervisor 自己决定波次——骨架（并行 + 失败隔离 + 聚合）已就绪。
+2. 并行模型是"多线程 + 多 Worker"：一个 Worker 内部跑同步 ReAct loop（串行思考），多个 Worker 之间由线程池并行执行。`dispatchAll` 第一步全量 submit（非阻塞投递）第二步按任务序 `future.get()`（等待最慢者）——两个循环是"投递 + 签收"，不是串行执行。
+
 ### MultiAgentExample 全景（一次完整数据流）
 
 ```

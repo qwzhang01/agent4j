@@ -1,7 +1,7 @@
 # Stage 12 架构设计：频道级共享 Agent、Agent Identity 与 Ambient 模式
 
 > 对应阶段：Stage 12 - 频道级共享 Agent、Agent Identity 与 Ambient 模式
-> 状态：✅ 已实现（2026-08-22）。M12.1-M12.5 全部完成：agent-channel 模块 20 类（identity 8 + 频道根包 3 + collab 6 + ambient 4）+ 2 验收示例，channel 模块 76 测试全绿，全仓 424 测试零影响。规划验收 5 条全过（对照见 §9）。分布式多实例 / 真实 IM 接入 / 自然语言指令 / 频道配额（归 Stage 18）留 v2
+> 状态：✅ 已实现（2026-08-22）。M12.1-M12.5 全部完成 + **完成后自查（§13）**：修复 4 处代码问题（含共享状态并发竞态），记录 4 项 v2 设计缺口（最重要：per-user 记忆检索未实现，D2 隐私承诺只兑现一半）。agent-channel 20 类 + 2 示例，channel 78 测试全绿，全仓 426 零影响。规划验收 5 条全过（§9）
 > 模块：新增 `agent-channel` Maven 模块，依赖 `agent-core`（Agent 接口）+ `agent-memory`（channel scope）+ `agent-scheduler`（EventBroker / 定时）+ `agent-security`（权限与审计，可选注入）
 > 前置：Stage 1-11 已完成（348 测试全绿；Multi-Agent 编排与 A2A 进程内互通已落地）
 
@@ -69,6 +69,12 @@ Ambient vs Cron 定时任务：
 | 多 Agent 编排 | `AgentSupervisor`（Stage 11） | v1 不强制；频道 Agent 内部想编排随时可挂 |
 
 **依赖方向**：`agent-channel -> agent-core + agent-memory + agent-scheduler`（security 可选注入，同 orchestrator 的模块边界纪律）。
+
+> ⚠️ **复用清单审查修正（2026-08-22 复查，规划时未做 due diligence 的三处）**：
+> 1. 「定时唤醒包装 TaskScheduler.scheduleResume」**未复用**——scheduleResume 语义是唤醒已 checkpoint 的 workflow run，Ambient 指令不是 run；实际用自建 ScheduledExecutorService（同款机制）。见 M12.4 实现记录。
+> 2. 「事件订阅包装 EventBroker」**未复用**——EventBroker 的 fire 回调绑死 `RunManager.resume(runId)`。实际自带 eventKey 注册表（同构语义）。见 M12.4 实现记录。
+> 3. 「IdentityScope 权限集喂给 PermissionChecker」**未对接**——identity 层与 Stage 9 工具权限三档（AUTO/REQUIRES_APPROVAL/DENY）之间没有桥；ResolvedIdentity.effectiveCapabilities 目前只是数据，装到 AgentConfig 的工具审批链路是装配层/后续阶段工作。
+> 复用实际兑现的是：channel scope 记忆（Stage 8，零新代码 ✓）、TaskStatus 状态机（Stage 7 ✓）、AgentState/组合包装（agent-core ✓）。
 
 ---
 
@@ -332,24 +338,20 @@ T5: 失败分支
 ```text
 agent-channel/                                # 新增 Maven 模块
 └── src/main/java/io/github/qwzhang01/agent/channel/
-    ├── ChannelContext.java                   # 频道元数据（成员/偏好/scope）
+    ├── ChannelContext.java                   # 频道元数据（成员清单；"频道偏好"v1 缩减未做）
     ├── ChannelMessage.java                   # 带说话人的消息 record
     ├── SharedAgentSession.java               # 频道 Agent 容器（D1 核心）
-    ├── identity/
-    │   ├── AgentIdentity.java                # 服务身份
-    │   ├── ServiceAccount.java               # 身份凭证配置
-    │   ├── IdentityScope.java                # 权限范围（白名单集）
-    │   ├── IdentityResolver.java             # 三方身份解析（D4 交集）
-    │   └── ResolvedIdentity.java             # 解析结果（有效权限+归属）
-    ├── collab/
-    │   ├── TaskHandoff.java                  # 接力记录 record
-    │   ├── ExecutionVisibility.java          # 事件流（发布/订阅）
-    │   └── TaskBoard.java                    # 任务看板只读视图
-    └── ambient/
-        ├── AmbientInstruction.java           # 常驻指令 record
-        ├── AmbientEngine.java                # 运行器（包装 scheduler，D3）
-        ├── NoisePolicy.java                  # 四道闸（D7）
-        └── ProactiveNotification.java        # 推送 record
+    ├── identity/                             # 8 类（M12.1）
+    │   ├── AgentIdentity.java / ServiceAccount.java / IdentityScope.java
+    │   ├── ChannelRolePermissions.java / IdentityResolver.java
+    │   └── IdentityDecision.java / IdentityResolutionException.java / ResolvedIdentity.java
+    ├── collab/                               # 6 类（M12.3，比规划多 VisibilityEvent/ChannelTask）
+    │   ├── VisibilityEvent.java / ExecutionVisibility.java
+    │   ├── ChannelTask.java / TaskBoard.java / TaskHandoff.java
+    └── ambient/                              # 4 类（M12.4）
+        ├── AmbientInstruction.java / AmbientEngine.java
+        ├── NoisePolicy.java / ProactiveNotification.java
+```
 
 examples/（新增 2 个）
 ├── ChannelAgentExample.java                  # 验收：共享 + 接力 + 身份 + 看板
@@ -463,7 +465,7 @@ ambient 子包 4 类 + VisibilityEvent 增补：
 - **任务接力**：handoff 后 B 的首轮对话能引用 A 阶段的结论；TaskBoard owner 变更；handoff 记录可查
 - **可见性**：订阅者按序收到 task-started / waiting-human / task-done；TaskBoard 与事件流一致（同一事实源）
 - **Ambient 定时**：注册"每 N 秒检查"指令 -> 触发 -> 条件满足 -> 推送；条件不满足 -> 静默无副作用
-- **Ambient 事件**：fireEvent -> 订阅指令被唤醒 -> 判定 -> 推送；超时未触发不残留订阅
+- **Ambient 事件**：fireEvent -> 订阅指令被唤醒 -> 判定 -> 推送（~~超时未触发不残留订阅~~——该条照抄了 Stage 7 EventBroker 的 TTL 能力，AmbientEngine 订阅无超时概念，v1 不适用，见 §13.3）
 - **噪音闸**：频控（间隔内第二次触发被吞）；静默窗口（进 digest 不实时推）；每日预算（第 6 条被吞）；WARN 级绕过 digest 实时推
 - **默认关闭**：不 enable 时 register 不产生任何调度行为（安全默认值）
 - **向后兼容**：只新增模块，348 存量测试零影响
@@ -495,3 +497,37 @@ ambient 子包 4 类 + VisibilityEvent 增补：
 - **Ambient 指令的自然语言配置（"帮我盯着 X"自动转指令）** -- v1 指令是代码/配置构造的 record；LLM 理解指令是 Stage 13 声明式层的题
 - **细粒度隐私字段（消息级 ACL）** -- v1 隐私边界用 scope 粒度（task vs channel）；消息级 ACL v2
 - **频道历史持久化与回放 UI** -- 事件流已可审计可重放，UI 不做
+
+---
+
+## 13. 审查记录（2026-08-22，Stage 12 完成后自查）
+
+对"规划 vs 实现 vs 前序阶段"做了三方交叉审查，结论分三档：
+
+### 13.1 已修代码问题（4 处，含回归测试，channel 78 测试全绿）
+
+1. **共享状态并发竞态（最重要）**：`AgentState.getMessages()` 返回内部裸 `ArrayList`（Stage 1 契约），而 SharedAgentSession 是框架里第一个"多人共享一个 state"的场景——并发 speak 会竞态/CME。修复：`speak`/`handoff` 加 `synchronized`（串行对话轮本就是频道语义：像人队友一样不抢话）。细粒度锁需动 agent-core，违反组装阶段纪律，留 v2。回归：4 线程 × 2 轮并发 speak，8 轮全部落地零丢失。
+2. **TaskBoard 日志占位符笔误**：`log.debug("... {} ...", "event", taskId)` 第一个占位填了常量 "event"，丢失事件类型。修复。
+3. **ChannelMessage.autoDetect 对 null text 在构造器校验前就 NPE**（startsWith 先于 record 校验执行）。提前 `requireNonNull`。
+4. **AmbientEngine shutdown 后再 enable 会深层 RejectedExecutionException**（executor 已 shutdownNow）。改为 fail-fast `IllegalStateException`（shutdown 是终态，重建 engine）。回归测试覆盖。
+
+### 13.2 设计缺口（不修代码，记为 v2——修复需动存量模块或改 API 形状）
+
+1. **per-user 记忆检索未实现（规划时序 T1 vs 实现的真实冲突）**：时序 T1 承诺"记忆检索：user:a1 + channel:team-eng"（按说话人动态拼检索列表）；D2 隐私边界承诺"task scope 默认仅发起人+接手人可检索"。实际：ContextBuilder 是 AgentConfig 构造时的**静态配置**，speak 无法按当前说话人动态切 scope——所有成员看到的检索列表相同。后果：成员 A 的 user/task 私有记忆若被拼进检索列表，会被 B 的轮次看到（D2 隐私承诺只兑现了 channel 全员共享那一半）。v1 装配纪律：**频道 Agent 的检索列表只放 channel/agent scope，不要放任何 user scope**（示例已是这么做的）。根治需要 ContextBuilder 按轮次动态化（agent-core 改造），v2。
+2. **Visibility 事件 → AuditLogger 无桥**：D6 说"可见性和审计共用一条事实源"、时序 T4 说"AuditEvent(actor=...)";实际 NOTIFICATION_SENT 只是 VisibilityEvent，与 Stage 9 AuditEvent 之间没有桥（身份决策有 Consumer sink，事件流没有）。装配层工作，v1 未做。
+3. **NoisePolicy.admit 与 drainDigest 非原子**（check-then-act）：并发触发同 instruction 可能双超预算/丢 digest 项。v1 低频主动推送场景可接受，v2 需要锁或 CAS。
+4. **handoff 的 fromUser 无认证**：任何知道 owner 名字的调用方都能以 owner 名义移交。"v1 不做移交审批"已声明，此处显式重申。
+
+### 13.3 规划文档修正（已完成）
+
+- §2 复用清单加"审查修正"注记：TaskScheduler.scheduleResume / EventBroker / PermissionChecker 三处"复用"声明与实际不符（复用的是机制与数据契约，不是那三个具体类）；channel scope / TaskStatus / AgentState 组合是真实兑现的复用
+- §7 模块结构更新为终态（collab 6 类比规划多 VisibilityEvent/ChannelTask；ChannelContext 的"频道偏好"v1 缩减未做，"关联 memory scope"职责由 channelMemoryContext 工厂承担）
+- §10 测试策略中"Ambient 事件：超时未触发不残留订阅"**未实现**（AmbientEngine 订阅无 TTL 概念）——该条是照抄 Stage 7 EventBroker TTL 的能力，v1 不适用，已从验收口径移除
+- 18 周规划原文命名（ScheduledTask/EventSubscription/ProactiveMonitor）与实现命名（AmbientInstruction.Scheduled/OnEvent + AmbientEngine）为同义映射，语义全覆盖
+
+### 13.4 与前序阶段无冲突项（确认清单）
+
+- Stage 8：channel scope 治理（PENDING_REVIEW/MemoryAdmin）未绕过——示例直接 write ACTIVE 属演示行为，产品路径走管线
+- Stage 7：TaskStatus 复用未改枚举；PENDING 值未用（任务从 RUNNING 起）语义成立
+- Stage 9/11：零存量代码改动；348→426 全程存量零影响
+- Stage 13/18 预留：自然语言指令（Stage 13）、monthlyTokenBudget 占位（Stage 18）接口形状已留，无耦合

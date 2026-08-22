@@ -116,8 +116,15 @@ public class SharedAgentSession {
      *         when resolution fails closed (non-member, no permission overlap,
      *         invalid account...) - thrown for BOTH mention and plain messages:
      *         a stranger cannot even talk into the channel through the agent.
+     * @implNote synchronized: the shared AgentState is a plain ArrayList
+     *         (agent-core contract, unchanged since Stage 1); concurrent
+     *         speaks from multiple members would race on it. Serializing
+     *         turns ALSO matches channel semantics: one conversation turn
+     *         at a time, like a human teammate who does not talk over
+     *         people. Finer-grained state locking is v2 (needs agent-core
+     *         changes, out of the assembly-stage discipline).
      */
-    public String speak(ChannelMessage message) {
+    public synchronized String speak(ChannelMessage message) {
         Objects.requireNonNull(message, "message must not be null");
         if (!message.channelId().equals(channel.channelId())) {
             throw new IllegalArgumentException(
@@ -253,8 +260,11 @@ public class SharedAgentSession {
      *                 someone else's task)
      * @param toUser   must be a channel member
      * @param note     shown to the model and kept in the audit record
+     * @implNote synchronized with {@link #speak}: both mutate the shared
+     *         AgentState (the baton note) and must not interleave with a
+     *         running conversation turn.
      */
-    public TaskHandoff handoff(String taskId, String fromUser, String toUser, String note) {
+    public synchronized TaskHandoff handoff(String taskId, String fromUser, String toUser, String note) {
         Objects.requireNonNull(fromUser, "fromUser must not be null");
         Objects.requireNonNull(toUser, "toUser must not be null");
         requireMember(fromUser);

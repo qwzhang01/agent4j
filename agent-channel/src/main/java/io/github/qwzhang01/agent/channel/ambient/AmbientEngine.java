@@ -90,10 +90,17 @@ public class AmbientEngine {
     /**
      * Opt in (admin action). Arms all already-registered instructions;
      * instructions registered afterwards arm immediately.
+     *
+     * @throws IllegalStateException if the engine was already shut down
+     *         (shutdown is terminal - build a new engine instead)
      */
     public synchronized AmbientEngine enable() {
         if (enabled) {
             return this;
+        }
+        if (ownsExecutor && executor.isShutdown()) {
+            throw new IllegalStateException(
+                    "AmbientEngine was shut down; shutdown is terminal - create a new engine");
         }
         enabled = true;
         for (AmbientInstruction instruction : instructions.values()) {
