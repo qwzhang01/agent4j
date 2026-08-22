@@ -73,7 +73,7 @@ Ambient vs Cron 定时任务：
 > ⚠️ **复用清单审查修正（2026-08-22 复查，规划时未做 due diligence 的三处）**：
 > 1. 「定时唤醒包装 TaskScheduler.scheduleResume」**未复用**——scheduleResume 语义是唤醒已 checkpoint 的 workflow run，Ambient 指令不是 run；实际用自建 ScheduledExecutorService（同款机制）。见 M12.4 实现记录。
 > 2. 「事件订阅包装 EventBroker」**未复用**——EventBroker 的 fire 回调绑死 `RunManager.resume(runId)`。实际自带 eventKey 注册表（同构语义）。见 M12.4 实现记录。
-> 3. 「IdentityScope 权限集喂给 PermissionChecker」**未对接**——identity 层与 Stage 9 工具权限三档（AUTO/REQUIRES_APPROVAL/DENY）之间没有桥；ResolvedIdentity.effectiveCapabilities 目前只是数据，装到 AgentConfig 的工具审批链路是装配层/后续阶段工作。
+> 3. 「IdentityScope 权限集喂给 PermissionChecker」**已对接（2026-08-22）**——`IdentityConstrainedPermissionChecker`（agent-security）= identity capabilities ∩ 原 ToolPolicy，fail-closed：不在 capabilities 里的工具 DENY；在集合内的仍走 AUTO/REQUIRES_APPROVAL/DENY。`SharedAgentSession` 经可选 `Consumer<ResolvedIdentity>` 装配接线（channel 不强制依赖 security）。
 > 复用实际兑现的是：channel scope 记忆（Stage 8，零新代码 ✓）、TaskStatus 状态机（Stage 7 ✓）、AgentState/组合包装（agent-core ✓）。
 
 ---
@@ -510,6 +510,7 @@ ambient 子包 4 类 + VisibilityEvent 增补：
 2. **TaskBoard 日志占位符笔误**：`log.debug("... {} ...", "event", taskId)` 第一个占位填了常量 "event"，丢失事件类型。修复。
 3. **ChannelMessage.autoDetect 对 null text 在构造器校验前就 NPE**（startsWith 先于 record 校验执行）。提前 `requireNonNull`。
 4. **AmbientEngine shutdown 后再 enable 会深层 RejectedExecutionException**（executor 已 shutdownNow）。改为 fail-fast `IllegalStateException`（shutdown 是终态，重建 engine）。回归测试覆盖。
+5. **已修：Identity↔PermissionChecker 桥**——`ResolvedIdentity.effectiveCapabilities` 不再只是数据。装配层用 `SharedAgentSession` 的 `identityBinder` 把本次身份喂给 `IdentityConstrainedPermissionChecker`（capabilities ∩ ToolPolicy，缺席 DENY）。channel 模块仍不 compile-depend security。
 
 ### 13.2 设计缺口（不修代码，记为 v2——修复需动存量模块或改 API 形状）
 
