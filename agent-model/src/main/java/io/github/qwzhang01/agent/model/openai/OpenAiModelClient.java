@@ -34,6 +34,7 @@ import java.util.stream.Stream;
  * - Streaming (SSE)
  * - Tool calling
  * - Structured output (response_format)
+ * - Multimodal vision (text + image messages via ChatMessage parts)
  */
 public class OpenAiModelClient implements ModelClient {
 
@@ -134,7 +135,10 @@ public class OpenAiModelClient implements ModelClient {
         for (ChatMessage msg : request.messages()) {
             ObjectNode msgNode = messages.addObject();
             msgNode.put("role", msg.role().name().toLowerCase());
-            if (msg.content() != null) {
+            // Multimodal parts (text + images) take precedence over plain text
+            if (msg.parts() != null) {
+                msgNode.set("content", buildContentParts(msg.parts()));
+            } else if (msg.content() != null) {
                 msgNode.put("content", msg.content());
             }
             if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
@@ -199,6 +203,44 @@ public class OpenAiModelClient implements ModelClient {
         }
 
         return body;
+    }
+
+    // ============ Multimodal Content Building ============
+
+    /**
+     * Builds the OpenAI multimodal content array:
+     * <pre>
+     * [
+     *   {"type": "text", "text": "..."},
+     *   {"type": "image_url", "image_url": {"url": "https://... or data:image/png;base64,..."}}
+     * ]
+     * </pre>
+     * Base64 images are inlined as data URLs.
+     */
+    private ArrayNode buildContentParts(List<ContentPart> parts) {
+        ArrayNode content = mapper.createArrayNode();
+        for (ContentPart part : parts) {
+            if (part instanceof ContentPart.TextPart tp) {
+                content.addObject().put("type", "text").put("text", tp.text());
+            } else if (part instanceof ContentPart.ImagePart ip) {
+                ObjectNode p = content.addObject();
+                p.put("type", "image_url");
+                p.putObject("image_url").put("url", toDataUrl(ip));
+            }
+        }
+        return content;
+    }
+
+    /**
+     * Resolves an ImagePart into a URL string: public URL as-is,
+     * base64 data as an inline data URL.
+     */
+    private String toDataUrl(ContentPart.ImagePart ip) {
+        if (ip.url() != null && !ip.url().isBlank()) {
+            return ip.url();
+        }
+        String mime = ip.mimeType() != null && !ip.mimeType().isBlank() ? ip.mimeType() : "image/png";
+        return "data:" + mime + ";base64," + ip.base64Data();
     }
 
     // ============ Response Parsing ============

@@ -98,12 +98,12 @@ public class MockModelClient implements ModelClient {
     // ============ Rule-based Logic ============
 
     private ModelResponse ruleBasedResponse(ModelRequest request) {
-        // Get last user message
+        // Get last user message (text content, or text parts for multimodal messages)
         String userInput = "";
         for (int i = request.messages().size() - 1; i >= 0; i--) {
             ChatMessage msg = request.messages().get(i);
             if (msg.role() == ChatRole.USER) {
-                userInput = msg.content();
+                userInput = extractText(msg);
                 break;
             }
         }
@@ -121,5 +121,29 @@ public class MockModelClient implements ModelClient {
 
         // Default: echo the user input
         return ModelResponse.text("Mock response to: \"" + userInput + "\"");
+    }
+
+    // ============ Helpers ============
+
+    /**
+     * Extracts displayable text from a message: plain content, or the text
+     * parts of a multimodal message (images are summarized as placeholders).
+     */
+    private String extractText(ChatMessage msg) {
+        if (msg.parts() == null) {
+            return msg.content() != null ? msg.content() : "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (ContentPart part : msg.parts()) {
+            if (sb.length() > 0) {
+                sb.append(" ");
+            }
+            if (part instanceof ContentPart.TextPart tp) {
+                sb.append(tp.text());
+            } else if (part instanceof ContentPart.ImagePart) {
+                sb.append("[image]");
+            }
+        }
+        return sb.toString();
     }
 }

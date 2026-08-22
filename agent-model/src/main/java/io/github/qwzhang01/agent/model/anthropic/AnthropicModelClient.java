@@ -41,6 +41,7 @@ import java.util.stream.Stream;
  * - Streaming (SSE)
  * - Tool calling
  * - Structured output (via response_format mapping)
+ * - Multimodal vision (text + image messages via ChatMessage parts)
  */
 public class AnthropicModelClient implements ModelClient {
 
@@ -174,7 +175,32 @@ public class AnthropicModelClient implements ModelClient {
             } else if (msg.role() == ChatRole.USER) {
                 ObjectNode msgNode = messages.addObject();
                 msgNode.put("role", "user");
-                msgNode.put("content", msg.content() != null ? msg.content() : "");
+
+                // Multimodal parts (text + images) take precedence over plain text
+                if (msg.parts() != null) {
+                    ArrayNode contentArray = msgNode.putArray("content");
+                    for (ContentPart part : msg.parts()) {
+                        if (part instanceof ContentPart.TextPart tp) {
+                            contentArray.addObject().put("type", "text").put("text", tp.text());
+                        } else if (part instanceof ContentPart.ImagePart ip) {
+                            ObjectNode img = contentArray.addObject();
+                            img.put("type", "image");
+                            ObjectNode source = img.putObject("source");
+                            if (ip.base64Data() != null && !ip.base64Data().isBlank()) {
+                                // Anthropic base64 source block
+                                source.put("type", "base64");
+                                source.put("media_type", ip.mimeType());
+                                source.put("data", ip.base64Data());
+                            } else {
+                                // Anthropic URL source block
+                                source.put("type", "url");
+                                source.put("url", ip.url());
+                            }
+                        }
+                    }
+                } else {
+                    msgNode.put("content", msg.content() != null ? msg.content() : "");
+                }
             } else if (msg.role() == ChatRole.ASSISTANT) {
                 ObjectNode msgNode = messages.addObject();
                 msgNode.put("role", "assistant");
