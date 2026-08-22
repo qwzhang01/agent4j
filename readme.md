@@ -6,7 +6,11 @@
 
 ## 当前阶段：Stage 10 ✅ 已完成（MCP 与外部生态集成）
 
-> Stage 1-10 已完成（2026-08-16 ~ 08-20）。
+> Stage 1-10 已完成（2026-08-16 ~ 08-20）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
+> Stage 4 沙箱 = ClassLoader + Process（无 Docker / WASM / 资源池）。
+> Stage 10 MCP = stdio v1（SSE 与 A2A 编排留 Stage 11）。
+> 多模态接入说明：[notes/architecture-multimodal.md](notes/architecture-multimodal.md)
 > Stage 10 设计文档：[notes/architecture-stage-10.md](notes/architecture-stage-10.md)
 > Stage 9 设计文档：[notes/architecture-stage-9.md](notes/architecture-stage-9.md)
 > Stage 8 设计文档：[notes/architecture-stage-8.md](notes/architecture-stage-8.md)
@@ -17,7 +21,7 @@
 ### 已完成
 
 - [x] Maven 多模块项目骨架（agent-core / agent-model / agent-plugin / agent-sandbox / examples）
-- [x] 核心数据结构：`ChatMessage` / `ModelRequest` / `ModelResponse` / `ToolCall` / `StreamEvent`
+- [x] 核心数据结构：`ChatMessage` / `ContentPart` / `ModelRequest` / `ModelResponse` / `ToolCall` / `StreamEvent`
 - [x] 核心接口：`ModelClient` / `Tool` / `ToolRegistry` / `ToolExecutor` / `Agent` / `AgentLoop`
 - [x] 默认实现：`InMemoryToolRegistry` / `DefaultToolExecutor` / `ReActAgentLoop` / `SimpleAgent`
 - [x] Mock 实现：`MockModelClient`（脚本模式 + 规则模式）/ `EchoTool` / `CurrentTimeTool`
@@ -38,9 +42,8 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：251 个（16 core + 29 插件 + 13 沙箱 + 33 Workflow + 21 调度器 + 66 记忆 + 35 安全 + 38 MCP），全绿
-- [x] 
-  示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample`
+- [x] 单元测试：289 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 38 MCP），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `MultimodalExample`
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -74,6 +77,7 @@
   MCP 工具注册后被 `GovernedToolExecutor` 自动治理，权限/审批/审计/净化零额外代码）· `McpServerDescriptor` 连接配置 +
   `McpToolSchema` 工具定义 · A2A 协议 v1 接口引入（`AgentCard`/`A2ATask`/`A2AMessage`/`A2AClient`，编排留 Stage 11）
   · `McpExample` 验收示例（连接 Mock MCP Server + 发现 echo 工具 + 治理执行 + 审计链 APPROVED+EXECUTED）
+- [x] **多模态接入治理与长任务**（2026-08-22）：读图 `ContentPart` + `SimpleAgent.run(ChatMessage)` + `VisionTool`；生图 `ImageGenerationClient` + Retry/Timeout 装饰器 + `ImageGenerationTool`；生视频默认不阻塞，`GenerationTaskCoordinator` 轮询后 `fire("video-done:{id}")`，`WaitEventNode.fromState` 自动恢复。`ToolPolicy.applyGenerationDefaults()` 三工具默认 REQUIRES_APPROVAL。验收：`MultimodalExample`
 
 ### 下一步（Stage 11：Multi-Agent 与 A2A 编排）
 
@@ -86,7 +90,7 @@
 
 ```
 java-agent-framework/
-├── agent-core/          # 核心接口与数据结构（零依赖）
+├── agent-core/          # 核心接口与数据结构（仅 Jackson + SLF4J）
 ├── agent-model/          # 模型适配器（Mock, OpenAI, Anthropic）
 ├── agent-plugin/         # 插件系统（SPI 发现 + 热加载/卸载）
 ├── agent-sandbox/        # 沙箱系统（ClassLoader + 进程隔离）
@@ -100,18 +104,14 @@ java-agent-framework/
 └── pom.xml              # 父 POM
 ```
 
-### 后续模块（按 18 周路线逐步创建）
+### 后续模块（尚未创建）
 
 ```
-agent-runtime/           # 阶段 6：运行时与 Checkpoint
-agent-scheduler/         # 阶段 7：异步任务调度器
-agent-memory/            # 阶段 8：记忆与上下文
-agent-security/          # 阶段 9：安全与审计
-agent-mcp/               # 阶段 10：MCP 集成
+agent-runtime/           # 阶段 6 已并入 agent-workflow/runtime，不再单独立项
 agent-channel/           # 阶段 12：频道级共享 Agent
 agent-trace-export/      # 阶段 14：RL 轨迹导出
 agent-product/           # 阶段 13：声明式产品层
-agent-observability/     # 阶段 18：可观测性
+agent-observability/     # 阶段 18：可观测性（含 OpenTelemetry）
 ```
 
 ## 快速开始
@@ -135,8 +135,10 @@ mvn test
 ## 核心接口速览
 
 ```
-ModelClient            # 统一模型调用入口（sync + streaming）
+ModelClient            # 统一模型调用入口（sync + streaming，含 vision parts）
   └─ MockModelClient   # 不依赖真实 LLM 的测试实现
+ImageGenerationClient  # 生图（Retry/Timeout 装饰器）
+VideoGenerationClient  # 生视频（submit/status；默认不阻塞 ReAct）
 
 Tool                   # 工具接口（name + schema + execute）
 ToolRegistry           # 工具注册表（in-memory 实现）

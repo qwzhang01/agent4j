@@ -119,7 +119,7 @@ graph TB
 graph LR
     subgraph Maven["Maven 多模块"]
         Pom["pom.xml<br/><i>父 POM</i>"]
-        Core["agent-core<br/><i>零外部依赖</i>"]
+        Core["agent-core<br/><i>Jackson + SLF4J</i>"]
         Model["agent-model<br/><i>依赖 agent-core</i>"]
         Examples["examples<br/><i>依赖 agent-core + agent-model</i>"]
     end
@@ -353,6 +353,7 @@ classDiagram
     class ChatMessage {
         +ChatRole role
         +String content
+        +List~ContentPart~ parts
         +List~ToolCall~ toolCalls
         +String toolCallId
         +String name

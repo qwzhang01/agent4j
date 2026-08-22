@@ -100,6 +100,22 @@ class SimpleAgentTest {
                 .findFirst().orElseThrow());
     }
 
+    @Test
+    void shouldPassMultimodalUserMessageThrough() {
+        var client = new CapturingMock();
+        client.response = ModelResponse.text("a cat");
+
+        AgentConfig config = new AgentConfig("test", "you are a bot", client, null, 5);
+        Agent agent = new SimpleAgent(config);
+        String result = agent.run(ChatMessage.userWithImage("what is this?", "https://example.com/cat.png"));
+
+        assertEquals("a cat", result);
+        ChatMessage user = client.lastRequest.messages().stream()
+                .filter(m -> m.role() == ChatRole.USER)
+                .findFirst().orElseThrow();
+        assertEquals(2, user.parts().size());
+    }
+
     // ============ Inline Mock ============
 
     /**

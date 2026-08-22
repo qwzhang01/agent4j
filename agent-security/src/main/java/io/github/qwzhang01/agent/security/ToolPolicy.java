@@ -1,5 +1,7 @@
 package io.github.qwzhang01.agent.security;
 
+import io.github.qwzhang01.agent.core.tool.GenerationTools;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +40,16 @@ public class ToolPolicy {
     public ToolPolicy setPermission(String toolName, ToolPermission permission) {
         toolPermissions.put(toolName, permission);
         return this;
+    }
+
+    /**
+     * Costly / side-effect multimodal tools default to REQUIRES_APPROVAL:
+     * {@code describe_image}, {@code generate_image}, {@code generate_video}.
+     */
+    public ToolPolicy applyGenerationDefaults() {
+        return setPermission(GenerationTools.DESCRIBE_IMAGE, ToolPermission.REQUIRES_APPROVAL)
+                .setPermission(GenerationTools.GENERATE_IMAGE, ToolPermission.REQUIRES_APPROVAL)
+                .setPermission(GenerationTools.GENERATE_VIDEO, ToolPermission.REQUIRES_APPROVAL);
     }
 
     /**

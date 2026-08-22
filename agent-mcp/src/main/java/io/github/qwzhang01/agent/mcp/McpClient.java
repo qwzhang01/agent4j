@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * MCP client: manages connection lifecycle and protocol operations (Stage 10 D3/D5).
@@ -26,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>{@link #connect} -- initialize handshake (send capabilities, receive server capabilities)
  *   <li>{@link #listTools} -- discover tools the server exposes
  *   <li>{@link #callTool} -- invoke a tool and get its result
+ *   <li>{@link #ping} -- MCP-standard liveness probe (process management)
+ *   <li>{@link #reconnect} -- close dead transport, build a fresh one, redo the handshake
  *   <li>{@link #disconnect} -- graceful shutdown
  * </ol>
  * <p>
@@ -41,30 +44,49 @@ public class McpClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final McpServerDescriptor descriptor;
-    private final McpTransport transport;
+    private final Supplier<McpTransport> transportFactory;
+    private McpTransport transport;  // mutable: swapped on reconnect()
     private final AtomicLong nextId = new AtomicLong(1);
     private volatile boolean initialized = false;
 
     /**
      * Create a client with a stdio transport (descriptor.command -> StdioTransport).
+     * <p>
+     * Every {@link #reconnect} spawns a FRESH subprocess via the factory.
      */
     public McpClient(McpServerDescriptor descriptor) {
-        this.descriptor = Objects.requireNonNull(descriptor);
-        if (descriptor.isStdio()) {
-            this.transport = new StdioTransport(descriptor.command());
-        } else {
-            throw new UnsupportedOperationException(
-                    "SSE transport not yet implemented (Stage 10 v2). " +
-                            "Use McpServerDescriptor.stdio() for now.");
-        }
+        this(descriptor, stdioFactory(descriptor));
     }
 
     /**
      * Create a client with a custom transport (for testing / SSE / etc.).
+     * <p>
+     * The same transport instance is reused across reconnects, so it must be
+     * reopenable ({@code open()} after {@code close()}): mocks are, a real
+     * {@link StdioTransport} is not -- use the factory constructor in production.
      */
     public McpClient(McpServerDescriptor descriptor, McpTransport transport) {
+        this(descriptor, () -> transport);
+    }
+
+    /**
+     * Create a client with a transport factory -- the recommended constructor
+     * for reconnect-capable setups: every {@link #reconnect} calls the factory
+     * to build a fresh transport (new subprocess / new connection).
+     */
+    public McpClient(McpServerDescriptor descriptor, Supplier<McpTransport> transportFactory) {
         this.descriptor = Objects.requireNonNull(descriptor);
-        this.transport = Objects.requireNonNull(transport);
+        this.transportFactory = Objects.requireNonNull(transportFactory, "transportFactory must not be null");
+        this.transport = transportFactory.get();
+    }
+
+    private static Supplier<McpTransport> stdioFactory(McpServerDescriptor descriptor) {
+        if (!descriptor.isStdio()) {
+            throw new UnsupportedOperationException(
+                    "SSE transport not yet implemented (Stage 10 v2). " +
+                            "Use McpServerDescriptor.stdio() for now.");
+        }
+        return () -> new StdioTransport(descriptor.command());
     }
 
     // ============ Connection Lifecycle ============
@@ -185,6 +207,42 @@ public class McpClient {
         }
 
         return extractTextContent(resp.result());
+    }
+
+    // ============ Health & Reconnect (process management) ============
+
+    /**
+     * MCP-standard liveness probe: send a {@code ping} request; a healthy server
+     * must reply with an (empty) result. Throws if the server is dead, the
+     * connection is broken, or the server answers with an error.
+     */
+    public void ping() throws IOException {
+        ensureConnected();
+        JsonRpcResponse resp = sendRequest("ping", null);
+        if (resp.isError()) {
+            throw new IOException("ping failed: " + resp.error());
+        }
+    }
+
+    /**
+     * Re-establish the connection after the old one died: close the old
+     * transport, build a fresh one from the factory, redo the initialize
+     * handshake. The mechanism behind {@link ManagedMcpClient}'s auto-recovery.
+     */
+    public void reconnect() throws IOException {
+        log.info("Reconnecting to MCP server '{}'...", descriptor.name());
+        initialized = false;
+        closeTransport();
+        this.transport = transportFactory.get();
+        connect();
+    }
+
+    /**
+     * The current transport. Read-only usage (health checks, crash simulation);
+     * the transport lifecycle is managed by this client.
+     */
+    public McpTransport getTransport() {
+        return transport;
     }
 
     // ============ Internal Helpers ============

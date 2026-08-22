@@ -9,14 +9,10 @@ import io.github.qwzhang01.agent.core.tool.ToolRegistry;
  * Default Agent implementation.
  * <p>
  * Combines AgentConfig (static blueprint) with AgentLoop (dynamic execution).
- * This is the simplest possible Agent: create state -> run loop -> return result.
- * <p>
- * Later stages will add:
- * - Memory integration (stage 8)
- * - Checkpoint before/after each step (stage 6)
- * - Policy checks (stage 9)
- * - Trace recording (stage 18)
- * - Trajectory export (stage 14)
+ * Accepts plain text or a multimodal {@link ChatMessage} (vision via {@code parts}).
+ * Memory ({@link AgentConfig#getContextBuilder()}), tool governance
+ * ({@link ReActAgentLoop} + {@code GovernedToolExecutor}) and checkpoints
+ * plug in from the outside — this class stays a thin entry point.
  */
 public class SimpleAgent implements Agent {
 
@@ -36,19 +32,39 @@ public class SimpleAgent implements Agent {
 
     @Override
     public String run(String userInput) {
-        return run(userInput, new AgentState());
+        return run(ChatMessage.user(userInput), new AgentState());
     }
 
     @Override
     public String run(String userInput, AgentState state) {
+        return run(ChatMessage.user(userInput), state);
+    }
+
+    @Override
+    public String run(ChatMessage userMessage) {
+        return run(userMessage, new AgentState());
+    }
+
+    @Override
+    public String run(ChatMessage userMessage, AgentState state) {
+        if (userMessage == null) {
+            throw new IllegalArgumentException("userMessage must not be null");
+        }
+        if (userMessage.role() != ChatRole.USER) {
+            throw new IllegalArgumentException("userMessage must have role USER");
+        }
         if (state.getMessages().isEmpty() && config.getSystemPrompt() != null) {
             state.addMessage(ChatMessage.system(config.getSystemPrompt()));
         }
-        state.addMessage(ChatMessage.user(userInput));
+        state.addMessage(userMessage);
 
         state.setMaxSteps(config.getMaxSteps());
         loop.execute(config, state);
 
+        return extractFinalAnswer(state);
+    }
+
+    private static String extractFinalAnswer(AgentState state) {
         var messages = state.getMessages();
         for (int i = messages.size() - 1; i >= 0; i--) {
             var msg = messages.get(i);

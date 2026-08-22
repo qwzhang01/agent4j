@@ -1,5 +1,7 @@
 package io.github.qwzhang01.agent.core.agent;
 
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+
 /**
  * Interface for an Agent.
  * <p>
@@ -33,6 +35,20 @@ public interface Agent {
      * @return agent's final response text
      */
     String run(String userInput, AgentState state);
+
+    /**
+     * Run with a pre-built USER message (text or multimodal via {@link ChatMessage#parts()}).
+     */
+    default String run(ChatMessage userMessage) {
+        return run(userMessage, new AgentState());
+    }
+
+    /**
+     * Continue a conversation with a pre-built USER message (text or multimodal).
+     */
+    default String run(ChatMessage userMessage, AgentState state) {
+        throw new UnsupportedOperationException("This agent does not support ChatMessage input");
+    }
 
     /**
      * Get the agent's configuration.

@@ -1,7 +1,7 @@
 # Stage 9 架构设计：Tool Governance、安全与审计
 
 > 对应阶段：Stage 9 - Tool Governance、安全与审计
-> 状态：设计定稿，待实现
+> 状态：✅ 已实现（2026-08-19）。2026-08-22 补：`ToolPolicy.applyGenerationDefaults()` 覆盖读图/生图/生视频。
 > 模块：新增 `agent-security` Maven 模块，依赖 `agent-core`（不依赖 workflow/scheduler/memory）
 > 前置：Stage 1-8 已完成（工具系统 / 插件 / 沙箱 / Workflow / Checkpoint / 调度器 / 记忆，178 测试全绿）
 

@@ -229,6 +229,29 @@ public class TaskScheduler {
     }
 
     /**
+     * Schedule a callback that is <em>not</em> a workflow resume.
+     * Used by {@link GenerationTaskCoordinator} to poll video tasks.
+     */
+    public void schedule(Runnable task, Duration delay) {
+        if (task == null) {
+            throw new IllegalArgumentException("task must not be null");
+        }
+        if (delay == null || delay.isNegative()) {
+            throw new IllegalArgumentException("delay must be non-negative");
+        }
+        executor.schedule(() -> {
+            if (!running) {
+                return;
+            }
+            try {
+                task.run();
+            } catch (Exception e) {
+                log.error("[scheduler] Scheduled callback failed: {}", e.getMessage());
+            }
+        }, delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
      * After a scheduler restart: re-register a one-shot resume for every
      * still-PAUSED run. Crash-recovery path for Stage 7.
      *

@@ -4,6 +4,8 @@ import io.github.qwzhang01.agent.core.model.ToolCall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.function.Function;
 
@@ -23,6 +25,17 @@ import java.util.function.Function;
 public class ConsoleApprovalService implements ToolApprovalService {
 
     private static final Logger log = LoggerFactory.getLogger(ConsoleApprovalService.class);
+
+    /**
+     * Shared scanner over System.in - created once and NEVER closed.
+     * <p>
+     * Closing a {@link Scanner} closes its underlying stream, and System.in is
+     * a process-global, non-reopenable stream. A previous version created a
+     * fresh try-with-resources Scanner per request, which closed System.in
+     * after the first approval and made every subsequent console approval
+     * crash with NoSuchElementException.
+     */
+    private static Scanner stdinScanner = new Scanner(System.in);
 
     private final Function<ToolCall, Boolean> decisionFunction;
 
@@ -66,14 +79,34 @@ public class ConsoleApprovalService implements ToolApprovalService {
         return approved;
     }
 
+    /**
+     * Reads y/n from the shared stdin scanner (never closed). Fails closed
+     * (rejects) when stdin is unavailable - closed or at EOF, e.g. in
+     * non-interactive/scheduled runs - instead of propagating
+     * {@link NoSuchElementException} up through the agent loop.
+     */
     private static boolean readFromConsole(ToolCall toolCall) {
         System.out.println("\n[APPROVAL REQUEST]");
         System.out.println("  Tool: " + toolCall.name());
         System.out.println("  Args: " + toolCall.arguments());
         System.out.print("  Allow execution? (y/n): ");
-        try (Scanner scanner = new Scanner(System.in)) {
-            String line = scanner.nextLine().trim().toLowerCase();
+        try {
+            String line = stdinScanner.nextLine().trim().toLowerCase();
             return line.equals("y") || line.equals("yes");
+        } catch (NoSuchElementException e) {
+            log.warn("[Approval] No console input available (stdin closed or EOF), "
+                    + "rejecting tool '{}' (runId context: fail-closed)", toolCall.name());
+            return false;
         }
+    }
+
+    // ============ Test Hook ============
+
+    /**
+     * Test hook: replaces the shared stdin scanner. Package-private, only for
+     * tests that need to script console input without touching real stdin.
+     */
+    static void replaceStdinScannerForTest(InputStream in) {
+        stdinScanner = new Scanner(in);
     }
 }

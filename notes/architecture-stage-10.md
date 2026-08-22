@@ -1,7 +1,7 @@
 # Stage 10 架构设计：MCP 与外部生态集成
 
 > 对应阶段：Stage 10 - MCP 与外部生态集成
-> 状态：设计定稿，待实现
+> 状态：✅ 已实现（2026-08-20）。MCP stdio v1 完成；SSE transport 与 A2A 编排留 Stage 11。
 > 模块：新增 `agent-mcp` Maven 模块，依赖 `agent-core`（不依赖 workflow/scheduler/memory/security）
 > 前置：Stage 1-9 已完成（工具/插件/沙箱/Workflow/Checkpoint/调度器/记忆/工具治理，213 测试全绿）
 

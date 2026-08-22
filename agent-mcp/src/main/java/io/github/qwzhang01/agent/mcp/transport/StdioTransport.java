@@ -28,6 +28,7 @@ public class StdioTransport implements McpTransport {
     private Process process;
     private OutputStream stdin;
     private BufferedReader stdout;
+    private Thread stderrDrainer;
 
     /**
      * @param command the subprocess command (e.g. ["python", "weather_server.py"])
@@ -55,6 +56,7 @@ public class StdioTransport implements McpTransport {
         stdin = process.getOutputStream();
         stdout = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+        startStderrDrainer();
         log.info("MCP subprocess started (pid={})", process.pid());
     }
 
@@ -86,6 +88,43 @@ public class StdioTransport implements McpTransport {
     @Override
     public boolean isOpen() {
         return process != null && process.isAlive();
+    }
+
+    /**
+     * Forcibly kill the subprocess immediately (no graceful stdin close).
+     * <p>
+     * Use cases: crash simulation in tests/demos, and killing a runaway server
+     * that ignores graceful shutdown.
+     */
+    public void destroyForcibly() {
+        if (process != null && process.isAlive()) {
+            log.warn("Force-killing MCP subprocess (pid={})", process.pid());
+            process.destroyForcibly();
+        }
+    }
+
+    /**
+     * Continuously drain the subprocess stderr on a daemon thread.
+     * <p>
+     * If nobody reads stderr, the OS pipe buffer (~64KB on macOS/Linux) fills up
+     * once the server logs enough (npx download progress, server startup logs),
+     * and the subprocess BLOCKS forever on its next stderr write -- the classic
+     * "process management" production trap (Stage 10, one of the 5 production gaps).
+     */
+    private void startStderrDrainer() {
+        stderrDrainer = new Thread(() -> {
+            try (BufferedReader err = new BufferedReader(
+                    new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = err.readLine()) != null) {
+                    log.info("[{}:stderr] {}", command.get(0), line);
+                }
+            } catch (IOException ignored) {
+                // error stream closed when the process dies -- normal shutdown path
+            }
+        }, "mcp-stderr-" + command.get(0));
+        stderrDrainer.setDaemon(true);
+        stderrDrainer.start();
     }
 
     @Override

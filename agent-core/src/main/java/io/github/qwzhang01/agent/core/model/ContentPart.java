@@ -1,6 +1,8 @@
 package io.github.qwzhang01.agent.core.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -19,6 +21,11 @@ import java.util.Objects;
  * wire format. Pure-text messages keep using {@link ChatMessage#content()}.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = ContentPart.TextPart.class, name = "text"),
+        @JsonSubTypes.Type(value = ContentPart.ImagePart.class, name = "image")
+})
 public sealed interface ContentPart {
 
     // ============ Part Types ============

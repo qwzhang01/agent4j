@@ -17,29 +17,42 @@ import java.time.Duration;
  * On resume: checks if the event has fired, reads its payload, and passes
  * it through to the next node.
  * <p>
- * Usage:
- * <pre>{@code
- * .node(WaitEventNode.of("wait-ci", "ci-passed:pr-123"))
- * }</pre>
+ * The event key can be fixed at graph-definition time, or read from the
+ * blackboard (so a previous node can write {@code video-done:{taskId}}).
  */
 public final class WaitEventNode implements WorkflowNode {
 
+    public static final String DEFAULT_EVENT_KEY_VARIABLE = "eventKey";
+
     private final String id;
     private final String eventKey;
+    private final String eventKeyVariable;
     private final Duration timeout;
 
-    private WaitEventNode(String id, String eventKey, Duration timeout) {
+    private WaitEventNode(String id, String eventKey, String eventKeyVariable, Duration timeout) {
         this.id = id;
         this.eventKey = eventKey;
+        this.eventKeyVariable = eventKeyVariable;
         this.timeout = timeout;
     }
 
     public static WaitEventNode of(String id, String eventKey) {
-        return new WaitEventNode(id, eventKey, null);
+        return new WaitEventNode(id, eventKey, null, null);
     }
 
     public static WaitEventNode of(String id, String eventKey, Duration timeout) {
-        return new WaitEventNode(id, eventKey, timeout);
+        return new WaitEventNode(id, eventKey, null, timeout);
+    }
+
+    /**
+     * Resolve the event key from {@code state.get(variable)} at runtime.
+     */
+    public static WaitEventNode fromState(String id, String eventKeyVariable) {
+        return fromState(id, eventKeyVariable, null);
+    }
+
+    public static WaitEventNode fromState(String id, String eventKeyVariable, Duration timeout) {
+        return new WaitEventNode(id, null, eventKeyVariable, timeout);
     }
 
     @Override
@@ -54,18 +67,32 @@ public final class WaitEventNode implements WorkflowNode {
             throw new IllegalStateException("WaitEventNode requires a TaskScheduler in the context");
         }
 
+        String key = resolveEventKey(ctx);
+
         if (ctx.isResuming()) {
-            if (scheduler.hasEventFired(eventKey)) {
-                Object payload = scheduler.getEventPayload(eventKey);
-                return NodeResult.of(payload != null ? payload : "event:" + eventKey);
+            if (scheduler.hasEventFired(key)) {
+                Object payload = scheduler.getEventPayload(key);
+                return NodeResult.of(payload != null ? payload : "event:" + key);
             }
-            if (scheduler.isEventTimedOut(ctx.runId(), eventKey)) {
-                throw new WorkflowException("Event '" + eventKey + "' timed out");
+            if (scheduler.isEventTimedOut(ctx.runId(), key)) {
+                throw new WorkflowException("Event '" + key + "' timed out");
             }
-            throw new PauseException(id, "event '" + eventKey + "' not yet fired, re-pausing");
+            throw new PauseException(id, "event '" + key + "' not yet fired, re-pausing");
         } else {
-            scheduler.waitForEvent(ctx.runId(), eventKey, timeout);
-            throw new PauseException(id, "waiting for event '" + eventKey + "'");
+            scheduler.waitForEvent(ctx.runId(), key, timeout);
+            throw new PauseException(id, "waiting for event '" + key + "'");
         }
+    }
+
+    private String resolveEventKey(NodeContext ctx) {
+        if (eventKeyVariable == null) {
+            return eventKey;
+        }
+        Object value = ctx.state().get(eventKeyVariable);
+        if (value == null || value.toString().isBlank()) {
+            throw new IllegalStateException(
+                    "WaitEventNode '" + id + "' expected state." + eventKeyVariable + " to hold an event key");
+        }
+        return value.toString();
     }
 }

@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.model.imagegen;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.qwzhang01.agent.core.client.ImageGenerationClient;
+import io.github.qwzhang01.agent.core.tool.GenerationTools;
 import io.github.qwzhang01.agent.core.tool.Tool;
 
 /**
@@ -27,7 +28,7 @@ public class ImageGenerationTool implements Tool {
 
     @Override
     public String getName() {
-        return "generate_image";
+        return GenerationTools.GENERATE_IMAGE;
     }
 
     @Override

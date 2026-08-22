@@ -1,7 +1,7 @@
 # Stage 8 架构设计：Memory、Context 与共享记忆治理
 
 > 对应阶段：Stage 8 - Memory、Context 与共享记忆治理（v3 扩展版）
-> 状态：设计定稿，待实现
+> 状态：✅ 已实现（2026-08-19）。v1 为内存存储；持久化 Store 留后续。
 > 模块：新增 `agent-memory` Maven 模块，依赖 `agent-core`（不依赖 workflow/scheduler）
 > 前置：Stage 1-7 已完成（AgentLoop / 插件 / 沙箱 / Workflow / Checkpoint / 调度器，112 测试全绿）
 

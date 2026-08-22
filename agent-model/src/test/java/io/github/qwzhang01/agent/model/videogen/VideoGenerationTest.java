@@ -164,6 +164,7 @@ class VideoGenerationTest {
         Tool tool = new VideoGenerationTool(mockClient, Duration.ofSeconds(5), Duration.ofMillis(10));
         var args = mapper.createObjectNode();
         args.put("prompt", "a sunset timelapse");
+        args.put("wait", true);
         String result = tool.execute(args);
 
         assertTrue(result.contains("https://cdn.example.com/sunset.mp4"),
@@ -196,6 +197,31 @@ class VideoGenerationTest {
     }
 
     @Test
+    void toolDefaultsToNonBlockingAndNotifiesListener() {
+        java.util.concurrent.atomic.AtomicReference<String> notified = new java.util.concurrent.atomic.AtomicReference<>();
+        VideoGenerationClient mockClient = new VideoGenerationClient() {
+            @Override
+            public VideoTask submit(VideoGenRequest request) {
+                return new VideoTask("t-async", VideoTask.STATUS_QUEUED, null, null, null, null);
+            }
+
+            @Override
+            public VideoTask status(String taskId) {
+                throw new IllegalStateException("status should not be called when wait defaults to false");
+            }
+        };
+
+        Tool tool = new VideoGenerationTool(mockClient, (kind, taskId, task) -> notified.set(taskId));
+        var args = mapper.createObjectNode();
+        args.put("prompt", "a sunrise");
+        String result = tool.execute(args);
+
+        assertTrue(result.contains("t-async"), "default mode must return the task id, got: " + result);
+        assertTrue(result.contains("video-done:t-async"));
+        assertEquals("t-async", notified.get());
+    }
+
+    @Test
     void toolReportsFailedTask() {
         VideoGenerationClient mockClient = new VideoGenerationClient() {
             @Override
@@ -212,6 +238,7 @@ class VideoGenerationTest {
         Tool tool = new VideoGenerationTool(mockClient, Duration.ofSeconds(5), Duration.ofMillis(10));
         var args = mapper.createObjectNode();
         args.put("prompt", "something invalid");
+        args.put("wait", true);
         String result = tool.execute(args);
 
         assertTrue(result.contains("failed") && result.contains("content policy violation"),

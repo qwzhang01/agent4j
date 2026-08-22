@@ -1,7 +1,7 @@
 # Stage 7 架构设计：异步任务调度器
 
 > 对应阶段：Stage 7 - 异步任务调度器
-> 状态：设计定稿，待实现
+> 状态：✅ 已实现（2026-08-18）。2026-08-22 补：`TaskScheduler.schedule` + `GenerationTaskCoordinator` 把生视频接到事件恢复。
 > 模块：新增 `agent-scheduler` Maven 模块，依赖 `agent-workflow`
 > 前置：Stage 6 已完成（Checkpoint 暂停-恢复 + RunManager）
 
