@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 12 ✅ 已完成（频道级共享 Agent、Agent Identity 与 Ambient 模式）
+## 当前阶段：Stage 13 ✅ 已完成（上层产品搭建层：声明式 Agent 定义，2026-08-23）—— 下一步 Stage 14 RL 轨迹产出层
 
 > Stage 1-12 已完成（2026-08-16 ~ 08-22），426 测试全绿（含 Stage 12 完成后自查修复，详见架构笔记 §13 审查记录）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 13 设计蓝图：[notes/architecture-stage-13.md](notes/architecture-stage-13.md)（新增 agent-product 模块：声明式定义 / 模板 / 配置驱动 Tool / Prompt 管理 / Webhook / DAG / 多租户）
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
 > Stage 4 沙箱 = ClassLoader + Process（无 Docker / WASM / 资源池）。
 > Stage 10 MCP = stdio v1 + 真实官方 Server 互通 + 进程管理自愈（SSE 留 v2）。
@@ -45,7 +46,7 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：426 个（23 core + 24 model + 29 插件 + 13 沙箱 + 33 Workflow + 22 调度器 + 66 记忆 + 41 安全 + 52 MCP + 45 编排 + 78 channel），全绿
+- [x] 单元测试：602 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 157 product），全绿
 - [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
@@ -129,16 +130,16 @@
     enable 事件触发条件判定推送→频控吞重复→静默窗 CRITICAL 突破/WARN 进 digest→定时 INFO 巡检进 digest（**digest=1 正是
     频控对 digest 也生效的实证**）→全部推送 actor=eng-bot）· 规划验收 5 条全过，12/18 阶段，下一步 Stage 13 上层产品搭建层
 
-### 下一步（Stage 12：频道级共享 Agent、Agent Identity 与 Ambient 模式 📐 已规划）
+### Stage 13 完成记录（上层产品搭建层 ✅ 2026-08-23，一天五里程碑）
 
-> 设计蓝图：[notes/architecture-stage-12.md](notes/architecture-stage-12.md) · 新增 `agent-channel` 模块，
-> 复用 Stage 7 调度底座 + Stage 8 channel scope 记忆 + Stage 9 治理（组装阶段）
+> 设计蓝图：[notes/architecture-stage-13.md](notes/architecture-stage-13.md) · 新增 `agent-product` 模块，
+> 复用 Stage 1-12 全部底座（第二次组装阶段），核心元模式：「定义存名字，注册表存实现」
 
-- [x] M12.1 AgentIdentity / ServiceAccount / IdentityScope / IdentityResolver（三方身份，权限交集 + fail-closed）
-- [x] M12.2 ChannelContext / SharedAgentSession（Agent + 频道容器，多人共享上下文）
-- [x] M12.3 TaskHandoff（state+记忆+进度三件套移交）+ ExecutionVisibility / TaskBoard
-- [x] M12.4 AmbientEngine（包装 TaskScheduler/EventBroker）+ NoisePolicy 四道闸（默认关闭）
-- [x] M12.5 验收示例 ChannelAgentExample / AmbientExample + 收口
+- [x] M13.1 声明式定义层：AgentDefinition + Parser（YAML/JSON）+ Validator（位置化错误）+ Binder + ProductBootstrapper ✅（agent-product 模块 53 测试全绿，2026-08-23）
+- [x] M13.2 模板系统：AgentTemplate（fork 快照语义）+ TemplateRegistry（内置客服 / 知识助手 2 模板）✅（+23 测试，2026-08-23）
+- [x] M13.3 配置驱动工具：HttpApiTool（implements Tool，治理免费搭车）+ HttpApiToolFactory ✅（+25 测试含治理接管实证，2026-08-23）
+- [x] M13.4 Prompt 管理：PromptManager + PromptVersion（实例级 pin 热切换 + stable/canary 双通道 + 租户路由 + 指针回滚）✅（+28 测试含 pin 实证，2026-08-23）
+- [x] M13.5 事件接入 + DAG + 多租户收口：WebhookController（HMAC 验签/幂等/202）+ DagSpec/WorkflowDagCodec/ConditionRegistry（双向转换）+ TenantAgentConfig 覆盖 + ambient 段接线（bindChannel）+ DeclarativeAgentExample/WebhookExample ✅（+28 测试，2026-08-23）
 - [ ] 文章：java-agent-02~10 存量草稿按节奏补发（不急）
 
 ## 模块结构
@@ -156,6 +157,7 @@ java-agent-framework/
 ├── agent-mcp/          # MCP 客户端与 A2A 协议基础（连外部工具服务器）
 ├── agent-orchestrator/ # 多 Agent 编排（Supervisor/Worker/A2A 桥接）
 ├── agent-channel/      # 频道级共享 Agent（身份/共享会话/Ambient，Stage 12）
+├── agent-product/      # 声明式产品层（YAML 定义/模板/配置工具/Prompt 管理，Stage 13）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -165,9 +167,7 @@ java-agent-framework/
 
 ```
 agent-runtime/           # 阶段 6 已并入 agent-workflow/runtime，不再单独立项
-agent-channel/           # 阶段 12：频道级共享 Agent
 agent-trace-export/      # 阶段 14：RL 轨迹导出
-agent-product/           # 阶段 13：声明式产品层
 agent-observability/     # 阶段 18：可观测性（含 OpenTelemetry）
 ```
 
@@ -254,4 +254,4 @@ ExecutionResult        # 终态（status + output + error + state）
 | 10. MCP 集成        | agent-mcp                | ✅ 完成  |
 | 11. Multi-Agent    | agent-orchestrator       | ✅ 完成  |
 | 12. 频道共享 Agent/Identity/Ambient | agent-channel | ✅ 完成  |
-| 13. 上层产品搭建层 | agent-product            | ⬜ 下一步 |
+| 13. 上层产品搭建层 | agent-product            | ✅ 已完成 |

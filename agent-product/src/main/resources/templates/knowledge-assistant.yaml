@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: AgentTemplate
+metadata:
+  name: knowledge-assistant
+  version: "1.0"
+  description: 知识助手模板：企业知识库检索问答，答不出就直说
+variables:
+  - name: tenantId
+    required: true
+    description: 租户标识（审计与未来的记忆隔离）
+  - name: assistantName
+    required: false
+    default: "小知"
+    description: 助手显示名，注入人格
+spec:
+  persona:
+    systemPrompt: "你是知识助手 ${assistantName}。只基于 kb-search 检索到的内容回答；检索不到就明确说「知识库里没有」，不要编造。"
+    temperature: 0.1
+  model:
+    provider: openai
+  tools:
+    - ref: kb-search
+  memory:
+    shortTerm:
+      strategy: window
+      maxMessages: 30

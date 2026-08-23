@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: AgentTemplate
+metadata:
+  name: support-agent
+  version: "1.0"
+  description: 客服 Agent 模板：订单查询 + 退款政策检索
+variables:
+  - name: tenantId
+    required: true
+    description: 租户标识（审计与未来的记忆隔离）
+  - name: brandName
+    required: false
+    default: "七七商城"
+    description: 品牌名，注入人格
+spec:
+  persona:
+    systemPrompt: "你是 ${brandName} 的客服助手。称呼用户为「老板」。回答订单问题前先用 order-query 查询，退款问题必须基于 refund-policy-search 的检索结果，不要凭空承诺。"
+    temperature: 0.3
+  model:
+    provider: openai
+    fallback: deepseek
+  tools:
+    - ref: order-query
+    - ref: refund-policy-search
+  memory:
+    shortTerm:
+      strategy: window
+      maxMessages: 20
