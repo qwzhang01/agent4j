@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.product;
 
+import io.github.qwzhang01.agent.channel.identity.ServiceAccount;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.tool.Tool;
@@ -33,6 +34,7 @@ public final class ProductContext {
     private final Map<String, ContextBuilder> contextBuilders = new LinkedHashMap<>();
     private final Map<String, Workflow> workflows = new LinkedHashMap<>();
     private final Map<String, TenantAgentConfig> tenantConfigs = new LinkedHashMap<>();
+    private final Map<String, ServiceAccount> serviceAccounts = new LinkedHashMap<>();
     private PromptManager promptManager;
 
     // ============ Registration ============
@@ -116,6 +118,23 @@ public final class ProductContext {
         return this;
     }
 
+    /**
+     * Register a provisioned service account under a name (D7): a tenant
+     * config's {@code serviceAccount} field holds this NAME, the account
+     * itself (scope / validity window / identity) is provisioned here by an
+     * admin - the same names-in-definition pattern as models and tools.
+     */
+    public ProductContext registerServiceAccount(String name, ServiceAccount account) {
+        requireName(name, "service account");
+        Objects.requireNonNull(account, "account must not be null");
+        if (serviceAccounts.containsKey(name)) {
+            throw new IllegalArgumentException(
+                    "Service account '" + name + "' is already registered");
+        }
+        serviceAccounts.put(name, account);
+        return this;
+    }
+
     // ============ Lookup ============
 
     public Optional<ModelClient> model(String name) {
@@ -153,6 +172,13 @@ public final class ProductContext {
         return Optional.ofNullable(tenantConfigs.get(tenantId));
     }
 
+    /**
+     * A provisioned service account by name (D7); empty when not registered.
+     */
+    public Optional<ServiceAccount> serviceAccount(String name) {
+        return Optional.ofNullable(serviceAccounts.get(name));
+    }
+
     // ============ Name listings (validation error messages) ============
 
     public List<String> modelNames() {
@@ -165,6 +191,10 @@ public final class ProductContext {
 
     public List<String> contextBuilderNames() {
         return List.copyOf(contextBuilders.keySet());
+    }
+
+    public List<String> serviceAccountNames() {
+        return List.copyOf(serviceAccounts.keySet());
     }
 
     // --------------------------------------------

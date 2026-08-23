@@ -106,15 +106,20 @@ public final class AgentDefinitionBinder {
         Objects.requireNonNull(channel, "channel must not be null");
         Agent agent = bind(definition);
 
-        // v1 service account: derived from the definition. The default scope
-        // intersects with the default "member" role capability; assembly can
-        // rebuild with a stricter IdentityScope/role wiring later.
-        String tenant = definition.metadata().tenant();
-        String accountId = "sa-" + definition.metadata().name() + (tenant == null ? "" : "-" + tenant);
-        ServiceAccount account = ServiceAccount.of(accountId,
-                new AgentIdentity(definition.metadata().name(),
-                        definition.metadata().name(), "platform"),
-                IdentityScope.capabilities("member"));
+        // Service identity (D7): the tenant overlay's serviceAccount NAME
+        // resolves against the context's provisioned accounts (one per tenant
+        // agent, admin-provisioned - same names-in-definition pattern as
+        // models/tools); without an overlay a v1 account is derived from the
+        // definition name. Assembly can rebuild the session with stricter
+        // IdentityScope/role wiring later.
+        TenantAgentConfig tenant = tenantOverlay(definition);
+        ServiceAccount account = tenant != null && tenant.serviceAccount() != null
+                ? context.serviceAccount(tenant.serviceAccount())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Tenant config references service account '"
+                                        + tenant.serviceAccount() + "' which is not registered "
+                                        + "(available: " + context.serviceAccountNames() + ")"))
+                : derivedServiceAccount(definition);
 
         // Default role permissions: members get a "member" capability set.
         // The assembly layer can rebuild the session with stricter wiring.
@@ -143,6 +148,19 @@ public final class AgentDefinitionBinder {
     private TenantAgentConfig tenantOverlay(AgentDefinition definition) {
         String tenant = definition.metadata().tenant();
         return tenant == null ? null : context.tenantConfig(tenant).orElse(null);
+    }
+
+    /**
+     * The fallback service identity when no tenant overlay provides one:
+     * derived from the definition name (v1 shape, see {@link #bindChannel}).
+     */
+    private ServiceAccount derivedServiceAccount(AgentDefinition definition) {
+        String tenant = definition.metadata().tenant();
+        String accountId = "sa-" + definition.metadata().name() + (tenant == null ? "" : "-" + tenant);
+        return ServiceAccount.of(accountId,
+                new AgentIdentity(definition.metadata().name(),
+                        definition.metadata().name(), "platform"),
+                IdentityScope.capabilities("member"));
     }
 
     private String modelProvider(AgentDefinition.Spec spec, TenantAgentConfig tenant) {

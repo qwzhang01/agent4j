@@ -3,8 +3,9 @@ package io.github.qwzhang01.agent.product.trigger;
 /**
  * Outcome of handling a webhook (Stage 13 M13.5, D8).
  * <p>
- * Transport-agnostic: the HTTP layer maps statuses to codes (202/401/404/409),
- * tests assert on this record instead.
+ * Transport-agnostic: the HTTP layer maps statuses to codes
+ * (202 accepted / 200 replay / 401 / 404 / 400 / 503), tests assert on this
+ * record instead.
  *
  * @param status  outcome category
  * @param message human-readable detail (also what audits log)
@@ -30,6 +31,9 @@ public record WebhookResult(Status status, String message) {
         /** Body is not the JSON the route expects (HTTP 400). */
         BAD_PAYLOAD,
         /** Route points at an agent that is not running (HTTP 503). */
-        AGENT_NOT_FOUND
+        AGENT_NOT_FOUND,
+        /** Executor refused the task - the event never started, retry is
+         *  safe with the same eventId (HTTP 503). */
+        DISPATCH_FAILED
     }
 }

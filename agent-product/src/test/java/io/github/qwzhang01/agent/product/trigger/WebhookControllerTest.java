@@ -144,6 +144,66 @@ class WebhookControllerTest {
         assertEquals(WebhookResult.Status.NO_EVENT_ID, result.status());
     }
 
+    // ============ Idempotency slot release (retry safety) ============
+
+    @Test
+    void eventIdIsReleasedWhenAgentIsMissingSoRetryCanDeliver() throws Exception {
+        // First delivery: the agent is not running yet -> 503, and the
+        // idempotency slot must NOT stay claimed (the event never ran).
+        String body = "{\"eventId\":\"e-retry\"}";
+        Map<String, String> headers = Map.of("X-Signature", sign(body));
+        WebhookController controller = controller();
+        assertEquals(WebhookResult.Status.AGENT_NOT_FOUND,
+                controller.handle("alerting", headers, body).status());
+
+        // The agent comes up; the sender retries the SAME eventId.
+        AtomicReference<String> lastInput = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        agents.register("support-bot", new CapturingAgent(lastInput, latch));
+
+        assertEquals(WebhookResult.Status.ACCEPTED,
+                controller.handle("alerting", headers, body).status(),
+                "retry after the agent is back must deliver, not read as a replay");
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void eventIdIsReleasedWhenExecutorRejectsTheTask() {
+        AtomicReference<String> lastInput = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        agents.register("support-bot", new CapturingAgent(lastInput, latch));
+        java.util.concurrent.ExecutorService rejecting =
+                java.util.concurrent.Executors.newSingleThreadExecutor();
+        rejecting.shutdown();   // every execute() now throws RejectedExecutionException
+        WebhookController controller = WebhookController.builder()
+                .route(new WebhookRoute("alerting", "support-bot", null, SECRET))
+                .agents(agents)
+                .executor(rejecting)
+                .build();
+
+        String body = "{\"eventId\":\"e-reject\"}";
+        Map<String, String> headers = Map.of("X-Signature", sign(body));
+        assertEquals(WebhookResult.Status.DISPATCH_FAILED,
+                controller.handle("alerting", headers, body).status(),
+                "a rejected dispatch must not throw and must answer DISPATCH_FAILED");
+        assertEquals(1, latch.getCount(), "the run never started");
+
+        // The slot was released - the retry on the SAME controller is
+        // answered DISPATCH_FAILED again (executor still down), NOT DUPLICATE.
+        assertEquals(WebhookResult.Status.DISPATCH_FAILED,
+                controller.handle("alerting", headers, body).status(),
+                "a retry must not be misread as a replay of an event that never ran");
+    }
+
+    @Test
+    void nullBodyIsRejectedAsBadPayloadNotAnNpe() {
+        agents.register("support-bot", new CapturingAgent(new AtomicReference<>(),
+                new CountDownLatch(1)));
+        WebhookResult result = controller().handle("alerting", Map.of(), null);
+        assertEquals(WebhookResult.Status.BAD_PAYLOAD, result.status(),
+                "handle() never throws for delivery-level problems");
+    }
+
     // ============ Routing ============
 
     @Test

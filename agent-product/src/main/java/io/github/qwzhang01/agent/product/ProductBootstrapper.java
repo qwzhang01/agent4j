@@ -77,6 +77,12 @@ public final class ProductBootstrapper {
     /**
      * Parse, validate and bind every definition file in {@code agentsDir}
      * (.yaml / .yml / .json). All-or-nothing: any failure means nothing starts.
+     * <p>
+     * Every definition is bound as a PLAIN agent ({@code bind()}). A definition
+     * that declares {@code spec.ambient} is still started, but its ambient
+     * instructions are NOT wired (they need a channel session): a WARN names
+     * the agent. To run ambient, use {@code AgentDefinitionBinder.bindChannel}
+     * explicitly - {@code startAll} has no channel context by design.
      *
      * @param agentsDir directory containing agent definition files
      * @return registry of started agents
@@ -123,6 +129,14 @@ public final class ProductBootstrapper {
         AgentDefinitionBinder binder = new AgentDefinitionBinder(context);
         AgentRegistry registry = new AgentRegistry();
         for (var definition : definitions) {
+            // Not silently ignored: ambient needs a channel session
+            // (bindChannel), which startAll does not have - say so.
+            if (definition.spec().ambient() != null && !definition.spec().ambient().isEmpty()) {
+                log.warn("Agent '{}' declares spec.ambient - startAll binds PLAIN agents; "
+                                + "the ambient instructions are NOT wired here. Use "
+                                + "AgentDefinitionBinder.bindChannel for channel agents.",
+                        definition.metadata().name());
+            }
             Agent agent = binder.bind(definition);
             registry.register(definition.metadata().name(), agent);
             log.info("Started agent '{}' from definition (tenant: {})",
@@ -207,6 +221,16 @@ public final class ProductBootstrapper {
          */
         public Builder tenantConfig(io.github.qwzhang01.agent.product.tenant.TenantAgentConfig config) {
             context.registerTenantConfig(config);
+            return this;
+        }
+
+        /**
+         * Register an admin-provisioned service account under a name (D7):
+         * tenant configs reference it by that name for channel-agent identity.
+         */
+        public Builder serviceAccount(String name,
+                                       io.github.qwzhang01.agent.channel.identity.ServiceAccount account) {
+            context.registerServiceAccount(name, account);
             return this;
         }
 

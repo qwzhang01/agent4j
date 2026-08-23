@@ -32,7 +32,13 @@ import java.util.concurrent.Executors;
  *   <li><b>Verify:</b> HMAC-SHA256 over the raw body with the route's secret;
  *       failure rejects BEFORE any agent runs</li>
  *   <li><b>Idempotent:</b> payload must carry {@code eventId}; replays are
- *       answered DUPLICATE without re-running (in-memory set in v1)</li>
+ *       answered DUPLICATE without re-running (in-memory set in v1). The
+ *       idempotency slot is claimed only when the event is actually
+ *       DISPATCHED - a delivery that fails before dispatch (agent missing,
+ *       executor rejected) releases the slot so the sender's retry can still
+ *       deliver the event. A run that fails AFTER dispatch keeps the slot:
+ *       that is at-least-once semantics, and a retry must not double-run a
+ *       partially executed event</li>
  *   <li><b>202 semantics:</b> handle() returns as soon as the work is queued;
  *       the run executes on an Executor - a slow agent must not turn the
  *       sender's timeout into a double delivery</li>
@@ -75,6 +81,12 @@ public final class WebhookController {
         }
 
         String signature = headers == null ? null : headers.get("X-Signature");
+        if (rawBody == null) {
+            // HMAC over null is impossible - reject as a delivery-level problem
+            // (this method never throws, per the contract above).
+            return new WebhookResult(WebhookResult.Status.BAD_PAYLOAD,
+                    "body must not be null");
+        }
         if (signature == null || !MessageDigest.isEqual(
                 signature.toLowerCase().getBytes(StandardCharsets.UTF_8),
                 hmacSha256(rawBody, route.secret()).toLowerCase().getBytes(StandardCharsets.UTF_8))) {
@@ -85,7 +97,7 @@ public final class WebhookController {
 
         JsonNode payload;
         try {
-            payload = JSON.readTree(rawBody == null ? "" : rawBody);
+            payload = JSON.readTree(rawBody);
         } catch (Exception e) {
             return new WebhookResult(WebhookResult.Status.BAD_PAYLOAD,
                     "body is not valid JSON: " + e.getMessage());
@@ -103,20 +115,33 @@ public final class WebhookController {
 
         Agent agent = agents.get(route.agentName()).orElse(null);
         if (agent == null) {
+            // The event never started - release the idempotency slot so the
+            // sender's retry (after the agent is back) can deliver it.
+            seenEventIds.remove(eventId);
             return new WebhookResult(WebhookResult.Status.AGENT_NOT_FOUND,
                     "route targets agent '" + route.agentName() + "' which is not running");
         }
 
         String input = PayloadRenderer.render(route.payloadTemplate(), payload);
-        executor.execute(() -> {
-            try {
-                String output = agent.run(input);
-                log.info("Webhook '{}' -> agent '{}' completed: {}",
-                        source, route.agentName(), abbreviate(output));
-            } catch (Exception e) {
-                log.error("Webhook '{}' -> agent '{}' failed", source, route.agentName(), e);
-            }
-        });
+        try {
+            executor.execute(() -> {
+                try {
+                    String output = agent.run(input);
+                    log.info("Webhook '{}' -> agent '{}' completed: {}",
+                            source, route.agentName(), abbreviate(output));
+                } catch (Exception e) {
+                    log.error("Webhook '{}' -> agent '{}' failed", source, route.agentName(), e);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException e) {
+            // Queue refused the task - the event never started, so release the
+            // idempotency slot for the sender's retry.
+            seenEventIds.remove(eventId);
+            log.error("Webhook '{}' -> agent '{}' dispatch rejected by the executor",
+                    source, route.agentName(), e);
+            return new WebhookResult(WebhookResult.Status.DISPATCH_FAILED,
+                    "executor rejected the event; retry with the same eventId is safe");
+        }
         return WebhookResult.accepted("event '" + eventId + "' dispatched to '"
                 + route.agentName() + "' asynchronously");
     }

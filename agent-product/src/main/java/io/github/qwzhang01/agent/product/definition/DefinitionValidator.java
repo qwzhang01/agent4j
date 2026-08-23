@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.product.definition;
 
 import io.github.qwzhang01.agent.product.ProductContext;
+import io.github.qwzhang01.agent.product.tenant.TenantAgentConfig;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,7 +34,7 @@ public final class DefinitionValidator {
         List<ValidationError> errors = new ArrayList<>();
         AgentDefinition.Spec spec = def.spec();
 
-        validatePersona(spec.persona(), ctx, errors);
+        validatePersona(def.metadata().tenant(), spec.persona(), ctx, errors);
         validateModel(spec.model(), ctx, errors);
         validateTools(spec.tools(), ctx, errors);
         validateMemory(spec.memory(), ctx, errors);
@@ -47,7 +48,7 @@ public final class DefinitionValidator {
     // Section validators
     // --------------------------------------------
 
-    private void validatePersona(AgentDefinition.Persona persona, ProductContext ctx,
+    private void validatePersona(String tenantId, AgentDefinition.Persona persona, ProductContext ctx,
                                  List<ValidationError> errors) {
         if (persona == null) {
             errors.add(new ValidationError("spec.persona",
@@ -66,8 +67,9 @@ public final class DefinitionValidator {
 
         if (hasRef) {
             PromptRef ref = persona.promptRef();
-            if (ref.channel() != null
-                    && !"stable".equals(ref.channel()) && !"canary".equals(ref.channel())) {
+            boolean channelValid = ref.channel() == null
+                    || "stable".equals(ref.channel()) || "canary".equals(ref.channel());
+            if (!channelValid) {
                 errors.add(new ValidationError("spec.persona.promptRef.channel",
                         "must be 'stable' or 'canary', got: " + ref.channel()));
             }
@@ -76,10 +78,24 @@ public final class DefinitionValidator {
                 errors.add(new ValidationError("spec.persona.promptRef",
                         "the platform has no PromptManager registered "
                                 + "(inline systemPrompt needs none)"));
-            } else if (manager.get().resolve(ref.name(), null, null).isEmpty()) {
-                errors.add(new ValidationError("spec.persona.promptRef.name",
-                        "'" + ref.name() + "' is not a published prompt, available: "
-                                + manager.get().promptNames()));
+            } else if (channelValid) {
+                // Route EXACTLY like the binder: tenant overlay's promptChannel
+                // overrides the declared one (operator overrides inside the
+                // manager still win) - otherwise a canary-only prompt would
+                // be rejected here while binding would succeed.
+                // Skipped for an invalid channel name: "no version for channel
+                // 'beta'" would mislead the author into publishing to a
+                // channel that cannot exist.
+                TenantAgentConfig tenant = tenantId == null ? null
+                        : ctx.tenantConfig(tenantId).orElse(null);
+                String declaredChannel = tenant != null && tenant.promptChannel() != null
+                        ? tenant.promptChannel() : ref.channel();
+                if (manager.get().resolve(ref.name(), tenantId, declaredChannel).isEmpty()) {
+                    errors.add(new ValidationError("spec.persona.promptRef.name",
+                            "'" + ref.name() + "' has no version for the routed channel '"
+                                    + (declaredChannel == null ? "stable" : declaredChannel)
+                                    + "', available: " + manager.get().promptNames()));
+                }
             }
         }
 

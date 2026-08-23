@@ -6,8 +6,8 @@ metadata:
   description: 知识助手模板：企业知识库检索问答，答不出就直说
 variables:
   - name: tenantId
-    required: true
-    description: 租户标识（审计与未来的记忆隔离）
+    required: false
+    description: 租户标识（v2 记忆隔离接线后注入 namespace；当前租户归属走 instantiate 的 tenant 参数，不经此变量）
   - name: assistantName
     required: false
     default: "小知"

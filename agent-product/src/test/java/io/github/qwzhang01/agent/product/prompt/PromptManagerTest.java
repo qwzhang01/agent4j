@@ -143,6 +143,37 @@ class PromptManagerTest {
         assertThrows(IllegalArgumentException.class, () -> manager.rollback("ghost"));
     }
 
+    // ============ Concurrency (runtime asset) ============
+
+    @Test
+    void concurrentPublishesAreAllCounted() throws Exception {
+        int threads = 8;
+        int perThread = 25;
+        java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(threads);
+        try {
+            java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+            for (int t = 0; t < threads; t++) {
+                int idx = t;
+                pool.submit(() -> {
+                    start.await();
+                    for (int i = 0; i < perThread; i++) {
+                        manager.publish("p", "c-" + idx + "-" + i);
+                    }
+                    return null;
+                });
+            }
+            start.countDown();
+            pool.shutdown();
+            assertTrue(pool.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS),
+                    "concurrent publishes must terminate");
+        } finally {
+            pool.shutdownNow();
+        }
+        assertEquals(threads * perThread, manager.history("p").size(),
+                "no version may be lost under concurrent publish");
+    }
+
     // ============ History discipline ============
 
     @Test

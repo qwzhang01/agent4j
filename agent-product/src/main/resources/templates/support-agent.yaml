@@ -6,8 +6,8 @@ metadata:
   description: 客服 Agent 模板：订单查询 + 退款政策检索
 variables:
   - name: tenantId
-    required: true
-    description: 租户标识（审计与未来的记忆隔离）
+    required: false
+    description: 租户标识（v2 记忆隔离接线后注入 namespace；当前租户归属走 instantiate 的 tenant 参数，不经此变量）
   - name: brandName
     required: false
     default: "七七商城"

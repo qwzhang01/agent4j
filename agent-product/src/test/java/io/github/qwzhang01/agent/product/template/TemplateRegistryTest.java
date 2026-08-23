@@ -102,6 +102,24 @@ class TemplateRegistryTest {
         assertEquals(2, support.spec().tools().size());
     }
 
+    @Test
+    void builtinsInstantiateWithoutTenantId() {
+        // tenantId is OPTIONAL in the built-ins: no spec placeholder consumes
+        // it until v2 memory isolation lands, so demanding it was pure burden.
+        // Tenant attribution travels via the instantiate tenant parameter.
+        TemplateRegistry registry = TemplateRegistry.builtins();
+
+        AgentDefinition minimal = registry.instantiate(
+                "support-agent", "support-bot", "acme", Map.of());
+        assertEquals("acme", minimal.metadata().tenant(),
+                "tenant attribution comes from the tenant parameter, not the variable");
+        assertTrue(minimal.spec().persona().systemPrompt().contains("七七商城"));
+
+        AgentDefinition kb = registry.instantiate(
+                "knowledge-assistant", "kb-bot", null, Map.of());
+        assertTrue(kb.spec().persona().systemPrompt().contains("小知"));
+    }
+
     // ============ Acceptance: template + params -> runnable agent, zero Java per agent ============
 
     @Test

@@ -2,6 +2,7 @@
 
 > 对应阶段：Stage 13 - 上层产品搭建层（声明式 Agent 定义 / 模板系统 / 配置驱动 Tool / Prompt 管理 / 事件驱动接入 / DAG 标准 / 多租户）
 > 状态：✅ 已完成（2026-08-23，一天完成 M13.1-M13.5 五个里程碑）。agent-product 模块 157 测试全绿，全仓 602 存量零影响；2 个验收示例（DeclarativeAgentExample 实跑通过）
+> 📌 评审修正（2026-08-23 晚，外部评审交叉验证后）：**修复 P0 五项**（Webhook 幂等占坑丢事件 / promptRef 校验误杀 canary / PromptManager 线程安全 / 示例 202 语义 / 注释口径），**接线三项**（TenantAgentConfig.serviceAccount 按名解析 / startAll 对 ambient 段打 WARN 不静默忽略 / 模板 tenantId 降级可选），product 167 测试全绿。**口径修正**：§2 复用表治理/记忆/模型装饰器三行、§3.2 样例字段、D3/D4/D7、§9 第 4 条、§10 两处——「注册即治理」「namespace 隔离」「新对话自动新版」均为 v2 或装配层口径，v1 未实现处已逐一标注。主路径遗留：治理默认路径无（装配层接线）、workflow 仅 DAG 导出不执行（D5 本意）、记忆隔离 v2。
 > 模块：新增 `agent-product` Maven 模块，依赖 `agent-core`（Agent/AgentConfig）+ `agent-model`（ModelClient 注册）+ `agent-memory`（ContextBuilder/scope 模板）+ `agent-workflow`（Workflow/DagSpec 转换）+ `agent-channel`（ambient 段构造 AmbientInstruction）；agent-security 经组装层可选注入（同 Stage 11/12 模块边界纪律）
 > 前置：Stage 1-12 已完成（426 测试全绿；频道共享 / Identity / Ambient 已落地）
 
@@ -65,15 +66,15 @@ Stage 12 的教训制度化：**规划时就做复用预检，不等完成后自
 |---|---|---|---|
 | Agent 构造 | `AgentConfig` + `SimpleAgent` + `ReActAgentLoop`（1/2） | Binder 把 Definition 翻译成 AgentConfig，走现有构造路径 | ✅ 直接兑现（字段已齐） |
 | 工具注册 | `ToolRegistry.register`（2） | HttpApiTool 是普通 Tool，注册路径不变 | ✅ 直接兑现 |
-| 工具治理 | `GovernedToolExecutor` + `ToolPolicy`（9） | HttpApiTool 注册即被治理包装，零额外代码 | ✅ Stage 10 已证明（McpToolAdapter 同款路径） |
-| 记忆配置 | `ContextBuilder` / `MemoryContextBuilder` / `MemoryScope`（8） | YAML memory 段映射为 ContextBuilder 配置 + namespace 变量模板 | ✅ 直接兑现 |
-| 模型容错 | Retry / Timeout / Fallback / StructuredOutput 装饰器（1） | model 段的 provider/fallback 声明 -> 装饰器组装 | ✅ 直接兑现 |
+| 工具治理 | `GovernedToolExecutor` + `ToolPolicy`（9） | HttpApiTool 是普通 Tool，治理由装配层显式配置 GovernedToolExecutor 后生效 | ⚠️ 口径修正（2026-08-23 评审）：非「注册即自动包装」——agent-security 为 test scope 可选依赖，产品层默认路径（Binder -> SimpleAgent）无治理；治理接线点在 ReActAgentLoop(ToolExecutor)，装配层配置后生效（同 Stage 10/11/12 边界纪律） |
+| 记忆配置 | `ContextBuilder` / `MemoryContextBuilder` / `MemoryScope`（8） | YAML memory 段映射为 ContextBuilder 配置（shortTerm window / named contextBuilder 两分支） | ⚠️ 口径修正（2026-08-23 评审）：短期记忆兑现；`longTerm` + namespace 变量模板（`tenant-${tenantId}`）未实现——parser 对 longTerm 给 planned v2 提示，agent-memory 未进产品层依赖，租户记忆隔离无实现无测试（§10 承诺的 namespace 隔离测试不存在） |
+| 模型容错 | Retry / Timeout / Fallback / StructuredOutput 装饰器（1） | model 段的 provider/fallback 声明 -> Fallback 装饰器组装；temperature 经 TemperatureModelClient 注入 | ⚠️ 口径修正：实际组装链 = Temperature(Fallback(primary, fallback))；Retry/Timeout/StructuredOutput 未声明化（HTTP 工具超时在 HttpApiTool 内部处理，见 T5 歧义） |
 | 工作流 | `Workflow` 不可变定义 + `WorkflowBuilder`（5） | DagSpec 双向转换（不可变定义天然可序列化） | ⚠️ 拓扑完整可表达；条件谓词是 lambda 不可序列化 -> 经注册表按名引用（D5） |
 | 事件触发 | `EventBroker.fire`（7） | Webhook 触发的是**新 Run**，不是恢复旧 run | ❌ 预检不通过：EventBroker 回调绑死 `RunManager.resume(runId)`（Stage 12 D3 同款偏差），Webhook 直接走 Agent/Session 入口（D8） |
 | Ambient 指令 | `AmbientInstruction` record（12） | definition.ambient 段从 YAML 构造（结构化部分） | ✅ record 已有；condition 谓词留 Java 扩展点（Stage 12 M12.4 诚实边界的部分兑现） |
-| 服务身份 | `ServiceAccount` / `IdentityResolver`（12） | TenantAgentConfig 挂 ServiceAccount（每租户 Agent 一个服务身份） | ✅ 直接兑现 |
+| 服务身份 | `ServiceAccount` / `IdentityResolver`（12） | TenantAgentConfig.serviceAccount 存**名字**，ProductContext 注册表存 admin 预置的账号实例（D1 第四次落地） | ✅ 已接线（2026-08-23 评审后修复）：bindChannel 按名解析，悬空引用 fail-fast 列可用名；无 overlay 时回退派生 `sa-{name}-{tenant}` |
 
-**依赖方向**：`agent-product -> agent-core + agent-model + agent-memory + agent-workflow + agent-channel`（security 可选注入）。新依赖仅新增 `jackson-dataformat-yaml`（与既有 Jackson 2.17.2 对齐）；HTTP 客户端复用 JDK `java.net.http.HttpClient`（agent-model 同款，零新依赖）。
+**依赖方向**：`agent-product -> agent-core + agent-workflow + agent-channel`（compile）；`agent-model` / `agent-security` 为 test scope（模型实现与治理由装配方提供，产品层只见接口——架构图注释「治理经 ToolExecutor 组装接线」是准确口径，D3 正文原「自动包装」措辞已修正）。agent-memory **未进依赖**（ContextBuilder 接口在 agent-core；MemoryScope namespace 隔离为 v2，见上表记忆行）。新依赖仅 `jackson-dataformat-yaml`（与既有 Jackson 2.17.2 对齐）；HTTP 客户端复用 JDK `java.net.http.HttpClient`（agent-model 同款，零新依赖）。
 
 ---
 
@@ -165,15 +166,17 @@ public final class WebhookController {
 }
 ```
 
-### 3.2 定义样例（验收基准 YAML）
+### 3.2 定义样例（验收基准 YAML，已对齐 v1 实际 schema）
+
+> 标注 `v2` 的字段蓝图有设计、v1 未实现（parser 给定向提示拒收）；其余字段与 `AgentDefinitionParser` 实际接受的 schema 逐字对齐（2026-08-23 评审修正，原样例有 4 处字段名超前）。
 
 ```yaml
 apiVersion: v1
 kind: Agent
 metadata:
   name: support-bot
-  tenant: acme                    # -> 变量 ${tenantId}
-  template: support-agent@1.2     # 可选：模板派生 + 逐段覆盖
+  tenant: acme                    # 租户归属（overlay / prompt 路由 / 派生身份后缀）
+  template: support-agent@1.2     # v2：模板派生 + 逐段覆盖（v1 走 TemplateRegistry.instantiate 产完整定义）
 spec:
   persona:
     promptRef: { name: support-system, channel: stable }   # 指向 PromptManager
@@ -192,12 +195,12 @@ spec:
           city: { in: query, type: string, required: true }
         response: { extract: "$.data.temperature" }
         auth: { type: bearer, token: "${env:WEATHER_TOKEN}" }
-        timeout: 3s
+        timeoutSeconds: 3         # v1 字段名（原样例 timeout: 3s 为蓝图形态）
   memory:
-    shortTerm: { strategy: window, maxTurns: 20 }
-    longTerm: { store: pgvector, namespace: "tenant-${tenantId}" }
-  workflow: support-flow          # 可选：引用已注册 Workflow
-  ambient:                        # 可选：Stage 12 接线（condition 留 Java 扩展点）
+    shortTerm: { strategy: window, maxMessages: 20 }   # v1 字段名 maxMessages（原样例 maxTurns 为蓝图形态）
+    longTerm: { store: pgvector, namespace: "tenant-${tenantId}" }   # v2：parser 拒收并提示
+  workflow: support-flow          # 可选：引用已注册 Workflow——v1 仅作 DAG 导出引用（Validator 校验存在性），**不改变 run() 行为**（D5：Agent 是 ReAct，图执行是另一回事）
+  ambient:                        # 可选：仅 bindChannel 路径生效（startAll 对此打 WARN，不静默忽略）
     - trigger: { onEvent: "ticket-updated" }
       importance: WARN
       messageTemplate: "工单 {ticketId} 状态变化，请关注"
@@ -231,21 +234,33 @@ AgentDefinition / DagSpec 里永远只有名字和参数，实现在 ProductCont
    product 翻译出 Agent——三次兑现"不改存量、只加一层"
 ```
 
-### D3. HttpApiTool 是普通 Tool，治理免费搭车
+### D3. HttpApiTool 是普通 Tool，治理经装配层接线（原「免费搭车」口径修正）
 
 ```text
-HttpApiTool implements Tool -> 注册进 ToolRegistry -> 被 GovernedToolExecutor
-自动包装（权限三档 / 审批 / 审计 / 净化）——Stage 10 D1 治理透明性第二次兑现
+HttpApiTool implements Tool -> 注册进 ToolRegistry（普通 Tool，治理零感知）
+-> 治理生效条件：装配层显式以 GovernedToolExecutor 包装执行路径
+   （ReActAgentLoop(ToolExecutor) 是接线点）——产品层默认路径（Binder ->
+   SimpleAgent(config)）不注入 executor，即默认无治理（agent-security 为
+   test scope 可选依赖，同 Stage 11/12 边界纪律；§5 架构图注释一直是准确口径）
+-> 评审修正（2026-08-23）：原文「注册即被自动包装，零额外代码」说满——
+   「零额外代码」只在装配方已配置治理的前提下成立；Stage 10 的先例是
+   McpExample 装配层显式配置 GovernedToolExecutor，同样是装配行为
 -> 与 MCP 双路线：HttpApiTool 连"我描述的 API"，McpToolAdapter 连"实现了协议的 Server"
 -> 安全细节：鉴权 token 走 ${env:XXX} 环境变量引用，密钥不落 YAML（对齐 Stage 9 哲学）
--> 超时 / 错误映射成 ToolExecutionResult 错误（不炸 AgentLoop，复用 Stage 2 工具错误处理）
+-> 超时 / 错误映射成 ToolException 错误（不炸 AgentLoop，复用 Stage 2 工具错误处理）
 ```
 
-### D4. Prompt 热切换 = Run 级 pin
+### D4. Prompt 热切换 = pin（v1 实现为实例级，Run 级为 v2）
 
 ```text
-进行中的对话锁定启动时的 PromptVersion；新对话自动拿最新 resolve 结果
--> 机制：会话/Run 启动时把 promptVersion 固化进 AgentState（Stage 6 快照思维的配置版）
+蓝图原句「进行中的对话锁定启动时的 PromptVersion；新对话自动拿最新 resolve 结果」
+-> v1 实现粒度 = BIND 时刻（实例级）：promptRef 在 bind 时 resolve 一次，内容快照进
+   AgentConfig；进行中对话不受 mid-flight publish 影响（验收成立），但常驻实例
+   （startAll 一名一实例 / webhook 复用）新对话也拿不到新版——需 rebind
+-> 「新对话自动新版」成立的形态：每次会话 bind 新实例（channel 场景手工 bindChannel
+   接近此形态）；startAll 主路径是部署级 pin（评审修正：M13.4 记录的「一对话一实例」
+   前提在 startAll 不成立）
+-> Run 级 pin（run() 开头 resolve + AgentState 锁版本）为 v2：需动 agent-core
 -> publish 是不可变追加（版本历史即审计）；rollback 是指针切回而非内容回写
 -> A/B 灰度 v1 = 双通道（stable/canary）+ 租户级指定（TenantAgentConfig.promptChannel）
    百分比分流需要 sticky session，v2
@@ -281,7 +296,12 @@ TenantAgentConfig 解决"每个租户能自己配什么"：
   promptChannel / model / 工具开关（disabledTools）/ ambient 开关
 租户间运行隔离靠已有机制，不新建系统：
   记忆隔离 = MemoryScope namespace 模板 "tenant-${tenantId}"（Stage 8）
+  ⚠️ 评审修正（2026-08-23）：v1 未接线——longTerm 段 parser 拒收（v2），
+     agent-memory 未进产品层依赖，租户记忆隔离无实现无测试（§10 该条已标注）
   身份隔离 = 每租户 Agent 关联 ServiceAccount（Stage 12）
+  ✅ 已接线（2026-08-23 修复）：TenantAgentConfig.serviceAccount 存名字，
+     ProductContext.registerServiceAccount 注册表存 admin 预置账号（D1 第四次
+     落地），bindChannel 按名解析，无 overlay 回退派生 sa-{name}-{tenant}
   Token 配额 = Stage 18（TeamBudget/ChannelQuota 已在 18 周规划立案）
 ```
 
@@ -549,7 +569,9 @@ v1 诚实边界：幂等去重是进程内 Set（重启丢失，持久化 v2）�
    -> M13.3（HttpApiTool + mock server 调用 + 治理接管）
 
 4. Prompt 热切换不影响进行中的对话
-   -> M13.4（Run 级 pin，进行中对话实见旧版本；新对话自动新版）
+   -> M13.4（实例级 pin：bind 时刻快照，进行中对话实见旧版本——成立且过度成立；
+      评审修正：「新对话自动新版」仅在每次会话 bind 新实例的形态下成立，
+      startAll 常驻实例需 rebind 拿新版，Run 级 pin 为 v2——见 D4 修正）
 ```
 
 ---
@@ -562,7 +584,9 @@ v1 诚实边界：幂等去重是进程内 Set（重启丢失，持久化 v2）�
 - **Prompt**：多版本共存；Run 级 pin（RecordingModelClient 捕获实见 system prompt 断言版本）；新对话拿新版；rollback；租户通道分流
 - **Webhook**：验签失败 401 + 审计；同 eventId 重放只跑一次；handle 快速返回 + 异步完成；未知 source 404
 - **DAG**：六节点混合图（agent/action/tool/router/approval/parallel）往返结构等价；条件经 ConditionRegistry 查回执行等价（同输入同输出）；未注册条件导出抛异常
+  （评审修正 2026-08-23：实际测试为 3 节点混合图 agent/action/tool + 条件边往返；router/approval/parallel 节点类型的往返覆盖为 v2）
 - **多租户**：租户覆盖（channel/model/工具开关）只影响本租户；namespace 隔离（tenant-a 的记忆不进 tenant-b 检索）
+  （评审修正 2026-08-23：覆盖隔离已测；namespace 隔离无实现无测试——v2 随 longTerm 一起，见 D7 修正）
 - **向后兼容**：只新增模块，426 存量测试零影响
 
 ---

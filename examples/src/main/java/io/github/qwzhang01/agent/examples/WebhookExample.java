@@ -60,8 +60,12 @@ public final class WebhookExample {
         server.createContext("/webhooks/", exchange -> {
             String source = exchange.getRequestURI().getPath().substring("/webhooks/".length());
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            Map<String, String> headers = Map.of(
-                    "X-Signature", exchange.getRequestHeaders().getFirst("X-Signature"));
+            // A missing header maps to null - Map.of() rejects null values,
+            // so build the header view defensively (a probe without the
+            // signature must get 401, not a 500 NPE).
+            String signature = exchange.getRequestHeaders().getFirst("X-Signature");
+            Map<String, String> headers = signature == null
+                    ? Map.of() : Map.of("X-Signature", signature);
             WebhookResult result = controller.handle(source, headers, body);
             byte[] out = (result.status() + ": " + result.message())
                     .getBytes(StandardCharsets.UTF_8);
@@ -100,11 +104,12 @@ public final class WebhookExample {
 
     private static int httpStatus(WebhookResult result) {
         return switch (result.status()) {
-            case ACCEPTED, DUPLICATE -> 200;
+            case ACCEPTED -> 202;   // D8: fast return + async run
+            case DUPLICATE -> 200;  // replay already handled, sender stops retrying
             case UNAUTHORIZED -> 401;
             case UNKNOWN_SOURCE -> 404;
             case BAD_PAYLOAD, NO_EVENT_ID -> 400;
-            case AGENT_NOT_FOUND -> 503;
+            case AGENT_NOT_FOUND, DISPATCH_FAILED -> 503;  // retry later, same eventId is safe
         };
     }
 

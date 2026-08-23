@@ -5,12 +5,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Prompt-as-asset management (Stage 13 M13.4, D4): versioning, two-channel
@@ -26,6 +26,12 @@ import java.util.Set;
  *       content is never rewritten (history stays honest)</li>
  * </ul>
  * <p>
+ * Thread safety: this manager is a RUNTIME asset - operators publish/rollback
+ * while agents bind and resolve concurrently. Mutations and reads of one
+ * prompt's record serialize on that record (per-prompt lock); the registries
+ * are concurrent maps. Concurrent operations on different prompts never
+ * contend.
+ * <p>
  * PIN semantics (the D4 acceptance): resolve is called at AGENT-BIND time by
  * {@code AgentDefinitionBinder} and the content is snapshotted into the agent
  * instance. A running conversation therefore keeps its prompt even while a
@@ -36,8 +42,8 @@ import java.util.Set;
 public final class PromptManager {
 
     private final Clock clock;
-    private final Map<String, PromptRecord> prompts = new LinkedHashMap<>();
-    private final Map<String, Map<String, String>> tenantOverrides = new HashMap<>();
+    private final Map<String, PromptRecord> prompts = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, String>> tenantOverrides = new ConcurrentHashMap<>();
 
     public PromptManager() {
         this(Clock.systemUTC());
@@ -75,11 +81,13 @@ public final class PromptManager {
         PromptChannel.requireValid(channel);
 
         PromptRecord record = prompts.computeIfAbsent(name, k -> new PromptRecord());
-        PromptVersion version = new PromptVersion(
-                name, record.versions.size() + 1, content, channel, clock.instant());
-        record.versions.add(version);
-        record.channelIndex.put(channel, record.versions.size() - 1);
-        return version;
+        synchronized (record) {
+            PromptVersion version = new PromptVersion(
+                    name, record.versions.size() + 1, content, channel, clock.instant());
+            record.versions.add(version);
+            record.channelIndex.put(channel, record.versions.size() - 1);
+            return version;
+        }
     }
 
     // ============ Resolve (routing point) ============
@@ -100,8 +108,10 @@ public final class PromptManager {
             return Optional.empty();
         }
         String channel = routeChannel(name, tenantId, declaredChannel);
-        Integer index = record.channelIndex.get(channel);
-        return index == null ? Optional.empty() : Optional.of(record.versions.get(index));
+        synchronized (record) {
+            Integer index = record.channelIndex.get(channel);
+            return index == null ? Optional.empty() : Optional.of(record.versions.get(index));
+        }
     }
 
     private String routeChannel(String name, String tenantId, String declaredChannel) {
@@ -127,7 +137,8 @@ public final class PromptManager {
         if (tenantId == null || tenantId.isBlank()) {
             throw new IllegalArgumentException("tenantId must not be blank");
         }
-        tenantOverrides.computeIfAbsent(tenantId, k -> new HashMap<>()).put(promptName, channel);
+        tenantOverrides.computeIfAbsent(tenantId, k -> new ConcurrentHashMap<>())
+                .put(promptName, channel);
         return this;
     }
 
@@ -156,18 +167,20 @@ public final class PromptManager {
         if (record == null) {
             throw new IllegalArgumentException("prompt '" + name + "' is not published");
         }
-        Integer current = record.channelIndex.get(PromptChannel.STABLE);
-        if (current == null) {
-            throw new IllegalArgumentException("prompt '" + name + "' has no stable version");
-        }
-        for (int i = current - 1; i >= 0; i--) {
-            if (PromptChannel.STABLE.equals(record.versions.get(i).channel())) {
-                record.channelIndex.put(PromptChannel.STABLE, i);
-                return record.versions.get(i);
+        synchronized (record) {
+            Integer current = record.channelIndex.get(PromptChannel.STABLE);
+            if (current == null) {
+                throw new IllegalArgumentException("prompt '" + name + "' has no stable version");
             }
+            for (int i = current - 1; i >= 0; i--) {
+                if (PromptChannel.STABLE.equals(record.versions.get(i).channel())) {
+                    record.channelIndex.put(PromptChannel.STABLE, i);
+                    return record.versions.get(i);
+                }
+            }
+            throw new IllegalArgumentException(
+                    "prompt '" + name + "' stable pointer is already at the earliest version");
         }
-        throw new IllegalArgumentException(
-                "prompt '" + name + "' stable pointer is already at the earliest version");
     }
 
     // ============ Inspection ============
@@ -177,7 +190,12 @@ public final class PromptManager {
      */
     public List<PromptVersion> history(String name) {
         PromptRecord record = prompts.get(name);
-        return record == null ? List.of() : List.copyOf(record.versions);
+        if (record == null) {
+            return List.of();
+        }
+        synchronized (record) {
+            return List.copyOf(record.versions);
+        }
     }
 
     public Set<String> promptNames() {

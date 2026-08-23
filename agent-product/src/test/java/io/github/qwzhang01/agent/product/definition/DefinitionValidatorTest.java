@@ -175,6 +175,78 @@ class DefinitionValidatorTest {
         assertTrue(errors.get(0).message().contains("beta"));
     }
 
+    // ============ promptRef routing must match the binder ============
+
+    @Test
+    void canaryOnlyPromptPassesValidationWhenDeclared() {
+        // Regression: validation used to always resolve stable, rejecting a
+        // perfectly bindable canary-only prompt.
+        io.github.qwzhang01.agent.product.prompt.PromptManager prompts =
+                new io.github.qwzhang01.agent.product.prompt.PromptManager();
+        prompts.publish("support-system", "canary content", "canary");
+        ProductContext ctx = context().withPromptManager(prompts);
+
+        List<ValidationError> errors = validator.validate(definition("""
+                apiVersion: v1
+                kind: Agent
+                metadata:
+                  name: x
+                spec:
+                  persona:
+                    promptRef: { name: support-system, channel: canary }
+                  model:
+                    provider: openai
+                """), ctx);
+        assertTrue(errors.isEmpty(), () -> "got: " + errors);
+    }
+
+    @Test
+    void declaredCanaryWithoutCanaryVersionIsReported() {
+        List<ValidationError> errors = validator.validate(definition("""
+                apiVersion: v1
+                kind: Agent
+                metadata:
+                  name: x
+                spec:
+                  persona:
+                    promptRef: { name: support-system, channel: canary }
+                  model:
+                    provider: openai
+                """), contextWithPrompts());   // stable-only
+        assertEquals(1, errors.size());
+        assertTrue(errors.get(0).message().contains("canary"),
+                "error should name the routed channel, got: " + errors.get(0).message());
+    }
+
+    @Test
+    void tenantOverlayChannelRoutesValidationLikeTheBinder() {
+        io.github.qwzhang01.agent.product.prompt.PromptManager prompts =
+                new io.github.qwzhang01.agent.product.prompt.PromptManager();
+        prompts.publish("support-system", "stable content");
+        ProductContext ctx = context().withPromptManager(prompts);
+        ctx.registerTenantConfig(new io.github.qwzhang01.agent.product.tenant.TenantAgentConfig(
+                "acme", "canary", null, java.util.Set.of(), null));
+
+        // The definition declares stable, but tenant acme's overlay routes to
+        // canary (no version published) - validation must fail exactly where
+        // binding would fail, not pass and explode at bind time.
+        List<ValidationError> errors = validator.validate(definition("""
+                apiVersion: v1
+                kind: Agent
+                metadata:
+                  name: x
+                  tenant: acme
+                spec:
+                  persona:
+                    promptRef: { name: support-system, channel: stable }
+                  model:
+                    provider: openai
+                """), ctx);
+        assertEquals(1, errors.size());
+        assertTrue(errors.get(0).message().contains("canary"),
+                "error should name the tenant-routed channel, got: " + errors.get(0).message());
+    }
+
     // ============ M13.5: workflow + ambient validation ============
 
     @Test

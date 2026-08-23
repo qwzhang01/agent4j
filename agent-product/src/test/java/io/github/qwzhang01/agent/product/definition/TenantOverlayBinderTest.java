@@ -13,6 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -149,6 +150,70 @@ class TenantOverlayBinderTest {
         bindValidated(yamlWithModel("acme", "obs"), ctx).run("hi");
 
         assertEquals("canary persona", capture.systemPrompt);
+    }
+
+    // ============ Service account overlay (D7) ============
+
+    @Test
+    void tenantServiceAccountOverlayReplacesDerivedIdentity() {
+        io.github.qwzhang01.agent.channel.identity.ServiceAccount provisioned =
+                io.github.qwzhang01.agent.channel.identity.ServiceAccount.of("sa-provisioned-ops",
+                        new io.github.qwzhang01.agent.channel.identity.AgentIdentity(
+                                "ops-bot", "运维机器人", "platform"),
+                        io.github.qwzhang01.agent.channel.identity.IdentityScope.capabilities("member"));
+        ProductContext ctx = new ProductContext()
+                .registerModel("primary", MockModelClient.scripted().respondText("ok"))
+                .registerServiceAccount("ops-identity", provisioned)
+                .registerTenantConfig(new TenantAgentConfig("acme", null, null, null, "ops-identity"));
+
+        AgentDefinition def = parser.parse("""
+                apiVersion: v1
+                kind: Agent
+                metadata:
+                  name: ops-bot
+                  tenant: acme
+                spec:
+                  persona:
+                    systemPrompt: "你是运维助手。"
+                  model:
+                    provider: primary
+                """);
+
+        var binding = new AgentDefinitionBinder(ctx)
+                .bindChannel(def, ChannelContext.of("ops-room", "alice"));
+
+        binding.session().speak(
+                io.github.qwzhang01.agent.channel.ChannelMessage.mention("ops-room", "alice", "检查一下"));
+
+        // The provisioned account (not the derived sa-ops-bot-acme) resolved
+        // the speaker - the tenant overlay's service identity is consumed.
+        assertEquals("svc:sa-provisioned-ops",
+                binding.session().lastResolvedIdentity().actor());
+    }
+
+    @Test
+    void danglingServiceAccountReferenceFailsFastWithAvailableNames() {
+        ProductContext ctx = new ProductContext()
+                .registerModel("primary", MockModelClient.scripted().respondText("ok"))
+                .registerTenantConfig(new TenantAgentConfig("acme", null, null, null, "ghost-account"));
+
+        AgentDefinition def = parser.parse("""
+                apiVersion: v1
+                kind: Agent
+                metadata:
+                  name: ops-bot
+                  tenant: acme
+                spec:
+                  persona:
+                    systemPrompt: "你是运维助手。"
+                  model:
+                    provider: primary
+                """);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> new AgentDefinitionBinder(ctx).bindChannel(def,
+                        ChannelContext.of("ops-room", "alice")));
+        assertTrue(e.getMessage().contains("ghost-account"), e.getMessage());
     }
 
     // ============ Channel binding (ambient, M13.5 acceptance) ============
