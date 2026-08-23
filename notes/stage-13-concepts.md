@@ -157,3 +157,48 @@ AgentDefinition            YAML 长什么样（纯数据，无逻辑）
 ```
 
 按能力域补读：`template/TemplateRegistry`（模板实例化）、`tools/HttpApiToolFactory`（配置驱动 Tool）、`prompt/PromptManager`（版本/通道/热切换）、`trigger/WebhookController`（D8 三件套）、`dag/WorkflowDagCodec`（DAG 导出）、`tenant/TenantAgentConfig`（租户覆盖）。
+
+---
+
+## 九、能力域速览（怎么用，一句话 + 最小声明）
+
+| 包 | 解决什么 | 关键机制 |
+|---|---|---|
+| `tools`（HttpApiTool） | 不写 Java 把 REST API 变 Tool | YAML 声明 `endpoint + params(in: query/body/path) + response.extract + auth + timeout`；`getParametersSchema()` 从声明生成模型可见的 Schema；密钥走 `${env:NAME}`，build 时解析、缺失拒加载（fail-fast） |
+| `trigger`（WebhookController） | 外部系统触发 Agent | D8 三件套：HMAC 验签（拒于 Agent 之前）/ eventId 幂等（重放答 DUPLICATE）/ 202 语义（快返回 + 异步 run）。幂等键「受理才占用」：Agent 缺失 / 入队拒绝时释放，执行失败保留（at-least-once） |
+| `dag`（WorkflowDagCodec） | Workflow ⇄ JSON 给前端画图 | 条件谓词（lambda）不可序列化，经 ConditionRegistry 按名引用；未注册谓词拒绝导出（D5，防静默丢条件分支） |
+| `tenant`（TenantAgentConfig） | 多租户覆盖 | 优先级 运营 > 租户 > 定义 > 默认；disabledTools 只收缩不扩张；v1 是「配置隔离」非「运行隔离」（记忆隔离 v2） |
+
+## 十、方法论与边界（这次学习最重要的两条）
+
+### 1. 消费方方法论：判断一个字段有没有影响
+
+```
+① grep 字段名 → 出现在哪些文件
+② 排除噪音：record 里「存它的那行」（数据结构）、javadoc（注释）
+③ 看剩下的调用是不是「消费方」= 读它的值去做决策
+④ 有消费方 → 有影响；没有 → 死字段（对行为无影响）
+   最硬验证：删掉它跑一遍，看行为变不变
+```
+
+- 经典对照：`workflow` 字段 → Binder 里 0 次出现 → **死字段**（对 run 无影响）；`temperature` 字段 → Binder 的 assembleModelClient 读了它 → **有消费方**（影响采样温度）。
+- 关键心智：**靠查消费方判断，不靠字段名像不像。**「workflow 听起来会执行」是陷阱。
+
+### 2. 模块边界标尺：两个模块是不是重复
+
+问三句：**时间**（启动时 / 运行时 / 入口）？**单数还是复数**（一个 Agent 的定义 / 多个 Agent 的协作）？**要不要聚合**（分完就完事 / 收回来合并）？
+
+- `agent-product`（Stage 13）= 定义层：YAML → Agent，启动时，管「一个 Agent 怎么来」
+- `agent-orchestrator`（Stage 11）= 编排层：supervisor 并行分发任务给 workers 再聚合，运行时，管「多个 Agent 怎么协作」
+- 入口路由（agent-product 不负责）= 请求级单发：1 请求 → 1 Agent，无聚合
+
+### 3. 四层框架（agent-product 覆盖 2、3 层）
+
+```
+第 0 层 入口/路由    用户消息从哪来、发给哪个 Agent   ← 不在 agent-product 范围
+第 1 层 运行时       ReAct 循环                        ← agent-core
+第 2 层 翻译         YAML → Agent                      ← agent-product 核心
+第 3 层 周边         模板 / prompt / DAG / Webhook      ← agent-product 附加
+```
+
+产品层生命周期 = 启动那一刻：翻译完成、Agent 进 AgentRegistry，之后 run 由 agent-core 接管，产品层退场。

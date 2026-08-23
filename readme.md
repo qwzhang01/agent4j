@@ -4,9 +4,10 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 13 ✅ 已完成（上层产品搭建层：声明式 Agent 定义，2026-08-23）—— 下一步 Stage 14 RL 轨迹产出层
+## 当前阶段：Stage 14 ✅ 已完成（RL 轨迹产出层，2026-08-24）—— M14.1~M14.4 全过，18 周规划验收 4 条全达成（agent-trace-export 29 类 73 测试，全仓 685 全绿）—— 下一步 Stage 15
 
-> Stage 1-12 已完成（2026-08-16 ~ 08-22），426 测试全绿（含 Stage 12 完成后自查修复，详见架构笔记 §13 审查记录）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 1-13 已完成（2026-08-16 ~ 08-23）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 14 设计蓝图：[notes/architecture-stage-14.md](notes/architecture-stage-14.md)（新增 agent-trace-export 模块：边界捕获记录 / S-A-O-R-D 轨迹模型 / 可插拔奖励 / 确定性采样 / JSONL 契约导出 / 走录回放 / DPO 偏好；与 Mini VERL 闭环的交汇点）
 > Stage 13 设计蓝图：[notes/architecture-stage-13.md](notes/architecture-stage-13.md)（新增 agent-product 模块：声明式定义 / 模板 / 配置驱动 Tool / Prompt 管理 / Webhook / DAG / 多租户）
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
 > Stage 4 沙箱 = ClassLoader + Process（无 Docker / WASM / 资源池）。
@@ -46,8 +47,8 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：602 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 157 product），全绿
-- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）
+- [x] 单元测试：685 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）/ `TrajectoryExample`（Stage 14：记录→奖励→采样→JSONL 导出→回放走查）/ `PreferenceAnnotationExample`（Stage 14：同 prompt 双 rollout→Console 标注→DPO preferences.jsonl）/ `scripts/consume_trajectory.py`（Python 跨语言消费证明）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -141,6 +142,47 @@
 - [x] M13.4 Prompt 管理：PromptManager + PromptVersion（实例级 pin 热切换 + stable/canary 双通道 + 租户路由 + 指针回滚）✅（+28 测试含 pin 实证，2026-08-23）
 - [x] M13.5 事件接入 + DAG + 多租户收口：WebhookController（HMAC 验签/幂等/202）+ DagSpec/WorkflowDagCodec/ConditionRegistry（双向转换）+ TenantAgentConfig 覆盖 + ambient 段接线（bindChannel）+ DeclarativeAgentExample/WebhookExample ✅（+28 测试，2026-08-23）
 - [ ] 文章：java-agent-02~10 存量草稿按节奏补发（不急）
+
+### Stage 14 规划（RL 轨迹产出层，📐 2026-08-23 定稿）
+
+> 设计蓝图：[notes/architecture-stage-14.md](notes/architecture-stage-14.md) · 新增 `agent-trace-export` 模块，
+> 与 AI Infra 主线（Mini VERL）的交汇点：Run 结束不是终点，是数据的起点
+
+- [x] M14.1 记录层：Trajectory/TrajectoryStep（S-A-O-R-D）数据模型 + TrajectoryRecorder + RecordingModelClient/RecordingToolExecutor 边界捕获（State=模型实见消息 post-ContextBuilder）+ RecordingAgent 糖衣（2026-08-24 完成，19 测试全绿）
+- [x] M14.2 奖励与导出：RewardSource/RuleReward（可插拔，v1 规则+人工）+ TrajectoryMetadata + SamplingPolicy（hash(runId+seed) 确定性）+ JSONL 标准导出（v1 信封 + golden schema）+ consume_trajectory.py 消费证明（2026-08-24 完成，+25 测试，跨语言消费证明数字逐项一致）
+- [x] M14.3 采样回放与 workflow 适配：TrajectoryReplayer/ReplayView（走录不重演 + 完整性校验）+ WorkflowTrajectoryAdapter（兑现 StepRecord javadoc 承诺）（2026-08-24 完成，+14 测试）
+- [x] M14.4 人工反馈与收口：PreferencePair/TrajectoryPairBuilder/DpoExporter/ConsoleAnnotator（双 rollout → DPO JSONL）+ 2 验收示例 + README/笔记收口（2026-08-24 完成，+15 测试，Stage 14 ✅ 收口验收 4 条全过）
+
+### Stage 14 完成记录
+
+- [x] **M14.4 人工反馈与收口**（agent-trace-export，2026-08-24，+15 测试全仓 685 全绿，Stage 14 ✅）：
+    - **feedback 包 5 类**：`HumanFeedback`（1-5 评分）/ `PreferencePair`（A/B 偏好**引用不内嵌**，preferred 限 A|B）/ `TrajectoryPairBuilder`（**prompt 前缀=至首条 USER 含**；不一致 IAE 带双方摘要）/ `DpoExporter`（物化 {prompt, chosen, rejected}：**悬空引用 IAE**+导出时重验前缀；空余段合法——「无响应 vs 好响应」是正当偏好）/ `ConsoleAnnotator`（可注入 IO：ReplayView.describeStep 走查渲染两侧+终答 → a/b/skip → sidecar）
+    - **sidecar 纪律**：标注落独立 annotations.jsonl，**原轨迹文件字节不变**（测试 bytes 相等实证 append-only）
+    - **双示例实跑**：`TrajectoryExample`（run→record→reward 1.0→回放 integrity verified→python 消费 avg 1.0/tokens 812·45·857）/ `PreferenceAnnotationExample`（双 rollout→标注 A→preferences.jsonl：prompt 2 条共享/chosen 3 条/rejected 1 条）
+    - **验收 4 条全过**（蓝图 §9 已加 ✅ 对照）；两处小差异：DPO 行加信封（D2 纪律统一）、describeStep 复用为标注渲染
+    - 构建踩坑：单模块 exec 从 .m2 拿旧 product jar 报误导性枚举错——跨模块示例先 install 依赖链
+- [x] **M14.3 采样回放与 workflow 适配**（agent-trace-export，2026-08-24，+14 测试全仓 670 全绿）：
+    - **`TrajectorySteps.logicalMessages`**：逻辑消息重建单一算法（RecordingSession 产出用 + ReplayView 校验重算，同一份代码——两处各写一份=静默腐化 bug 农场）
+    - **replay 包 2 类**：`ReplayView`（构造即校验 + step-through stateAt/actionAt/observationsAt + describeStep 人读摘要）/ `TrajectoryReplayer`（loadAll/loadFirst，坏 JSON 带行号）
+    - **D7 完整性校验四连**（比蓝图三连多一条）：index 连续 / done 恰一次在末步 / **非空轨迹无 done 也拒绝**（截断文件，蓝图未写）+ doneReason 对齐 / messages==steps 重建双通道自洽；坏文件实测五形态全 IAE
+    - **`WorkflowTrajectoryAdapter`**：兑现 StepRecord Stage 5 javadoc 承诺；**诚实粗粒度**——节点级投影（step.state=黑板视图非模型实见，javadoc 明写语义差异）；终态映射 CANCELLED→doneReason 语义放 doneReason（AgentState.Status 无此值）、**PAUSED 直接 IAE**（暂停 run 非完整轨迹，resume 拼接是 v2）
+    - **免费复用证明**：adapt → RuleReward(+1.0) → exporter.record → load → ReplayView 走查全链不改一行——workflow 轨迹进同一条训练数据管线
+    - agent-workflow compile 依赖落地（依赖随用随加）
+- [x] **M14.2 奖励与导出**（agent-trace-export，2026-08-24，+25 测试全仓 656 全绿）：
+    - **reward 包 3 类**：`RewardSource` 接口（三槽位：规则 v1 / 人工 M14.4 / judge v2）/ `RewardResult`（`applyTo` 不可变 wither 回填）/ `RuleReward`（默认 +1.0/-0.5/-1.0/0，`withReward` 定制新实例，空 steps → 0.0 + "no steps recorded" 不造假）
+    - **sample 包 2 类**：`SamplingPolicy`（rate+seed+状态集+步数区间+reward 阈值；默认全采含 ERROR 负样本；minReward 时未评分 fail-closed 拒绝）/ `TrajectorySampler`（`floorMod(runId.hashCode() ^ seed, 100) < rate`，String.hashCode 是 JLS 规范值跨 JVM 恒一致可审计）
+    - **export 包 3 类**：`TrajectoryCodec`（**契约唯一实现点**——手写 JSON 树，字段显式 snake_case 不靠命名策略；信封 api_version=v1/kind=Trajectory；未知版本 IAE）/ `JsonlTrajectoryWriter`（append-only，坏行报错带 文件:行号 fail loud）/ `TrajectoryExporter`（record = score→sample→persist 门面 + skippedCount 可观测 + write 手动路径 + IO fail loud）
+    - **consume_trajectory.py**（examples/scripts/，stdlib only）：信封校验+统计+SFT 样本物化；**跨语言消费证明实测数字逐项一致**（3 条/avg 0.3333/6 模型调用/echo×3/tokens 330·110·440）
+    - **golden 字段名快照**：测试内联 40 字段 snake_case 清单，两形状并集==全集+单形状不越界；`custom`/`arguments` 自由数据容器不入契约——改字段名=升 api_version，此测试是 CI 绊线
+    - **蓝图口径修正**：导出 steps 用 `state`（模型实见全量快照）非蓝图样例的 `state_delta`（写时压缩 delta 表达不了，§3.2 已加注记指向 §14）
+    - 诚实边界：多模态 parts 不进 v1 契约；顶层 done_reason 冗余便利字段 load 时派生不盲信；null/空集合省略+双重 round-trip 树稳定锁
+- [x] **M14.1 轨迹记录层**（agent-trace-export 模块，2026-08-24，+19 测试全仓 631 全绿）：
+    - **trajectory 包 6 类**（S-A-O-R-D 数据模型）：`Trajectory`（messages 逻辑对话 + steps 逐步结构双通道）/ `TrajectoryStep`（state=该步模型实见全量快照 post-ContextBuilder）/ `StepAction`（content+toolCalls+finishReason+usage+durationMs，模型异常时 finishReason="error" 也成终步）/ `ToolObservation`（结果 VERBATIM，含 [ERROR]/[DENIED] 文本；success 仅指执行器未抛）/ `TrajectoryMetadata`（agentName + promptSha256 指纹 + 工具清单 + token 汇总 + lastError）/ `DoneReason`（终态枚举，非终态映射 null）
+    - **record 包 6 文件**（5 公开抽象 + 1 包内实现）：`TrajectoryRecorder`（ThreadLocal 会话，runId 唯一性拒绝重复）/ `RunSession` 接口 + `RecordingSession` 实现（attach 配置一次、finish 恰一次、close 安全网兜底未显式完成）/ `RecordingModelClient`（ModelClient 边界捕获 State+Action，异常捕获后上抛不吞）/ `RecordingToolExecutor`（工具边界捕获 Observation）/ `RecordingAgent`（糖衣：自动 open/attach/finish + 嵌套降级）
+    - **D1 压缩保真核心测试**：TrimmingContextBuilder(keepLast=2) 3 步 run + 独立 CapturingModelClient 非循环佐证——step.state == 模型实见 ≠ state.messages 全量（step2 只见 [ASSISTANT,TOOL] 窗口，state 存 7 条）+ messages 逻辑通道保持全量 7 条
+    - 其余验证：并行多工具归一步（1 step 2 observations）/ 模型异常终步 ERROR + lastError 入 metadata / maxSteps 终步 MAX_STEPS_EXCEEDED / token 三项汇总（250/90/340）/ [ERROR] 文本 VERBATIM 且 success=true（执行器返回即观察）/ 执行器抛异常 success=false + rethrow + 非终态归一化 ERROR / runId 重复与嵌套 open 拒绝 / finish 二次拒绝 / 无会话透传
+    - **与蓝图的两处偏差（诚实记录）**：① D3 的 state_delta 改为每步全量快照——任意 ContextBuilder（含写时压缩）都无法用 delta+dropCount 表达，精确性优先，delta 编码留给 M14.2 导出层；② 压缩保真测试用测试本地 TrimmingContextBuilder 而非 agent-product WindowContextBuilder——避免为一个测试助手拖整个 product 依赖链，被测契约是「任意裁剪 builder 下 State=模型实见」；agent-workflow compile 依赖推迟到 M14.3 adapter 落地时再加
+    - **意外边界发现**：ReActAgentLoop 对 toolExecutor.execute 无 try-catch，执行器异常直接炸穿 loop（框架既有行为）——RecordingToolExecutor 记录后原样上抛，RecordingAgent 的 finally-finish 用非终态归一化 ERROR 兜住并诚实标注（"run aborted in non-terminal status EXECUTING_TOOL"）
 
 ## 模块结构
 
@@ -255,3 +297,4 @@ ExecutionResult        # 终态（status + output + error + state）
 | 11. Multi-Agent    | agent-orchestrator       | ✅ 完成  |
 | 12. 频道共享 Agent/Identity/Ambient | agent-channel | ✅ 完成  |
 | 13. 上层产品搭建层 | agent-product            | ✅ 已完成 |
+| 14. RL 轨迹产出层 | agent-trace-export      | ✅ 已完成 |
