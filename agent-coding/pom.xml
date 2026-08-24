@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.qwzhang01</groupId>
+        <artifactId>seven-agent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>agent-coding</artifactId>
+    <name>Agent Coding</name>
+    <description>Coding Agent Profile (Stage 17): workspace with path boundaries, patch staging,
+        whitelisted command execution, test-as-judge, bounded fix loop. Third domain profile on
+        the shared Runtime - aiming for the third consecutive zero-change landing (blueprint D9).</description>
+
+    <dependencies>
+        <!-- Dependencies are added as milestones land ("add when used" discipline):
+             M17.1: agent-core (Tool contract).
+             M17.2: (nothing new - patch staging is module-internal).
+             M17.3: agent-sandbox (SandboxSpec/SandboxResult data contracts for CommandRunner,
+                   blueprint D5: reuse the Stage 4 data contracts, re-implement the process
+                   pattern - the temp-dir isolation model is deliberately NOT reused).
+             M17.5: agent-security (governance chain, approval + audit - the D8 permission
+                   tiers and the REQUIRES_APPROVAL gates for run_command/run_tests). -->
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-sandbox</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-model</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
