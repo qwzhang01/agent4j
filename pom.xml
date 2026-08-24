@@ -35,6 +35,7 @@
         <module>agent-enterprise</module>
         <module>agent-tavern</module>
         <module>agent-coding</module>
+        <module>agent-observability</module>
         <module>examples</module>
     </modules>
 
@@ -129,6 +130,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-coding</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-observability</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

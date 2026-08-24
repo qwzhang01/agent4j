@@ -4,7 +4,7 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 17 ✅ 全部完成（Coding Agent Profile，M17.1~M17.5 五里程碑全过，agent-coding 138 测试全仓 **1023 全绿**，**零存量改动第三次兑现**——18 周规划 M8「三类场景同 Runtime」完成：企业/游戏/编码三 Profile，归属层/世界层/变更层）—— **Stage 18 📐 规划定稿待开工**（收官阶段：可观测性/成本治理/模型路由/评估回归/版本发布，`agent-observability` 新模块，与 17 依赖正交可交错实施，见 notes/architecture-stage-18.md §0 并行裁决）—— 上一步 Stage 16 ✅（Tavern Game Profile，agent-tavern 111 测试，零存量改动）—— Stage 15 ✅（agent-enterprise 89 测试）
+## 当前阶段：Stage 18 🚧 实施中（可观测性/评估/成本治理与发布，18 周规划**收官阶段**）-- M18.1 ✅ 指标核心 + M18.2 ✅ 成本与预算（agent-observability 54 测试全仓 **1077 全绿**，零存量改动；五维预算闸/WARN-DENIED 分离/microUSD 换算/Stage 12 占位钩子 ChannelQuota 兑现）-- 上一步 Stage 17 ✅ 全部完成（Coding Agent Profile 五里程碑，agent-coding 138 测试，零存量改动第三次兑现，M8「三类场景同 Runtime」达成）-- Stage 16 ✅（agent-tavern 111）-- Stage 15 ✅（agent-enterprise 89）
 
 > Stage 1-17 已完成（2026-08-16 ~ 08-24）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
 > Stage 17 设计蓝图：[notes/architecture-stage-17.md](notes/architecture-stage-17.md)（新增 agent-coding 模块：工作区即边界 / 变更即补丁 / 命令即白名单客人（无 shell）/ 测试即裁判 / 修复环即有界收敛——三类场景同 Runtime 的第三个领域 Profile，目标第三次零存量改动；四处有意不复用：ProcessSandbox.execute 隔离模型 / Workflow 修复环 / MemoryStore / RecordingAgent）
@@ -53,7 +53,7 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：1023 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export + 89 enterprise + 111 tavern + 138 coding），全绿
+- [x] 单元测试：1077 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export + 89 enterprise + 111 tavern + 138 coding + 54 observability），全绿
 - [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）/ `TrajectoryExample`（Stage 14：记录→奖励→采样→JSONL 导出→回放走查）/ `PreferenceAnnotationExample`（Stage 14：同 prompt 双 rollout→Console 标注→DPO preferences.jsonl）/ `EnterpriseAssistantExample`（Stage 15：登录→RAG→工具审批→任务审批断点恢复→租户隔离→预算拒绝全剧本）/ `scripts/consume_trajectory.py`（Python 跨语言消费证明）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
@@ -237,8 +237,8 @@
 > 四处有意不复用：OpenTelemetry SDK（D9 零新依赖）/ CostLedger 直接扩展（D4 下层不认识上层）/
 > ServiceAccount 身份绑定（D5 数字注入）/ LLM-as-judge（D7 门禁生命线是可复现）
 
-- [ ] M18.1 指标核心：MetricsSink / ModelCallMetrics / ToolCallMetrics / RunMetrics / ObservingModelClient / ObservingToolExecutor / MetricsCollector——**指标在边界不在路径**（装饰器谱系第四代：1 Retry/Timeout/Fallback → 9 Governed → 14 Recording → 18 Observing）；一次 Run 三种投影（Trajectory 训练 / AuditEvent 治理 / Metrics 运营，D1 不另造 Trace）
-- [ ] M18.2 成本与预算：PricingTable / CostMeter（microUSD，单价缺失 fail-loud）/ BudgetDimension（**五维逃逸面**：RUN/USER/TENANT/CHANNEL/AGENT）/ BudgetCheck（WARN 不阻断与 DENIED 阻断分离）/ BudgetBook（事前闸 + 事后账）/ ChannelQuota（**Stage 12 ServiceAccount 预算占位钩子回收**，装配层读数字）
+- [x] M18.1 指标核心：MetricsSink / ModelCallMetrics / ToolCallMetrics / RunMetrics / ObservingModelClient / ObservingToolExecutor / MetricsCollector--**指标在边界不在路径**（装饰器谱系第四代：1 Retry/Timeout/Fallback -> 9 Governed -> 14 Recording -> 18 Observing）；一次 Run 三种投影（Trajectory 训练 / AuditEvent 治理 / Metrics 运营，D1 不另造 Trace）✅（2026-08-25 完成，24 测试全仓 1047 全绿，零存量改动；实现记录见蓝图 §14）
+- [x] M18.2 成本与预算：PricingTable / CostMeter（microUSD 整数换算，单价缺失 fail-loud）/ BudgetDimension（**五维逃逸面**：RUN/USER/TENANT/CHANNEL/AGENT）/ BudgetCheck（sealed 三态 **WARN 不阻断与 DENIED 阻断分离**；DENIED 判 projected 击穿、恰好用尽放行）/ BudgetBook（事前闸 + 事后账，未配置=不限 limitOf -1 对齐 ServiceAccount 占位）/ ChannelQuota（**Stage 12 占位钩子兑现**，装配层读数字）+ 接线（MetricsSink.onAlarm default / MetricsCollector 注入 CostMeter，RunMetrics.costMicros 精确和）✅（2026-08-25 完成，+30 测试模块累计 54 全仓 1077 全绿；实现记录见蓝图 §15）
 - [ ] M18.3 模型路由：ModelRouter / RouteDecision（**reason 必填**——路由可解释是对账前提）/ RoutingModelClient（与 Fallback 组合 Routing(Fallback(…)) 纵深：外层按预算选人、内层挂了兜底）/ BudgetAwareRouter（余量路由，验收"至少 2 模型自动切换"）
 - [ ] M18.4 评估回归：EvalCase（originRunId 谱系可溯）/ Expectation（v1 确定性断言四类）/ EvalDataset（**importFailures 失败轨迹回收**：doneReason=ERROR/MAX_STEPS 或低 reward → 修一个 bug=数据集+1 用例）/ EvaluationRunner / EvalReport（门禁三态 PASS/FAIL/BASELINE_ABSENT）
 - [ ] M18.5 版本与收口：ComponentVersion（PROMPT/MODEL/TOOL 三元组）/ RunRecord / RunRegistry（byRunId 时间旅行："昨晚答错那单用的什么版本"）/ CostDashboard（四维拆分导出，各维合计=总账对账断言）+ ObservabilityExample 全剧本（T0-T7）+ README/笔记收口 + **文章 11《v1.0 架构复盘》收官 M9 面试叙事**

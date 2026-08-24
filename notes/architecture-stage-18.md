@@ -781,4 +781,65 @@ Enterprise/Tavern/Coding Profile（15/16/17）✅（17 实施中，并行收口�
 
 ---
 
-## 14. 实现记录（实施中回填）
+## 14. M18.1 实现记录（2026-08-25，指标核心）
+
+### 交付
+
+- 新增 `agent-observability` Maven 模块（父 POM `<modules>` + dependencyManagement 两处注册；compile 依赖**仅 `agent-core`**--「依赖随用随加」纪律：agent-trace-export 留 M18.4 评估读轨迹时再加；`agent-model` test scope 供端到端 MockModelClient）
+- **零存量改动兑现**：除父 POM 两处注册外全仓存量模块零 diff--**全仓 1047 测试全绿**（17 线并行推进至 agent-coding 138 + 本模块 24 + 存量 885），双线并行（§0 裁决）首次落地互不干扰的实证
+- **metrics 包 7 类**：
+  - `MetricsSink`（运营投影出口：onModelCall / onToolCall / onRun 三事件；onAlarm 留 M18.2 以 default method 加入--接口演进不破坏实现者，见偏差 ①）
+  - `ModelCallMetrics`（record：model + latencyMs + token 三项 + finishReason + error；usage 未报告诚实记 0--M18.2 定价表对缺行 fail-loud 拒猜，两级诚实分工）
+  - `ToolCallMetrics`（record：toolName + latencyMs + success + denied + error）
+  - `RunMetrics`（record：runId + agentName + status + lastError + durationMs + modelCallCount + modelCallErrors + toolCallCount + deniedToolCalls + tokenUsage 汇总 + costMicros 占位 0[诚实占位：无定价表=无成本计算，M18.2 接线]）
+  - `ObservingModelClient`（装饰器第四代：1 Retry/Timeout/Fallback -> 9 Governed -> 14 Recording -> 18 Observing；chat 边界测延迟读 usage；**stream 在终止事件 Done/Error 恰发一次**（peek + AtomicBoolean，无终止事件的流零发射--lazy 语义保真）；**双向异常纪律**：delegate 异常记完照抛[对齐 14] / sink 异常吞+warn[对齐 12 listener 隔离]--指标是旁路，旁路失败不伤主流程）
+  - `ObservingToolExecutor`（denied 检测=Stage 9 治理链文本契约 `[DENIED] `/`[RATE_LIMITED] ` 前缀；`[ERROR] ` 前缀（Stage 2 工具错误包装）明确不算 denied--工具跑了且失败是质量信号，治理拦截才是治理信号，javadoc 写明两种 prefix 的语义分界；**wiring 顺序契约**：必须在 Governed 外层否则 denial 全部静默丢失）
+  - `MetricsCollector`（implements MetricsSink + run 生命周期：beginRun ThreadLocal 上下文 / endRun 物化 RunMetrics；**孤儿事件不丢弃**--无 run 上下文的边界事件计入全局 totalModelCalls/totalToolCalls[运营记账不挑 run：run 外烧的 token 也是 token]；查询 runMetrics/byAgent/agentStats[嵌套 record：成功率统计，DONE 才算成功、MAX_STEPS 算失败]；守卫：嵌套 run 拒[对齐 14 单 run 纪律] / runId 唯一性拒 / endRun 无 active run 拒 IAE）
+- 测试 24 个：`ObservingModelClientTest` 9（chat 透传 assertSame 响应实例 + request 恒等 / 指标精确[tokens/finishReason/latency>=0] / usage null 诚实 0 / **异常记完照抛**[同类型同消息] / stream 事件序列逐项透传 + Done 恰一次含 usage / Error 终止失败指标 / **无终止流零发射** / **sink 抛异常不伤主流程** / 多 sink 转发广播同事件）+ `ObservingToolExecutorTest` 6（成功透传 / 异常 rethrow 非 denied / **[DENIED] 前缀 denied=true success=false 文本 verbatim** / [RATE_LIMITED] 同 / **[ERROR] 前缀不算 denied**[工具跑了的失败是质量信号] / sink 异常隔离）+ `MetricsCollectorTest` 9（聚合精确[2 model 含 1 error + 3 tool 含 1 denied -> 各字段 + token 累加 + costMicros==0 占位] / 失败 status+lastError 入行 / endRun 清 ThreadLocal[二次 endRun IAE] / beginRun 三守卫[blank/嵌套/runId 复用] / active run 查询 empty[诚实：未结束无汇总] / byAgent 过滤 / **agentStats 成功率[MAX_STEPS 算 failed]** / **孤儿事件全局计数** / **端到端：SimpleAgent + ReActAgentLoop + 双装饰器一行接线，scripted tool_calls->text 两轮 -> RunMetrics modelCallCount=2 toolCallCount=1 tokenUsage 精确 100/40/140 + agentStats 1.0**--「不动 loop 一行」的即插即用实证）
+
+### 与蓝图的一致性（偏差 5 处诚实记录）
+
+1. **MetricsSink.onAlarm 推迟 M18.2**：蓝图 3.1 草图含 `onAlarm(BudgetAlarmEvent)`，但参数类型属 cost 包（M18.2）--为不在 M18.1 引入占位类型，接口先三事件，M18.2 以 **default method** 加 onAlarm（接口演进零破坏实现者）；javadoc 已预告
+2. **RunMetrics.doneReason -> status + lastError**：蓝图字段名 doneReason 来自 14 的 DoneReason 枚举（trace-export）；metrics 包为其 import trace-export 语义错位--改用 core 的 `AgentState.Status` + lastError 字符串承载失败原因（语义同源，依赖最小化）
+3. **超蓝图字段两处**：modelCallErrors / deniedToolCalls（蓝图验收点名"denied 计数"与错误率，record 字段显式承载优于事后推导；同 M17.1 maxDepth 第 4 字段先例）
+4. **AgentStats 嵌套 record**：蓝图 7 类清单外，作为 MetricsCollector 嵌套类型兑现"任务成功率统计"验收（不占顶层类名额，同 16 Snapshot.relationship 先例）
+5. **sink 异常吞掉的旁路纪律**：蓝图测试策略写"指标是旁路"，实现明确**双向异常分界**（delegate 异常照抛[业务保真] vs sink 异常吞+warn[旁路不伤主流程]）并双双测试锁定--javadoc 契约化，同 14「捕获后上抛不吞」与 12 listener 隔离的两条纪律在同一装饰器内的精确组合
+
+### 实现记录
+
+- **零实现 bug**：24 测试一次通过（对照 M17.1/M17.2 各有 1 个实现侧 bug--装饰器层薄 + 契约先读后写的效果）
+- **并行实证**：本里程碑开发期间 17 线同步推进（agent-coding 72 -> 138，M17.3/M17.4 落地），两线全仓合并构建一次通过--§0 裁决「交集仅 agent-core 且零存量」从纸面推断变成构建事实
+- 依赖随用随加：pom 仅 agent-core（trace-export 推迟 M18.4，对照蓝图 §2 预检的落点）
+
+---
+
+## 15. M18.2 实现记录（2026-08-25，成本与预算）
+
+### 交付
+
+- **cost 包 7 类**（蓝图 6 类 + BudgetAlarmEvent 第 7 类，§3.1 草图点名的预警事件类型落位）：
+  - `PricingTable`（model -> Price(input/output microUSD per 1M) 不可变表；builder 校验非正价 IAE；同模型重复定价后写覆盖）
+  - `CostMeter`（TokenUsage -> microUSD，**纯整数运算 round-half-up**：`(tokens*price+500_000)/1_000_000`；溢出诚实边界 javadoc：价格 < ~4.3e9 microUSD/M（$4,300/M tokens）时 tokens*price 恒在 long 内；**单价缺失 IAE fail-loud 不算假账**，消息含模型名）
+  - `BudgetDimension`（五维 enum，javadoc 逐维写明逃逸面语义：RUN 经济闸对照 17 [LIMIT] 行为闸"同一条战壕的两个哨位" / CHANNEL 兑现 12 占位 / AGENT 是 12 身份隔离的经济面）
+  - `BudgetCheck`（sealed 三态 Ok/Warn/Denied，嵌套 record；**类型层落实 D3 预警阻断分离**：Warn 携带 percentUsed/used/limit 永不阻断，Denied fail-closed）
+  - `BudgetAlarmEvent`（record：dimension/key/used/limit/percent，流向 MetricsSink.onAlarm）
+  - `BudgetBook`（两阶段纪律：**requireBudget 事前闸**[DENIED 判 projected=used+est>limit，WARN 判 used>=warnAt%] + **recordUsage 事后诚实账**[估算与实际的差值保留不平滑]；未配置=不限[Ok + limitOf=-1 对齐 ServiceAccount.UNLIMITED 占位约定 + remainingOf=MAX_VALUE 路由算术安全]；alarm 每次越线都发 v1 无频控[javadoc 注明 NoisePolicy 教训属 sink 关切]；alarmSink 异常吞[旁路纪律]；builder 校验 limit>0/warnAt 1-99 装配期 fail-fast）
+  - `ChannelQuota`（纯数字容器 record：channelId + monthlyTokenBudget；javadoc 写明装配模式 `if (svc.hasBudgetCap()) book.budget(CHANNEL, ch, svc.monthlyTokenBudget())`--**Stage 12 占位钩子兑现的代码级落点**）
+- **M18.1 预告的两处接线兑现**：
+  - `MetricsSink.onAlarm(BudgetAlarmEvent)` default method 落地（M18.1 前的实现零改动编译通过--接口演进承诺兑现，AlarmCollector 测试锁定）
+  - `MetricsCollector(CostMeter)` 注入构造：RunAccumulator.addModelCall 边到边计价、endRun 的 costMicros 从占位 0 变为已计价精确和；**无参构造保持**（向后兼容）；**无定价模型 catch IAE -> warn + 0**（两纪律冲突的裁决：CostMeter 直接调用者享受 fail-loud，聚合路径选择旁路不炸 run--诚实记录见偏差 ②）
+- 测试 +30（模块累计 54）：`PricingTableTest` 3 / `CostMeterTest` 7（**精确换算 800+200=4000 microUSD** / input-output 分价 / **round-half-up 0.5->1** / 零 token 诚实 0 / **缺价 IAE 含模型名** / ModelCallMetrics 重载 / 负数拒）/ `BudgetBookTest` 15（未配置不限 + 未配置也记账 / 健康 Ok 无告警 / **WARN 83% 精确 + alarm 事件六字段** / **DENIED projected 击穿** / **恰好用尽 == limit 放行**[拒绝透支不拒绝踩线] / 诚实账回填 / **五维闸各自独立** / 同维度不同 key 独立 / warnAt=50 提前告警 / 告警每次越线重发 / 无 sink 不炸 / **sink 抛异常不伤闸** / builder 三守卫 / gate 四守卫）/ `ChannelQuotaTest` 3 / `MetricsCollectorTest` +2（**接线精确和 2150** / **无定价 0 成本 run 存活**）
+- **全仓 1077 全绿**（1047 + 30），存量零影响，零存量改动继续兑现
+
+### 实现期坑 2 条（记入防复发）
+
+1. **Java 17 sealed permits 嵌套类型简单名解析失败**（实现侧，编译器抓）：`sealed interface BudgetCheck permits Ok, Warn, Denied` 引用同文件嵌套 record 的简单名在 javac 17 (Tencent JDK 17.0.19) 下报"找不到符号"；修复=**省略 permits 子句**（JLS：子类同编译单元时自动 permit）。这是 Java 17 语法边界第 N 次踩（M16.2 record 解构模式 + switch 类型模式之后），防复发惯例升级："写 sealed 先问 17 还是 21，嵌套子类省 permits"
+2. **测试期望值算式错误**（测试侧，M17.2 教训重演）：lastWriteWins 把 `1M tokens × 2M microUSD/M` 期望写成 4,000（正确是 4,000,000--每百万 token 单价 2M microUSD，1M tokens 恰好付单价 $2）。实现侧零 bug，4M 是对的。教训：**token 换算断言先写"单价 × 百万 token 数"的量纲检查再写数字**
+
+### 与蓝图的一致性（偏差 5 处诚实记录）
+
+1. **BudgetAlarmEvent 为第 7 类**：蓝图 26 类清单外、§3.1 草图 onAlarm(BudgetAlarmEvent) 点名--类型落位到 cost 包（预警是预算域的事件）
+2. **CostMeter fail-loud 与 Collector 旁路的双纪律分界**：蓝图 F6 的 fail-loud 属于 CostMeter 直接调用者；MetricsCollector 聚合路径 catch IAE -> warn + 0（旁路失败不伤 run）。两纪律冲突时旁路优先，测试双双锁定（CostMeterTest.missingPricingFailsLoud vs MetricsCollectorTest.costWiringUnpricedSurvives）
+3. **DENIED 边界语义细化**：蓝图只写"耗尽 fail-closed"，实现明确 projected（used+est）> limit 拒 / 恰好 == limit 放行（拒绝透支不拒绝踩线）+ WARN 按 used（已发生）判而非 projected（预测）--预算尾部保守浪费是永不透支的代价，javadoc 写明
+4. **limitOf 未配置返回 -1**：对齐 Stage 12 ServiceAccount.UNLIMITED_BUDGET = -1 的占位约定（跨阶段同构语义）
+5. **孤儿事件不算成本**：RunMetrics.costMicros 是 run 内已计价调用的和；run 外调用的成本走 BudgetBook 记账维度（run 汇总与账本职责分离，javadoc 注明）
