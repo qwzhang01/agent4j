@@ -843,3 +843,30 @@ Enterprise/Tavern/Coding Profile（15/16/17）✅（17 实施中，并行收口�
 3. **DENIED 边界语义细化**：蓝图只写"耗尽 fail-closed"，实现明确 projected（used+est）> limit 拒 / 恰好 == limit 放行（拒绝透支不拒绝踩线）+ WARN 按 used（已发生）判而非 projected（预测）--预算尾部保守浪费是永不透支的代价，javadoc 写明
 4. **limitOf 未配置返回 -1**：对齐 Stage 12 ServiceAccount.UNLIMITED_BUDGET = -1 的占位约定（跨阶段同构语义）
 5. **孤儿事件不算成本**：RunMetrics.costMicros 是 run 内已计价调用的和；run 外调用的成本走 BudgetBook 记账维度（run 汇总与账本职责分离，javadoc 注明）
+
+---
+
+## 16. M18.3 实现记录（2026-08-25，模型路由）
+
+### 交付
+
+- **routing 包 4 类 + cost 包第 8 类**（蓝图 26 类清单外新增 BudgetExhaustedException，见偏差 ①）：
+  - `ModelRouter`（策略接口：`route(request, BudgetSnapshot) -> RouteDecision`；嵌套 record `BudgetSnapshot(remainingTokens, limitTokens)`--**D5 数字注入的代码级落点**：路由器只见数字不见 BudgetBook/ServiceAccount，测试可用纯数据构造；`of()` 工厂校验 limit>0 且 0<=remaining<=limit 装配期 fail-fast--路由器永远不见不可能的账本；`unlimited()` 工厂对应未配置预算，永不降级）
+  - `RouteDecision`（record：modelId + reason；compact constructor **类型层强制 reason 非空**--D6"路由必须可解释"不是 javadoc 惯例是构造契约，javadoc 写明三理由：成本对账行行可审计 / 事后归因可复现 / 对齐 12 IdentityDecision + 9 AuditEvent 裁决留痕传统）
+  - `RoutingModelClient`（implements ModelClient 装饰器：候选 Map + router + **每次调用前取一次快照的 Supplier**--同一 router 随账本消耗看到不同快照，中途耗尽翻转下一次决策；**零开销透传为测试锁定契约**：选中 client 收到原 request 实例[不重写 request.model()--候选按逻辑键编址，v1 javadoc 写明]、response/stream 实例原样返回；**路由是主路径不是旁路**：router 与 delegate 异常全部原样上抛不遮蔽--对照 M18.1 双向异常纪律，两代装饰器一个吞 sink 一个不吞业务，javadoc 互引；router 返回未知 modelId -> ISE 含 id+reason+候选集，fail-loud 是装配 bug 的正确死法；两构造器[无预算源=unlimited 快照 / 带预算源]）
+  - `BudgetAwareRouter`（默认策略三档：健康>=阈值 -> premium / 0<余量<阈值 -> cheap / 余量==0 -> `BudgetExhaustedException` fail-closed--**降级不是拒绝服务，是降低剩余服务的成本密度；耗尽时切便宜也救不了[任何调用都透支]，诚实拒绝**；恰好踩线 == 阈值走 premium[严格小于比较，对齐 BudgetBook"拒绝透支不拒绝踩线"]；reason 携带余量百分数与阈值数字["remaining 18% < 25% threshold"]；percent 整数向下取整[javadoc 写明]；请求本身 v1 不参与决策--预算是唯一信号，复杂度路由是 v2 策略不是本类的参数）
+  - `BudgetExhaustedException`（cost 包第 8 类：remaining + limit 字段；**非 ModelException 是有意裁决**--预算耗尽不是瞬态模型故障，外层 FallbackModelClient 不该"恢复"它[换供应商不回血预算]，javadoc 写明与 15 enterprise BudgetExceededException 的同语义不同名关系[D4 依赖方向 + 装配层桥接两账本时避免 import 歧义]）
+- 测试 +24（模块累计 78）：`RouteDecisionTest` 3（构造/相等 + blank modelId 拒 + **null/blank reason 拒**[D6 类型契约]）/ `BudgetAwareRouterTest` 10（健康 premium reason 含"50%" / **低于阈值 cheap reason 同时含"18%"与"25%"**[对账材料] / **恰好踩线走 premium** / unlimited 走 premium + isUnlimited + percent 100 / **耗尽抛 BudgetExhaustedException 字段与消息数字全断言** / 微小余量 5/10000=0% 降级不抛[0% 向下取整仍在阈值下] / **percent 向下取整 2499/10000=24% -> cheap** / 构造守卫 4 / 快照 of() 校验 5 断言 / null 快照 NPE）/ `RoutingModelClientTest` 11（**chat 零开销透传**[assertSame request + assertSame response + 未选者 0 调用] / stream 同[assertSame 流实例 + router 每调用恰一次] / router 每调用都问[2 次 chat -> 2 次 route] / **验收剧本：双 Mock 同一 client 实例先 premium 后 cheap**[真 BudgetBook + 真 BudgetAwareRouter + supplier 读 remainingOf/limitOf，记账 8500 后 15%<25% 自动切换] / **预算中途耗尽下一调用 fail-closed** / **Routing(Fallback(…)) 组合**[空 scripted Mock 天然抛 ModelException -> 1 的链零改动兜底 -> backup 答案] / **全链耗尽" All fallback clients exhausted"原样穿透**[诚实失败] / **router 异常实例 assertSame 穿透**[主路径无遮蔽] / 未知 modelId ISE 三要素消息 / 构造守卫 4 / candidateIds）
+- **全仓 1101 全绿**（1077 + 24），存量零影响，零存量改动继续兑现
+
+### 实现期坑 1 条（记入防复发）
+
+1. **record 静态工厂与实例谓词同签名冲突**（实现侧，编译器抓）：`BudgetSnapshot` 的静态工厂 `unlimited()`（返回快照）与实例谓词 `unlimited()`（返回 boolean）同名同参--Java 不允许 static 与实例方法同签名共存，javac 报"已在记录中定义了方法"。修复=谓词改名 `isUnlimited()`（bean 惯例）。防复发惯例：**record 的静态工厂命名先查实例方法命名空间**（对照 M18.2 坑 1 sealed permits--Java 17 语法边界踩坑第三期）
+
+### 与蓝图的一致性（偏差 5 处诚实记录）
+
+1. **BudgetExhaustedException 为第 8 类（cost 包）**：蓝图 §3 BudgetAwareRouter 行点名"耗尽抛 BudgetExceededException"，但该类型属 15 enterprise（D4 明文禁止 observability 反向依赖）--自有同语义类型落位 cost 包[预算域失败词汇，T4 的装配层闸门 DENIED->throw 也复用它]，命名避开 BudgetExceededException 防桥接装配时 import 歧义
+2. **BudgetSnapshot 为 ModelRouter 嵌套 record**：蓝图 26 类清单无此类、§3.1 草图签名 `route(request, budgetSnapshot)` 点名了它--按 16 Snapshot.relationship / M18.1 AgentStats 嵌套先例落位（不占顶层类名额）；顺带把"路由器不见账本只见数字"固化为类型边界
+3. **快照供应商注入 RoutingModelClient**：蓝图草图只写 candidates + router 两件套，未写预算视图从哪来--实现加第三构造参数 `Supplier<BudgetSnapshot>`（每次调用前取新快照），两参重载默认 unlimited；"同一 router 随账本消耗看到不同快照"由此成立，验收剧本的自动切换正是靠它
+4. **恰好踩线走 premium（严格 `<` 比较）**：蓝图只写"余量低于阈值走 cheap"，实现明确 == 阈值不切--对齐 M18.2 偏差 ③"拒绝透支不拒绝踩线"的同款边界语义，两处 javadoc 互为印证
+5. **不重写 request.model()**：路由选中候选后 request 原实例透传（蓝图验收"选中者参数原样转发"的字面兑现）--model 字段仍是调用方写的逻辑名，javadoc 写明 v1 候选按键编址、需要改写模型串的供应商在自己的 client 里改
