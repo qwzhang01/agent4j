@@ -4,11 +4,12 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 16 📐 规划定稿（Tavern Game Profile，零存量改动 + 9 设计决策）—— Stage 15 ✅ 全部完成（Enterprise Agent Profile：M15.1~M15.5 五里程碑全过，agent-enterprise 89 测试全仓 774 全绿，EnterpriseAssistantExample 全剧本验收）—— 上一步 Stage 14 ✅（18 周规划验收 4 条全达成）
+## 当前阶段：Stage 16 ✅ 全部完成（Tavern Game Profile）—— M16.1~M16.5 五里程碑全过（agent-tavern 111 测试全仓 885 全绿，**零存量改动兑现**；TavernGameExample 全剧本实跑验收：三角色人格 / 关系变化 / 事件触发 / 限幅自愈 / 存档续局 / 完整回放 / GM 审计）—— 上一步 Stage 15 ✅（五里程碑全过，agent-enterprise 89 测试）—— Stage 14 ✅（18 周规划验收 4 条全达成）
 
 > Stage 1-14 已完成（2026-08-16 ~ 08-24）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
 > Stage 16 设计蓝图：[notes/architecture-stage-16.md](notes/architecture-stage-16.md)（新增 agent-tavern 模块：角色即 Agent / 世界即黑板 / 影响即工具 / 回合即管线 / 历史即事件流——三类场景同 Runtime 的第二个领域 Profile，**零存量改动** + 三处有意不复用）
 > Stage 15 设计蓝图：[notes/architecture-stage-15.md](notes/architecture-stage-15.md)（新增 agent-enterprise 模块：租户与用户域 / 租户隔离 RAG / 角色权限与归属审计 / 成本账本 / 业务任务断点恢复——三类场景同 Runtime 的第一个领域 Profile）
+> Stage 15 业务场景学习笔记：[notes/stage-15-business-scenario.md](notes/stage-15-business-scenario.md)（从企业客服退款场景出发，解释为什么通用 Runtime 还不能直接进企业、核心概念、实现映射、8 个设计决策、M15.1~M15.5 验收、工程坑与复盘速答）
 > Stage 14 设计蓝图：[notes/architecture-stage-14.md](notes/architecture-stage-14.md)（新增 agent-trace-export 模块：边界捕获记录 / S-A-O-R-D 轨迹模型 / 可插拔奖励 / 确定性采样 / JSONL 契约导出 / 走录回放 / DPO 偏好；与 Mini VERL 闭环的交汇点）
 > Stage 13 设计蓝图：[notes/architecture-stage-13.md](notes/architecture-stage-13.md)（新增 agent-product 模块：声明式定义 / 模板 / 配置驱动 Tool / Prompt 管理 / Webhook / DAG / 多租户）
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
@@ -24,6 +25,7 @@
 > Stage 7 设计文档：[notes/architecture-stage-7.md](notes/architecture-stage-7.md)
 > Stage 6 设计文档：[notes/architecture-stage-6.md](notes/architecture-stage-6.md)
 > Stage 5 设计文档：[notes/architecture-stage-5.md](notes/architecture-stage-5.md)
+> Stage 5 业务场景学习笔记：[notes/stage-5-business-scenario.md](notes/stage-5-business-scenario.md)（从企业退款流程出发，解释为什么需要 Workflow、核心概念、实现映射、设计权衡与复盘速答）
 
 ### 已完成
 
@@ -205,11 +207,11 @@
 > **零存量改动**（对照 Stage 15 两处枚举加法——"当一个新场景能零存量改动落地时，才证明之前的抽象是对的"）；
 > 三处有意不复用：RunManager（D6 存档≠run checkpoint）/ EventBroker（D5 事件=同步规则评估非 run 恢复）/ Workflow（D8 回合=顺序代码非图）；与 Stage 15 依赖正交（D9）
 
-- [ ] M16.1 角色域：CharacterCard / CharacterAgentFactory（persona→systemPrompt 翻译）+ CharacterMemory（agent:{charId} 跨局 + session:{gameId} 局内双 scope 白名单）
-- [ ] M16.2 世界与回合：WorldState / WorldEffect（变更即指令）+ SetWorldFlagTool + Turn / TurnEngine / TurnLog（mention 路由 + [world]/[relationship] 便签注入 + append-only 落账）
-- [ ] M16.3 关系与事件：Relationship / Matrix / Policy（回合累计限幅 fail-closed，防化整为零刷好感）+ AdjustRelationshipTool + GameEvent / EventRule / EventEvaluator（同步评估恰一轮防风暴）+ TriggerEventTool（事件强制响应）
-- [ ] M16.4 存档与回放：SaveGame / GameStore（局快照，非 run checkpoint）+ GameReplayer（走录不重演 + 完整性校验 + 重演终态==存档终态）
-- [ ] M16.5 装配与收口：TavernGame 门面 + TavernGameExample 全剧本（三角色人格/关系变化/事件触发/限幅自愈/存档续局/逐回合回放）+ README/笔记收口
+- [x] M16.1 角色域：CharacterCard / CharacterAgentFactory（persona→systemPrompt 翻译 + Interaction rules 预埋）+ CharacterMemory（agent:{charId} 跨局 + session:{gameId} 局内双 scope 白名单，**零新 scope kind**）✅（2026-08-24 完成，19 测试全仓 793 全绿，存量零影响：persona 注入模型实见实证 + 同输入两角色两人格 + 跨局记忆存活 + AgentState 跨回合续跑）
+- [x] M16.2 世界与回合：WorldState / WorldEffect（sealed 变更即指令，apply 不可变返回新状态）+ SetWorldFlagTool（**纯指令提交器**——工具产出指令、引擎唯一 apply 点）+ Turn / TurnResult（sealed 两态）/ TurnEngine（mention 路由 + [world]/[relationship]/[player] 便签注入 + held AgentState 续跑 + submitEffect 唯一 apply+记录点）/ TurnLog（内存 append-only，JSONL 随 M16.4）✅（2026-08-24 完成，+28 测试全仓 821 全绿：mention 两态零模型空跑 / 便签注入模型实见实证 / 工具变世界全链 / 角色状态隔离 / 回合推进续跑）
+- [x] M16.3 关系与事件：Relationship / Matrix / Policy（**净变幅回合累计限幅** fail-closed，防化整为零刷好感）+ AdjustRelationshipTool（拒绝=教练式 [REJECTED] 文本，模型读失败观察自愈）+ GameEvent / GameFacts / EventRule / EventEvaluator（同步评估恰一轮防风暴，fail-soft 坏条件）+ TriggerEventTool（登记不执行，结算点统一引爆）+ TurnEngine 事件结算点（effects 应用+respondCharacter 强制响应 eventDriven）+ **Turn 补 RelationshipChange 落账字段**（蓝图缺口：D7 回放要重演世界+关系）+ 治理链接线（executorFactory 注入，**审计流水=GM 后台**实证）✅（2026-08-24 完成，+37 测试全仓 858 全绿：限幅全语义/事件结算全链/无级联/手动引爆同回合/响应中登记顺延/治理审计）
+- [x] M16.4 存档与回放：SaveGame / GameStore（局快照 + {gameId}/save.json + turn-log.jsonl 双文件布局）/ ReplayCodec（手写树编解码，读写单一契约点）/ GameReplayer + GameReplay（**走录不重演**：stateAt(n) 重演世界+关系时间线，模型零调用；describeTurn 人读复盘）/ TurnEngine+Matrix+Evaluator 扩展（initial 信封视图 / characterHistories / restoreHistories / restore 绕限幅系统操作）✅（2026-08-24 完成，+17 测试全仓 875 全绿：round-trip 全等 + 续局对话连续 + once 簿记跨重载 + **重演终态==存档终态** + 完整性三态带行号 fail-loud + **写后字节不变（前缀稳定）** + 多模态消息 fail-loud）
+- [x] M16.5 装配与收口：TavernGame 门面 + Builder（新局 build / 续局 load / `governance(logger)` 一行装配 GM 后台 / storeRoot 持久化）+ TurnEngine.resume 工厂（**拆分 game-initial 与 current-world 语义**——load 恢复完整历史，续局 save 仍写从 turn 1 起的连续日志）+ examples 依赖 + TavernGameExample 全剧本实跑 ✅（2026-08-24 完成，+10 测试全仓 885 全绿：门面全链 / builder 校验 / [relationship] 默认注入 / governance 一行审计 / save-load 续局 turnNo 接续+历史可见 / replay 双视图 / 无治理兼容）——**示例实跑揪出续存档日志断裂真缺口**，完整性校验 fail-loud 拦截后修复
 
 ## 模块结构
 
@@ -228,8 +230,8 @@ java-agent-framework/
 ├── agent-channel/      # 频道级共享 Agent（身份/共享会话/Ambient，Stage 12）
 ├── agent-product/      # 声明式产品层（YAML 定义/模板/配置工具/Prompt 管理，Stage 13）
 ├── agent-trace-export/ # RL 轨迹产出层（记录/奖励/采样/导出/回放/DPO，Stage 14）
-├── agent-enterprise/   # 企业 Agent Profile（租户用户域/RAG/治理/成本/业务任务，Stage 15 🚧）
-├── agent-tavern/       # 酒馆游戏 Agent Profile（角色/世界/回合/关系/事件/回放，Stage 16 📐）
+├── agent-enterprise/   # 企业 Agent Profile（租户用户域/RAG/治理/成本/业务任务，Stage 15 ✅）
+├── agent-tavern/       # 酒馆游戏 Agent Profile（角色/世界/回合/关系/事件/回放，Stage 16 ✅）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -327,5 +329,5 @@ ExecutionResult        # 终态（status + output + error + state）
 | 12. 频道共享 Agent/Identity/Ambient | agent-channel | ✅ 完成  |
 | 13. 上层产品搭建层 | agent-product            | ✅ 已完成 |
 | 14. RL 轨迹产出层 | agent-trace-export      | ✅ 已完成 |
-| 15. Enterprise Agent Profile | agent-enterprise  | 🚧 M15.1~M15.3 已完成 |
-| 16. Tavern Game Profile | agent-tavern  | 📐 规划定稿 |
+| 15. Enterprise Agent Profile | agent-enterprise  | ✅ 完成 |
+| 16. Tavern Game Profile | agent-tavern  | ✅ 完成（111 测试，零存量改动） |

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.qwzhang01</groupId>
+        <artifactId>seven-agent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>agent-tavern</artifactId>
+    <name>Agent Tavern</name>
+    <description>Tavern Game Agent Profile (Stage 16): characters with persona, world state,
+        turns, relationships, events, save &amp; replay. Second domain profile on the shared
+        Runtime - zero changes to existing modules (blueprint D1).</description>
+
+    <dependencies>
+        <!-- Dependencies are added as milestones land ("add when used" discipline):
+             M16.1: agent-core (Agent/AgentConfig/SimpleAgent) + agent-memory (scope whitelist).
+             M16.2+: agent-security (governance chain for the game-state tools). -->
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-memory</artifactId>
+        </dependency>
+        <!-- M16.3: governance chain for the game tools (permission + audit = GM backend). -->
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-model</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

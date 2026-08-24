@@ -33,6 +33,7 @@
         <module>agent-product</module>
         <module>agent-trace-export</module>
         <module>agent-enterprise</module>
+        <module>agent-tavern</module>
         <module>examples</module>
     </modules>
 
@@ -117,6 +118,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-enterprise</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-tavern</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

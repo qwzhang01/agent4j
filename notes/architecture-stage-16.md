@@ -646,4 +646,177 @@ examples/（新增 1 个）
 
 ---
 
-## 13. 实现记录（留白，实现时追加）
+## 13. M16.1 实现记录（2026-08-24，角色域）
+
+### 交付
+
+- 新增 `agent-tavern` Maven 模块（父 POM `<modules>` + dependencyManagement 注册；compile 依赖仅 `agent-core` + `agent-memory`——「依赖随用随加」纪律，agent-security 留 M16.2 治理链落地时再加；agent-model test scope）
+- **零存量改动兑现（蓝图 D1 的直接验证）**：除父 POM 两处注册外，agent-core / agent-memory 等存量模块零 diff——全仓 793 测试全绿（Stage 15 收官 774 + tavern 19），存量零影响
+- **character 包 3 类**：
+  - `CharacterCard`（record：characterId + displayName[null/blank 默认 characterId] + persona[必填 fail-fast——"a character without a soul is just a chat loop"] + greeting[可选领域数据，门面 M16.5 消费]）
+  - `CharacterMemory`（**白名单即全部设计**：`scopesFor(charId, gameId)` = [agent:{charId}, session:{gameId}]——AGENT/SESSION kind 均已有，零新枚举值，这是蓝图 D1「零存量改动」的兑现点；`contextBuilder` = MemoryContextBuilder + 白名单 + null compressor[诚实边界：局末压缩 v2] + recallLimit 默认 8）
+  - `CharacterAgentFactory`（Card→Agent 翻译器：`personaPrompt` = 身份行 + persona 正文 + **Interaction rules 四条**——M16.2 游戏工具的行为契约预埋[按角色情绪用工具/世界变化从对话中生长/工具报错自然继续/不出戏]；maxSteps 默认 6——角色回合是场景节拍不是研究任务；null gameTools → 空 registry 纯对话可用）
+- 测试 19 个：`CharacterCardTest` 4（校验三态 + displayName 默认）+ `CharacterMemoryTest` 9（**白名单四向**：双 scope 可见 / 跨角色隔离 / 跨局隔离 / **角色记忆跨局存活**[D2「记得你靠记忆不靠历史」的可执行证明]；[Known memories] 注入紧跟 system 的格式契约 + recallLimit 行数边界 + 空记忆零注入）+ `CharacterAgentFactoryTest` 6（**persona 注入模型实见实证**——CapturingModelClient 捕获 ModelRequest 断言首条 SYSTEM 含身份+persona+Interaction rules / **同输入两角色两人格**[人格隔离的可执行证明，两 prompt assertNotEquals] / config 绑定与 maxSteps / 端到端白名单[run 全链注入块只见 agent:marcus 内容，agent:lyra 与 session:game-2 不可见] / **AgentState 跨回合续跑**[M16.5 门面原语：held state 两次 run，第二次请求含 4 条完整历史]）
+
+### 测试侧 bug 1 处（记入防复发）
+
+`recallLimitBoundsInjection` 初版按**消息条数**计数断言期望 2 实际 1——所有记忆行渲染在**同一条**注入 USER 消息内（MemoryContextBuilder 把整块记忆拼成一条 `[Known memories]` 消息），应按注入块内的**行数**（`startsWith("- [")`）计数。对齐 M15.3 教训：「测试失败先核对自己算式和语义」。
+
+### 环境备忘
+
+- `JAVA_HOME=$(路径)` 写法在 zsh 下把目录当命令执行 → 赋值为空 → 回落 JDK 8 → maven-compiler 报 `TypeTag :: UNKNOWN`；正确姿势是直接赋值：`JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home mvn test -pl agent-tavern`
+- 全仓跑时 agent-scheduler `TaskSchedulerTest` 偶发 1 Error，单独重跑 18/18 全绿——异步时序竞态 flaky，与本次改动无关（tavern 不依赖 scheduler）；留观察不修
+
+### 与蓝图的一致性
+
+- 16 抽象第一组（character 3 类）落地，签名与 §3.1 草图一致（scopesFor / contextBuilder / create）
+- D2「角色即 Agent」三要素齐备：persona→systemPrompt 翻译（FactoryTest 实证）、双 scope 记忆（MemoryTest 四向白名单）、`run(input, state)` 续跑原语（FactoryTest 跨回合测试）——跨局记忆存活测试是「记忆而非历史」设计判断的可执行锁定
+- D1 零存量改动：全仓除父 POM 注册外零 diff，793 全绿即证明
+
+---
+
+## 14. M16.2 实现记录（2026-08-24，世界与回合）
+
+### 交付
+
+- **world 3 文件 + turn 4 文件**（蓝图 turn 3 类 + `TurnResult`——§3.1 草图明确背书的返回类型，超蓝图第 4 文件同 M15.1 suspendTenant 先例：领域语义正当），+28 测试全仓 821 全绿（存量 793 零影响，零存量改动继续兑现）
+- **world 包**：
+  - `WorldEffect`（sealed 三指令：SetFlag/ClearFlag/SetLocation，紧凑构造器校验——变更即指令 D3 的类型层落地）
+  - `WorldState`（record 不可变：apply 返回新实例原状态不动；flags Map.copyOf 防外泄；`describe()` 人读快照——[world] 便签与将来回放摘要共用同一渲染）
+  - `SetWorldFlagTool`（**纯指令提交器**：持有 `Consumer<WorldEffect>` sink 而非世界引用——"工具产出指令、引擎 apply"是 D3「唯一变更路径」的字面兑现；收集 sink 让工具契约零引擎可测；参数缺失/空白 → ToolException 对齐 Stage 2 错误契约）
+- **turn 包**：
+  - `Turn`（record：turnNo/playerInput/speakingCharacterId/responses/appliedEffects/**triggeredEventIds（M16.3 预立空字段）**/timestamp——字段位一次立满避免 M16.3 record 签名变更；`CharacterResponse(characterId, text, eventDriven)` eventDriven 恒 false 至 M16.3；`WorldEffectEntry` 包装 effect 为 provenance 留位）
+  - `TurnResult`（sealed 恰两态：`Completed(Turn)` / `RoutingMiss(input, message, availableCharacters)`——蓝图 F1 语义：路由失败不烧模型调用、不推进回合数、不落账）
+  - `TurnEngine`（管线四步：mention 路由[正则 `@([A-Za-z0-9_-]+)` 首个命中，Stage 12 autoDetect 分隔符边界语义] → nextTurn + 便签注入[`[world] describe\n[relationship] describer\n[player] 原文`，Stage 12 [from userId]/[handoff] 手法] → 角色 run[held AgentState 续跑] → Turn 落账；**`submitEffect` 是唯一 apply+记录点**——工具与 M16.3 事件效果同走一口；世界工具由引擎构造时注册（有引擎才有可变世界）；`relationshipDescriber` 构造注入 Function 可 null——机制 M16.2 立好、真矩阵 M16.3 接）
+  - `TurnLog`（内存 append-only：unmodifiable view + 只增 append——"落账不可改"的内存契约；JSONL 首行 initial 信封 + 写后字节不变验证随 M16.4 GameStore 落地，诚实边界）
+- 测试 28 个：WorldStateTest 9（三指令语义 / apply 不可变返回新实例 / flags 拷贝防外泄 / nextTurn 边界 / describe 含 flags / 空白 location 拒绝）+ SetWorldFlagToolTest 4（提交契约 / 参数三态拒绝且零提交 / 元数据）+ TurnLogTest 3 + TurnEngineTest 12（**mention 两态**：命中路由 + 无@与未知@双 miss（模型零调用+零推进+零落账三断言）；**便签注入模型实见实证**：[world] 前缀开头 + [player] 原文结尾 + 无 describer 无 [relationship] 行 / stub describer 注入实证；**工具变世界全链**：scripted toolCalls → world.flag 命中 + describe 可读 + turn.appliedEffects 记录 + 角色终答仍在；落账字段完整 / 回合推进 Turn 2 / **角色状态隔离**（lyra 请求零 marcus 历史）/ log 不可变 / 空 roster 与 null input 守卫）
+
+### 实现期坑 3 条（记入防复发）
+
+1. **Java 17 语法边界连踩两次**：record 解构模式（`case SetFlag(String k, String v)`，21 转正）与 switch 类型模式（`case SetFlag f ->`，21 转正 / 17 preview）先后编译失败——**17 兼容写法 = sealed + instanceof 类型模式链**（JEP 394 在 16 转正）；链尾兜底 throw 是 sealed 穷尽性无法被 17 编译器证明的诚实补丁（javadoc 注明）
+2. 测试断言索引 bug 反证续跑正确：多轮后第二次模型请求是 4 条（含第一轮历史），新注入在**末条**非 index 1——断言取 last；失败本身恰证明 held AgentState 续跑工作正常
+3. `mapper.readTree` 的 checked `JsonProcessingException` 忘在测试方法声明（assertThrows 的 lambda 内可抛无需处理——Executable.execute() throws Throwable）
+
+### 与蓝图的一致性
+
+- 交付清单对齐（world 3 + turn 3 + TurnResult）；M16.2 五条验证全过（mention 两态 / [world]+[relationship] 便签注入实证[stub describer] / 工具变世界 / 落账完整 / append-only[内存级]）
+- §3.1 签名偏差诚实记录：`playTurn(String)` 而非草图 `playTurn(TavernGame, String)`——M16.2 引擎内持局状态（world/agentStates/log），M16.5 TavernGame 门面出现时提取重构、管线逻辑不变（javadoc 已注）
+- TurnLog「写后字节不变」验证随 M16.4 GameStore 的 JSONL 形态整体落地（本阶段立内存 append-only 语义）
+- 治理链（agent-security 依赖 + GovernedToolExecutor）推迟 M16.3 与关系限幅一起接——「依赖随用随加」纪律第三次执行（pom 未动）
+
+---
+
+## 15. M16.3 实现记录（2026-08-24，关系与事件）
+
+### 交付
+
+- **relation 4 类 + event 5 类**（蓝图 4 类 + `GameFacts`——蓝图 EventRule 行备注背书的评估入参视图）+ Turn 补字段 + 两处扩展 + pom 增补 agent-security，+37 测试全仓 858 全绿（存量 821 零影响）
+- **relation 包**：
+  - `Relationship`（value 0-100 + lastChangedTurn + tier 六档派生 [STRANGER/COLD/NEUTRAL/WARM/FRIEND/DEVOTED] + describe "affection 62 (WARM)"——[relationship] 便签与 GM 视图共用）
+  - `RelationshipPolicy`（maxChangePerTurn 默认 5，**净变幅语义**：|本回合累计 + 本次| ≤ 上限）
+  - `RelationshipMatrix`（**唯一写路径带限幅**：`ApplyResult` sealed 两态 Applied/Rejected——拒绝是正常游戏流非异常；view 未见角色 50 NEUTRAL；回合滚动重置预算；每角色独立预算；0-100 钳位但预算按**请求 delta** 计费——更严防边界操作）
+  - `AdjustRelationshipTool`（matrix + currentTurn + **appliedSink 三注入**：Accepted 提交引擎落账 Turn.RelationshipChange；Rejected 返回 "[REJECTED] reason… Continue the scene naturally" **教练式文本**——模型读失败观察自愈）
+- **event 包**：
+  - `GameEvent`（respondCharacterId 可空——纯世界变更无戏剧响应）
+  - `GameFacts`（world + relationships 快照 + turnNo 只读视图，Stage 12 ambient facts 同款；relationship(id) 默认 50）
+  - `EventRule`（once 默认工厂 + repeatable 工厂）
+  - `EventEvaluator`（**双路径一规则表**：`evaluate(facts)` 回合结算恰一轮批量评估；`triggerManually(eventId)` 目录引爆——**免条件检查**（角色的戏剧意图即授权）**但守 once 簿记**；坏条件 fail-soft 不炸结算；firedEventIds() 存档视图）
+  - `TriggerEventTool`（**登记不执行**：事件进 pendingManualEvents 延迟到结算点统一处理——内联执行会在 run 中嵌套 run，递归风暴；未知/已耗尽 id 返回 [REJECTED] 文本）
+- **TurnEngine 结算点**（管线第 3 步）：`evaluate(响应后 facts) + drain(pendingManual)` 合批 → 逐个 fireEvent：effects 走 submitEffect（同工具一口）+ triggeredEventIds 记录 + respondCharacter `run("[event] description")` 响应追加（eventDriven=true）；**事件响应中再登记的手动事件顺延下回合结算**（防风暴的戏剧化表达——"你的敬酒之后，诗人决定明晚办演唱会"）
+- **Turn 补 `RelationshipChange` 字段**（characterId/delta/before/after）——**蓝图缺口修补**：D7 要求回放重演"世界+关系"，但蓝图 Turn 字段清单只有 appliedEffects 没有关系变更；引擎 `submitRelationshipChange` 与 `submitEffect` 平行成对（关系变化的回放流）
+- **治理链接线**（D4 两层分工）：`CharacterAgentFactory` + `executorFactory`（Function&lt;ToolRegistry, ToolExecutor&gt;，null=直通兼容 M16.1/16.2 行为）——`GovernedToolExecutor(DefaultToolExecutor) + PermissionChecker(ToolPolicy(AUTO)) + InMemoryAuditLogger` 装配即 **GM 后台**：`audit.getByTool("adjust_relationship")` 断言 EXECUTED + args 含 characterId（每个世界/关系变更都有审计流水）
+- **关系影响行为接线**：TurnEngine 内建 describer 从矩阵派生（`relationships.view(id).describe()`）——M16.2 的 Function 注入点完成使命（自定义覆盖仍支持）
+
+### 测试 37 个
+
+- MatrixTest 13：**限幅全语义**——单次超幅拒（±5）/ **切香肠防御**（+3 后 +3 拒，净 +6）/ 负向共享预算（-4 后 -2 拒、+1 放行）/ 精确边界（+5 放 +1 拒）/ 回合滚动重置 / 每角色独立 / 钳位全请求计费（95+5→100）/ 快照不可变 / 守卫 / policy 与 tier 边界
+- AdjustRelationshipToolTest 4：成功确认+sink 提交 / 拒绝文本零提交 / 参数三态 / 元数据
+- EventEvaluatorTest 12：命中触发 / 未命中 / **once 跨评估** / repeatable / **fail-soft 坏条件**（一条坏规则不炸整批）/ facts 默认关系 / **手动引爆**（免条件+守 once+联动自动路径不可再触发）/ 未知 id / 工具排队与 [REJECTED] / record 守卫
+- TurnEngineM16_3Test 8 集成：关系工具全链落账（矩阵 53 + Turn.RelationshipChange before/after）/ 便签矩阵派生（"affection 62 (WARM)"）/ **限幅拒绝模型实见+自愈**（+10 拒 → 第二请求含 "[REJECTED] ±5" 失败观察 → 终答正常返回场景继续）/ **事件结算全链**（marcus 置 flag → 规则命中 → 事件 effects 应用 + lyra 强制响应 eventDriven=true + triggeredEventIds）/ **无级联**（A 效果置位 B 条件，B 本回合不触发、下回合才触发——恰一轮的时序证明）/ **手动引爆同回合结算**（工具登记 → 结算 effects+响应）/ **响应中登记顺延下回合**（防风暴核心证明：turn1 只 first、turn2 才 second）/ **治理审计 GM 后台**（getByTool 断言两工具 EXECUTED + args 可见 whose relationship）
+
+### 实现期坑 4 条（记入防复发）
+
+1. **Java 17 switch 模式第三次踩**（AdjustRelationshipTool 的 ApplyResult 分派）——M16.2 防复发记录本人复犯，恰好证明该记录价值；惯例升级：**tavern 模块写任何 switch 分派前先自问"17 还是 21"**，默认 instanceof 链
+2. **Map.copyOf 不保序暴露 M16.2 遗留 bug**：WorldState.flags 用 Map.copyOf 顺序不稳定 → describe()/[world] 便签 flags 顺序不确定 → describeWithFlags 间歇性失败；修复 = `Collections.unmodifiableMap(new LinkedHashMap<>())` 保插入序。教训：**不可变 ≠ 顺序无关——凡是要渲染/落盘/注入 prompt 的集合，都要显式选择顺序语义**
+3. readTree checked 异常第三度出现（EventEvaluatorTest ×3 + AdjustRelationshipToolTest ×2）——惯例定型：**测试方法直接 `throws Exception`**
+4. 测试侧 2 处：预热矩阵 +12 被默认限幅拒（失败信息恰好证明限幅在工作——换 policy(20) 预热）；noCascade 初版误设 throw helper（已删）
+
+### 与蓝图的一致性
+
+- 交付对齐：relation 4 + event 4（+GameFacts 备注背书）+ 两处扩展（Factory/TurnEngine）+ Turn 补字段；M16.3 五条验证全过（限幅三态+拒绝文本进对话 / 规则命中+effects 应用+事件响应追加 / once / 恰一轮不级联 / 主动引爆）
+- D4 两层分工实证：治理链（AUTO 权限+全量审计=GM 后台）与工具内数值限幅（净变幅累计）互不越界
+- D5 兑现：同步评估恰一轮 + 手动登记顺延=防风暴的完整闭环；蓝图「事件触发后事件响应角色再触发」的链式风暴场景被「登记顺延」消解为跨回合戏剧节奏
+- 蓝图缺口修补：Turn.RelationshipChange 使 D7「重演世界与关系」的数据流完整（M16.4 GameReplayer 直接消费）
+- 蓝图偏差：EventEvaluator 双路径设计（evaluate/triggerManually 共享 once 簿记）超出蓝图描述但符合 D5 精神——主动引爆是"角色的戏剧授权"语义
+
+---
+
+## 16. M16.4 实现记录（2026-08-24，存档与回放）
+
+### 交付
+
+- **replay 包 5 文件**（蓝图 3 类 + GameReplay 步进视图 + ReplayCodec 编解码器——蓝图 D7「模式复用 Stage 14 TrajectoryCodec 纪律」的实体化：格式契约单一权威点，GameStore 写与 GameReplayer 读都走它）+ TurnEngine/RelationshipMatrix/EventEvaluator 三处恢复入口扩展，+17 测试全仓 875 全绿（存量 858 零影响）
+- **`SaveGame`**（record：gameId + world + relationships + characterHistories + firedEventIds——D6 的"全套领域状态"，对照 Stage 6 run checkpoint 的形似神异在 javadoc 里写死）
+- **`GameStore`**（save/load 双文件布局：`{root}/{gameId}/save.json` 终态快照 + `turn-log.jsonl` 历史流——**快是恢复路径、流是复盘路径，重演终态==存档终态让两文件互查**；save 全量写但**字节在追加下稳定**：同 turns 同字节，后次 save 是前次的字节前缀延长，已写行永不变）
+- **`ReplayCodec`**（手写 JSON 树：world/relationship/message/toolCall/effect/turn/initial 信封——**零注解魔法**，enum switch + instanceof 链全 17 兼容；**v1 诚实边界：多模态 parts 消息存档即 IAE**，fail-loud 不静默丢；tool 消息的 toolCallId/name 完整保留，重建后配对不断）
+- **`GameReplayer` + `GameReplay`**（load 校验 + 步进视图：**stateAt(n) 走录重演**——从 initial 逐 turn nextTurn + apply(effects) + apply(relationshipChanges)，纯数据流推导，模型零调用规则零重评（记录即真相）；**describeTurn** 人读复盘[谁说了什么/world 改了什么/关系动了多少/触发了什么]；ReplaySnapshot.relationship(id) 与 GameFacts/Matrix.view 同款默认 50 语义——三处默认语义统一）
+- **三处恢复入口**（load 路径的部件）：TurnEngine 记录 initial 信封（initialWorld + 构造时刻关系快照）+ `characterHistories()` 存档视图 + `restoreHistories()` 历史注入；`RelationshipMatrix.restore(map)` **绕限幅**（系统操作非模型回合动作，预算清零）；`EventEvaluator.restore(set)` once 簿记续接
+
+### 测试 17 个
+
+- GameStoreTest 8：目录布局 / **round-trip 全等**（世界 record equals + 关系 + 全部角色历史[含工具调用消息] + fired 事件）/ 首行 initial 信封 / **写后字节不变**（save→bytes1→再玩两回合→save→bytes2，逐字节断言 bytes1 是 bytes2 前缀）/ 缺档 NoSuchFileException / **续局对话连续**（蓝图 T6：重载引擎续跑 turnNo=2 接续 + 恢复的历史对模型可见 + 恢复的关系进 [relationship] 便签 + 限幅预算新回合刷新）/ **once 簿记跨重载**（存档前触发过的事件，重载后同条件不再触发）/ 多模态历史 fail-loud
+- GameReplayerTest 9：**stateAt 时点正确**（蓝图 T7 精确对应：t0 空世界 50 关系 / t1 flag+关系 / t2 关系累加 flag 未至 / t3 终态）/ **重演终态==存档终态**（世界+关系双断言——两文件互查闭环）/ describeTurn 人读 / 越界拒绝 / 完整性三态带行号（缺 initial 信封 / turnNo 跳号"line 3: expected turnNo 2" / 坏 JSON"line 2"）/ 空 log 拒绝 / 最小合法 log 加载
+
+### 实现期坑 2 条（记入防复发）
+
+1. **快照默认语义漏挖**：stateAtTimePoints 初版裸 `relationships().get("marcus")` NPE——初始快照只含已跟踪角色（跟踪=被改过），"未跟踪=中性 50"的默认语义在 GameFacts/Matrix.view 都有而 Snapshot 裸 map 没有；修复 = ReplaySnapshot.relationship(id) 补齐，**三处默认语义统一**。教训：一个领域默认值（未见过的角色=50）要跟随该类型的**每一个读取视图**
+2. ObjectNode 忘 import + mapper::createTextNode 不存在（ArrayNode.add(String) 才是正路）——小错快修
+
+### 与蓝图的一致性
+
+- 交付对齐：蓝图 3 类 + GameReplay 视图 + ReplayCodec（D7 TrajectoryCodec 模式复用的实体化，超蓝图第 5 文件同 M15.1/M16.2 先例：机制正当）；M16.4 四条验证全过（round-trip 续跑连续 / 逐 Turn 步进 / 完整性校验带行号 / 重演终态==存档终态）
+- D6 兑现：存档=局快照双文件；恢复部件（restore×3）绕限幅的系统操作语义与 D4 的模型操作限幅语义分层清晰
+- D7 兑现：走录不重演（stateAt 纯数据流）；append-only 字节稳定（前缀断言）；信封 kind 区分 initial/turn；fail-loud 带行号（对齐 Stage 14）
+- M16.2 的 TurnLog「写后字节不变」遗留验证条目随本阶段落地（内存 append-only → 文件字节级前缀稳定）
+
+---
+
+## 17. M16.5 实现记录（2026-08-24，装配与收口）+ Stage 16 总验收
+
+### 交付
+
+- **`TavernGame` 门面 + Builder**（M16.5）：一个 Builder 定义一局游戏（model/memory/roster/world/policy/rules/governance/storeRoot 全带默认），`build()` 新局、`load()` 续局、`governance(auditLogger)` **一行装配 GM 后台**（GovernedToolExecutor + ToolPolicy(AUTO) + 审计）；门面路径恒有 matrix+evaluator（默认 DEFAULT policy / 空规则表）；`replay()` 内存视图 + `replayFromDisk()` 跨会话完整历史
+- **`TurnEngine.resume` 工厂**：拆分 **game-initial（日志第 1 行）与 current-world（运行状态）两个语义**——新局时相同、续局时分离；`load()` 双读（save.json 终态 + turn-log.jsonl 完整历史）恢复：旧 turns 预填 turnLog、真 initial 进日志信封、存档终态作当前世界——**续局引擎的 save() 仍写出从 turn 1 起的连续日志，replay() 覆盖全部回合**
+- **`TavernGameExample`**（examples 模块 + agent-tavern 依赖）：蓝图 §6 的 T0-T7 全剧本，MockModelClient 十响应全链零 LLM 实跑：三角色人格（marcus/lyra/brawn 各自台词）/ T2 关系 +3 / T3 世界 flag / **T4 事件 improvisation 结算触发（lyra 事件响应 + crowd=cheering 效果）**/ **T5 +10 限幅拒绝自愈（"trust is earned sip by sip"）**/ T6 save-load 续局（lyra 记得歌，turn 6 接续）/ T7 完整回放 describeTurn × 6 + stateAt(3) 时点 + **重演终态==存档终态 YES** / GM 审计 3 条全 EXECUTED
+- 测试 +10（TavernGameTest）：门面全链 / 默认 matrix+evaluator / builder 校验三态 / [relationship] 默认注入 / governance 一行审计 / save-load 续局（turnNo 接续 + 恢复历史对模型可见）/ 无 storeRoot 拒绝 + load 双守卫 / replay 双视图 / 无治理兼容
+
+### 示例实跑揪出真缺口（本阶段最有价值的坑）
+
+初版续局引擎的 initial=存档终态、turnLog 只有恢复后新回合 → 续玩后 save() 覆盖写日志（initial 行=恢复点 + turnNo 6 一行）→ `replayFromDisk` 完整性校验 **"line 2: expected turnNo 1, got 6" fail-loud 拦截**。M16.4 的防坏文件校验反过来抓住了 M16.5 装配的真实语义错误——**fail-loud 纪律的自我证明**。修复即 resume 工厂的双语义拆分（上节）。教训：**"存档终态"与"日志起点"是两个角色，续局装配时必须分别携带**。
+
+小坑 2 条：CharacterAgentFactory 四参构造是 `(ModelClient, CharacterMemory, int, Function)` 传 MemoryStore 不匹配；builderValidation 测试初版断言写反（三件齐全不抛异常）——测试侧 bug。
+
+### Stage 16 总验收（对照 18 周规划原文六条 + 「需要支持」八项）
+
+```text
+规划原文：完成一个最小酒馆场景：
+1. 玩家与多个角色对话     -> ✅ mention 路由 + 三角色（示例 T1-T4 先后与 marcus/lyra/brawn 对话）
+2. 角色拥有不同人格       -> ✅ persona→systemPrompt 翻译（M16.1 捕获模型实见断言；示例三角色三套台词）
+3. 对话会改变关系值       -> ✅ adjust_relationship 工具 + 净变幅限幅（示例 T2 +3 → 53；T5 +10 被拒）
+4. 关系值会影响后续行为   -> ✅ [relationship] 便签每回合注入（M16.3 派生注入实证）+ 阈值事件规则就位
+                             （confession ≥80 / hostility ≤20 在示例 T0 装配）
+5. 世界事件可以被触发     -> ✅ 规则命中（示例 T4 improvisation 结算触发 + 事件响应）+ TriggerEventTool 主动引爆
+6. 一局对话可以保存和回放 -> ✅ save/load 续局（T6 turn 6 接续、lyra 记得歌）+ GameReplay 逐回合步进
+                             + stateAt 时点 + 重演终态==存档终态（T7 输出 YES）
+
+「需要支持」八项：多角色 ✓ / 角色人格 ✓ / 世界状态 ✓ / 回合推进 ✓ / 事件系统 ✓ /
+角色关系 ✓ / 长期记忆 ✓（M16.1 双 scope：agent:{charId} 跨局 + session:{gameId} 局内）/ 状态回放 ✓
+```
+
+### Stage 16 收官数字
+
+- 五里程碑全过：M16.1 角色域（+19）/ M16.2 世界与回合（+28）/ M16.3 关系与事件（+37）/ M16.4 存档与回放（+17）/ M16.5 装配收口（+10）= **agent-tavern 111 测试**
+- 全仓 885 测试全绿（Stage 15 收官 774 + tavern 111），存量零影响
+- **零存量改动兑现**：除父 POM 两处注册 + examples pom 依赖外，agent-core/agent-memory/agent-security 等存量模块零 diff——蓝图 D1「当一个新场景能零存量改动落地时，才证明之前的抽象是对的」的完整证明
+- 三处有意不复用全部经测试锁定：RunManager（D6）/ EventBroker（D5）/ Workflow（D8）
+- 文章素材六篇就位（蓝图 §11），《游戏 Agent 为什么不能只有一个 Chat Loop》总纲待写
