@@ -12,6 +12,7 @@ import java.util.Objects;
  *   <li>{@code session:s7} - session-level facts</li>
  *   <li>{@code task:r42} - task working memory (maps to a Stage 7 AsyncTask)</li>
  *   <li>{@code channel:c1} - channel-shared memory (multi-user, Claude Tag style)</li>
+ *   <li>{@code tenant:acme} - tenant-scoped data (knowledge base, Stage 15 enterprise profile)</li>
  * </ul>
  * <p>
  * Sharing is just a scope value, not a separate system. Multi-tenant isolation is
@@ -30,7 +31,14 @@ public record MemoryScope(String value) {
         USER,
         SESSION,
         TASK,
-        CHANNEL
+        CHANNEL,
+        /**
+         * Tenant namespace (Stage 15 Enterprise Agent Profile). Holds tenant-scoped
+         * data such as knowledge base entries. Isolation is enforced by the store's
+         * scope whitelist - a query listing {@code tenant:acme} can never see
+         * {@code tenant:globex} entries.
+         */
+        TENANT
     }
 
     // ============ Factory Methods ============
@@ -53,6 +61,14 @@ public record MemoryScope(String value) {
 
     public static MemoryScope channel(String channelId) {
         return new MemoryScope("channel:" + channelId);
+    }
+
+    /**
+     * Scope for tenant-scoped data (Stage 15): knowledge base entries and other
+     * data shared by every member of a tenant, visible to no one else.
+     */
+    public static MemoryScope tenant(String tenantId) {
+        return new MemoryScope("tenant:" + tenantId);
     }
 
     /**

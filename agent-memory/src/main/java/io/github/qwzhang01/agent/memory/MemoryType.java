@@ -25,5 +25,11 @@ public enum MemoryType {
     /**
      * An external event worth remembering (e.g. "PR #123 was merged").
      */
-    EVENT
+    EVENT,
+    /**
+     * Tenant knowledge base content (Stage 15): imported documents, FAQs, policies.
+     * Unlike conversation-derived memories, knowledge entries are admin-ingested
+     * (controlled import, not dialog sediment) and live in {@code tenant:*} scopes.
+     */
+    KNOWLEDGE
 }

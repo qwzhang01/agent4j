@@ -68,6 +68,10 @@
             <artifactId>agent-trace-export</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-enterprise</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
         </dependency>

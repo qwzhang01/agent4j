@@ -32,6 +32,7 @@
         <module>agent-channel</module>
         <module>agent-product</module>
         <module>agent-trace-export</module>
+        <module>agent-enterprise</module>
         <module>examples</module>
     </modules>
 
@@ -111,6 +112,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-trace-export</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-enterprise</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

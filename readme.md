@@ -4,9 +4,11 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 14 ✅ 已完成（RL 轨迹产出层，2026-08-24）—— M14.1~M14.4 全过，18 周规划验收 4 条全达成（agent-trace-export 29 类 73 测试，全仓 685 全绿）—— 下一步 Stage 15
+## 当前阶段：Stage 16 📐 规划定稿（Tavern Game Profile，零存量改动 + 9 设计决策）—— Stage 15 ✅ 全部完成（Enterprise Agent Profile：M15.1~M15.5 五里程碑全过，agent-enterprise 89 测试全仓 774 全绿，EnterpriseAssistantExample 全剧本验收）—— 上一步 Stage 14 ✅（18 周规划验收 4 条全达成）
 
-> Stage 1-13 已完成（2026-08-16 ~ 08-23）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 1-14 已完成（2026-08-16 ~ 08-24）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+> Stage 16 设计蓝图：[notes/architecture-stage-16.md](notes/architecture-stage-16.md)（新增 agent-tavern 模块：角色即 Agent / 世界即黑板 / 影响即工具 / 回合即管线 / 历史即事件流——三类场景同 Runtime 的第二个领域 Profile，**零存量改动** + 三处有意不复用）
+> Stage 15 设计蓝图：[notes/architecture-stage-15.md](notes/architecture-stage-15.md)（新增 agent-enterprise 模块：租户与用户域 / 租户隔离 RAG / 角色权限与归属审计 / 成本账本 / 业务任务断点恢复——三类场景同 Runtime 的第一个领域 Profile）
 > Stage 14 设计蓝图：[notes/architecture-stage-14.md](notes/architecture-stage-14.md)（新增 agent-trace-export 模块：边界捕获记录 / S-A-O-R-D 轨迹模型 / 可插拔奖励 / 确定性采样 / JSONL 契约导出 / 走录回放 / DPO 偏好；与 Mini VERL 闭环的交汇点）
 > Stage 13 设计蓝图：[notes/architecture-stage-13.md](notes/architecture-stage-13.md)（新增 agent-product 模块：声明式定义 / 模板 / 配置驱动 Tool / Prompt 管理 / Webhook / DAG / 多租户）
 > Stage 3 插件 = SPI + Tool 热插拔（无 JAR ClassLoader / 无多版本共存）。
@@ -47,8 +49,8 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：685 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export），全绿
-- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）/ `TrajectoryExample`（Stage 14：记录→奖励→采样→JSONL 导出→回放走查）/ `PreferenceAnnotationExample`（Stage 14：同 prompt 双 rollout→Console 标注→DPO preferences.jsonl）/ `scripts/consume_trajectory.py`（Python 跨语言消费证明）
+- [x] 单元测试：774 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export + 89 enterprise），全绿
+- [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）/ `TrajectoryExample`（Stage 14：记录→奖励→采样→JSONL 导出→回放走查）/ `PreferenceAnnotationExample`（Stage 14：同 prompt 双 rollout→Console 标注→DPO preferences.jsonl）/ `EnterpriseAssistantExample`（Stage 15：登录→RAG→工具审批→任务审批断点恢复→租户隔离→预算拒绝全剧本）/ `scripts/consume_trajectory.py`（Python 跨语言消费证明）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
 - [x] **Workflow 图引擎**（agent-workflow 模块，Stage 5）：6 核心抽象（`Workflow` 不可变图定义 / `WorkflowNode` / `Edge`
@@ -184,6 +186,31 @@
     - **与蓝图的两处偏差（诚实记录）**：① D3 的 state_delta 改为每步全量快照——任意 ContextBuilder（含写时压缩）都无法用 delta+dropCount 表达，精确性优先，delta 编码留给 M14.2 导出层；② 压缩保真测试用测试本地 TrimmingContextBuilder 而非 agent-product WindowContextBuilder——避免为一个测试助手拖整个 product 依赖链，被测契约是「任意裁剪 builder 下 State=模型实见」；agent-workflow compile 依赖推迟到 M14.3 adapter 落地时再加
     - **意外边界发现**：ReActAgentLoop 对 toolExecutor.execute 无 try-catch，执行器异常直接炸穿 loop（框架既有行为）——RecordingToolExecutor 记录后原样上抛，RecordingAgent 的 finally-finish 用非终态归一化 ERROR 兜住并诚实标注（"run aborted in non-terminal status EXECUTING_TOOL"）
 
+### Stage 15 规划（Enterprise Agent Profile，📐 2026-08-24 定稿）
+
+> 设计蓝图：[notes/architecture-stage-15.md](notes/architecture-stage-15.md) · 新增 `agent-enterprise` 模块，
+> 三类场景同 Runtime 宣言的第一次实证：企业场景缺的不是新能力，是**归属层**（谁在问 / 属于哪个租户 / 花了谁的钱 / 出了事找谁）
+> 依赖裁决：core + memory + security + workflow（不依赖 product/channel/scheduler，D1 正交）；存量改动仅 MemoryScope TENANT / MemoryType KNOWLEDGE 两处纯加法
+
+- [x] M15.1 租户与用户域：Tenant/User/TenantRegistry/RequestContext（登录识别 + scope 白名单 SSOT）+ 两处存量纯加法 ✅（2026-08-24 完成，27 测试全仓 712 全绿，存量零影响）
+- [x] M15.2 知识层（RAG）：KnowledgeEntry/KnowledgeBase/KnowledgeTool（知识即记忆：type=KNOWLEDGE + tenant scope 白名单隔离，跨租户零泄漏）✅（2026-08-24 完成，+18 测试全仓 730 全绿）
+- [x] M15.3 治理接线：RoleBasedPermissionChecker（角色×工具矩阵，兑现 Stage 9 扩展点承诺）+ EnterpriseAuditTrail（归属审计）+ CostLedger（事前预算闸 + 事后记账 fail-closed）✅（2026-08-24 完成，+24 测试全仓 754 全绿）
+- [x] M15.4 业务任务与恢复：BusinessTask/TaskApprovalRecord/EnterpriseTaskManager（任务级审批 + approve→resume 断点恢复 + FileCheckpointStore 崩溃恢复）+ TaskApprovalBridge（装配级审批通道，崩溃后跨 manager 代际共享）✅（2026-08-24 完成，+12 测试全仓 766 全绿）
+- [x] M15.5 装配与收口：EnterpriseAgentFactory（请求作用域装配，身份显式传递非 ThreadLocal）+ EnterpriseAssistant + EnterpriseAssistantExample 全剧本验收 + README/笔记收口 ✅（2026-08-24 完成，+8 测试全仓 774 全绿，Stage 15 五里程碑收官）
+
+### Stage 16 规划（Tavern Game Profile，📐 2026-08-24 定稿）
+
+> 设计蓝图：[notes/architecture-stage-16.md](notes/architecture-stage-16.md) · 新增 `agent-tavern` 模块，
+> 三类场景同 Runtime 宣言的第二次实证：游戏场景缺的不是新能力，是**世界层**（角色有灵魂 / 说话有后果 / 一局有历史）；
+> **零存量改动**（对照 Stage 15 两处枚举加法——"当一个新场景能零存量改动落地时，才证明之前的抽象是对的"）；
+> 三处有意不复用：RunManager（D6 存档≠run checkpoint）/ EventBroker（D5 事件=同步规则评估非 run 恢复）/ Workflow（D8 回合=顺序代码非图）；与 Stage 15 依赖正交（D9）
+
+- [ ] M16.1 角色域：CharacterCard / CharacterAgentFactory（persona→systemPrompt 翻译）+ CharacterMemory（agent:{charId} 跨局 + session:{gameId} 局内双 scope 白名单）
+- [ ] M16.2 世界与回合：WorldState / WorldEffect（变更即指令）+ SetWorldFlagTool + Turn / TurnEngine / TurnLog（mention 路由 + [world]/[relationship] 便签注入 + append-only 落账）
+- [ ] M16.3 关系与事件：Relationship / Matrix / Policy（回合累计限幅 fail-closed，防化整为零刷好感）+ AdjustRelationshipTool + GameEvent / EventRule / EventEvaluator（同步评估恰一轮防风暴）+ TriggerEventTool（事件强制响应）
+- [ ] M16.4 存档与回放：SaveGame / GameStore（局快照，非 run checkpoint）+ GameReplayer（走录不重演 + 完整性校验 + 重演终态==存档终态）
+- [ ] M16.5 装配与收口：TavernGame 门面 + TavernGameExample 全剧本（三角色人格/关系变化/事件触发/限幅自愈/存档续局/逐回合回放）+ README/笔记收口
+
 ## 模块结构
 
 ```
@@ -200,6 +227,9 @@ java-agent-framework/
 ├── agent-orchestrator/ # 多 Agent 编排（Supervisor/Worker/A2A 桥接）
 ├── agent-channel/      # 频道级共享 Agent（身份/共享会话/Ambient，Stage 12）
 ├── agent-product/      # 声明式产品层（YAML 定义/模板/配置工具/Prompt 管理，Stage 13）
+├── agent-trace-export/ # RL 轨迹产出层（记录/奖励/采样/导出/回放/DPO，Stage 14）
+├── agent-enterprise/   # 企业 Agent Profile（租户用户域/RAG/治理/成本/业务任务，Stage 15 🚧）
+├── agent-tavern/       # 酒馆游戏 Agent Profile（角色/世界/回合/关系/事件/回放，Stage 16 📐）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -209,7 +239,6 @@ java-agent-framework/
 
 ```
 agent-runtime/           # 阶段 6 已并入 agent-workflow/runtime，不再单独立项
-agent-trace-export/      # 阶段 14：RL 轨迹导出
 agent-observability/     # 阶段 18：可观测性（含 OpenTelemetry）
 ```
 
@@ -298,3 +327,5 @@ ExecutionResult        # 终态（status + output + error + state）
 | 12. 频道共享 Agent/Identity/Ambient | agent-channel | ✅ 完成  |
 | 13. 上层产品搭建层 | agent-product            | ✅ 已完成 |
 | 14. RL 轨迹产出层 | agent-trace-export      | ✅ 已完成 |
+| 15. Enterprise Agent Profile | agent-enterprise  | 🚧 M15.1~M15.3 已完成 |
+| 16. Tavern Game Profile | agent-tavern  | 📐 规划定稿 |
