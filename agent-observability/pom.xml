@@ -26,6 +26,11 @@
             <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-core</artifactId>
         </dependency>
+        <!-- M18.4: EvalDataset imports failure trajectories (Trajectory / DoneReason). -->
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-trace-export</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-model</artifactId>

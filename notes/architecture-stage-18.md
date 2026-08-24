@@ -870,3 +870,32 @@ Enterprise/Tavern/Coding Profile（15/16/17）✅（17 实施中，并行收口�
 3. **快照供应商注入 RoutingModelClient**：蓝图草图只写 candidates + router 两件套，未写预算视图从哪来--实现加第三构造参数 `Supplier<BudgetSnapshot>`（每次调用前取新快照），两参重载默认 unlimited；"同一 router 随账本消耗看到不同快照"由此成立，验收剧本的自动切换正是靠它
 4. **恰好踩线走 premium（严格 `<` 比较）**：蓝图只写"余量低于阈值走 cheap"，实现明确 == 阈值不切--对齐 M18.2 偏差 ③"拒绝透支不拒绝踩线"的同款边界语义，两处 javadoc 互为印证
 5. **不重写 request.model()**：路由选中候选后 request 原实例透传（蓝图验收"选中者参数原样转发"的字面兑现）--model 字段仍是调用方写的逻辑名，javadoc 写明 v1 候选按键编址、需要改写模型串的供应商在自己的 client 里改
+
+---
+
+## 17. M18.4 实现记录（2026-08-25，评估回归）
+
+### 交付
+
+- **pom 依赖兑现**：`agent-trace-export` compile 依赖落地（M18.1 预告的"依赖随用随加"--EvalDataset 读 Trajectory/DoneReason；metrics/cost 仍不在 eval 的 import 面，里程碑独立性保持）
+- **eval 包 5 类**：
+  - `Expectation`（sealed 四类 + 嵌套 `Outcome(finalText, totalTokens, toolCallCount)` 载体；嵌套子类省 permits[防复发惯例]；**MaxTokens 含上界**[恰好用尽放行，对齐 BudgetBook 踩线约定]；ToolCallCount 精确相等[javadoc 写明脆性是确定性断言的代价]；**judge 槽位 v2**：LLM 判定自带非确定性+成本，门禁生命线是可复现）
+  - `EvalCase`（record：caseId + prompt + expectation + **originRunId 可空**--手工用例 null 是诚实[14 metadata 纪律]，伪造谱系才是错）
+  - `EvalDataset`（`importFailures(trajectories, minReward, expectationFor)`：ERROR/MAX_STEPS_EXCEEDED 或 reward<阈值 三源过滤；prompt=messages 首条 USER；无 USER 的轨迹诚实跳过计入返回值；caseId 生成 case-%04d 且跳过手工占用号；**JSONL 契约按 14 TrajectoryCodec 纪律手建树**：snake_case + api_version/kind 信封 + 坏行带行号 fail-loud + 变更字段名=版本号升级而非编辑）
+  - `EvaluationRunner`（嵌套 `@FunctionalInterface Subject`：Mock lambda 可测/真模型+M18.1 装饰器可评，runner 不建 agent 保持里程碑独立；**subject 崩溃=用例失败评估继续**[第 1/8 个 case 炸了不剥夺其余 7 个的判决]；null outcome 同路径处理；失败明细含期望 describe+实际摘要[文本截断 80 字符，复现拿全文]）
+  - `EvalReport`（record：passRate + results + baseline + verdict；**无时间戳无环境态，同输入同报告 record 相等**[可复现是结构性保证不是纪律承诺]；failureDetails() 即 F5 修复清单）
+- 测试 +30（模块累计 108）：`ExpectationTest` 5 / `EvalDatasetTest` 13（**三源过滤各自正确**+健康 DONE 与无 reward DONE 排除 / **originRunId 谱系** / 期望翻译函数注入 / 无 USER 跳过 / caseId 撞号跳过 / **四类期望 JSONL round-trip 无损** / 契约快照[snake_case+信封] / **坏行行号 fail-loud** / api_version-未知期望类型-重复 id 三类违约 / 空行跳过 / 数据集基础+防御拷贝+重复 id 拒）/ `EvaluationRunnerTest` 12（allPass 首跑 BASELINE_ABSENT + 复跑 PASS / **对绿基线一例变坏 FAIL**+明细字段 / 长文本截断 / **无基线标注** / **踩线 == 阈值不 FAIL**+回归 vs 基线 FAIL / 高于阈值仍回归 FAIL / 基线链携带 / **subject 崩溃=失败+其余照判** / null outcome 不穿透 / **可复现：同脚本两跑 record 相等** / 守卫 4）
+- **全仓 1131 全绿**（1101 + 30），存量零影响，零存量改动继续兑现
+
+### 实现期坑 2 条（记入防复发）
+
+1. **门禁优先级首版写反**（设计侧，测试抓）：初版 verdict 判定顺序"无基线 -> BASELINE_ABSENT 一票先决"，导致**首跑跌破阈值也不 FAIL**--门禁的地板作用被吞（allPass/oneFail/subjectCrash 三测齐红）。修正为**三级瀑布：阈值地板无条件 -> 无基线 BASELINE_ABSENT -> 回归 vs 基线**。教训：三态门禁先写"每个状态为谁存在"再写判定顺序，地板（绝对质量）先于基线（相对回归）先于标注（诚实性）
+2. **lambda 捕获非终变量 + 助手方法名不一致**（实现侧，编译器抓）：nextCaseId 的 stream lambda 捕获重赋值的 candidate[改为普通循环]；fromJson 调 requireField 但助手名 requiredField。对照 M18.3 坑 1：编译器抓的都是小错，代价是三轮构建--**新类先 javac 一次再写测试**可省两轮
+
+### 与蓝图的一致性（偏差 5 处诚实记录）
+
+1. **importFailures 增加 expectationFor 函数参数**：蓝图 §3.1 草图两参版本无法诚实构造期望--失败形态到断言的翻译是领域知识（"终答应含道歉"/"工具至多调两次"），框架通译要么伪造断言要么空洞断言；蓝图 D7 自己举例"如终答不应包含 X / 应包含 Y"恰证明翻译者是人
+2. **门禁优先级三级瀑布**（见坑 1）：蓝图 D7"跌破阈值=FAIL"与 F4"无基线=BASELINE_ABSENT 建基线不假对比"两句的共存解读--阈值地板每次运行都生效（首跑 0% 也 FAIL，门禁不是装饰），BASELINE_ABSENT 只标注"高于地板但无可比对象"，是否接受首跑提升是装配层策略不是门禁语义
+3. **FAIL 双来源**：蓝图 T6 反例"7/8 < 基线 -> FAIL"点名回归即 FAIL--实现把"回归 vs 基线"与"跌破阈值"并列为 FAIL 的两个来源（修好一个 case 弄坏另一个是教科书级回归，正是本门禁存在的理由）；比较是 passRate 级，case 级差异 v2
+4. **Outcome 为 Expectation 嵌套 record（蓝图清单外）**：被判定对象不只是文本（MaxTokens/ToolCallCount 需要 tokens 与工具数）--按嵌套先例落位不占类名额；装配层用 M18.1 装饰器桥接真 Agent 的 usage/tool 计数（示例 M18.5 落地）
+5. **subject 崩溃不中止评估**（蓝图未写明）：裁决为用例失败+明细携带异常+评估继续--评估的职责是给全量判决，崩在第 1 个 case 对其余 7 个一无所知才是失败；与 Fallback 的"换供应商重试"语义刻意不同（评估不重试，重试会掩盖被评估对象的真实行为）
