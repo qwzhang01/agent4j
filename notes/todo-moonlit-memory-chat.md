@@ -1,7 +1,7 @@
 # ToDo：AI 角色引擎（agent-chat + memory × Moonlit）
 
 > 状态：📋 逐项推进（2026-08-25）  
-> 下一项：**T07**  
+> 下一项：**T08**  
 > 组织蓝图：[`architecture-character-engine.md`](architecture-character-engine.md)  
 > 原则：**框架 = 角色怎么活（通用挂钩）；产品 = 怎么卖、抽什么、何时提醒。不写 birthday / 外卖进框架。不拆 20 个 Maven 模块。**
 
@@ -84,7 +84,7 @@
 
 ### T06 · `RoundRobinSpeaker`（通用轮流，无主角叙事）
 
-- [ ] 群聊轮流选人；叙事「你是世界主角」留给 Moonlit 的 ExtraText
+- [x] 群聊轮流选人；叙事「你是世界主角」留给 Moonlit 的 ExtraText
 - **模块：** `agent-chat`  
 - **类：** 新建 `RoundRobinSpeaker` + 测试  
 - 可在群聊接线前做
@@ -95,8 +95,8 @@
 
 ### T07 · 蓝图与模块说明
 
-- [ ] `architecture-agent-chat.md`：MemorySource 标已规划/已做；写明抽取与提醒属业务
-- [ ] `docs/modules.md` / `CHANGELOG.md`：T05 落地后更新
+- [x] `architecture-agent-chat.md`：MemorySource 标已规划/已做；写明抽取与提醒属业务
+- [x] `docs/modules.md` / `CHANGELOG.md`：T05 落地后更新
 - **模块：** `java-agent-framework` 文档
 
 ---

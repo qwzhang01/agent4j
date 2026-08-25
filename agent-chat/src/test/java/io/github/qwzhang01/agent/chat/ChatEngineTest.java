@@ -5,6 +5,7 @@ import io.github.qwzhang01.agent.chat.context.ExtraTextSource;
 import io.github.qwzhang01.agent.chat.context.HistorySource;
 import io.github.qwzhang01.agent.chat.context.PersonaSource;
 import io.github.qwzhang01.agent.chat.speaker.MentionSpeaker;
+import io.github.qwzhang01.agent.chat.speaker.RoundRobinSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SoloSpeaker;
 import io.github.qwzhang01.agent.core.agent.AgentEvent;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
@@ -133,6 +134,26 @@ class ChatEngineTest {
         assertEquals("hello everyone", engine.room().history().get(0).content());
         assertEquals("", engine.say("still no one"));
         assertEquals(2, noSpeaker.get());
+    }
+
+    @Test
+    void roundRobinRotatesSpeakersWithoutMention() {
+        RecordingModelClient model = recording(
+                MockModelClient.scripted()
+                        .respondText("a1")
+                        .respondText("b1")
+                        .respondText("a2"));
+        ChatEngine engine = groupEngine(model, new RoundRobinSpeaker());
+
+        assertEquals("a1", engine.say("one"));
+        assertEquals("luna", engine.room().history().get(1).speakerId());
+
+        assertEquals("b1", engine.say("two"));
+        assertEquals("bob", engine.room().history().get(3).speakerId());
+
+        assertEquals("a2", engine.say("three"));
+        assertEquals("luna", engine.room().history().get(5).speakerId());
+        assertEquals("You are Luna.", model.requests.get(2).messages().get(0).content());
     }
 
     @Test

@@ -50,6 +50,21 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 
 模块：`agent-memory`。示例：`MemoryExample` / `CompressionExample` / `ChannelMemoryExample`。
 
+## ChatRoom
+
+房间对话引擎（`agent-chat`）与单次 `Agent.run` 不同：多 persona、选人策略、拼上下文、流式、业务 Listener。
+
+| 概念 | 说明 |
+|------|------|
+| `ChatRoom` / `ChatEngine` | 一次 `say(userLine)`：选人 → 组 messages → `ModelClient.stream` → 通知 Listener |
+| `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker`（可组合） |
+| `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` |
+| `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回 |
+
+默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit），见 `notes/architecture-agent-chat.md` §9。
+
+模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。
+
 ## Governance
 
 工具默认不可信。治理四件套挂在 `GovernedToolExecutor` 上（装饰 `DefaultToolExecutor`，向后兼容）：

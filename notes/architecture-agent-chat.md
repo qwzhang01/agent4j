@@ -1,6 +1,6 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 已落地；T05 `MemorySource` 可选挂上（2026-08-25）——Moonlit 接线另开任务
+> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地（2026-08-25）——Moonlit 接线从 T08 起
 > 模块：`agent-chat` Maven 模块
 > 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
@@ -80,10 +80,10 @@ SpeakerPolicy
   pick(room, userText) → Optional<ChatPersona>
   空 = 本轮无人说（群聊里没点到人，由业务决定是否提示）
 
-内置三种，业务也可自己写：
+内置四种，业务也可自己写：
   SoloSpeaker          屋里只有一个 AI → 就是他；多于一个则拒绝（防误用）
-  MentionSpeaker       第一个 @id 命中则他；可叠加 fallback（如 Solo）
-  RoundRobinSpeaker    群聊轮流（v1 后做，未做）
+  MentionSpeaker       第一个 @id 命中则他；可叠加 fallback（如 Solo / RoundRobin）
+  RoundRobinSpeaker    群聊按成员顺序轮流（T06 ✅）
 
 ContextSource
   contribute(room, speaker, userText) → 若干 ChatMessage 或一段文本
@@ -92,7 +92,7 @@ ContextSource
 内置：
   PersonaSource        说话人的 systemPrompt
   HistorySource        房间最近 N 条（默认 20）
-  MemorySource         可选；`MemoryRetriever` + 业务给的 scope 白名单 + limit。**不默认挂**
+  MemorySource         ✅ T05。可选；`MemoryRetriever` + 业务 scope 白名单 + limit。**不默认挂**
   ExtraTextSource      业务塞场景氛围 / 世界书 / 关系说明（一段字符串）
 
 ContextAssembler
@@ -144,6 +144,7 @@ ChatListener
 | 改写人设 | 人设是业务资产 |
 | Spring | 装配走现有 starter；本模块无 Spring |
 | 向量世界书 | ExtraTextSource 先够；检索留给业务或 memory |
+| 记忆抽什么 / 何时提醒 | 见 §9：框架只提供 Store / Extractor 接口 / 召回注入；subject 词表、cron、生日/外卖规则在 Moonlit |
 
 ---
 
@@ -153,7 +154,7 @@ ChatListener
 |---|---|---|
 | **M1 房间 + 单人流式** ✅ | `ChatPersona` / `Room` / `SoloSpeaker` / `ChatEngine.stream` | 屋里 1 人，不打 `@` 也能流式出字；`run()` 行为不变 |
 | **M2 上下文** ✅ | `PersonaSource` + `HistorySource` + `ExtraTextSource` | 第二轮请求里看得到第一轮历史；Extra 原文出现在 system 或紧随其后 |
-| **M3 选人** ✅ | `MentionSpeaker`；可与 Solo 组合（先 @，没有则 Solo） | 两人屋：`@b` 只有 b 回；不 @ 且无 fallback → `onNoSpeaker` |
+| **M3 选人** ✅ | `MentionSpeaker` + `RoundRobinSpeaker`；可与 Solo 组合 | 两人屋：`@b` 只有 b 回；不 @ 且无 fallback → `onNoSpeaker`；三人屋 `RoundRobinSpeaker` 轮流 |
 | **M4 通知** ✅ | `ChatListener` | 回复完成后 listener 恰一次；出错不写成功历史 |
 | **M5 门面 + 示例** ✅ | `ChatRoom` builder（model + personas + policy + sources）；`ChatRoomExample` | Mock 零 LLM：一对一流式 + 两人点名 |
 
@@ -179,6 +180,7 @@ agent-chat/
       SpeakerPolicy.java
       SoloSpeaker.java
       MentionSpeaker.java
+      RoundRobinSpeaker.java   # T06：群聊轮流
     context/
       ContextSource.java
       ContextAssembler.java
@@ -205,22 +207,58 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 3. `ChatEngine.stream` 接到现在的 `SseEmitter`
 4. `onReplied` 里走现在的 `afterStreamComplete`
 
-群聊以后：同一 `Room` 里加成员，政策换成 `MentionSpeaker` + 默认策略。不必换引擎。
+群聊：`MentionSpeaker(new RoundRobinSpeaker())`（@ 优先，否则轮流），或纯 `RoundRobinSpeaker`。不必换引擎。
 
-记忆压缩 / 抽取：业务在 listener 里调 `agent-memory`，或挂 `MemorySource`。存储仍是 Moonlit 的表（自己写 `MemoryStore` 适配器）。
-
----
-
-## 9. 开工顺序建议
-
-1. 本文件评审，不改范围。
-2. Moonlit P0 安全审核优先（控制塔本周约束）。
-3. 审核过后再开 M1。不要和 P0、kidsgame G1 抢人手。
-4. M1–M4 在框架内闭环（Mock + 测试）。M5 后再动 Moonlit 聊天代码。
+记忆：**读** — 挂 `MemorySource`（T05 ✅）。**写 / 抽 / 压** — 在 `ChatListener` 里调 `agent-memory`（Extractor / Policy / Compressor），存储用 Moonlit 的 `MemoryStore` 适配器（T08+）。**提醒** — Moonlit Job，框架零规则。
 
 ---
 
-## 10. 一句话
+## 9. 引擎 vs 产品（记忆与提醒）
+
+聊天引擎**只负责**「这一轮拼什么上下文、谁说话、字怎么流」。长期记忆在 `agent-memory`，房间侧通过可选 `MemorySource` 注入已存条目。
+
+| 能力 | 框架（agent-memory + agent-chat） | 产品（Moonlit） |
+|------|-----------------------------------|-----------------|
+| 存哪 | `MemoryStore` 接口；v1 内存实现 | `MoonlitMemoryStore`、表结构（T08+） |
+| 读进 prompt | `MemoryRetriever` + 可选 `MemorySource` | 传入 scope 列表（user / agent / session / channel） |
+| 写什么 | `MemoryExtractor` 接口（keyword / LLM） | 抽什么、prompt、subject 约定（T12） |
+| 何时写 | `ChatListener.onReplied` 挂钩点（引擎回调，不内置逻辑） | Listener 里调 Extractor + Policy |
+| 主动说话 | `dueAt` + `MemoryQuery` 时间窗（**无调度、无含义**） | Job 扫库、规则表、推送文案（T17） |
+| 压缩 | `ContextCompressor`（agent-memory） | 超窗时在 Listener 或独立路径调用 |
+
+框架**不认识** birthday、外卖、11:30、亲密度公式。这些只作为 Moonlit 的 prompt 示例或 Job 配置存在。
+
+典型 1:1 接线（Moonlit Factory，T13+）：
+
+```text
+ChatRoom.builder()
+  .speakerPolicy(new SoloSpeaker())
+  .source(new PersonaSource())
+  .source(new MemorySource(retriever, scopes, limit))   // 可选
+  .source(new HistorySource())
+  .source(new ExtraTextSource(sceneAndRelation))        // 主角叙事、关系文案在这里
+  .listener(moonlitListener)                            // 落库、抽取、关系
+```
+
+`ContextAssembler.defaults()` 与 `ChatRoom` **不**默认挂 `MemorySource`；一旦 `.source(...)` 自定义列表，需自行带上 Persona + History。
+
+---
+
+## 10. 当前进度与下一步
+
+| 项 | 状态 |
+|----|------|
+| M1–M5 房间引擎 | ✅ |
+| T05 `MemorySource` | ✅ 可选召回，不默认挂 |
+| T06 `RoundRobinSpeaker` | ✅ 群聊轮流 |
+| T07 本文档 | ✅ 引擎/产品边界写清 |
+| Moonlit 存储 + 接线 | 📋 T08 起（[`todo-moonlit-memory-chat.md`](todo-moonlit-memory-chat.md)） |
+
+Moonlit P0 安全审核仍优先于 T08+ 代码接线（控制塔约束）。框架侧 Wave 1 文档项已收口，下一项 **T08**（表结构对齐 `MemoryEntry`）。
+
+---
+
+## 11. 一句话
 
 `agent-chat` 是可配置的房间对话机。  
 `agent-tavern` 是写死玩法的一桌跑团。  
