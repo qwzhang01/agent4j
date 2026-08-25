@@ -1,7 +1,7 @@
 # Stage 18 架构设计：可观测性、评估、成本治理与发布
 
 > 对应阶段：Stage 18 - 可观测性、评估、成本治理与发布（18 周规划**收官阶段**：指标 / 成本与预算 / 模型路由 / 评估回归 / 版本与发布）
-> 状态：📐 规划定稿（2026-08-24），**与 Stage 17 实施并行推进**——依赖正交裁决见 §0；实施记录见 §14 起
+> 状态：✅ 实施完结（2026-08-24 规划定稿，2026-08-25 五里程碑一天收口，模块 125 测试全仓 1148 全绿）；与 Stage 17 的并行裁决见 §0；实施记录见 §14-§18
 > 模块：新增 `agent-observability` Maven 模块，依赖 `agent-core`（ModelClient/ToolExecutor/Tool 契约 + `ModelResponse.TokenUsage`）+ `agent-trace-export`（评估读失败轨迹：`TrajectoryReplayer`/`Trajectory`/`SamplingPolicy`）；`agent-model`（MockModelClient）test scope。**不依赖 channel / enterprise / product / sandbox / workflow / scheduler / memory / mcp / orchestrator / tavern / coding**（D5 装配层粘合 + 四处有意不复用）
 > 前置：Stage 1-16 已完成（全仓 885 测试全绿）；Stage 17 实施中（M17.1 ✅ 全仓 921 全绿，M17.2-M17.5 进行中）——本阶段与其无代码依赖交叉，可交错实施
 > 定位：18 周规划的最后一块。前 17 个阶段回答"Agent 能不能跑"（能不能决策 1-2 / 能不能扩展 3 / 能不能安全 4·9 / 能不能持久 5-8 / 能不能协作 10-12 / 能不能产品化 13 / 能不能学习 14 / 能不能进企业·演戏·写代码 15-17），Stage 18 回答"**Agent 敢不敢上线运营**"。收官同时兑现 M9 里程碑（面试表达：5 分钟讲架构、15 分钟深模块、30 分钟全链路）
@@ -899,3 +899,44 @@ Enterprise/Tavern/Coding Profile（15/16/17）✅（17 实施中，并行收口�
 3. **FAIL 双来源**：蓝图 T6 反例"7/8 < 基线 -> FAIL"点名回归即 FAIL--实现把"回归 vs 基线"与"跌破阈值"并列为 FAIL 的两个来源（修好一个 case 弄坏另一个是教科书级回归，正是本门禁存在的理由）；比较是 passRate 级，case 级差异 v2
 4. **Outcome 为 Expectation 嵌套 record（蓝图清单外）**：被判定对象不只是文本（MaxTokens/ToolCallCount 需要 tokens 与工具数）--按嵌套先例落位不占类名额；装配层用 M18.1 装饰器桥接真 Agent 的 usage/tool 计数（示例 M18.5 落地）
 5. **subject 崩溃不中止评估**（蓝图未写明）：裁决为用例失败+明细携带异常+评估继续--评估的职责是给全量判决，崩在第 1 个 case 对其余 7 个一无所知才是失败；与 Fallback 的"换供应商重试"语义刻意不同（评估不重试，重试会掩盖被评估对象的真实行为）
+
+---
+
+## 18. M18.5 实现记录（2026-08-25，版本与收口--Stage 18 完结）
+
+### 交付
+
+- **version 包 4 类**：
+  - `ComponentVersion`（record：kind PROMPT/MODEL/TOOL + name + version + **channel 可空**--模型/工具无通道概念，缺席是诚实[14 metadata 纪律]；PROMPT 的版本号由装配层从 13 PromptManager.resolve 翻译，observability 不 import product[D5 同款：版本号注入而非管理器依赖]）
+  - `RunRecord`（record：runId + agentName + 三元组 + **RunMetrics 行即摘要**；`of(versions, metrics)` 从 metrics 行派生 runId/agentName[它们本来就同行走]；`combination()` 人类可读渲染）
+  - `RunRegistry`（append-only：重复 runId 拒[改写历史=伪造历史，对齐 13 版本追加与 14 轨迹纪律]；byRunId 时间旅行 / byAgent / all 皆插入序）
+  - `CostDashboard`（**总账与分账分离**：`recordCost` 每事件恰记一次权威总额，`record(dim,key,µ)` 是四视角分账--见坑 1；CSV/JSONL 导出按插入序确定性；`attributionSink` 一行接线：定价走 CostMeter，无价模型跳过+warn[旁路纪律]，具名嵌套类暴露 dashboard() 供装配读）
+- **ObservabilityExample（examples 模块，零 LLM 实跑 T0-T7 + F1/F2/F3/F6/F7）**：
+  - **装配层粘合三处示范**：ServiceAccount.monthlyTokenBudget -> ChannelQuota（Stage 12 占位钩子闭环）/ PromptManager 版本号 -> ComponentVersion（v1 stable -> v2 canary，13 复用不重做）/ 打印 router 包装（每个决策带 reason 打印--F2 可解释的可见化）
+  - **层级装配裁决（兑现 M18.3 偏差⑤）**：候选层 `Named(Observing(mock))`--命名包装器把层名盖上 request（供应商本来就要模型串），观察装饰器在其内侧才看得到计价所需的模型名；路由层零触碰保持。蓝图字面的 Observing(Routing(…)) 外置会让观察层拿到 model=null（ReActAgentLoop 不设 request.model），计价全部落空--**示例实跑暴露的装配事实，比蓝图草图更真**
+  - **三投影同源对照（验收 1 的兑现形态）**：一次 [DENIED] 工具调用，同一 run 同时产出 AuditEvent.deny（9，审计员读）/ ToolCallMetrics.denied=true 进 RunMetrics.deniedToolCalls（18，值班读）/ 轨迹 step 的 observation 保留 [DENIED] 原文（14，训练系统读）--零重复埋点，读者不同
+  - T4 双层语义展示：**loop 内**拒绝表现为诚实失败（status=ERROR + lastError 携带 budget exhausted--ReActAgentLoop 的 catch-all 把边界异常转 run 级失败，设计如此）；**client 边界**直接调用保留异常类型（BudgetExhaustedException 原样穿透）
+  - T6 门禁剧本：首跑 BASELINE_ABSENT 建基线 -> 修复版 PASS 可提升 canary -> 反例 0.50>=地板 0.50 但 < 基线 1.00 -> FAIL 阻断（回归与地板两个 FAIL 来源的实跑演示）
+  - F3：cheap 层内死 -> Stage 1 Fallback 链零改动兜底；F1：RUN 维闸 projected 拒；F6：无价模型 IAE fail-loud
+- 测试 +17（模块累计 125）：`RunRegistryTest` 6（ComponentVersion channel 可空与守卫 / RunRecord.of 派生 / **combination 渲染含通道方括号** / byRunId 时间旅行 / **重复 runId 拒** / byAgent 过滤+all 保序）/ `CostDashboardTest` 11（分账合并 / **对账：四角=总额** / **总账非视角之和[防重复计数]** / 守卫三 / 键插入序 / CSV 契约快照 / JSONL 契约快照 / **attributionSink 四维入账** / 无价跳过不抛 / 空归因拒）
+- **全仓 1148 全绿**（1131 + 17），存量零影响，**零存量改动第四次兑现**（16/17/18 连续三阶段零 diff + 15 两处加法）；examples pom 增 agent-observability（装配依赖，同 15/16/17 先例）
+
+### 实现期坑 2 条（记入防复发）
+
+1. **CostDashboard 总账首版重复计数**（设计侧，测试抓）：初版 `totalCost()` = 所有分账行求和--多维归因（同一笔钱记 tenant+channel+agent+user 四角）直接 ×4。修正为**总账与分账分离**：`recordCost` 是权威总额（每事件一次），`record` 是视角分账，对账断言=各角合计==总账而非总和==总账。教训：**聚合 API 先问"同一事件会被记几次"再定 total 语义**（多维账本的经典双计陷阱）
+2. **示例 T4 首版期望错层**（脚本侧，实跑抓）：期望 BudgetExhaustedException 穿透 agent.run()--但 ReActAgentLoop 的 catch-all（`catch (Exception e)` -> status=ERROR）把一切边界异常转 run 级失败，异常类型止步于 client 边界。这不是 bug 是分层语义：**run 级看 status+lastError（loop 的职责），client 级看异常类型（边界的职责）**，示例改为双层展示。教训：写跨层断言先读中间层的 catch 语义
+
+### 与蓝图的一致性（偏差 5 处诚实记录）
+
+1. **RunRecord 不单列 costMicros 字段**：蓝图 §3 草图"RunMetrics 摘要 + costMicros"两处真相--M18.2 接线后 RunMetrics.costMicros 已是精确和，单列字段制造审计漂移口（哪个是对的？）；`metrics().costMicros()` 访问即可
+2. **CostDashboard 增加 recordCost/AttributionSink**（蓝图 4 类清单外）：总账/分账分离（坑 1）需要权威总额入口；AttributionSink 是"固定归因上下文"形态的一行装配（示例/试点部署），pricing 走既有 CostMeter 不新造计价
+3. **示例装配层级 Named(Observing(…)) 而非蓝图字面 Observing(Routing(…))**：见交付第 2 条--ReActAgentLoop 不设 request.model，外置观察层拿到 null 模型名计价落空；命名层在候选内侧是 M18.3 偏差⑤("供应商需要的模型串在自己的 client 里改")的装配兑现
+4. **三投影对照经由一次 [DENIED] 而非蓝图 T5 的"工具异常"**：DENIED 是唯一同时流经三个投影系统的事件形态（审计流有 deny 事件/指标有 denied 计数/轨迹有 [DENIED] 原文 observation），比 ERROR run（只有轨迹+指标）更能演示"同源不同读者"；ERROR run 另用于失败样本回收
+5. **RunRegistry 无持久化**：蓝图"append-only 注册表"未提存储；v1 内存态与 MetricsCollector 同边界（进程生命周期），JSONL 持久化留 v2 与 eval dataset 同款契约
+
+### Stage 18 收口（18 周规划代码侧完结）
+
+- 26 抽象五组全部落地（蓝图 §3 清单 + 3 个实现期新增类：BudgetAlarmEvent/BudgetExhaustedException/AttributionSink 相关）
+- 9 条验收全兑现（§9 映射逐条：Trace=三投影对照示例 / 工具指标 / token+成本 / 2 模型自动切换 / 频道配额+预警 / 成功率双口径 / 失败样本回归门禁 / 版本三元组 / 四维导出对账）
+- 模块 125 测试，全仓 1148 全绿，零存量改动第四次兑现，零新第三方依赖（D9）
+- 文章 11《Java Agent Framework v1.0 架构复盘》按文章计划另行产出（素材：§13 收官对照 + 六次组装阶段 + 零存量证据链 15->16->17->18 + T0-T7 剧本即讲稿）
