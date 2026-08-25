@@ -1,0 +1,70 @@
+name: Question
+description: Ask a usage or design question
+title: "[question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer [GitHub Discussions](https://github.com/qwzhang01/agent4j/discussions) for open-ended talk. Use this form when you need a tracked answer. `notes/` is learning material, not the API contract.
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - agent-core
+        - agent-model
+        - agent-plugin
+        - agent-sandbox
+        - agent-workflow
+        - agent-scheduler
+        - agent-memory
+        - agent-security
+        - agent-mcp
+        - agent-orchestrator
+        - agent-channel
+        - agent-product
+        - agent-trace-export
+        - agent-enterprise
+        - agent-tavern
+        - agent-coding
+        - agent-observability
+        - examples
+        - docs / packaging
+        - unknown
+    validations:
+      required: true
+  - type: input
+    id: jdk
+    attributes:
+      label: JDK version
+      placeholder: "17"
+    validations:
+      required: false
+  - type: dropdown
+    id: needs_llm
+    attributes:
+      label: Needs a real LLM?
+      description: Does answering or reproducing this require a live model?
+      options:
+        - "No — mock / docs should be enough"
+        - "Yes — a real LLM is involved"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What you already tried
+      description: Commands, docs pages, or example classes you looked at.
+      placeholder: |
+        1. Read docs/...
+        2. Ran MockAgentExample
+    validations:
+      required: false

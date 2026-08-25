@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/qwzhang01/agent4j/discussions
+    about: Ask usage questions or discuss ideas. Do not use this for security reports.
+  - name: Security advisory
+    url: https://github.com/qwzhang01/agent4j/security/advisories/new
+    about: Privately report sandbox, injection, or permission vulnerabilities.

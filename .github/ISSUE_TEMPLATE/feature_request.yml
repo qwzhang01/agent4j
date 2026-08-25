@@ -1,0 +1,77 @@
+name: Feature request
+description: Propose a user-facing change or new capability
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open an issue before large refactors. `notes/` is learning material, not an API contract. User-facing contract lives in javadoc and `docs/`.
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which module would this primarily change?
+      options:
+        - agent-core
+        - agent-model
+        - agent-plugin
+        - agent-sandbox
+        - agent-workflow
+        - agent-scheduler
+        - agent-memory
+        - agent-security
+        - agent-mcp
+        - agent-orchestrator
+        - agent-channel
+        - agent-product
+        - agent-trace-export
+        - agent-enterprise
+        - agent-tavern
+        - agent-coding
+        - agent-observability
+        - examples
+        - docs / packaging
+        - unknown
+    validations:
+      required: true
+  - type: input
+    id: jdk
+    attributes:
+      label: JDK version
+      description: JDK you developed or tested against
+      placeholder: "17"
+    validations:
+      required: false
+  - type: dropdown
+    id: needs_llm
+    attributes:
+      label: Needs a real LLM?
+      description: Would implementing or verifying this require a live model?
+      options:
+        - "No — mock / unit test is enough"
+        - "Yes — a real LLM is required"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing or painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep the scope to one concern. Do not invent new module names.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Current workaround or reproduce steps
+      description: How do you hit the gap today? Optional if this is a net-new capability.
+    validations:
+      required: false

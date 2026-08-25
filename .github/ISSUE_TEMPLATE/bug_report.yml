@@ -1,0 +1,78 @@
+name: Bug report
+description: Report unexpected behavior or a test failure
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for a report. For exploitable sandbox, injection, or permission bypasses, use a [private security advisory](https://github.com/qwzhang01/agent4j/security/advisories/new) instead of a public issue.
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which library module is involved?
+      options:
+        - agent-core
+        - agent-model
+        - agent-plugin
+        - agent-sandbox
+        - agent-workflow
+        - agent-scheduler
+        - agent-memory
+        - agent-security
+        - agent-mcp
+        - agent-orchestrator
+        - agent-channel
+        - agent-product
+        - agent-trace-export
+        - agent-enterprise
+        - agent-tavern
+        - agent-coding
+        - agent-observability
+        - examples
+        - build / CI
+        - unknown
+    validations:
+      required: true
+  - type: input
+    id: jdk
+    attributes:
+      label: JDK version
+      description: Output of `java -version`
+      placeholder: "17"
+    validations:
+      required: true
+  - type: dropdown
+    id: needs_llm
+    attributes:
+      label: Needs a real LLM?
+      description: Can this be reproduced with MockModelClient, or does it require a live model?
+      options:
+        - "No — mock / unit test is enough"
+        - "Yes — a real LLM is required"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, command, or failing test name.
+      placeholder: |
+        1. ./mvnw -B verify
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include stack traces or test output if available.
+    validations:
+      required: true

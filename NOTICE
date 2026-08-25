@@ -1,0 +1,14 @@
+Java Agent Framework (agent4j)
+Copyright 2026 qwzhang01
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file in the project root for the full license text.
+
+This product may include third-party components distributed under their
+own licenses, including but not limited to:
+
+  - Jackson (FasterXML)
+  - SLF4J
+  - Lombok
+
+Those components remain under their respective licenses.
