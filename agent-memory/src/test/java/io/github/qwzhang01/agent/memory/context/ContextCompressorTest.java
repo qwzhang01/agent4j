@@ -1,9 +1,13 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.context;
 
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.memory.MemoryEntry;
+import io.github.qwzhang01.agent.memory.MemoryQuery;
+import io.github.qwzhang01.agent.memory.MemoryType;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import org.junit.jupiter.api.Test;
 

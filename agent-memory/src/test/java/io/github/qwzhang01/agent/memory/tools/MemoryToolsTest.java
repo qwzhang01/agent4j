@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.memory.*;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

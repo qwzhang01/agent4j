@@ -1,5 +1,11 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.store;
 
+import io.github.qwzhang01.agent.memory.MemoryEntry;
+import io.github.qwzhang01.agent.memory.MemoryProvenance;
+import io.github.qwzhang01.agent.memory.MemoryQuery;
+import io.github.qwzhang01.agent.memory.MemoryScope;
+import io.github.qwzhang01.agent.memory.MemoryStatus;
+import io.github.qwzhang01.agent.memory.MemoryType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -118,6 +124,61 @@ class InMemoryMemoryStoreTest {
 
         assertEquals(1, result.size());
         assertEquals("new news", result.get(0).content());
+    }
+
+    // ============ dueAt window (no scheduler, no product meaning) ============
+
+    @Test
+    void write_preservesDueAt() {
+        Instant due = Instant.parse("2026-08-26T03:30:00Z");
+        MemoryEntry stored = store.write(new MemoryEntry(
+                null, "user:u1", MemoryType.FACT, "k", "due later", 0.5,
+                MemoryProvenance.userSaid("u1", "r1", Instant.now()),
+                MemoryStatus.ACTIVE, Instant.now(), null, due));
+
+        assertEquals(due, store.findById(stored.id()).orElseThrow().dueAt());
+    }
+
+    @Test
+    void query_dueWindow_filtersInclusiveAndSkipsNullDue() {
+        Instant t0 = Instant.parse("2026-08-26T03:00:00Z");
+        Instant t1 = Instant.parse("2026-08-26T03:30:00Z");
+        Instant t2 = Instant.parse("2026-08-26T04:00:00Z");
+        writeDue("early", t0);
+        writeDue("in-window", t1);
+        writeDue("late", t2);
+        store.write(entry("user:u1", "none", "no due", MemoryStatus.ACTIVE));
+
+        List<MemoryEntry> window = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .dueBetween(t1, t1)
+                .build());
+        assertEquals(1, window.size());
+        assertEquals("in-window", window.get(0).content());
+
+        List<MemoryEntry> until = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .dueTo(t1)
+                .build());
+        assertEquals(2, until.size());
+
+        List<MemoryEntry> from = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .dueFrom(t1)
+                .build());
+        assertEquals(2, from.size());
+
+        List<MemoryEntry> all = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .build());
+        assertEquals(4, all.size(), "no due window still returns entries without dueAt");
+    }
+
+    private void writeDue(String content, Instant dueAt) {
+        store.write(new MemoryEntry(
+                null, "user:u1", MemoryType.FACT, content, content, 0.5,
+                MemoryProvenance.userSaid("u1", "r1", Instant.now()),
+                MemoryStatus.ACTIVE, Instant.now(), null, dueAt));
     }
 
     // ============ Filters: type / subject / keyword / limit ============

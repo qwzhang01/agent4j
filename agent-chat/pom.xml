@@ -22,6 +22,10 @@
         </dependency>
         <dependency>
             <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-memory</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-model</artifactId>
             <scope>test</scope>
         </dependency>

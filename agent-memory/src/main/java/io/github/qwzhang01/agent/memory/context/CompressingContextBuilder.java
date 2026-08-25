@@ -1,10 +1,15 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.context;
 
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.memory.MemoryEntry;
+import io.github.qwzhang01.agent.memory.MemoryProvenance;
+import io.github.qwzhang01.agent.memory.MemoryStatus;
+import io.github.qwzhang01.agent.memory.MemoryStore;
+import io.github.qwzhang01.agent.memory.MemoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

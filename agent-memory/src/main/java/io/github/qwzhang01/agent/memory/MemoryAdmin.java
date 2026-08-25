@@ -83,7 +83,7 @@ public class MemoryAdmin {
                 entry.id(), entry.scope(), entry.type(), entry.subject(), newContent,
                 entry.importance(),
                 MemoryProvenance.adminEdit(adminId, Instant.now()),
-                entry.status(), entry.createdAt(), entry.expireAt()
+                entry.status(), entry.createdAt(), entry.expireAt(), entry.dueAt()
         );
         store.update(updated);
         log.info("Admin {} edited entry {}", adminId, entryId);
@@ -132,7 +132,7 @@ public class MemoryAdmin {
         MemoryEntry withTtl = new MemoryEntry(
                 entry.id(), entry.scope(), entry.type(), entry.subject(), entry.content(),
                 entry.importance(), entry.provenance(), entry.status(),
-                entry.createdAt(), expireAt
+                entry.createdAt(), expireAt, entry.dueAt()
         );
         store.update(withTtl);
         return withTtl;

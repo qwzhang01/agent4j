@@ -19,7 +19,8 @@ public enum MemoryType {
      */
     EPISODE,
     /**
-     * A compressed summary of prior conversation (produced by ContextCompressor).
+     * A compressed summary of prior conversation (produced by
+     * {@link io.github.qwzhang01.agent.memory.context.ContextCompressor}).
      */
     SUMMARY,
     /**

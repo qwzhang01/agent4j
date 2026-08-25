@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.tavern.character;
 
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
-import io.github.qwzhang01.agent.memory.MemoryContextBuilder;
+import io.github.qwzhang01.agent.memory.context.MemoryContextBuilder;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
 import io.github.qwzhang01.agent.memory.MemoryScope;
 import io.github.qwzhang01.agent.memory.MemoryStore;

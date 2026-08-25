@@ -1,4 +1,9 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.store;
+
+import io.github.qwzhang01.agent.memory.MemoryEntry;
+import io.github.qwzhang01.agent.memory.MemoryQuery;
+import io.github.qwzhang01.agent.memory.MemoryStatus;
+import io.github.qwzhang01.agent.memory.MemoryStore;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,7 +39,8 @@ public class InMemoryMemoryStore implements MemoryStore {
                 entry.provenance(),
                 entry.status(),
                 entry.createdAt() != null ? entry.createdAt() : Instant.now(),
-                entry.expireAt()
+                entry.expireAt(),
+                entry.dueAt()
         );
         entries.put(id, stored);
         return stored;
@@ -60,6 +66,9 @@ public class InMemoryMemoryStore implements MemoryStore {
             String kw = query.keyword().toLowerCase();
             stream = stream.filter(e -> e.content() != null
                     && e.content().toLowerCase().contains(kw));
+        }
+        if (query.hasDueWindow()) {
+            stream = stream.filter(e -> matchesDueWindow(e.dueAt(), query.dueFrom(), query.dueTo()));
         }
 
         List<MemoryEntry> result = stream
@@ -107,5 +116,21 @@ public class InMemoryMemoryStore implements MemoryStore {
                 .filter(e -> e.scope().equals(scope))
                 .sorted(Comparator.comparing(MemoryEntry::createdAt).reversed())
                 .toList();
+    }
+
+    /**
+     * Inclusive window on {@code dueAt}. Entries without a due time never match.
+     */
+    static boolean matchesDueWindow(Instant dueAt, Instant from, Instant to) {
+        if (dueAt == null) {
+            return false;
+        }
+        if (from != null && dueAt.isBefore(from)) {
+            return false;
+        }
+        if (to != null && dueAt.isAfter(to)) {
+            return false;
+        }
+        return true;
     }
 }

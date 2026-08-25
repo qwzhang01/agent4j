@@ -11,7 +11,7 @@ import io.github.qwzhang01.agent.channel.identity.IdentityScope;
 import io.github.qwzhang01.agent.channel.identity.ServiceAccount;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.SimpleAgent;
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryStatus;

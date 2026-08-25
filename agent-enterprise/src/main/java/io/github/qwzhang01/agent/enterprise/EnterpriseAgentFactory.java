@@ -16,7 +16,7 @@ import io.github.qwzhang01.agent.enterprise.govern.EnterpriseAuditTrail;
 import io.github.qwzhang01.agent.enterprise.knowledge.KnowledgeBase;
 import io.github.qwzhang01.agent.enterprise.knowledge.KnowledgeTool;
 import io.github.qwzhang01.agent.enterprise.tenant.RequestContext;
-import io.github.qwzhang01.agent.memory.MemoryContextBuilder;
+import io.github.qwzhang01.agent.memory.context.MemoryContextBuilder;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
 import io.github.qwzhang01.agent.memory.MemoryStore;
 import io.github.qwzhang01.agent.security.AuditLogger;

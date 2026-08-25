@@ -17,7 +17,7 @@ import io.github.qwzhang01.agent.enterprise.tenant.RequestContext;
 import io.github.qwzhang01.agent.enterprise.tenant.Tenant;
 import io.github.qwzhang01.agent.enterprise.tenant.TenantRegistry;
 import io.github.qwzhang01.agent.enterprise.tenant.User;
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import io.github.qwzhang01.agent.security.ToolPermission;
 import io.github.qwzhang01.agent.security.ToolPolicy;

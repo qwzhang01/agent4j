@@ -1,4 +1,4 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.context;
 
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
@@ -22,7 +22,8 @@ import java.util.List;
  * </pre>
  * The original messages that were compressed are returned in
  * {@link CompressionResult#archived()} so the caller can persist them
- * to {@link MemoryStore} as a {@link MemoryType#SUMMARY} entry (for audit).
+ * to {@link io.github.qwzhang01.agent.memory.MemoryStore} as a
+ * {@link io.github.qwzhang01.agent.memory.MemoryType#SUMMARY} entry (for audit).
  */
 public class ContextCompressor {
 

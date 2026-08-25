@@ -12,12 +12,12 @@ import java.util.stream.Stream;
 /**
  * Test helper: records every request then delegates.
  */
-final class RecordingModelClient implements ModelClient {
+public final class RecordingModelClient implements ModelClient {
 
     private final ModelClient delegate;
-    final List<ModelRequest> requests = new ArrayList<>();
+    public final List<ModelRequest> requests = new ArrayList<>();
 
-    RecordingModelClient(ModelClient delegate) {
+    public RecordingModelClient(ModelClient delegate) {
         this.delegate = delegate;
     }
 

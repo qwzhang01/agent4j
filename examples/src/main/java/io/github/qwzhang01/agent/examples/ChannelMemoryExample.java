@@ -2,6 +2,8 @@ package io.github.qwzhang01.agent.examples;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.memory.*;
+import io.github.qwzhang01.agent.memory.extract.KeywordMemoryExtractor;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,7 +27,7 @@ public class ChannelMemoryExample {
         InMemoryMemoryStore store = new InMemoryMemoryStore();
         MemoryAdmin admin = new MemoryAdmin(store);
         MemoryRetriever retriever = new MemoryRetriever(store);
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
 
         // ---- T1: User A states a fact in channel c1 ----

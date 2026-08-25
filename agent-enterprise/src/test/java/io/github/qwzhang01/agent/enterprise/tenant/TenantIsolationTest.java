@@ -1,6 +1,6 @@
 package io.github.qwzhang01.agent.enterprise.tenant;
 
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryQuery;

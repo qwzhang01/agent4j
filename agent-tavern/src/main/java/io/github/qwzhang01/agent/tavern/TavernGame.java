@@ -4,7 +4,7 @@ import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.memory.MemoryStore;
 import io.github.qwzhang01.agent.security.AuditLogger;
 import io.github.qwzhang01.agent.security.GovernedToolExecutor;

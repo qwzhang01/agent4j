@@ -15,7 +15,7 @@
 | `agent-sandbox` | ClassLoader 沙箱 + Process 沙箱（**无** Docker / WASM） | `agent-coding`、沙箱示例 |
 | `agent-workflow` | 图运行时、7 种节点、Checkpoint | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列 | `agent-channel`、调度示例 |
-| `agent-memory` | Working / Session / Long-term + `MemoryScope` | `agent-channel`、`agent-enterprise`、`agent-tavern` |
+| `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
 | `agent-mcp` | MCP stdio 客户端 + 进程内 A2A（SSE / HTTP 传输未做） | `agent-orchestrator`、MCP 示例 |
 | `agent-orchestrator` | Supervisor / Worker / 并行派发 | 多 Agent 示例 |
@@ -24,7 +24,7 @@
 | `agent-trace-export` | 轨迹 S-A-O-R-D、JSONL、DPO 偏好 | `agent-observability`、轨迹示例 |
 | `agent-enterprise` | 租户 / RAG / 成本账本 / 业务任务 | 企业助手示例 |
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
-| `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
+| `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。可选 `MemorySource`。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
 | `agent-observability` | 指标、五维预算、路由、评估、版本三元组 | 可观测示例 |
 | `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |

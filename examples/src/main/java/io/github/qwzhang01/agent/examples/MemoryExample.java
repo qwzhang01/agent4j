@@ -5,6 +5,10 @@ import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.memory.*;
+import io.github.qwzhang01.agent.memory.context.MemoryContextBuilder;
+import io.github.qwzhang01.agent.memory.extract.KeywordMemoryExtractor;
+import io.github.qwzhang01.agent.memory.session.ChatSession;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 
 import java.time.Instant;
@@ -14,7 +18,7 @@ import java.util.List;
  * Stage 8 acceptance example 1: multi-turn personal memory loop.
  * <p>
  * Demonstrates:
- * - Turn 1: user states a preference -> MemoryExtractor stores it
+ * - Turn 1: user states a preference -> KeywordMemoryExtractor stores it
  * - Turn 2: user asks a related question -> MemoryContextBuilder injects the stored memory
  * - The model's request in turn 2 contains the preference from turn 1
  * <p>
@@ -27,7 +31,7 @@ public class MemoryExample {
 
         InMemoryMemoryStore store = new InMemoryMemoryStore();
         MemoryRetriever retriever = new MemoryRetriever(store);
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
         MemoryContextBuilder ctxBuilder = new MemoryContextBuilder(
                 retriever, List.of("user:u1"), null, null, null, 0);

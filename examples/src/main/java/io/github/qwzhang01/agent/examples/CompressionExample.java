@@ -3,6 +3,10 @@ package io.github.qwzhang01.agent.examples;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.memory.*;
+import io.github.qwzhang01.agent.memory.context.CompressingContextBuilder;
+import io.github.qwzhang01.agent.memory.context.ContextBudget;
+import io.github.qwzhang01.agent.memory.context.ContextCompressor;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 
 import java.util.ArrayList;

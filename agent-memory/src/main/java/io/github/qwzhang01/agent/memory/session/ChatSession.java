@@ -1,4 +1,4 @@
-package io.github.qwzhang01.agent.memory;
+package io.github.qwzhang01.agent.memory.session;
 
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.model.ChatMessage;

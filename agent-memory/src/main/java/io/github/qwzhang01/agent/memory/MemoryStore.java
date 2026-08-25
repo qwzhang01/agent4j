@@ -9,7 +9,7 @@ import java.util.Optional;
  * Implementations must enforce scope isolation: {@link #query} only returns
  * entries whose scope is in the query's scope list.
  * <p>
- * v1 implementation: {@link InMemoryMemoryStore}. The interface is designed so
+ * v1 implementation: {@link io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore}. The interface is designed so
  * a persistent backend (JSONL / DB / Redis) can be added later without changing
  * callers.
  */

@@ -13,7 +13,7 @@ import io.github.qwzhang01.agent.channel.identity.ServiceAccount;
 import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
-import io.github.qwzhang01.agent.memory.MemoryContextBuilder;
+import io.github.qwzhang01.agent.memory.context.MemoryContextBuilder;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
 import io.github.qwzhang01.agent.memory.MemoryScope;
 import io.github.qwzhang01.agent.memory.MemoryStore;

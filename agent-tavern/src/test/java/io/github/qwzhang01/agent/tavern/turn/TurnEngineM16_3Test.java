@@ -11,7 +11,7 @@ import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.security.AuditEvent;
 import io.github.qwzhang01.agent.security.GovernedToolExecutor;
 import io.github.qwzhang01.agent.security.InMemoryAuditLogger;

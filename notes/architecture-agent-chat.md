@@ -1,8 +1,8 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 已落地（2026-08-25）—— 31 测试全绿；Moonlit 接线另开任务
+> 状态：✅ M1–M5 已落地；T05 `MemorySource` 可选挂上（2026-08-25）——Moonlit 接线另开任务
 > 模块：`agent-chat` Maven 模块
-> 依赖：compile `agent-core`；`agent-memory` 仅作可选上下文源（可后加）；`agent-model` test scope
+> 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
 > 第一消费者：Moonlit（SillyTavern 一类：人对人、人对群的角色聊天）
 > 对照：`agent-tavern` 是回合制游戏 Profile，保留不动。本模块不改 tavern 一行。
@@ -92,7 +92,7 @@ ContextSource
 内置：
   PersonaSource        说话人的 systemPrompt
   HistorySource        房间最近 N 条（默认 20）
-  MemorySource         可选；走 MemoryStore + 业务给的 scope 白名单（v1.1，未做）
+  MemorySource         可选；`MemoryRetriever` + 业务给的 scope 白名单 + limit。**不默认挂**
   ExtraTextSource      业务塞场景氛围 / 世界书 / 关系说明（一段字符串）
 
 ContextAssembler
@@ -185,12 +185,16 @@ agent-chat/
       PersonaSource.java
       HistorySource.java
       ExtraTextSource.java
-      MemorySource.java        # v1.1，未做
+      MemorySource.java        # T05：可选召回，不默认挂
 ```
 
 ---
 
-## 8. Moonlit 怎么坐上来（本模块做完之后，另开任务）
+## 8. Moonlit 怎么坐上来
+
+角色引擎怎么组织、缺什么：[`architecture-character-engine.md`](architecture-character-engine.md)。  
+逐项清单：[`todo-moonlit-memory-chat.md`](todo-moonlit-memory-chat.md)。  
+**抽什么、何时提醒（生日、11:30 外卖等）只在 Moonlit**；框架不写业务词。
 
 Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_messages`、SSE、动作/台词解析。
 

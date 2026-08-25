@@ -18,11 +18,13 @@ import java.time.Instant;
  * @param type        what kind of memory this is
  * @param subject     topic key used for conflict detection / supersede (e.g. "dietary-restriction")
  * @param content     the actual memory text (e.g. "allergic to peanuts")
- * @param importance  0.0 ~ 1.0, used by the write-gate policy
+ * @param importance  0.0 ~ 1.0; write-gate threshold and context-recall rank
  * @param provenance  where this memory came from
  * @param status      lifecycle status
  * @param createdAt   when it was first written
- * @param expireAt    TTL deadline (null = permanent)
+ * @param expireAt    TTL deadline (null = permanent); after this the entry is not retrievable
+ * @param dueAt       optional due time with no built-in meaning (null = none).
+ *                    Hosts use it for their own scans; this module does not schedule jobs.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemoryEntry(
@@ -35,18 +37,32 @@ public record MemoryEntry(
         MemoryProvenance provenance,
         MemoryStatus status,
         Instant createdAt,
-        Instant expireAt
+        Instant expireAt,
+        Instant dueAt
 ) {
+    /** Backward-compatible constructor: no due time. */
+    public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
+                       double importance, MemoryProvenance provenance, MemoryStatus status,
+                       Instant createdAt, Instant expireAt) {
+        this(id, scope, type, subject, content, importance, provenance, status,
+                createdAt, expireAt, null);
+    }
+
     // ============ With Methods (for governance transitions) ============
 
     public MemoryEntry withStatus(MemoryStatus newStatus) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, newStatus, createdAt, expireAt);
+                provenance, newStatus, createdAt, expireAt, dueAt);
     }
 
     public MemoryEntry withContent(String newContent) {
         return new MemoryEntry(id, scope, type, subject, newContent, importance,
-                provenance, status, createdAt, expireAt);
+                provenance, status, createdAt, expireAt, dueAt);
+    }
+
+    public MemoryEntry withDueAt(Instant newDueAt) {
+        return new MemoryEntry(id, scope, type, subject, content, importance,
+                provenance, status, createdAt, expireAt, newDueAt);
     }
 
     /**

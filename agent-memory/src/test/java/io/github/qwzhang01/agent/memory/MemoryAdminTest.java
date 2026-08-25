@@ -1,6 +1,8 @@
 package io.github.qwzhang01.agent.memory;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.memory.extract.KeywordMemoryExtractor;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +28,7 @@ class MemoryAdminTest {
     void setUp() {
         store = new InMemoryMemoryStore();
         admin = new MemoryAdmin(store);
-        extractor = new MemoryExtractor();
+        extractor = new KeywordMemoryExtractor();
         policy = new MemoryPolicy(0.5);
         retriever = new MemoryRetriever(store);
     }

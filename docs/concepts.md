@@ -44,7 +44,9 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 | Session | 一轮会话的连续上下文 |
 | Long-term | `MemoryStore` 里可检索的条目 |
 
-`MemoryScope`（agent / user / session / task / channel）决定「谁能看见」。共享记忆不是第二套系统，只是 scope 取值不同。写入经 `MemoryExtractor` + `MemoryPolicy`；读出经 `MemoryRetriever` + `MemoryContextBuilder`。超预算时 `ContextCompressor` 做压缩。
+`MemoryScope`（agent / user / session / task / channel）决定「谁能看见」。共享记忆不是第二套系统，只是 scope 取值不同。写入经 `MemoryExtractor`（`extract.KeywordMemoryExtractor` 或 `extract.LlmMemoryExtractor`）+ `MemoryPolicy`；读出经 `MemoryRetriever`（`recallForContext` 按 importance 再 recency 取 topN）+ `context.MemoryContextBuilder`。房间引擎走可选的 `MemorySource`（`ChatRoom.Builder.source`，默认不挂）。`dueAt` 是可选时间戳，查询可按区间过滤；框架不调度、不解释含义。抽取指令与 subject 词表由调用方决定。超预算时 `context.ContextCompressor` 做压缩。
+
+包按流水线切，仍是一个 Maven 模块：根包是接线面（Store / Entry / Query / Scope / Extractor / Retriever / Policy / Admin）；`extract/` 写、`store/` 存、`context/` 读与压缩、`session/` 会话层、`tools/` 模型自管记忆。
 
 模块：`agent-memory`。示例：`MemoryExample` / `CompressionExample` / `ChannelMemoryExample`。
 

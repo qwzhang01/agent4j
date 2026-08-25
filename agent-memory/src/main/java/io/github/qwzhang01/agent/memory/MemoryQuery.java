@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.memory;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,17 +16,29 @@ import java.util.Objects;
  * @param subject optional exact subject filter (null = any)
  * @param keyword optional keyword filter matched against content (null/blank = any)
  * @param limit   max results (0 or negative = no limit)
+ * @param dueFrom inclusive lower bound on {@link MemoryEntry#dueAt()} (null = no min)
+ * @param dueTo   inclusive upper bound on {@link MemoryEntry#dueAt()} (null = no max)
  */
 public record MemoryQuery(
         List<String> scopes,
         MemoryType type,
         String subject,
         String keyword,
-        int limit
+        int limit,
+        Instant dueFrom,
+        Instant dueTo
 ) {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * {@code true} when the caller asked for a due-time window.
+     * Entries with a null {@code dueAt} are excluded from that window.
+     */
+    public boolean hasDueWindow() {
+        return dueFrom != null || dueTo != null;
     }
 
     public static final class Builder {
@@ -34,6 +47,8 @@ public record MemoryQuery(
         private String subject;
         private String keyword;
         private int limit;
+        private Instant dueFrom;
+        private Instant dueTo;
 
         public Builder scopes(List<String> scopes) {
             this.scopes = scopes;
@@ -65,9 +80,25 @@ public record MemoryQuery(
             return this;
         }
 
+        public Builder dueFrom(Instant dueFrom) {
+            this.dueFrom = dueFrom;
+            return this;
+        }
+
+        public Builder dueTo(Instant dueTo) {
+            this.dueTo = dueTo;
+            return this;
+        }
+
+        public Builder dueBetween(Instant from, Instant to) {
+            this.dueFrom = from;
+            this.dueTo = to;
+            return this;
+        }
+
         public MemoryQuery build() {
             Objects.requireNonNull(scopes, "scopes must not be null");
-            return new MemoryQuery(scopes, type, subject, keyword, limit);
+            return new MemoryQuery(scopes, type, subject, keyword, limit, dueFrom, dueTo);
         }
     }
 }

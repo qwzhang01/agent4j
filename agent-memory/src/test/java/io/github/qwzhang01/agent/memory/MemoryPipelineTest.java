@@ -8,6 +8,11 @@ import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.client.ModelClient;
+import io.github.qwzhang01.agent.memory.context.ContextCompressor;
+import io.github.qwzhang01.agent.memory.context.MemoryContextBuilder;
+import io.github.qwzhang01.agent.memory.extract.KeywordMemoryExtractor;
+import io.github.qwzhang01.agent.memory.session.ChatSession;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -115,7 +120,7 @@ class MemoryPipelineTest {
 
     @Test
     void extractor_findsPreferenceInUserMessage() {
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         List<ChatMessage> msgs = List.of(
                 ChatMessage.system("sys"),
                 ChatMessage.user("记住我对花生过敏"),
@@ -133,7 +138,7 @@ class MemoryPipelineTest {
 
     @Test
     void extractor_ignoresAssistantAndToolMessages() {
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         List<ChatMessage> msgs = List.of(
                 ChatMessage.assistant("我喜欢深色模式"),  // assistant, not extracted
                 ChatMessage.tool("tc1", "result")
@@ -146,7 +151,7 @@ class MemoryPipelineTest {
 
     @Test
     void extractor_extractAndStore_fullFlow() {
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
 
         List<ChatMessage> msgs = List.of(
@@ -164,7 +169,7 @@ class MemoryPipelineTest {
 
     @Test
     void extractor_supersedeOnContradiction() {
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
 
         // First: user says they like dark mode
@@ -188,7 +193,7 @@ class MemoryPipelineTest {
 
     @Test
     void extractor_dedupIdenticalContent() {
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
 
         List<ChatMessage> msgs = List.of(ChatMessage.user("我喜欢深色模式"));
@@ -293,7 +298,7 @@ class MemoryPipelineTest {
     void e2e_multiTurnMemory_rememberedAcrossRuns() {
         // Setup: a recording ModelClient that captures what it receives
         RecordingModelClient mc = new RecordingModelClient();
-        MemoryExtractor extractor = new MemoryExtractor();
+        MemoryExtractor extractor = new KeywordMemoryExtractor();
         MemoryPolicy policy = new MemoryPolicy(0.5);
         MemoryContextBuilder ctxBuilder = new MemoryContextBuilder(
                 retriever, List.of("user:u1"), null, null, null, 0);

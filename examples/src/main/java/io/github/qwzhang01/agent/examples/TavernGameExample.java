@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.examples;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.qwzhang01.agent.core.model.ToolCall;
-import io.github.qwzhang01.agent.memory.InMemoryMemoryStore;
+import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import io.github.qwzhang01.agent.security.InMemoryAuditLogger;
 import io.github.qwzhang01.agent.tavern.TavernGame;

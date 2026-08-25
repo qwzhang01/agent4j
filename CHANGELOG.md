@@ -22,10 +22,16 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - Agent-level streaming: `Agent.stream(userInput, listener)` emits `AgentEvent` (content deltas, tool start/finish, Done, Error) while `ReActAgentLoop` consumes `ModelClient.stream`. `run()` is unchanged.
 - Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
 - Example: `StreamingAgentExample`
-- Room conversation engine (`agent-chat`): `ChatRoom` / `ChatEngine`, `SoloSpeaker` + `MentionSpeaker`, `PersonaSource` / `HistorySource` / `ExtraTextSource`, `ChatListener`. Default `maxSteps` 1, no tools, no tavern dependency. Example: `ChatRoomExample`
+- Room conversation engine (`agent-chat`): `ChatRoom` / `ChatEngine`, `SoloSpeaker` + `MentionSpeaker`, `PersonaSource` / `HistorySource` / `ExtraTextSource` / optional `MemorySource`, `ChatListener`. Default `maxSteps` 1, no tools, no tavern dependency. Example: `ChatRoomExample`
+- Optional `MemorySource` for `ChatRoom`: host supplies `MemoryRetriever` + scopes + limit. Not mounted by `ContextAssembler.defaults()`. Extract / remind stay with the host.
+- `MemoryExtractor` is now an interface; keyword rules live in `KeywordMemoryExtractor`. Write path (`extractAndStore`) is shared. Business-specific subjects stay out of the extractor.
+- `LlmMemoryExtractor`: host-supplied instructions + JSON memories; subject is stored as returned; parse/model failure yields no entries.
+- `MemoryRetriever.recallForContext` ranks by importance (then recency) before applying topN. Hosts map product priority (e.g. user-edited) onto importance at write time.
+- Optional `MemoryEntry.dueAt` plus `MemoryQuery` due window (`dueFrom` / `dueTo`). No scheduler and no product meaning for the timestamp.
 
 ### Changed
 
+- `agent-memory` packages follow the write/read/compact/govern pipelines: root stays the wiring surface; implementations live in `extract/`, `store/`, `context/`, `session/` (`tools/` unchanged).
 - Drop Spring Boot parent POM in favor of a standalone Maven parent
 - Open-source packaging for GitHub (`qwzhang01/agent4j`) and intended Maven Central coordinates
 
