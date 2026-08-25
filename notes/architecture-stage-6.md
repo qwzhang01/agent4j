@@ -1,7 +1,7 @@
 # Stage 6 架构设计：State、Checkpoint 和长任务
 
 > 对应阶段：Stage 6 - State、Checkpoint 和长任务
-> 状态：✅ 已实现（2026-08-18，87 个测试全绿；验收示例 CheckpointExample 暂停-恢复跑通，幂等恢复验证通过）
+> 状态：✅ 已实现（2026-08-18 暂停-恢复收口；**2026-08-25 补齐 M6.3/M6.4 旧缺口**：`TimeoutPolicy` 真实落地 + `AgentState` 进黑板/Checkpoint，workflow 测试 39）
 > 模块：在 `agent-workflow` 模块内新增 `runtime` 子包（不新建 Maven 模块）
 > 前置：Stage 5 已完成（Workflow + GraphRuntime + 7 种节点 + 23 测试全绿）
 
