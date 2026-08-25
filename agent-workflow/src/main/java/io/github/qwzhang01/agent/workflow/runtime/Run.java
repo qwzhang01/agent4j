@@ -36,6 +36,7 @@ public class Run {
     // ============ Control ============
     private volatile boolean cancelled = false;
     private final long startTime;
+    private TimeoutPolicy timeoutPolicy = TimeoutPolicy.none();
 
     // ============ Constructors ============
 
@@ -69,6 +70,12 @@ public class Run {
     public Object getPendingInput() { return pendingInput; }
     public int getStepsExecuted() { return stepsExecuted; }
     public String getErrorMessage() { return errorMessage; }
+    public long getStartTime() { return startTime; }
+    public TimeoutPolicy getTimeoutPolicy() { return timeoutPolicy; }
+
+    public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
+        this.timeoutPolicy = timeoutPolicy == null ? TimeoutPolicy.none() : timeoutPolicy;
+    }
 
     // ============ Setters (used by GraphRuntime across packages) ============
 

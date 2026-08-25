@@ -4,10 +4,15 @@ import io.github.qwzhang01.agent.workflow.runtime.PauseException;
 import io.github.qwzhang01.agent.workflow.runtime.ResumeToken;
 import io.github.qwzhang01.agent.workflow.runtime.Run;
 import io.github.qwzhang01.agent.workflow.runtime.RunState;
+import io.github.qwzhang01.agent.workflow.runtime.TimeoutPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * The interpreter: walks a Workflow from START to END.
@@ -25,6 +30,7 @@ import java.util.List;
  * - {@link #execute(Run)}: main entry point with pause/cancel/resume support
  * - Resume: if Run has a cursor, start from there (skip completed nodes)
  * - Cancel: check volatile flag at each node boundary
+ * - Timeout: run-level check at each boundary; node-level wait around execute
  * - Pause: catch PauseException, save cursor = paused node, return PAUSED
  */
 public class GraphRuntime {
@@ -97,6 +103,8 @@ public class GraphRuntime {
     private ExecutionResult doExecute(Run run) throws Exception {
         Workflow workflow = run.getWorkflow();
         WorkflowState state = run.getState();
+        long executeStarted = System.currentTimeMillis();
+        TimeoutPolicy timeout = run.getTimeoutPolicy();
 
         // Resume vs fresh start
         boolean resuming = run.getCursor() != null;
@@ -118,6 +126,11 @@ public class GraphRuntime {
                 run.setStatus(RunState.CANCELLED);
                 log.info("[{}] Cancelled at node '{}'", run.getRunId(), cursor);
                 return ExecutionResult.cancelled(state);
+            }
+
+            ExecutionResult timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);
+            if (timedOut != null) {
+                return timedOut;
             }
 
             // --------------------------------------------
@@ -147,7 +160,7 @@ public class GraphRuntime {
 
             ExecOutcome outcome;
             try {
-                outcome = executeWithRetry(workflow, node, ctx);
+                outcome = executeWithRetry(workflow, node, ctx, timeout);
             } catch (PauseException pe) {
                 // Node requested pause: save cursor = this node (will re-execute on resume)
                 run.setCursor(cursor);
@@ -158,6 +171,12 @@ public class GraphRuntime {
                 log.info("[{}] Paused at node '{}': {}", run.getRunId(), cursor, pe.getMessage());
                 return ExecutionResult.paused(
                         new ResumeToken(run.getRunId(), null, cursor), state);
+            } catch (NodeTimeoutException te) {
+                run.setStatus(RunState.FAILED);
+                run.setErrorMessage(te.getMessage());
+                state.record(StepRecord.failed(cursor, 0, 0, te.getMessage()));
+                log.info("[{}] {}", run.getRunId(), te.getMessage());
+                return ExecutionResult.failed(te.getMessage(), state);
             }
 
             // --------------------------------------------
@@ -194,7 +213,17 @@ public class GraphRuntime {
                     outcome.attempts(), summarize(result.output())));
             lastOutput = result.output();
 
+            timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);
+            if (timedOut != null) {
+                return timedOut;
+            }
+
             cursor = route(workflow, node.id(), result.next(), state);
+        }
+
+        ExecutionResult timedOutAtEnd = failIfRunTimedOut(run, state, Workflow.END, executeStarted, timeout);
+        if (timedOutAtEnd != null) {
+            return timedOutAtEnd;
         }
 
         run.setStatus(RunState.SUCCEEDED);
@@ -205,8 +234,8 @@ public class GraphRuntime {
 
     // ============ Node Execution (retry wrapper) ============
 
-    private ExecOutcome executeWithRetry(Workflow workflow, WorkflowNode node, NodeContext ctx)
-            throws PauseException {
+    private ExecOutcome executeWithRetry(Workflow workflow, WorkflowNode node, NodeContext ctx,
+                                         TimeoutPolicy timeout) throws PauseException {
         RetryPolicy policy = workflow.retryPolicyFor(node.id());
         long start = System.currentTimeMillis();
         Exception failure = null;
@@ -216,11 +245,14 @@ public class GraphRuntime {
                 sleepQuietly(policy.delayForAttempt(attempt - 1));
             }
             try {
-                NodeResult result = node.execute(ctx);
+                NodeResult result = executeNode(node, ctx, timeout);
                 return ExecOutcome.ok(result, System.currentTimeMillis() - start, attempt + 1);
             } catch (PauseException pe) {
                 // Propagate immediately - pause is not a failure, don't retry
                 throw pe;
+            } catch (NodeTimeoutException te) {
+                // Timeout is not retryable and does not take onError routes
+                throw te;
             } catch (Exception e) {
                 failure = e;
                 log.debug("[{}] Node '{}' attempt {} failed: {}",
@@ -228,6 +260,61 @@ public class GraphRuntime {
             }
         }
         return ExecOutcome.error(failure, System.currentTimeMillis() - start, policy.maxRetries() + 1);
+    }
+
+    private NodeResult executeNode(WorkflowNode node, NodeContext ctx, TimeoutPolicy timeout)
+            throws Exception {
+        long nodeLimit = timeout.nodeTimeoutMs();
+        if (nodeLimit <= 0) {
+            return node.execute(ctx);
+        }
+        try {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    return node.execute(ctx);
+                } catch (PauseException pe) {
+                    throw new CompletionException(pe);
+                } catch (RuntimeException re) {
+                    throw re;
+                } catch (Exception e) {
+                    throw new CompletionException(e);
+                }
+            }).orTimeout(nodeLimit, TimeUnit.MILLISECONDS).join();
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            if (cause instanceof TimeoutException) {
+                throw new NodeTimeoutException(node.id(), nodeLimit);
+            }
+            if (cause instanceof PauseException pe) {
+                throw pe;
+            }
+            if (cause instanceof Exception ex) {
+                throw ex;
+            }
+            throw e;
+        }
+    }
+
+    private ExecutionResult failIfRunTimedOut(Run run, WorkflowState state, String cursor,
+                                              long executeStarted, TimeoutPolicy timeout) {
+        if (!timeout.isRunTimedOut(executeStarted)) {
+            return null;
+        }
+        String msg = "Run timed out after " + timeout.runTimeoutMs() + "ms at node '" + cursor + "'";
+        run.setStatus(RunState.FAILED);
+        run.setErrorMessage(msg);
+        state.record(StepRecord.failed(cursor, 0, 0, msg));
+        log.info("[{}] {}", run.getRunId(), msg);
+        return ExecutionResult.failed(msg, state);
+    }
+
+    /**
+     * Node-level timeout: fail the whole run (no onError routing, no retry).
+     */
+    static final class NodeTimeoutException extends RuntimeException {
+        NodeTimeoutException(String nodeId, long timeoutMs) {
+            super("Node '" + nodeId + "' timed out after " + timeoutMs + "ms");
+        }
     }
 
     // ============ Routing (preserved from Stage 5) ============

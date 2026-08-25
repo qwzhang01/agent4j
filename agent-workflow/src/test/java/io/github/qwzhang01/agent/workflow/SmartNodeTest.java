@@ -135,4 +135,55 @@ class SmartNodeTest {
         assertEquals("first", new GraphRuntime().run(wf, "q1").output());
         assertEquals("second", new GraphRuntime().run(wf, "q2").output());
     }
+
+    @Test
+    void agentStateSurvivesJsonBoardRestoreOnNewNode() throws Exception {
+        var client = new CountingClient("first", "second");
+        AgentNode firstNode = AgentNode.of("mem", new SimpleAgent(new AgentConfig(
+                "mem-agent", "sys", client, null, 5)));
+        WorkflowState live = WorkflowState.of("q1");
+        firstNode.execute(NodeContext.of(live, "q1"));
+
+        Object parked = live.get(AgentNode.stateKey("mem"));
+        assertTrue(parked != null, "AgentNode must park AgentState on the blackboard");
+
+        Object raw = MAPPER.readValue(MAPPER.writeValueAsString(parked), Object.class);
+        WorkflowState restored = WorkflowState.of("q2");
+        restored.put(AgentNode.stateKey("mem"), raw);
+
+        AgentNode freshNode = AgentNode.of("mem", new SimpleAgent(new AgentConfig(
+                "mem-agent", "sys", client, null, 5)));
+        NodeResult second = freshNode.execute(NodeContext.of(restored, "q2"));
+
+        assertEquals(2, client.seenSizes.size());
+        assertTrue(client.seenSizes.get(1) > client.seenSizes.get(0),
+                "restored node must send prior turns to the model, got " + client.seenSizes);
+        assertEquals("second", second.output());
+    }
+
+    /**
+     * Records how many messages the model saw on each chat call.
+     */
+    private static final class CountingClient implements io.github.qwzhang01.agent.core.client.ModelClient {
+        private final java.util.Queue<String> replies = new java.util.ArrayDeque<>();
+        private final java.util.List<Integer> seenSizes = new java.util.ArrayList<>();
+
+        CountingClient(String... replies) {
+            java.util.Collections.addAll(this.replies, replies);
+        }
+
+        @Override
+        public io.github.qwzhang01.agent.core.model.ModelResponse chat(
+                io.github.qwzhang01.agent.core.model.ModelRequest request) {
+            seenSizes.add(request.messages().size());
+            return io.github.qwzhang01.agent.core.model.ModelResponse.text(replies.remove());
+        }
+
+        @Override
+        public java.util.stream.Stream<io.github.qwzhang01.agent.core.model.StreamEvent> stream(
+                io.github.qwzhang01.agent.core.model.ModelRequest request) {
+            var r = chat(request);
+            return java.util.stream.Stream.of(new io.github.qwzhang01.agent.core.model.StreamEvent.Done(r));
+        }
+    }
 }

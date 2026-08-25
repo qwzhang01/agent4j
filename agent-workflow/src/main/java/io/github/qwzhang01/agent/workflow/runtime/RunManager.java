@@ -82,8 +82,17 @@ public class RunManager {
      * @return ExecutionResult (SUCCEEDED / FAILED / PAUSED / CANCELLED)
      */
     public ExecutionResult start(Workflow workflow, Object input) {
+        return start(workflow, input, TimeoutPolicy.none());
+    }
+
+    /**
+     * Start a new workflow run with a timeout policy.
+     * {@link TimeoutPolicy#none()} is unlimited on both axes.
+     */
+    public ExecutionResult start(Workflow workflow, Object input, TimeoutPolicy timeout) {
         String runId = UUID.randomUUID().toString();
         Run run = new Run(runId, workflow, WorkflowState.of(input));
+        run.setTimeoutPolicy(timeout);
         activeRuns.put(runId, run);
         log.info("[{}] Run started, workflow='{}'", runId, workflow.name());
         return withSingleFlight(runId, () -> executeAndPersist(run));

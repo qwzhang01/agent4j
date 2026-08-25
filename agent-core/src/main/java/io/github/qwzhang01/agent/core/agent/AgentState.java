@@ -1,5 +1,8 @@
 package io.github.qwzhang01.agent.core.agent;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 
 import java.util.ArrayList;
@@ -13,9 +16,13 @@ import java.util.List;
  * - Current step count (for max-step enforcement)
  * - Status (where the loop currently is)
  * <p>
- * In stage 6, this will be serialized to CheckpointStore for pause/resume.
- * In stage 14, this will be exported as RL trajectory.
+ * Stage 6: Jackson-serializable so {@code AgentNode} can park a snapshot
+ * on the workflow blackboard ({@code agentState:{nodeId}}) and restore
+ * it after a process restart. Stage 14 records trajectory at the model
+ * boundary instead of dumping this object.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AgentState {
 
     // ============ Status ============
@@ -41,6 +48,18 @@ public class AgentState {
 
     public List<ChatMessage> getMessages() {
         return messages;
+    }
+
+    /** Jackson / checkpoint restore: replace the live history. */
+    public void setMessages(List<ChatMessage> messages) {
+        this.messages.clear();
+        if (messages != null) {
+            this.messages.addAll(messages);
+        }
+    }
+
+    public void setCurrentStep(int currentStep) {
+        this.currentStep = currentStep;
     }
 
     // ============ Methods ============
@@ -85,13 +104,13 @@ public class AgentState {
         this.lastError = lastError;
     }
 
+    @JsonIgnore
     public boolean isTerminal() {
         return status == Status.DONE || status == Status.ERROR || status == Status.MAX_STEPS_EXCEEDED;
     }
 
     /**
-     * Create a snapshot of the current state.
-     * Stage 6 will serialize this to CheckpointStore.
+     * Create a snapshot of the current state for the workflow blackboard.
      */
     public AgentState snapshot() {
         var copy = new AgentState();

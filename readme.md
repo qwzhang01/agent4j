@@ -4,9 +4,11 @@
 >
 > **Learning project**: 通过构建一个 Java Agent Runtime，掌握 Agent 架构设计的全貌。
 
-## 当前阶段：Stage 18 ✅ 全部完成（可观测性/评估/成本治理与发布，18 周规划**收官阶段**，2026-08-25 五里程碑一天收口）-- M18.1 指标核心 + M18.2 成本与预算 + M18.3 模型路由 + M18.4 评估回归 + M18.5 版本与收口（agent-observability 125 测试全仓 **1148 全绿**，零存量改动第四次兑现；五维预算闸/WARN-DENIED 分离/microUSD 换算/Stage 12 占位钩子 ChannelQuota 兑现/BudgetAwareRouter 降级切换 + Routing(Fallback(…)) 纵深/失败轨迹回收 + 门禁三态/版本三元组 byRunId 时间旅行/CostDashboard 四维对账 + ObservabilityExample T0-T7 全剧本实跑零 LLM）-- 上一步 Stage 17 ✅ 全部完成（Coding Agent Profile 五里程碑，agent-coding 138 测试，零存量改动第三次兑现，M8「三类场景同 Runtime」达成）-- Stage 16 ✅（agent-tavern 111）-- Stage 15 ✅（agent-enterprise 89）
+## 当前阶段：Stage 18 ✅ v1 收官（没有 Stage 19）
 
-> Stage 1-17 已完成（2026-08-16 ~ 08-24）。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。
+18 周规划的工程交付已结束。2026-08-25 补齐 Stage 6 两处旧缺口（`TimeoutPolicy` + `AgentState` 进 Checkpoint），学习文章 15/16/18 已落入 `notes/`。全仓测试基线 **1148 + 7 = 1155**（core +2 / workflow +5）。
+
+> Stage 1-18 已完成。README 的 ✅ 相对**各阶段架构笔记的简化验收**，不是 18 周规划全文。v1 有意不做的能力（JAR 插件、Docker/WASM 沙箱、MCP SSE、真 Git、OTel、Mini VERL 训练）不是下一阶段，是 v2 清单。
 > Stage 17 设计蓝图：[notes/architecture-stage-17.md](notes/architecture-stage-17.md)（新增 agent-coding 模块：工作区即边界 / 变更即补丁 / 命令即白名单客人（无 shell）/ 测试即裁判 / 修复环即有界收敛——三类场景同 Runtime 的第三个领域 Profile，目标第三次零存量改动；四处有意不复用：ProcessSandbox.execute 隔离模型 / Workflow 修复环 / MemoryStore / RecordingAgent）
 > Stage 18 设计蓝图：[notes/architecture-stage-18.md](notes/architecture-stage-18.md)（新增 agent-observability 模块：**18 周规划收官阶段**——指标在边界不在路径 / 预算是事前闸不是事后账单（五维 fail-closed）/ 路由是策略且决策可解释 / 失败样本即回归集 / 版本三元组可复现性前提；一次 Run 三种投影（Trajectory 训练 / AuditEvent 治理 / Metrics 运营）；**与 Stage 17 依赖正交并行**（§0 裁决：规划并行、实施交错、17 收口优先）；四处有意不复用：OpenTelemetry SDK / CostLedger 直接扩展 / ServiceAccount 身份绑定 / LLM-as-judge）
 > Stage 16 设计蓝图：[notes/architecture-stage-16.md](notes/architecture-stage-16.md)（新增 agent-tavern 模块：角色即 Agent / 世界即黑板 / 影响即工具 / 回合即管线 / 历史即事件流——三类场景同 Runtime 的第二个领域 Profile，**零存量改动** + 三处有意不复用）
@@ -53,7 +55,7 @@
     - ClassLoader 隔离（拦截 File/Runtime/ProcessBuilder/Network/反射）
     - 进程隔离（ProcessBuilder + 超时 + 工作目录限制）
     - 超时自动终止（死循环 2 秒被 kill）
-- [x] 单元测试：1077 个（23 core + 24 model + 29 插件 + 14 沙箱 + 34 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export + 89 enterprise + 111 tavern + 138 coding + 54 observability），全绿
+- [x] 单元测试：1155 个（25 core + 24 model + 29 插件 + 14 沙箱 + 39 Workflow + 27 调度器 + 66 记忆 + 46 安全 + 55 MCP + 45 编排 + 82 channel + 167 product + 73 trace-export + 89 enterprise + 111 tavern + 138 coding + 125 observability），全绿（Stage 6 缺口补齐后 core +2 / workflow +5；observability 以模块 125 为准）
 - [x] 示例：`MockAgentExample` / `DecoratedModelClientExample` / `PluginExample` / `PluginSelfModificationExample` / `SandboxExample` / `SandboxAgentExample` / `WorkflowSupportFlowExample` / `CheckpointExample` / `SchedulerExample` / `LlmDrivenSchedulerExample` / `MemoryExample` / `CompressionExample` / `ChannelMemoryExample` / `SecurityExample` / `InjectionDefenseExample` / `McpExample` / `McpRealServerExample`（连官方 filesystem Server）/ `ManagedMcpExample`（崩溃自愈）/ `MultimodalExample`（2 内部 + 1 外部 A2A 编排）/ `ChannelAgentExample`（频道共享+接力+身份+看板）/ `AmbientExample`（Ambient 主动模式+噪音闸）/ `TrajectoryExample`（Stage 14：记录→奖励→采样→JSONL 导出→回放走查）/ `PreferenceAnnotationExample`（Stage 14：同 prompt 双 rollout→Console 标注→DPO preferences.jsonl）/ `EnterpriseAssistantExample`（Stage 15：登录→RAG→工具审批→任务审批断点恢复→租户隔离→预算拒绝全剧本）/ `scripts/consume_trajectory.py`（Python 跨语言消费证明）
 - [x] 内容产出（08-14 ~ 08-17）：公众号发布 5 篇（DeepSeek Harness 架构拆解 / 九模块自进化 / Java SPI 自进化 / Agent
   沙箱技术全景 / java-agent-06 进程级沙箱原理）
@@ -263,7 +265,7 @@ java-agent-framework/
 ├── agent-enterprise/   # 企业 Agent Profile（租户用户域/RAG/治理/成本/业务任务，Stage 15 ✅）
 ├── agent-tavern/       # 酒馆游戏 Agent Profile（角色/世界/回合/关系/事件/回放，Stage 16 ✅）
 ├── agent-coding/       # Coding Agent Profile（工作区/补丁/命令沙箱/测试裁判/修复环，Stage 17 ✅ 零存量改动）
-├── agent-observability/ # 可观测性与成本治理（指标/预算五维/模型路由/评估回归/版本记录，Stage 18 📐 并行规划定稿）
+├── agent-observability/ # 可观测性与成本治理（指标/预算五维/模型路由/评估回归/版本记录，Stage 18 ✅）
 ├── examples/            # 示例代码
 ├── notes/               # 学习笔记（按阶段组织）
 └── pom.xml              # 父 POM
@@ -363,4 +365,15 @@ ExecutionResult        # 终态（status + output + error + state）
 | 15. Enterprise Agent Profile | agent-enterprise  | ✅ 完成 |
 | 16. Tavern Game Profile | agent-tavern  | ✅ 完成（111 测试，零存量改动） |
 | 17. Coding Agent Profile | agent-coding  | ✅ 完成（138 测试，零存量改动——M8 三 Profile 达成） |
-| 18. 可观测性/评估/成本治理与发布 | agent-observability | 📐 规划定稿（与 17 并行，收官阶段） |
+| 18. 可观测性/评估/成本治理与发布 | agent-observability | ✅ 完成（v1 收官，无 Stage 19） |
+
+### 建议阅读顺序（学习文章）
+
+先读 Stage 17（已齐 7 篇），再读三 Profile + 运营层：
+
+| 系列 | 篇数 | 入口 |
+|------|------|------|
+| Stage 15 企业 Profile | 6 | [notes/stage-15-article-1-agent-vs-workflow.md](notes/stage-15-article-1-agent-vs-workflow.md) |
+| Stage 16 酒馆 Profile | 6 | [notes/stage-16-article-1-domain-model.md](notes/stage-16-article-1-domain-model.md) |
+| Stage 17 编码 Profile | 7 | [notes/stage-17-article-1-controlled-engineering-loop.md](notes/stage-17-article-1-controlled-engineering-loop.md) |
+| Stage 18 运营层 / v1 复盘 | 11 | [notes/stage-18-article-1-no-trace-no-debug.md](notes/stage-18-article-1-no-trace-no-debug.md) → 收官 [article-11](notes/stage-18-article-11-v1-architecture-review.md) |
