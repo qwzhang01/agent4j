@@ -65,7 +65,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.17.2</jackson.version>
-        <slf4j.version>2.0.13</slf4j.version>
+        <slf4j.version>2.0.18</slf4j.version>
         <lombok.version>1.18.34</lombok.version>
         <junit.version>5.10.3</junit.version>
     </properties>
