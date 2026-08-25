@@ -41,4 +41,4 @@
 | `agent-chat` | `ChatRoom` / `ChatEngine`：选人、拼上下文、流式、`ChatListener` |
 | `agent-memory` | Store / Extractor / Retriever；可选 `MemorySource` 在 chat 侧挂载 |
 
-边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（下一项 T08 表结构）。
+边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（下一项 T13 ChatRoom 装配）。

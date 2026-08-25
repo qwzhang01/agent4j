@@ -1,7 +1,7 @@
 # ToDo：AI 角色引擎（agent-chat + memory × Moonlit）
 
-> 状态：📋 逐项推进（2026-08-25）  
-> 下一项：**T08**  
+> 状态：📋 逐项推进（2026-08-26）  
+> 下一项：**T13**  
 > 组织蓝图：[`architecture-character-engine.md`](architecture-character-engine.md)  
 > 原则：**框架 = 角色怎么活（通用挂钩）；产品 = 怎么卖、抽什么、何时提醒。不写 birthday / 外卖进框架。不拆 20 个 Maven 模块。**
 
@@ -105,16 +105,16 @@
 
 ### T08 · 表结构对齐 `MemoryEntry`（无业务枚举写死在框架）
 
-- [ ] `moonlit_memories` 增加：`scope`、`subject`、`status`、`expire_at`、provenance；可选 `due_at`
-- [ ] 旧数据回填 `scope = agent:{characterId}:{userId}`
+- [x] `moonlit_memories` 增加：`scope`、`subject`、`status`、`expire_at`、provenance；可选 `due_at`
+- [x] 旧数据回填 `scope = agent:{characterId}:{userId}`
 - **模块：** `seven-ai-learn/server`  
-- **文件：** `MoonlitMemory`、`database-schema-moonlit.sql`、迁移脚本
+- **文件：** `MoonlitMemory`、`database-schema-moonlit.sql`、`doc/scripts/migration-moonlit-memories-align-entry.sql`
 
 ### T09 · `MoonlitMemoryStore` + Scope 工厂
 
-- [ ] `implements MemoryStore`，7 方法对齐框架语义
-- [ ] `MoonlitMemoryScope`：`user` / `pair` / `session` / `group`（字符串格式合法，见下）
-- [ ] 单测：与 `InMemoryMemoryStore` 行为对照（可用 Testcontainers 或 H2）
+- [x] `implements MemoryStore`，7 方法对齐框架语义
+- [x] `MoonlitMemoryScope`：`user` / `pair` / `session` / `group`（字符串格式合法，见下）
+- [x] 单测：与 `InMemoryMemoryStore` 行为对照（可用 Testcontainers 或 H2）
 - **模块：** `seven-ai-learn/server`  
 - **类：** 新建 `MoonlitMemoryStore`、`MoonlitMemoryScope`；改 `MoonlitMemoryMapper`
 
@@ -129,15 +129,15 @@ channel:{groupRoomId}
 
 ### T10 · MemoryService 变薄
 
-- [ ] `buildMemoryContext` → `MemoryRetriever`
-- [ ] `addMemory` / `saveSummary` / 编辑删除 → Store
-- [ ] 用户编辑：提高 importance + 业务标记 `isUserEdited`，Policy 侧由 Moonlit 决定是否禁止 AI 覆盖
+- [x] `buildMemoryContext` → `MemoryRetriever`
+- [x] `addMemory` / `saveSummary` / 编辑删除 → Store
+- [x] 用户编辑：提高 importance + 业务标记 `isUserEdited`，Policy 侧由 Moonlit 决定是否禁止 AI 覆盖
 - **模块：** Moonlit  
 - **类：** 改 `MoonlitMemoryService` / `MoonlitMemoryServiceImpl` / Controller / VO（按需）
 
 ### T11 · 取消关系删记忆（已有方法未接线）
 
-- [ ] `MoonlitUserCharacterRelationServiceImpl.cancel` 调用 `deleteAllByRelation`
+- [x] `MoonlitUserCharacterRelationServiceImpl.cancel` 调用 `deleteAllByRelation`
 - **类：** 改 Relation 实现
 
 ---
@@ -146,11 +146,12 @@ channel:{groupRoomId}
 
 ### T12 · 抽取策略（规则 和/或 LLM）
 
-- [ ] 新建 `MoonlitMemoryExtractPolicy`（或 prompt 配置）：**Moonlit 决定**抽哪些类型、subject 约定（可动态、可交给 LLM 自拟）
-- [ ] 组装 `KeywordMemoryExtractor` 或 `LlmMemoryExtractor`，**指令从这里传入**
-- [ ] 例：外卖 11:30、生日——只作为 **Moonlit 配置/prompt 示例**，不写进 agent-memory
+- [x] 新建 `MoonlitMemoryExtractPolicy`（或 prompt 配置）：**Moonlit 决定**抽哪些类型、subject 约定（可动态、可交给 LLM 自拟）
+- [x] 组装 `KeywordMemoryExtractor` 或 `LlmMemoryExtractor`，**指令从这里传入**
+- [x] 例：外卖 11:30、生日、下午面试晚上追问——只作为 **Moonlit 配置/prompt 示例**，不写进 agent-memory
 - **模块：** Moonlit  
 - **类：** 新建 Policy/Prompt + `MoonlitMemoryConfig`（Bean：Store / Retriever / Extractor / Policy）
+- **说明：** 抽的是「稍后还能再问」的日常，不只纪念日；`dueAt` = 角色自然开口的时刻。到点说话仍是 T17。用户编辑（`ADMIN_EDIT`）禁止 AI 覆盖。
 
 ---
 

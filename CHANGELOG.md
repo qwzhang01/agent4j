@@ -29,6 +29,7 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - `LlmMemoryExtractor`: host-supplied instructions + JSON memories; subject is stored as returned; parse/model failure yields no entries.
 - `MemoryRetriever.recallForContext` ranks by importance (then recency) before applying topN. Hosts map product priority (e.g. user-edited) onto importance at write time.
 - Optional `MemoryEntry.dueAt` plus `MemoryQuery` due window (`dueFrom` / `dueTo`). No scheduler and no product meaning for the timestamp.
+- `LlmMemoryExtractor` parses optional JSON `dueAt` (ISO-8601 Instant or offset). Invalid values are ignored; the rest of the entry is kept.
 
 ### Changed
 

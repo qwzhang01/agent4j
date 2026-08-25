@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LlmMemoryExtractorTest {
@@ -114,6 +115,36 @@ class LlmMemoryExtractorTest {
             }
         });
         assertTrue(boom.extract(List.of(ChatMessage.user("hi")), "user:u1", PROV).isEmpty());
+    }
+
+    @Test
+    void optionalDueAtIsParsedAsInstant() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                """
+                        {"memories":[{"type":"EVENT","subject":"later-ask","content":"ask how it went","dueAt":"2026-08-26T11:00:00Z"}]}
+                        """,
+                "user:u1", PROV);
+        assertEquals(1, entries.size());
+        assertEquals(Instant.parse("2026-08-26T11:00:00Z"), entries.get(0).dueAt());
+        assertEquals("later-ask", entries.get(0).subject());
+    }
+
+    @Test
+    void offsetDueAtIsAccepted() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                "{\"memories\":[{\"type\":\"EVENT\",\"subject\":\"k\",\"content\":\"v\",\"dueAt\":\"2026-08-26T19:00:00+08:00\"}]}",
+                "user:u1", PROV);
+        assertEquals(Instant.parse("2026-08-26T11:00:00Z"), entries.get(0).dueAt());
+    }
+
+    @Test
+    void invalidDueAtDoesNotDropTheEntry() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"k\",\"content\":\"keep me\",\"dueAt\":\"not-a-time\"}]}",
+                "user:u1", PROV);
+        assertEquals(1, entries.size());
+        assertEquals("keep me", entries.get(0).content());
+        assertNull(entries.get(0).dueAt());
     }
 
     @Test

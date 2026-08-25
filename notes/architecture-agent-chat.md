@@ -1,6 +1,6 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地（2026-08-25）——Moonlit 接线从 T08 起
+> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T12 存储+抽取（2026-08-26）——下一项 T13 ChatRoom 装配
 > 模块：`agent-chat` Maven 模块
 > 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
@@ -209,7 +209,7 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 
 群聊：`MentionSpeaker(new RoundRobinSpeaker())`（@ 优先，否则轮流），或纯 `RoundRobinSpeaker`。不必换引擎。
 
-记忆：**读** — 挂 `MemorySource`（T05 ✅）。**写 / 抽 / 压** — 在 `ChatListener` 里调 `agent-memory`（Extractor / Policy / Compressor），存储用 Moonlit 的 `MemoryStore` 适配器（T08+）。**提醒** — Moonlit Job，框架零规则。
+记忆：**读** — 挂 `MemorySource`（T05 ✅）。**写 / 抽 / 压** — 在 `ChatListener` 里调 `agent-memory`（Extractor / Policy / Compressor），存储用 `MoonlitMemoryStore`（T09 ✅）。**提醒** — Moonlit Job，框架零规则。
 
 ---
 
@@ -219,9 +219,9 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 
 | 能力 | 框架（agent-memory + agent-chat） | 产品（Moonlit） |
 |------|-----------------------------------|-----------------|
-| 存哪 | `MemoryStore` 接口；v1 内存实现 | `MoonlitMemoryStore`、表结构（T08+） |
+| 存哪 | `MemoryStore` 接口；v1 内存实现 | `moonlit_memories`（T08 ✅）+ `MoonlitMemoryStore`（T09 ✅） |
 | 读进 prompt | `MemoryRetriever` + 可选 `MemorySource` | 传入 scope 列表（user / agent / session / channel） |
-| 写什么 | `MemoryExtractor` 接口（keyword / LLM） | 抽什么、prompt、subject 约定（T12） |
+| 写什么 | `MemoryExtractor` 接口（keyword / LLM）；可选解析 `dueAt` | 抽什么、prompt、subject 约定（T12 ✅：含稍后追问，不只纪念日） |
 | 何时写 | `ChatListener.onReplied` 挂钩点（引擎回调，不内置逻辑） | Listener 里调 Extractor + Policy |
 | 主动说话 | `dueAt` + `MemoryQuery` 时间窗（**无调度、无含义**） | Job 扫库、规则表、推送文案（T17） |
 | 压缩 | `ContextCompressor`（agent-memory） | 超窗时在 Listener 或独立路径调用 |
@@ -252,9 +252,13 @@ ChatRoom.builder()
 | T05 `MemorySource` | ✅ 可选召回，不默认挂 |
 | T06 `RoundRobinSpeaker` | ✅ 群聊轮流 |
 | T07 本文档 | ✅ 引擎/产品边界写清 |
-| Moonlit 存储 + 接线 | 📋 T08 起（[`todo-moonlit-memory-chat.md`](todo-moonlit-memory-chat.md)） |
+| T08 `moonlit_memories` | ✅ 列对齐 `MemoryEntry`；旧行回填 `agent:{characterId}:{userId}` |
+| T09 `MoonlitMemoryStore` | ✅ 7 方法对齐 `InMemoryMemoryStore`；H2 18 测 |
+| T10 MemoryService 变薄 | ✅ 读 Retriever、写 Store；用户编辑抬 importance |
+| T11 取消关系删记忆 | ✅ `cancel` 调 `deleteAllByRelation` |
+| T12 抽取策略 | ✅ `MoonlitMemoryExtractPolicy` + `LlmMemoryExtractor`（Spring AI 适配）；prompt 含日常追问 / `dueAt`；不覆盖用户编辑 |
 
-Moonlit P0 安全审核仍优先于 T08+ 代码接线（控制塔约束）。框架侧 Wave 1 文档项已收口，下一项 **T08**（表结构对齐 `MemoryEntry`）。
+Moonlit P0 安全审核仍优先于 T13+ 聊天换引擎（控制塔约束）。下一项 **T13**（`MoonlitChatRoomFactory`）。聊天仍未调用 Extractor（T14 `onReplied`）。
 
 ---
 

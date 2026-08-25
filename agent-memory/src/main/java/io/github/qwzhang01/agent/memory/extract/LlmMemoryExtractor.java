@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,10 +41,12 @@ public class LlmMemoryExtractor implements MemoryExtractor {
 
     private static final String FORMAT_HINT = """
             Reply with JSON only, no markdown:
-            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7}]}
+            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7,"dueAt":"2026-08-26T12:00:00Z"}]}
             Use {"memories":[]} if there is nothing to store.
             type must be one of those five names; if unsure use FACT.
             importance is optional, 0.0–1.0.
+            dueAt is optional ISO-8601 (Instant or offset). Omit when there is no later follow-up time.
+            This module does not interpret dueAt; hosts use it for their own scans.
             """;
 
     private static final Logger log = LoggerFactory.getLogger(LlmMemoryExtractor.class);
@@ -140,7 +144,8 @@ public class LlmMemoryExtractor implements MemoryExtractor {
                     origin,
                     MemoryStatus.ACTIVE,
                     now,
-                    null
+                    null,
+                    parseDueAt(node)
             ));
         }
         return List.copyOf(out);
@@ -182,6 +187,27 @@ public class LlmMemoryExtractor implements MemoryExtractor {
             return MemoryType.valueOf(raw.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return MemoryType.FACT;
+        }
+    }
+
+    private static Instant parseDueAt(JsonNode node) {
+        JsonNode value = node.get("dueAt");
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        String raw = value.asText("").trim();
+        if (raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(raw);
+        } catch (DateTimeParseException ignored) {
+            try {
+                return OffsetDateTime.parse(raw).toInstant();
+            } catch (DateTimeParseException e) {
+                log.warn("LLM extract dueAt ignored: {}", raw);
+                return null;
+            }
         }
     }
 

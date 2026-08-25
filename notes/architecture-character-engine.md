@@ -67,8 +67,8 @@ Runtime  agent-core / model / security / mcp / observability
 | 缺口 | 层 | 为何缺 | 组织方式 |
 |------|----|--------|----------|
 | **记忆写回 + 注入未接通** | ③④ | chat 已有可选 `MemorySource`；Moonlit 尚未挂上、几乎不写回 | ToDo T08–T16 |
-| **生产持久化** | ③ | 只有 `InMemoryMemoryStore` | Moonlit `MemoryStore` 适配（T08–T09） |
-| **LLM 抽取（指令业务给）** | ③ | 只有关键词 | T01–T02 + T12 |
+| **生产持久化** | ③ | 只有 `InMemoryMemoryStore` | 表 + Store + 薄 Service + 取消关系删记忆（T08–T11 ✅） |
+| **LLM 抽取（指令业务给）** | ③ | 框架抽取器已有；Moonlit prompt/Policy 已接（T12 ✅）。聊天写回仍待 T14 | T01–T02 + T12 ✅；T14 接线 |
 | **人设渲染接口** | ① | `systemPrompt` 整段塞进 Persona；Moonlit `renderSystemPrompt` 仍是产品私货 | 引擎：`PersonaRenderer` 挂钩；实现在 Moonlit |
 | **Room 上的身份键** | ② | Room 只有 roomId + members，没有 user/session scope 约定 | 给 Room/ChatRoom 可选 `scopes` 或业务 Factory 传入 MemorySource |
 | **一致性挂钩** | ② | 无人设锚点校验、无 OOC | 接口 `ConsistencyGuard`，默认 no-op；实现可后做或产品做 |

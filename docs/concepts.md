@@ -44,7 +44,7 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 | Session | 一轮会话的连续上下文 |
 | Long-term | `MemoryStore` 里可检索的条目 |
 
-`MemoryScope`（agent / user / session / task / channel）决定「谁能看见」。共享记忆不是第二套系统，只是 scope 取值不同。写入经 `MemoryExtractor`（`extract.KeywordMemoryExtractor` 或 `extract.LlmMemoryExtractor`）+ `MemoryPolicy`；读出经 `MemoryRetriever`（`recallForContext` 按 importance 再 recency 取 topN）+ `context.MemoryContextBuilder`。房间引擎走可选的 `MemorySource`（`ChatRoom.Builder.source`，默认不挂）。`dueAt` 是可选时间戳，查询可按区间过滤；框架不调度、不解释含义。抽取指令与 subject 词表由调用方决定。超预算时 `context.ContextCompressor` 做压缩。
+`MemoryScope`（agent / user / session / task / channel）决定「谁能看见」。共享记忆不是第二套系统，只是 scope 取值不同。写入经 `MemoryExtractor`（`extract.KeywordMemoryExtractor` 或 `extract.LlmMemoryExtractor`）+ `MemoryPolicy`；读出经 `MemoryRetriever`（`recallForContext` 按 importance 再 recency 取 topN）+ `context.MemoryContextBuilder`。房间引擎走可选的 `MemorySource`（`ChatRoom.Builder.source`，默认不挂）。`dueAt` 是可选时间戳，`LlmMemoryExtractor` 可从 JSON 解析；查询可按区间过滤；框架不调度、不解释含义。抽取指令与 subject 词表由调用方决定。超预算时 `context.ContextCompressor` 做压缩。
 
 包按流水线切，仍是一个 Maven 模块：根包是接线面（Store / Entry / Query / Scope / Extractor / Retriever / Policy / Admin）；`extract/` 写、`store/` 存、`context/` 读与压缩、`session/` 会话层、`tools/` 模型自管记忆。
 
@@ -61,7 +61,7 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 | `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` |
 | `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回 |
 
-默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit），见 `notes/architecture-agent-chat.md` §9。
+默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 才开口），见 `notes/architecture-agent-chat.md` §9。
 
 模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。
 
