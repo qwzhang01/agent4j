@@ -26,8 +26,9 @@
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
 | `agent-observability` | 指标、五维预算、路由、评估、版本三元组 | 可观测示例 |
+| `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块** | Spring Boot 3.2 应用（如 Moonlit） |
 | `examples` | 可运行示例（见 `examples/README.md`） | 无（消费以上模块） |
 
 企业 / 酒馆 / 编码是**同一 Runtime 上的三个领域 Profile**，不是三套框架。
 
-最小接入：`agent-core` + `agent-model`。图、治理、记忆按需加。
+最小接入：`agent-core` + `agent-model`。图、治理、记忆按需加。Spring Boot 应用可再加 `agent-spring-boot-starter`（core / model 仍无 Spring）。

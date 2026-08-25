@@ -1,5 +1,11 @@
 package io.github.qwzhang01.agent.core.agent;
 
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
+
+import java.util.List;
+import java.util.function.Consumer;
+
 /**
  * The core Agent execution loop (ReAct pattern).
  * <p>
@@ -7,7 +13,7 @@ package io.github.qwzhang01.agent.core.agent;
  * <pre>{@code
  * while (state.hasStepsRemaining() && !state.isTerminal()) {
  *     1. Build ModelRequest from state (messages + tool schemas)
- *     2. Call ModelClient.chat(request)
+ *     2. Call ModelClient.chat(request)  — or ModelClient.stream for stream()
  *     3. If response has tool calls:
  *        - Execute each tool via ToolExecutor
  *        - Add tool results to state
@@ -35,4 +41,31 @@ public interface AgentLoop {
      * @return the final state
      */
     AgentState execute(AgentConfig config, AgentState state);
+
+    /**
+     * Stream the same loop as {@link #execute}, pushing {@link AgentEvent}s to {@code sink}.
+     * <p>
+     * Default: run {@code execute} then emit {@link AgentEvent.Error} or {@link AgentEvent.Done}.
+     * {@link ReActAgentLoop} overrides this to consume {@code ModelClient.stream}.
+     */
+    default void stream(AgentConfig config, AgentState state, Consumer<AgentEvent> sink) {
+        execute(config, state);
+        String answer = lastAssistantContent(state);
+        if (state.getStatus() == AgentState.Status.ERROR) {
+            sink.accept(new AgentEvent.Error(state.getLastError(), null));
+            return;
+        }
+        sink.accept(new AgentEvent.Done(answer, state));
+    }
+
+    private static String lastAssistantContent(AgentState state) {
+        List<ChatMessage> messages = state.getMessages();
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            ChatMessage msg = messages.get(i);
+            if (msg.role() == ChatRole.ASSISTANT && msg.content() != null) {
+                return msg.content();
+            }
+        }
+        return "";
+    }
 }

@@ -143,8 +143,7 @@ class SimpleAgentTest {
 
         @Override
         public java.util.stream.Stream<StreamEvent> stream(ModelRequest request) {
-            ModelResponse r = chat(request);
-            return java.util.stream.Stream.of(new StreamEvent.Done(r));
+            return toStreamEvents(chat(request));
         }
     }
 
@@ -160,8 +159,15 @@ class SimpleAgentTest {
 
         @Override
         public java.util.stream.Stream<StreamEvent> stream(ModelRequest request) {
-            return java.util.stream.Stream.of(new StreamEvent.Done(chat(request)));
+            return toStreamEvents(chat(request));
         }
+    }
+
+    static java.util.stream.Stream<StreamEvent> toStreamEvents(ModelResponse r) {
+        if (r.content() != null && !r.content().isBlank()) {
+            return java.util.stream.Stream.of(new StreamEvent.ContentDelta(r.content()), new StreamEvent.Done(r));
+        }
+        return java.util.stream.Stream.of(new StreamEvent.Done(r));
     }
 
     /**

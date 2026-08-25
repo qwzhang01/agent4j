@@ -12,7 +12,7 @@
 
 - **JDK 17+**
 - Maven 3.9+，或直接用仓库自带的 `./mvnw`
-- 库本身**不依赖 Spring Framework**（独立 Maven parent，不是 `spring-boot-starter-parent`）
+- 运行时模块（`agent-core` / `agent-model` 等）**不依赖 Spring Framework**（独立 Maven parent，不是 `spring-boot-starter-parent`）。可选模块 `agent-spring-boot-starter` 是唯一依赖 Spring 的地方。
 
 不需要真实 LLM 即可跑通第一个例子。
 
@@ -114,6 +114,71 @@ String response = agent.run("What time is it now?");
 ```
 
 按需再加 `agent-workflow`、`agent-security` 等，见 [modules.md](modules.md)。
+
+## Spring Boot
+
+可选 starter，**不**把 Spring 引进 core。Moonlit 这类 Spring Boot 3.2 / Java 17 应用加依赖即可：
+
+```xml
+<dependency>
+  <groupId>io.github.qwzhang01</groupId>
+  <artifactId>agent-spring-boot-starter</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+先在本仓库执行 `./mvnw install`，再编译下游。
+
+`application.yml`：
+
+```yaml
+agent4j:
+  enabled: true
+  model:
+    provider: openai   # openai | mock
+    api-key: ${OPENAI_API_KEY:}
+    base-url: https://api.openai.com/v1
+    name: gpt-4o-mini
+    timeout: 60s
+  retry:
+    enabled: false
+    max-attempts: 3
+  call-timeout:
+    enabled: false
+    duration: 30s
+```
+
+注入 `ModelClient` 与 `AgentFactory`。**不要**指望有一个全局 `Agent` bean——角色各有 system prompt，用工厂按角色创建：
+
+```java
+import io.github.qwzhang01.agent.core.agent.Agent;
+import io.github.qwzhang01.agent.core.agent.AgentEvent;
+import io.github.qwzhang01.agent.spring.AgentFactory;
+
+import java.util.function.Consumer;
+
+@Service
+public class ChatService {
+    private final AgentFactory agentFactory;
+
+    public ChatService(AgentFactory agentFactory) {
+        this.agentFactory = agentFactory;
+    }
+
+    public String reply(String characterPrompt, String userInput) {
+        Agent agent = agentFactory.create("moonlit-character", characterPrompt);
+        return agent.run(userInput);
+    }
+
+    public void replyStream(String characterPrompt, String userInput,
+                            Consumer<AgentEvent> listener) {
+        Agent agent = agentFactory.create("moonlit-character", characterPrompt);
+        agent.stream(userInput, listener);
+    }
+}
+```
+
+Bean 名：`modelClient`、`agentFactory`。已有 `ModelClient` bean 时 starter 不会覆盖。`agent4j.enabled=false` 关闭自动配置。
 
 ## 下一步
 

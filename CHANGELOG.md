@@ -19,6 +19,9 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - CI workflow for Maven verify (JDK 17 / 21)
 - Bill of Materials (`seven-agent-bom`) for coordinated dependency versions
 - Maven Wrapper (`./mvnw`, Maven 3.9.9)
+- Agent-level streaming: `Agent.stream(userInput, listener)` emits `AgentEvent` (content deltas, tool start/finish, Done, Error) while `ReActAgentLoop` consumes `ModelClient.stream`. `run()` is unchanged.
+- Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
+- Example: `StreamingAgentExample`
 
 ### Changed
 

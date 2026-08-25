@@ -49,7 +49,7 @@ System.out.println(agent.run("What time is it?"));
 |------|------|
 | [快速开始](docs/getting-started.md) | 构建、Mock 跑通、换真模型、BOM |
 | [核心概念](docs/concepts.md) | Agent / Tool / Loop / Workflow / Memory / 治理 |
-| [模块一览](docs/modules.md) | 17 个库模块 + BOM 怎么引 |
+| [模块一览](docs/modules.md) | 18 个库模块 + BOM 怎么引 |
 | [对比](docs/comparison.md) | vs LangChain4j / Spring AI / AgentScope |
 | [v1 边界](docs/limitations.md) | 有意不做的能力 |
 | [示例](examples/README.md) | 32 个可运行 `main`，从 `MockAgentExample` 开始 |
@@ -80,6 +80,7 @@ agent-enterprise     租户 · RAG · 成本账本 · 业务任务
 agent-tavern         角色 · 世界 · 回合（游戏 Profile）
 agent-coding         工作区 · 补丁 · 命令白名单 · 修复环
 agent-observability  指标 · 五维预算 · 路由 · 评估 · 版本三元组
+agent-spring-boot-starter  可选 Spring Boot 自动配置（唯一依赖 Spring 的模块）
 examples             可运行示例（不发布）
 ```
 

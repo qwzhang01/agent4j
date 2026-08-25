@@ -16,7 +16,7 @@ LangChain4j 覆盖面广：模型适配、RAG 组件、记忆、工具绑定、�
 
 Spring AI 跟 Spring 生态绑在一起：自动配置、Advisor、评测与可观测的起步成本低。如果你的系统已经是 Spring Boot，它是默认选项。
 
-本库**不依赖 Spring Framework**。`Agent` / `Tool` / Loop 是普通 Java。你可以把它嵌进 Spring 应用，但不会自带 starter、自动配置或 Actuator 集成。v1 也没有 OpenTelemetry SDK。
+本库的 **core / model / 运行时模块不依赖 Spring Framework**。`Agent` / `Tool` / Loop 是普通 Java。可选模块 `agent-spring-boot-starter` 提供 `application.yml` 绑定、`ModelClient` bean 和 `AgentFactory`（不自动创建单个 `Agent` bean，也不带 Actuator）。v1 也没有 OpenTelemetry SDK。
 
 要「Spring 里快速接模型」选 Spring AI。要「Spring 可有可无、治理和断点恢复是一等公民」再看这里。
 

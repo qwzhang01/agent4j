@@ -10,9 +10,11 @@
 
 API 以源码和测试为准，SNAPSHOT 可能改。
 
-## 库不依赖 Spring
+## 运行时不依赖 Spring
 
-运行时模块不引入 Spring Framework。父 POM 是独立聚合工程，不是 `spring-boot-starter-parent`。没有 starter、没有自动配置。嵌进 Spring Boot 应用可以，但集成要自己写。
+`agent-core` / `agent-model` 等运行时模块不引入 Spring Framework。父 POM 是独立聚合工程，不是 `spring-boot-starter-parent`。
+
+可选模块 `agent-spring-boot-starter` 是**唯一**依赖 Spring 的模块：读 `agent4j.*` 配置、创建 `ModelClient`、提供 `AgentFactory`。Core 仍然 Spring-free。没有 Actuator 集成。
 
 ## v1 明确不做
 

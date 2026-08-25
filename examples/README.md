@@ -36,6 +36,7 @@ IDE 里直接跑对应 `main` 即可。
 | 类名 | 看什么 |
 |------|--------|
 | **`MockAgentExample`** | **最小 Agent：注册工具 + 脚本化模型 + `run`** |
+| `StreamingAgentExample` | `stream`：边生成边打印 `ContentDelta` |
 | `DecoratedModelClientExample` | Retry / Timeout / Fallback / StructuredOutput 叠装饰器 |
 | `PluginExample` | SPI 发现、加载、卸载、重载 |
 | `PluginSelfModificationExample` | 模型在对话里管理插件（inspect / load / unload） |

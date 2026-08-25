@@ -4,11 +4,11 @@
 
 ## Agent
 
-`Agent` 是调用入口，故意很薄：`run(userInput)` 一次跑完，`run(userInput, state)` 带着已有 `AgentState` 续跑。多模态用户消息走 `run(ChatMessage)`。
+`Agent` 是调用入口，故意很薄：`run(userInput)` 一次跑完，`run(userInput, state)` 带着已有 `AgentState` 续跑。流式输出走 `stream(userInput, listener)`，边生成边回调 `AgentEvent`。多模态用户消息走 `run(ChatMessage)` / `stream(ChatMessage, listener)`。
 
 默认实现是 `SimpleAgent`。静态蓝图是 `AgentConfig`：名字、system prompt、`ModelClient`、`ToolRegistry`、`maxSteps`，以及可选的 `ContextBuilder`（记忆注入；`null` 则透传）。
 
-模块：`agent-core`。示例：`MockAgentExample`。
+模块：`agent-core`。示例：`MockAgentExample` / `StreamingAgentExample`。
 
 ## Tool
 
@@ -20,9 +20,9 @@
 
 ## Loop
 
-`AgentLoop` 是 ReAct 循环：在 `maxSteps` 内反复「组请求 → `ModelClient.chat` → 有 tool call 就执行 → 否则结束」。Loop 是函数，不是线程：吃 `AgentConfig` + 可变 `AgentState`，返回更新后的 state。可测、可续跑。
+`AgentLoop` 是 ReAct 循环：在 `maxSteps` 内反复「组请求 → `ModelClient.chat` → 有 tool call 就执行 → 否则结束」。`stream` 走同一循环，但调用 `ModelClient.stream`，把 token / 工具起止推给 `AgentEvent` sink。Loop 是函数，不是线程：吃 `AgentConfig` + 可变 `AgentState`，返回更新后的 state。可测、可续跑。
 
-默认实现是 `ReActAgentLoop`。`SimpleAgent` 把 `run` 委托给它。
+默认实现是 `ReActAgentLoop`。`SimpleAgent` 把 `run` / `stream` 委托给它。
 
 模块：`agent-core`。
 

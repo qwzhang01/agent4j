@@ -5,6 +5,9 @@ import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
 /**
  * Default Agent implementation.
  * <p>
@@ -15,6 +18,8 @@ import io.github.qwzhang01.agent.core.tool.ToolRegistry;
  * plug in from the outside — this class stays a thin entry point.
  */
 public class SimpleAgent implements Agent {
+
+    static final String MAX_STEPS_PLACEHOLDER = "[Agent reached max steps without a final answer]";
 
     private final AgentConfig config;
     private final AgentLoop loop;
@@ -47,6 +52,19 @@ public class SimpleAgent implements Agent {
 
     @Override
     public String run(ChatMessage userMessage, AgentState state) {
+        prepare(userMessage, state);
+        loop.execute(config, state);
+        return extractFinalAnswer(state);
+    }
+
+    @Override
+    public void stream(ChatMessage userMessage, AgentState state, Consumer<AgentEvent> listener) {
+        Objects.requireNonNull(listener, "listener");
+        prepare(userMessage, state);
+        loop.stream(config, state, listener);
+    }
+
+    private void prepare(ChatMessage userMessage, AgentState state) {
         if (userMessage == null) {
             throw new IllegalArgumentException("userMessage must not be null");
         }
@@ -59,9 +77,6 @@ public class SimpleAgent implements Agent {
         state.addMessage(userMessage);
 
         state.setMaxSteps(config.getMaxSteps());
-        loop.execute(config, state);
-
-        return extractFinalAnswer(state);
     }
 
     private static String extractFinalAnswer(AgentState state) {
@@ -74,7 +89,7 @@ public class SimpleAgent implements Agent {
         }
 
         return switch (state.getStatus()) {
-            case MAX_STEPS_EXCEEDED -> "[Agent reached max steps without a final answer]";
+            case MAX_STEPS_EXCEEDED -> MAX_STEPS_PLACEHOLDER;
             case ERROR -> "[Agent error: " + state.getLastError() + "]";
             default -> "[Agent did not produce a final answer]";
         };
