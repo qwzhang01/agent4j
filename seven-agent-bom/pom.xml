@@ -94,6 +94,11 @@
             </dependency>
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-chat</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-coding</artifactId>
                 <version>${project.version}</version>
             </dependency>

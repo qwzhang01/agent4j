@@ -28,6 +28,7 @@ body:
         - agent-trace-export
         - agent-enterprise
         - agent-tavern
+        - agent-chat
         - agent-coding
         - agent-observability
         - examples

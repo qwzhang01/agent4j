@@ -58,6 +58,7 @@ IDE 里直接跑对应 `main` 即可。
 | `PreferenceAnnotationExample` | 双 rollout 标注，写出 DPO preferences |
 | `EnterpriseAssistantExample` | 租户 / RAG / 审批断点 / 预算拒绝 |
 | `TavernGameExample` | 角色 / 世界 / 回合 / 回放 |
+| `ChatRoomExample` | 房间聊天：一对一流式 + 两人 `@` 点名（零 LLM） |
 | `CodingAgentExample` | 工作区、补丁、命令白名单、有界修复环 |
 | `ObservabilityExample` | 指标、五维预算、路由、评估、版本三元组 |
 | `DeclarativeAgentExample` | YAML 定义 Agent + 模板 / Prompt 版本 / DAG |

@@ -24,9 +24,10 @@
 | `agent-trace-export` | 轨迹 S-A-O-R-D、JSONL、DPO 偏好 | `agent-observability`、轨迹示例 |
 | `agent-enterprise` | 租户 / RAG / 成本账本 / 业务任务 | 企业助手示例 |
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
+| `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
 | `agent-observability` | 指标、五维预算、路由、评估、版本三元组 | 可观测示例 |
-| `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块** | Spring Boot 3.2 应用（如 Moonlit） |
+| `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
 | `examples` | 可运行示例（见 `examples/README.md`） | 无（消费以上模块） |
 
 企业 / 酒馆 / 编码是**同一 Runtime 上的三个领域 Profile**，不是三套框架。

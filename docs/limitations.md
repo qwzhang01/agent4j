@@ -36,7 +36,7 @@ API 以源码和测试为准，SNAPSHOT 可能改。
 - **模型覆盖窄**：Mock、OpenAI-compatible、Anthropic。没有厂商全家桶 connector。
 - **记忆默认在进程内**：`InMemoryMemoryStore` 等实现适合单机与测试；持久化要自己接存储。
 - **Checkpoint 同理**：内存 / 文件 store，没有托管工作流后端。
-- **测试基线 1155**：全绿是回归契约；`notes/` 里的阶段叙事、公众号文章**不是**用户合同。
+- **测试基线 1186**：全绿是回归契约；`notes/` 里的阶段叙事、公众号文章**不是**用户合同。
 - **学习项目**：通过造 Runtime 学架构。生产使用前先读本页和 [comparison.md](comparison.md)。
 
 ## 相关文档

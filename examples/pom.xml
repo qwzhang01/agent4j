@@ -77,6 +77,10 @@
         </dependency>
         <dependency>
             <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-chat</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-coding</artifactId>
         </dependency>
         <!-- Stage 18: ObservabilityExample (metrics / budget / routing / eval / version glue). -->

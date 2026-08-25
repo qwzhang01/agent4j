@@ -16,7 +16,7 @@
 ```bash
 git clone https://github.com/qwzhang01/agent4j.git
 cd agent4j
-./mvnw -B verify          # 1155 tests
+./mvnw -B verify          # 1186 tests
 ./mvnw install -DskipTests
 ./mvnw -pl examples compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
@@ -49,10 +49,10 @@ System.out.println(agent.run("What time is it?"));
 |------|------|
 | [快速开始](docs/getting-started.md) | 构建、Mock 跑通、换真模型、BOM |
 | [核心概念](docs/concepts.md) | Agent / Tool / Loop / Workflow / Memory / 治理 |
-| [模块一览](docs/modules.md) | 18 个库模块 + BOM 怎么引 |
+| [模块一览](docs/modules.md) | 19 个库模块 + BOM 怎么引 |
 | [对比](docs/comparison.md) | vs LangChain4j / Spring AI / AgentScope |
 | [v1 边界](docs/limitations.md) | 有意不做的能力 |
-| [示例](examples/README.md) | 32 个可运行 `main`，从 `MockAgentExample` 开始 |
+| [示例](examples/README.md) | 33 个可运行 `main`，从 `MockAgentExample` 开始 |
 | [贡献](CONTRIBUTING.md) | 怎么跑测试、PR 约定 |
 | [安全](SECURITY.md) | 漏洞请走 GitHub Security Advisory |
 | [发布](RELEASING.md) | 打 tag 与 Central（凭证未接） |
@@ -78,6 +78,7 @@ agent-product        YAML 定义 · 模板 · Prompt 版本 · Webhook
 agent-trace-export   轨迹 S-A-O-R-D · JSONL · DPO
 agent-enterprise     租户 · RAG · 成本账本 · 业务任务
 agent-tavern         角色 · 世界 · 回合（游戏 Profile）
+agent-chat           房间对话：选人 · 上下文 · 流式（不是酒馆）
 agent-coding         工作区 · 补丁 · 命令白名单 · 修复环
 agent-observability  指标 · 五维预算 · 路由 · 评估 · 版本三元组
 agent-spring-boot-starter  可选 Spring Boot 自动配置（唯一依赖 Spring 的模块）
@@ -109,7 +110,7 @@ examples             可运行示例（不发布）
 | 项 | 事实 |
 |----|------|
 | 版本 | `0.1.0-SNAPSHOT`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
-| 测试 | 1155，`./mvnw -B test` 全绿 |
+| 测试 | 1186，`./mvnw -B test` 全绿 |
 | CI | GitHub Actions，JDK 17 + 21 |
 | 许可证 | [Apache-2.0](LICENSE) |
 | 运行时依赖 | Jackson + SLF4J；**无 Spring** |

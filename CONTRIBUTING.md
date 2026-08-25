@@ -29,7 +29,7 @@ Fallback if the wrapper is unavailable:
 mvn -B verify
 ```
 
-The suite includes 1155 tests. `./mvnw verify` and `mvn test` should stay green.
+The suite includes 1186 tests. `./mvnw verify` and `mvn test` should stay green.
 
 ## Run one example
 
@@ -52,7 +52,7 @@ Most examples use mock clients and do not need a real LLM.
 - Java 17; keep new code in `io.github.qwzhang01.agent.*`
 - Do not add a new Spring dependency
 - Follow existing decorator and module boundaries
-- Library modules (do not invent names): `agent-core`, `agent-model`, `agent-plugin`, `agent-sandbox`, `agent-workflow`, `agent-scheduler`, `agent-memory`, `agent-security`, `agent-mcp`, `agent-orchestrator`, `agent-channel`, `agent-product`, `agent-trace-export`, `agent-enterprise`, `agent-tavern`, `agent-coding`, `agent-observability`, plus `examples`
+- Library modules (do not invent names): `agent-core`, `agent-model`, `agent-plugin`, `agent-sandbox`, `agent-workflow`, `agent-scheduler`, `agent-memory`, `agent-security`, `agent-mcp`, `agent-orchestrator`, `agent-channel`, `agent-product`, `agent-trace-export`, `agent-enterprise`, `agent-tavern`, `agent-chat`, `agent-coding`, `agent-observability`, plus `examples`
 
 ## Tests
 

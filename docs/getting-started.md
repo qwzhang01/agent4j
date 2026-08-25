@@ -22,7 +22,7 @@
 git clone https://github.com/qwzhang01/agent4j.git
 cd agent4j
 
-# 全量编译 + 1155 个测试
+# 全量编译 + 1186 个测试
 ./mvnw -B verify
 # 或
 mvn -B verify
@@ -188,4 +188,4 @@ Bean 名：`modelClient`、`agentFactory`。已有 `ModelClient` bean 时 starte
 | 模块怎么拆、依赖谁 | [modules.md](modules.md) |
 | 和 LangChain4j / Spring AI 的差异 | [comparison.md](comparison.md) |
 | v1 明确不做的事 | [limitations.md](limitations.md) |
-| 32 个可运行示例 | [../examples/README.md](../examples/README.md) |
+| 33 个可运行示例 | [../examples/README.md](../examples/README.md) |

@@ -22,6 +22,7 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - Agent-level streaming: `Agent.stream(userInput, listener)` emits `AgentEvent` (content deltas, tool start/finish, Done, Error) while `ReActAgentLoop` consumes `ModelClient.stream`. `run()` is unchanged.
 - Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
 - Example: `StreamingAgentExample`
+- Room conversation engine (`agent-chat`): `ChatRoom` / `ChatEngine`, `SoloSpeaker` + `MentionSpeaker`, `PersonaSource` / `HistorySource` / `ExtraTextSource`, `ChatListener`. Default `maxSteps` 1, no tools, no tavern dependency. Example: `ChatRoomExample`
 
 ### Changed
 

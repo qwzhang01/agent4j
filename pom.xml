@@ -55,6 +55,7 @@
         <module>agent-trace-export</module>
         <module>agent-enterprise</module>
         <module>agent-tavern</module>
+        <module>agent-chat</module>
         <module>agent-coding</module>
         <module>agent-observability</module>
         <module>agent-spring-boot-starter</module>
@@ -153,6 +154,11 @@
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-tavern</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-chat</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
