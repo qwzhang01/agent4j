@@ -32,5 +32,14 @@ class RoomTest {
         assertEquals(2, room.history().size());
         assertEquals("hello", room.history().get(0).content());
         assertTrue(room.member("luna").isPresent());
+        assertTrue(room.identity().isEmpty());
+    }
+
+    @Test
+    void identityHoldsOpaqueScopes() {
+        RoomIdentity identity = RoomIdentity.of("user:1:7", "agent:42:7", "user:1:7", " ", null);
+        Room room = new Room("r", List.of(ChatPersona.of("luna", "hi")), identity);
+        assertEquals(List.of("user:1:7", "agent:42:7"), room.scopes());
+        assertEquals(room.identity().scopes(), room.scopes());
     }
 }

@@ -60,8 +60,9 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 | `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker`（可组合） |
 | `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` |
 | `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回 |
+| `RoomIdentity` | 房间身份：opaque memory-scope 字符串。引擎不解析前缀、不依赖 channel |
 
-默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 才开口），见 `notes/architecture-agent-chat.md` §9。
+默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。`RoomIdentity` 把 user/session/pair 等 scope 字符串挂在 Room 上，`MemorySource` 无显式 list 时继承。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 已开口），见 `notes/architecture-agent-chat.md` §9。Moonlit 1:1 聊天已走 `ChatRoom.stream`（T15）。
 
 模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。
 

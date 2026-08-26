@@ -56,6 +56,7 @@ public final class ChatRoom {
         private ModelClient modelClient;
         private int maxSteps = ChatEngine.DEFAULT_MAX_STEPS;
         private ToolRegistry tools;
+        private RoomIdentity identity = RoomIdentity.empty();
 
         public Builder roomId(String roomId) {
             this.roomId = roomId;
@@ -107,8 +108,26 @@ public final class ChatRoom {
             return this;
         }
 
+        /**
+         * Opaque memory-scope strings for this room.
+         * {@link io.github.qwzhang01.agent.chat.context.MemorySource} with no
+         * explicit list inherits them.
+         */
+        public Builder identity(RoomIdentity identity) {
+            this.identity = identity == null ? RoomIdentity.empty() : identity;
+            return this;
+        }
+
+        public Builder scopes(List<String> scopes) {
+            return identity(RoomIdentity.of(scopes));
+        }
+
+        public Builder scopes(String... scopes) {
+            return identity(RoomIdentity.of(scopes));
+        }
+
         public ChatRoom build() {
-            Room room = new Room(roomId, personas);
+            Room room = new Room(roomId, personas, identity);
             SpeakerPolicy policy = speakerPolicy != null
                     ? speakerPolicy
                     : (personas.size() == 1 ? new SoloSpeaker() : new MentionSpeaker());

@@ -1,6 +1,6 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T12 存储+抽取（2026-08-26）——下一项 T13 ChatRoom 装配
+> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T16 Wave 1 + T17–T22 完成（2026-08-26）——下一项 T24（T23 默认跳过）
 > 模块：`agent-chat` Maven 模块
 > 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
@@ -67,6 +67,7 @@ Room
   roomId
   members: List<ChatPersona>     至少一个
   history: List<RoomMessage>     按时间
+  identity: RoomIdentity         ✅ T22。opaque scope 字符串（user / session / pair / channel）。引擎不解析前缀，不依赖 agent-channel
   不内置 turnCount / location / flags
 ```
 
@@ -93,7 +94,12 @@ ContextSource
   PersonaSource        说话人的 systemPrompt
   HistorySource        房间最近 N 条（默认 20）
   MemorySource         ✅ T05。可选；`MemoryRetriever` + 业务 scope 白名单 + limit。**不默认挂**
+                       T22：无显式 list 时继承 `Room.scopes()`；显式空 list 仍不召回
   ExtraTextSource      业务塞场景氛围 / 世界书 / 关系说明（一段字符串）
+
+PersonaRenderer        ✅ T21。结构化 PersonaSpec → system 文本。引擎不解释 attributes 键、不写占位符词表。
+  ChatPersona.render(spec, renderer)；renderer 为 null 时用 spec 的 systemPrompt 原文。
+  PersonaSource 仍只注入 ChatPersona.systemPrompt，不在 contribute 时再渲染。
 
 ContextAssembler
   按 Source 列表拼 Model 用的消息
@@ -171,7 +177,10 @@ agent-chat/
   pom.xml
   src/main/java/io/github/qwzhang01/agent/chat/
     ChatPersona.java
+    PersonaRenderer.java       # T21
+    PersonaSpec.java
     Room.java
+    RoomIdentity.java          # T22：opaque scopes
     RoomMessage.java
     ChatEngine.java
     ChatRoom.java              # M5 门面
@@ -203,11 +212,11 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 换模型层时：
 
 1. 一个「用户 × 角色」会话 = 一个 `Room`（members 1 人）
-2. `systemPrompt` 仍用现在的 `renderSystemPrompt`（场景 + 记忆 + 关系），经 `ChatPersona` 或 `ExtraTextSource` 注入
+2. 人设走 `PersonaRenderer`（Moonlit 去掉产品占位符）；场景/关系 `ExtraTextSource`；记忆 `MemorySource`
 3. `ChatEngine.stream` 接到现在的 `SseEmitter`
 4. `onReplied` 里走现在的 `afterStreamComplete`
 
-群聊：`MentionSpeaker(new RoundRobinSpeaker())`（@ 优先，否则轮流），或纯 `RoundRobinSpeaker`。不必换引擎。
+群聊：`MentionSpeaker(new RoundRobinSpeaker())`（@ 优先，否则轮流）。T18 房间表 + 按说话人隔离记忆；T19 Controller/Biz 已接 `groupRoomId`。
 
 记忆：**读** — 挂 `MemorySource`（T05 ✅）。**写 / 抽 / 压** — 在 `ChatListener` 里调 `agent-memory`（Extractor / Policy / Compressor），存储用 `MoonlitMemoryStore`（T09 ✅）。**提醒** — Moonlit Job，框架零规则。
 
@@ -223,7 +232,7 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 | 读进 prompt | `MemoryRetriever` + 可选 `MemorySource` | 传入 scope 列表（user / agent / session / channel） |
 | 写什么 | `MemoryExtractor` 接口（keyword / LLM）；可选解析 `dueAt` | 抽什么、prompt、subject 约定（T12 ✅：含稍后追问，不只纪念日） |
 | 何时写 | `ChatListener.onReplied` 挂钩点（引擎回调，不内置逻辑） | Listener 里调 Extractor + Policy |
-| 主动说话 | `dueAt` + `MemoryQuery` 时间窗（**无调度、无含义**） | Job 扫库、规则表、推送文案（T17） |
+| 主动说话 | `dueAt` + `MemoryQuery` 时间窗（**无调度、无含义**） | Job 扫库、规则表、推送文案（T17 ✅） |
 | 压缩 | `ContextCompressor`（agent-memory） | 超窗时在 Listener 或独立路径调用 |
 
 框架**不认识** birthday、外卖、11:30、亲密度公式。这些只作为 Moonlit 的 prompt 示例或 Job 配置存在。
@@ -233,11 +242,12 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 ```text
 ChatRoom.builder()
   .speakerPolicy(new SoloSpeaker())
+  .identity(RoomIdentity.of(scopes))                    // T22：挂在 Room 上
   .source(new PersonaSource())
-  .source(new MemorySource(retriever, scopes, limit))   // 可选
+  .source(new MemorySource(retriever, limit))           // 无显式 list → 继承 Room.scopes()
   .source(new HistorySource())
-  .source(new ExtraTextSource(sceneAndRelation))        // 主角叙事、关系文案在这里
-  .listener(moonlitListener)                            // 落库、抽取、关系
+  .source(new ExtraTextSource(sceneAndRelation))
+  .listener(moonlitListener)
 ```
 
 `ContextAssembler.defaults()` 与 `ChatRoom` **不**默认挂 `MemorySource`；一旦 `.source(...)` 自定义列表，需自行带上 Persona + History。
@@ -257,8 +267,18 @@ ChatRoom.builder()
 | T10 MemoryService 变薄 | ✅ 读 Retriever、写 Store；用户编辑抬 importance |
 | T11 取消关系删记忆 | ✅ `cancel` 调 `deleteAllByRelation` |
 | T12 抽取策略 | ✅ `MoonlitMemoryExtractPolicy` + `LlmMemoryExtractor`（Spring AI 适配）；prompt 含日常追问 / `dueAt`；不覆盖用户编辑 |
+| T13 ChatRoom 装配 | ✅ `MoonlitChatRoomFactory` 1:1 `SoloSpeaker` + Persona/Memory/Extra/History；`agent-chat` 已进 pom |
+| T14 ChatListener | ✅ `MoonlitChatListener`：落库 / parser / 关系 / 抽取 / 超窗压缩。`onError`/`onNoSpeaker` 不写助手句 |
+| T15 ChatRoom.stream | ✅ `MoonlitChatBizServiceImpl` 开房 + SSE 消费 `AgentEvent`；人设/场景关系/记忆分源；本路径不再走 `AiChatService` |
+| T16 SUMMARY 回写 | ✅ 超窗压缩写入 Store SUMMARY + `moonlit_chat_sessions.summary` |
+| T17 主动说话 Job | ✅ `MoonlitProactiveScanJob` + `due-memory` / `quiet-days` 两条规则；Factory `say` 只落助手句；推送打日志 |
+| T18 群房间 + scope | ✅ 房间/成员表；说话人只召回 user + channel + 自己的 pair；ExtraText 主角叙事在 Moonlit |
+| T19 群聊选人 | ✅ `MentionSpeaker(RoundRobin)`；`POST /send` 认 `groupRoomId`；`/groups` CRUD |
+| T20 Flutter 入口 | ✅ 记忆 VO `subject`；会话未读=主动消息入口；聊天 Tab 群列表/建房/群气泡 `personaId`。无推送 SDK |
+| T21 PersonaRenderer | ✅ 接口 + `PersonaSpec`；无渲染器时 `ChatPersona.systemPrompt` 原文；Moonlit 去掉产品占位符，不内联场景/记忆 |
+| T22 RoomIdentity | ✅ Room / `ChatRoom.Builder` 带 opaque scopes；`MemorySource` 可继承；不依赖 channel。群房 identity 只有 user+channel，pair 仍按说话人重算 |
 
-Moonlit P0 安全审核仍优先于 T13+ 聊天换引擎（控制塔约束）。下一项 **T13**（`MoonlitChatRoomFactory`）。聊天仍未调用 Extractor（T14 `onReplied`）。
+Moonlit P0 安全审核仍优先于新聊天 UX 上线（控制塔约束）。下一项 **T24**（`LoreSource`；T23 默认跳过）。
 
 ---
 

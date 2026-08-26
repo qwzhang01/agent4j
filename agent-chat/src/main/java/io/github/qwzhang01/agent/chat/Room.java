@@ -10,14 +10,20 @@ import java.util.Optional;
 /**
  * One conversation room. Members are the AI personas; history is the
  * shared transcript. No turn counter, location, or world flags.
+ * Optional {@link RoomIdentity} holds opaque memory-scope strings.
  */
 public final class Room {
 
     private final String roomId;
+    private final RoomIdentity identity;
     private final Map<String, ChatPersona> members = new LinkedHashMap<>();
     private final List<RoomMessage> history = new ArrayList<>();
 
     public Room(String roomId, List<ChatPersona> members) {
+        this(roomId, members, RoomIdentity.empty());
+    }
+
+    public Room(String roomId, List<ChatPersona> members, RoomIdentity identity) {
         if (roomId == null || roomId.isBlank()) {
             throw new IllegalArgumentException("roomId must not be null or blank");
         }
@@ -25,6 +31,7 @@ public final class Room {
             throw new IllegalArgumentException("a room needs at least one persona");
         }
         this.roomId = roomId;
+        this.identity = identity == null ? RoomIdentity.empty() : identity;
         for (ChatPersona persona : members) {
             Objects.requireNonNull(persona, "persona");
             if (this.members.put(persona.personaId(), persona) != null) {
@@ -35,6 +42,17 @@ public final class Room {
 
     public String roomId() {
         return roomId;
+    }
+
+    public RoomIdentity identity() {
+        return identity;
+    }
+
+    /**
+     * Opaque scopes from {@link #identity()}; empty when the host set none.
+     */
+    public List<String> scopes() {
+        return identity.scopes();
     }
 
     public List<ChatPersona> members() {

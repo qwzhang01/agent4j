@@ -1,7 +1,7 @@
 # ToDo：AI 角色引擎（agent-chat + memory × Moonlit）
 
 > 状态：📋 逐项推进（2026-08-26）  
-> 下一项：**T13**  
+> 下一项：**T24**（T22 `RoomIdentity` 已接线；T23 默认跳过）  
 > 组织蓝图：[`architecture-character-engine.md`](architecture-character-engine.md)  
 > 原则：**框架 = 角色怎么活（通用挂钩）；产品 = 怎么卖、抽什么、何时提醒。不写 birthday / 外卖进框架。不拆 20 个 Maven 模块。**
 
@@ -159,28 +159,32 @@ channel:{groupRoomId}
 
 ### T13 · 依赖与装配
 
-- [ ] `server/pom.xml` 加 `agent-chat`、`agent-memory`
-- [ ] `MoonlitChatRoomFactory`：1:1 默认 `SoloSpeaker` + Persona/History/Extra/MemorySource
+- [x] `server/pom.xml` 加 `agent-chat`、`agent-memory`
+- [x] `MoonlitChatRoomFactory`：1:1 默认 `SoloSpeaker` + Persona/History/Extra/MemorySource
 - **类：** 新建 Factory；改 `pom.xml` / `application.yml`
+- **说明：** 聊天通路仍走 `AiChatService`。T15 再换成 `ChatRoom.stream`。
 
 ### T14 · `MoonlitChatListener`
 
-- [ ] `onReplied`：落库、parser、关系/亲密度、**调用业务 Extractor**、超窗则 `ContextCompressor`
-- [ ] `onError` / `onNoSpeaker`：不写成功助手句 / 群聊提示
+- [x] `onReplied`：落库、parser、关系/亲密度、**调用业务 Extractor**、超窗则 `ContextCompressor`
+- [x] `onError` / `onNoSpeaker`：不写成功助手句 / 群聊提示
 - **类：** 新建 `MoonlitChatListener`
+- **说明：** 聊天通路仍走 `AiChatService`。T15 把 Listener 挂上 `ChatRoom.stream`。压缩产出回写是 T16。
 
 ### T15 · `MoonlitChatBizServiceImpl` 换 `ChatRoom.stream`
 
-- [ ] 保留：过滤、配额、getOrCreate 会话
-- [ ] 人设/场景/关系 → `ChatPersona` + `ExtraTextSource`；记忆 → `MemorySource`
-- [ ] SSE：消费 `AgentEvent`；停用本路径的 `AiChatService`
-- [ ] **不**调用 `AiMemoryService`
+- [x] 保留：过滤、配额、getOrCreate 会话
+- [x] 人设/场景/关系 → `ChatPersona` + `ExtraTextSource`；记忆 → `MemorySource`
+- [x] SSE：消费 `AgentEvent`；停用本路径的 `AiChatService`
+- [x] **不**调用 `AiMemoryService`
 - **类：** 大改 `MoonlitChatBizServiceImpl`；改 `MoonlitCharacterServiceImpl.renderSystemPrompt`；小改 `SseUtil`
+- **说明：** regenerate 只落新助手句，不推进关系、不抽取。压缩回写仍是 T16。
 
 ### T16 · SUMMARY 回写会话
 
-- [ ] Compressor 产出写入 Store + `moonlit_chat_sessions.summary`
+- [x] Compressor 产出写入 Store + `moonlit_chat_sessions.summary`
 - **类：** 改 `MoonlitChatSessionServiceImpl`、Listener
+- **说明：** 超窗才写；未超窗 / regenerate 不写。会话列覆盖最新快照，Store 追加 SUMMARY 行。
 
 ---
 
@@ -188,12 +192,13 @@ channel:{groupRoomId}
 
 ### T17 · 通用「到期扫描」Job（规则在 Moonlit）
 
-- [ ] `MoonlitProactiveScanJob`：定时跑；**查的条件、过滤、文案全在 Moonlit**
-- [ ] 用 `MemoryStore.query(MemoryQuery)`（type/subject/时间窗由本 Job 拼）
-- [ ] 生日、11:30 外卖、三日未登录 = **本 Job 或配置表里的多条规则**，可增删，不改框架
-- [ ] `MoonlitProactiveChatService`：选角色 → Factory → 生成一句 → 落库 + 推送
+- [x] `MoonlitProactiveScanJob`：定时跑；**查的条件、过滤、文案全在 Moonlit**
+- [x] 用 `MemoryStore.query(MemoryQuery)`（type/subject/时间窗由本 Job 拼）
+- [x] 生日、11:30 外卖、三日未登录 = **本 Job 或配置表里的多条规则**，可增删，不改框架
+- [x] `MoonlitProactiveChatService`：选角色 → Factory → 生成一句 → 落库 + 推送
 - **模块：** Moonlit only  
 - **类：** 新建 Job + Service；推送用现有或新建通知适配
+- **说明：** 两条规则 `due-memory`（扫 `dueAt`，不认 subject 词表）+ `quiet-days`（三日无消息且用户也静默）。开口不挂 Listener，只落助手句；`dueAt` 成功后清空。推送目前打日志。下一项 T18。
 
 ---
 
@@ -201,16 +206,18 @@ channel:{groupRoomId}
 
 ### T18 · 群房间模型 + scope 政策
 
-- [ ] 群房间 / 成员表（若无）
-- [ ] `MoonlitGroupScopePolicy`：说话人召回 `user` + `channel` + **自己的** `agent:`；默认不读别人私密 scope
-- [ ] ExtraText：主角叙事（框架不写）
+- [x] 群房间 / 成员表（若无）
+- [x] `MoonlitGroupScopePolicy`：说话人召回 `user` + `channel` + **自己的** `agent:`；默认不读别人私密 scope
+- [x] ExtraText：主角叙事（框架不写）
 - **类：** 新建实体/服务/Policy；改 Factory
+- **说明：** `moonlit_group_rooms` / `moonlit_group_members`；Factory `openGroup` 按说话人重算 scope（不把全员 pair 塞进一个 MemorySource）。选人 / Controller 是 T19。
 
 ### T19 · 群聊选人接线
 
-- [ ] Factory：`MentionSpeaker` ± `RoundRobinSpeaker`（T06）
-- [ ] Controller/Biz 支持群 `roomId`
+- [x] Factory：`MentionSpeaker` ± `RoundRobinSpeaker`（T06）
+- [x] Controller/Biz 支持群 `roomId`
 - **类：** 改 Factory、ChatBiz、前端会话（若已有群 UI）
+- **说明：** `@` 优先否则轮流。`POST /send` 填 `groupRoomId`；CRUD ` /groups`。无群 UI（广场 Tab 不是群聊），Flutter 入口留给 T20。
 
 ---
 
@@ -218,9 +225,10 @@ channel:{groupRoomId}
 
 ### T20 · Flutter 记忆 / 主动消息 / 群
 
-- [ ] `memory.dart` / `memory_repository.dart`（VO 增 subject 才改）
-- [ ] 主动消息、群聊入口
+- [x] `memory.dart` / `memory_repository.dart`（VO 增 subject 才改）
+- [x] 主动消息、群聊入口
 - **模块：** `c-end/moonlit`
+- **说明：** `MoonlitMemoryVO` 补 `subject`/`dueAt`。会话列表未读加粗 = 主动消息入口（无推送 SDK）。聊天 Tab 混排群房间；`POST /send` 填 `groupRoomId`；气泡读 `personaId`/`speakerId`。广场 Tab 仍不是群聊。
 
 ---
 
@@ -230,18 +238,19 @@ channel:{groupRoomId}
 
 ### T21 · `PersonaRenderer` 挂钩（① 资产）
 
-- [ ] 接口：结构化输入 → system 文本；引擎不写死占位符词表
-- [ ] Moonlit 把现有 `renderSystemPrompt` 改成实现
-- [ ] `ChatPersona.systemPrompt` 仍可直接用（无渲染器时）
+- [x] 接口：结构化输入 → system 文本；引擎不写死占位符词表
+- [x] Moonlit 把现有 `renderSystemPrompt` 改成实现
+- [x] `ChatPersona.systemPrompt` 仍可直接用（无渲染器时）
 - **模块：** `agent-chat` + Moonlit  
-- **类：** 新建 `PersonaRenderer`；改 `MoonlitCharacterServiceImpl`
+- **类：** 新建 `PersonaRenderer` / `PersonaSpec`；`MoonlitPersonaRenderer`；改 `MoonlitCharacterServiceImpl`
 
 ### T22 · Room / Factory 带身份 scope（②）
 
-- [ ] `ChatRoom` 或 Factory 能带上 user / session / pair 的 scope 列表，交给 `MemorySource`
-- [ ] 不引入 channel 模块依赖；字符串即可
+- [x] `ChatRoom` 或 Factory 能带上 user / session / pair 的 scope 列表，交给 `MemorySource`
+- [x] 不引入 channel 模块依赖；字符串即可
 - **模块：** `agent-chat`  
-- **类：** 改 `ChatRoom.Builder` 或新建小 record `RoomIdentity`
+- **类：** 新建 `RoomIdentity`；改 `Room` / `ChatRoom.Builder` / `MemorySource`；Moonlit Factory 挂上
+- **说明：** 显式 scope list 仍覆盖房间身份；空 list = 不召回。群房 identity 只挂 user+channel，pair 仍按说话人每轮重算。
 
 ### T23 · （可选）`agent-character` 门面模块
 

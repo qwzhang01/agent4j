@@ -66,11 +66,11 @@ Runtime  agent-core / model / security / mcp / observability
 
 | 缺口 | 层 | 为何缺 | 组织方式 |
 |------|----|--------|----------|
-| **记忆写回 + 注入未接通** | ③④ | chat 已有可选 `MemorySource`；Moonlit 尚未挂上、几乎不写回 | ToDo T08–T16 |
+| **记忆写回 + 注入未接通** | ③④ | Factory + Listener + `ChatRoom.stream` + SUMMARY 回写已接（T13–T16 ✅） | Wave 1 完成 |
 | **生产持久化** | ③ | 只有 `InMemoryMemoryStore` | 表 + Store + 薄 Service + 取消关系删记忆（T08–T11 ✅） |
 | **LLM 抽取（指令业务给）** | ③ | 框架抽取器已有；Moonlit prompt/Policy 已接（T12 ✅）。聊天写回仍待 T14 | T01–T02 + T12 ✅；T14 接线 |
-| **人设渲染接口** | ① | `systemPrompt` 整段塞进 Persona；Moonlit `renderSystemPrompt` 仍是产品私货 | 引擎：`PersonaRenderer` 挂钩；实现在 Moonlit |
-| **Room 上的身份键** | ② | Room 只有 roomId + members，没有 user/session scope 约定 | 给 Room/ChatRoom 可选 `scopes` 或业务 Factory 传入 MemorySource |
+| **人设渲染接口** | ① | `PersonaRenderer` + `PersonaSpec`（T21 ✅）；Moonlit 去掉产品占位符，场景/记忆仍走 ExtraText / MemorySource | 引擎挂钩；实现在产品 |
+| **Room 上的身份键** | ② | `RoomIdentity` + `ChatRoom.Builder.scopes`（T22 ✅）；字符串，不依赖 channel | MemorySource 可继承；群聊 pair 仍按说话人 |
 | **一致性挂钩** | ② | 无人设锚点校验、无 OOC | 接口 `ConsistencyGuard`，默认 no-op；实现可后做或产品做 |
 | **Worldbook** | ① | 只有 `ExtraTextSource` 整段塞 | 通用 `LoreSource`（按关键词/触发器抽条目）；**格式/词库在产品** |
 | **解耦的关系槽** | ⑤ | 关系在 Moonlit 业务或 tavern 游戏里 | 引擎只要 `RelationSnapshot` → Extra/System；公式在产品 |
@@ -131,7 +131,7 @@ Wave 4  完整引擎：lore / 关系槽 / 一致性 / 角色评测 = T24–T27
 可选    dueAt、导演、向量、卡导入     = T04、T28+
 ```
 
-一次仍只做一项。下一项代码仍是 **T01**。
+一次仍只做一项。下一项：**T24**（`LoreSource`；T23 默认跳过）。
 
 ---
 

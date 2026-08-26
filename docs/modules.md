@@ -24,7 +24,7 @@
 | `agent-trace-export` | 轨迹 S-A-O-R-D、JSONL、DPO 偏好 | `agent-observability`、轨迹示例 |
 | `agent-enterprise` | 租户 / RAG / 成本账本 / 业务任务 | 企业助手示例 |
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
-| `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。可选 `MemorySource`；群聊 `RoundRobinSpeaker`。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
+| `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。可选 `MemorySource`；群聊 `RoundRobinSpeaker`；`PersonaRenderer` 挂钩。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
 | `agent-observability` | 指标、五维预算、路由、评估、版本三元组 | 可观测示例 |
 | `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
@@ -38,7 +38,7 @@
 
 | 模块 | 职责 |
 |------|------|
-| `agent-chat` | `ChatRoom` / `ChatEngine`：选人、拼上下文、流式、`ChatListener` |
+| `agent-chat` | `ChatRoom` / `ChatEngine`：选人、拼上下文、流式、`ChatListener`；`PersonaRenderer` |
 | `agent-memory` | Store / Extractor / Retriever；可选 `MemorySource` 在 chat 侧挂载 |
 
-边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（下一项 T13 ChatRoom 装配）。
+边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（Wave 1 + T17–T22 完成；下一项 T24，T23 默认跳过）。
