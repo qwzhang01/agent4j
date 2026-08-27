@@ -1,5 +1,9 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.PersonaSpec;
+import io.github.qwzhang01.agent.chat.persona.PersonaRenderer;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

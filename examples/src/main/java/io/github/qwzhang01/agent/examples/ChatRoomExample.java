@@ -1,6 +1,6 @@
 package io.github.qwzhang01.agent.examples;
 
-import io.github.qwzhang01.agent.chat.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.ChatRoom;
 import io.github.qwzhang01.agent.chat.context.ExtraTextSource;
 import io.github.qwzhang01.agent.chat.context.HistorySource;

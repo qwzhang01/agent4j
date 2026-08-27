@@ -1,10 +1,10 @@
 package io.github.qwzhang01.agent.chat.context;
 
-import io.github.qwzhang01.agent.chat.ChatPersona;
 import io.github.qwzhang01.agent.chat.ChatRoom;
 import io.github.qwzhang01.agent.chat.RecordingModelClient;
-import io.github.qwzhang01.agent.chat.Room;
-import io.github.qwzhang01.agent.chat.RoomIdentity;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.model.RoomIdentity;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;

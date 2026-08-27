@@ -4,6 +4,8 @@ import io.github.qwzhang01.agent.chat.context.ContextAssembler;
 import io.github.qwzhang01.agent.chat.context.ExtraTextSource;
 import io.github.qwzhang01.agent.chat.context.HistorySource;
 import io.github.qwzhang01.agent.chat.context.PersonaSource;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.chat.speaker.MentionSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.RoundRobinSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SoloSpeaker;

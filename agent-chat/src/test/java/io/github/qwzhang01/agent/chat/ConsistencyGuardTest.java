@@ -1,5 +1,9 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
+import io.github.qwzhang01.agent.chat.guard.ConsistencyVerdict;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.chat.speaker.MentionSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SoloSpeaker;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;

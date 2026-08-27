@@ -1,4 +1,7 @@
-package io.github.qwzhang01.agent.chat;
+package io.github.qwzhang01.agent.chat.guard;
+
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
 
 /**
  * Optional drift check after a successful reply.

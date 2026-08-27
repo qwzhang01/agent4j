@@ -1,4 +1,6 @@
-package io.github.qwzhang01.agent.chat;
+package io.github.qwzhang01.agent.chat.persona;
+
+import io.github.qwzhang01.agent.chat.model.PersonaSpec;
 
 /**
  * Turns structured persona attributes into system text.
@@ -10,7 +12,7 @@ package io.github.qwzhang01.agent.chat;
 public interface PersonaRenderer {
 
     /**
-     * @return system text; {@code null} is treated as blank by {@link ChatPersona#render}
+     * @return system text; {@code null} is treated as blank by {@link io.github.qwzhang01.agent.chat.model.ChatPersona#render}
      */
     String render(PersonaSpec spec);
 }

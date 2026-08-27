@@ -1,10 +1,10 @@
 package io.github.qwzhang01.agent.chat.speaker;
 
 import io.github.qwzhang01.agent.chat.ChatEngine;
-import io.github.qwzhang01.agent.chat.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.ChatRoom;
 import io.github.qwzhang01.agent.chat.RecordingModelClient;
-import io.github.qwzhang01.agent.chat.Room;
+import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;

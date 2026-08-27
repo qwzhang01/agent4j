@@ -1,5 +1,9 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
+
 /**
  * Business hook after a room turn. The engine never writes memories or
  * changes relationship state; the host does that here.

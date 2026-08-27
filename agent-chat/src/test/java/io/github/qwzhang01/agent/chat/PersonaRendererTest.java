@@ -1,5 +1,10 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.PersonaSpec;
+import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.persona.PersonaRenderer;
+
 import io.github.qwzhang01.agent.chat.context.PersonaSource;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import org.junit.jupiter.api.Test;

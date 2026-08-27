@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.core.agent.AgentEvent;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import org.junit.jupiter.api.Test;

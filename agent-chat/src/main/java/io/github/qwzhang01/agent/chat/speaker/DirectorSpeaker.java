@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.chat.speaker;
 
-import io.github.qwzhang01.agent.chat.ChatPersona;
-import io.github.qwzhang01.agent.chat.Room;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ModelRequest;

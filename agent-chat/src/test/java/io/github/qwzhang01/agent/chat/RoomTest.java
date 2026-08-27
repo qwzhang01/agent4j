@@ -1,5 +1,9 @@
 package io.github.qwzhang01.agent.chat;
 
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.model.RoomIdentity;
+import io.github.qwzhang01.agent.chat.model.RoomMessage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

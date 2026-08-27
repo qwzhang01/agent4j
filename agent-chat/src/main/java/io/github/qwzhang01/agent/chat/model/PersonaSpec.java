@@ -1,10 +1,10 @@
-package io.github.qwzhang01.agent.chat;
+package io.github.qwzhang01.agent.chat.model;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Structured persona input for {@link PersonaRenderer}.
+ * Structured persona input for {@link io.github.qwzhang01.agent.chat.persona.PersonaRenderer}.
  * <p>
  * Attribute keys are free-form. When no renderer is supplied,
  * {@link ChatPersona#render} reads the optional {@code systemPrompt} attribute

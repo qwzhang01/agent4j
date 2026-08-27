@@ -1,10 +1,11 @@
 package io.github.qwzhang01.agent.chat.context;
 
-import io.github.qwzhang01.agent.chat.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.ChatRoom;
 import io.github.qwzhang01.agent.chat.RecordingModelClient;
-import io.github.qwzhang01.agent.chat.RelationSnapshot;
-import io.github.qwzhang01.agent.chat.Room;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.RelationSnapshot;
+import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import org.junit.jupiter.api.Test;

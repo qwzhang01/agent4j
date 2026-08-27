@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.chat.speaker;
 
-import io.github.qwzhang01.agent.chat.ChatPersona;
-import io.github.qwzhang01.agent.chat.Room;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
 
 import java.util.Optional;
 

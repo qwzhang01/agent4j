@@ -1,4 +1,4 @@
-package io.github.qwzhang01.agent.chat;
+package io.github.qwzhang01.agent.chat.guard;
 
 /**
  * Result of a {@link ConsistencyGuard} check.

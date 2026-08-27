@@ -2,6 +2,10 @@ package io.github.qwzhang01.agent.chat;
 
 import io.github.qwzhang01.agent.chat.context.ContextAssembler;
 import io.github.qwzhang01.agent.chat.context.ContextSource;
+import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.model.RoomIdentity;
 import io.github.qwzhang01.agent.chat.speaker.MentionSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SoloSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SpeakerPolicy;

@@ -1,4 +1,4 @@
-package io.github.qwzhang01.agent.chat;
+package io.github.qwzhang01.agent.chat.model;
 
 import io.github.qwzhang01.agent.core.model.ChatRole;
 

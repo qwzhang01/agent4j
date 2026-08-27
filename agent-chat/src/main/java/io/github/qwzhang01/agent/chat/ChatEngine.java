@@ -1,6 +1,11 @@
 package io.github.qwzhang01.agent.chat;
 
 import io.github.qwzhang01.agent.chat.context.ContextAssembler;
+import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
+import io.github.qwzhang01.agent.chat.guard.ConsistencyVerdict;
+import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.model.RoomMessage;
 import io.github.qwzhang01.agent.chat.speaker.SpeakerPolicy;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentEvent;
