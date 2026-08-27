@@ -57,7 +57,7 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 | 概念 | 说明 |
 |------|------|
 | `ChatRoom` / `ChatEngine` | 一次 `say(userLine)`：选人 → 组 messages → `ModelClient.stream` → 通知 Listener |
-| `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker`（可组合） |
+| `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker` / `DirectorSpeaker`（可组合） |
 | `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` / `LoreSource` / `RelationSource` |
 | `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回。可选 `onConsistencyWarning` |
 | `ConsistencyGuard` | Done 后可选防漂：人设锚点 + 回复 → OK/告警。默认 no-op，不改写历史 |

@@ -1,7 +1,7 @@
 # ToDo：AI 角色引擎（agent-chat + memory × Moonlit）
 
-> 状态：📋 Wave 4 收口（2026-08-27）  
-> 下一项：**T28**（LLM 导演选人，**默认后置**；T23 默认跳过）  
+> 状态：📋 Wave 4 + T28 完成（2026-08-27）  
+> 下一项：**可选 T04**（`dueAt` 已做；其余按需）；**T23 默认跳过**  
 > 组织蓝图：[`architecture-character-engine.md`](architecture-character-engine.md)  
 > 原则：**框架 = 角色怎么活（通用挂钩）；产品 = 怎么卖、抽什么、何时提醒。不写 birthday / 外卖进框架。不拆 20 个 Maven 模块。**
 
@@ -296,9 +296,10 @@ channel:{groupRoomId}
 
 ### T28 · LLM 导演选人（④ 后置）
 
-- [ ] `SpeakerPolicy` 实现：模型选谁说话；prompt 由业务给
-- [ ] 一轮一人仍是默认
-- **默认后置**
+- [x] `SpeakerPolicy` 实现：模型选谁说话；prompt 由业务给
+- [x] 一轮一人仍是默认
+- **类：** `DirectorSpeaker` + `DirectorChoiceParser` + `DirectorSpeakerTest`（10 绿）
+- **说明：** 独立 `ModelClient` 做导演；可与 `MentionSpeaker` 组合（@ 优先）。Moonlit 未接线。
 
 ---
 

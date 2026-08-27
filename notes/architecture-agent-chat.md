@@ -1,6 +1,6 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T16 Wave 1 + T17–T27 完成（2026-08-27）——T28 默认后置（T23 默认跳过）
+> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T16 Wave 1 + T17–T28 完成（2026-08-27）（T23 默认跳过）
 > 模块：`agent-chat` Maven 模块
 > 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
@@ -82,10 +82,11 @@ SpeakerPolicy
   pick(room, userText) → Optional<ChatPersona>
   空 = 本轮无人说（群聊里没点到人，由业务决定是否提示）
 
-内置四种，业务也可自己写：
+内置五种，业务也可自己写：
   SoloSpeaker          屋里只有一个 AI → 就是他；多于一个则拒绝（防误用）
-  MentionSpeaker       第一个 @id 命中则他；可叠加 fallback（如 Solo / RoundRobin）
+  MentionSpeaker       第一个 @id 命中则他；可叠加 fallback（如 Solo / RoundRobin / Director）
   RoundRobinSpeaker    群聊按成员顺序轮流（T06 ✅）
+  DirectorSpeaker      ✅ T28。业务传入导演 prompt + 独立 ModelClient；群聊模型选人；可与 Mention 组合
 
 ContextSource
   contribute(room, speaker, userText) → 若干 ChatMessage 或一段文本
@@ -201,6 +202,8 @@ agent-chat/
       SoloSpeaker.java
       MentionSpeaker.java
       RoundRobinSpeaker.java   # T06：群聊轮流
+      DirectorSpeaker.java     # T28：LLM 导演选人
+      DirectorChoiceParser.java
     context/
       ContextSource.java
       ContextAssembler.java
@@ -298,8 +301,9 @@ ChatRoom.builder()
 | T25 RelationSnapshot | ✅ `RelationSource` 注入 stage/槽/文案；不算分、不限幅、不依赖 tavern。Moonlit 状态机仍在产品，可继续 ExtraText |
 | T26 ConsistencyGuard | ✅ Done 后可选校验；默认 no-op；告警不改写历史。实现留给产品，不内置人设 |
 | T27 角色向 eval | ✅ `CharacterEvalTest`：跨轮召回 subject、群聊不串 pair scope、人设原文。Mock，无 LLM-as-judge |
+| T28 导演选人 | ✅ `DirectorSpeaker`：业务 prompt + 独立 ModelClient；默认解析 member id；可与 Mention 组合。Moonlit 未接线 |
 
-Moonlit P0 安全审核仍优先于新聊天 UX 上线（控制塔约束）。Wave 4 收口。**T28** 默认后置。
+Moonlit P0 安全审核仍优先于新聊天 UX 上线（控制塔约束）。角色引擎挂钩清单（Wave 1–4 + T28）已收口。
 
 ---
 

@@ -41,4 +41,4 @@
 | `agent-chat` | `ChatRoom` / `ChatEngine`：选人、拼上下文、流式、`ChatListener`；`PersonaRenderer`；可选 `ConsistencyGuard` |
 | `agent-memory` | Store / Extractor / Retriever；可选 `MemorySource` 在 chat 侧挂载 |
 
-边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。`LoreSource` 只负责本轮关键词/正则命中后注入，词库在产品。`RelationSource` 只注入快照，不算分。`ConsistencyGuard` 默认 no-op，告警不改写。角色向 eval：`CharacterEvalTest`。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（Wave 1 + T17–T27 完成；T28 默认后置，T23 默认跳过）。
+边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。`LoreSource` 只负责本轮关键词/正则命中后注入，词库在产品。`RelationSource` 只注入快照，不算分。`ConsistencyGuard` 默认 no-op，告警不改写。`DirectorSpeaker` 用独立 ModelClient + 业务 prompt 选人，可与 Mention 组合。角色向 eval：`CharacterEvalTest`。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（Wave 1–4 + T28 完成；T23 默认跳过）。

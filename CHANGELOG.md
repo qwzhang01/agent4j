@@ -23,6 +23,7 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
 - Example: `StreamingAgentExample`
 - Room conversation engine (`agent-chat`): `ChatRoom` / `ChatEngine`, `SoloSpeaker` + `MentionSpeaker`, `PersonaSource` / `HistorySource` / `ExtraTextSource` / optional `MemorySource`, `ChatListener`. Default `maxSteps` 1, no tools, no tavern dependency. Example: `ChatRoomExample`
+- Optional `DirectorSpeaker` for group rooms: host-supplied director instructions plus a separate `ModelClient` pick one answering persona per turn. Default `DirectorChoiceParser.memberId()`; composable as `MentionSpeaker` fallback. Not wired in Moonlit yet.
 - Character-engine eval scripts (`CharacterEvalTest`): cross-turn subject recall, group pair-scope isolation, persona text unchanged. MockModelClient only; no LLM-as-judge.
 - Optional `ConsistencyGuard` on `ChatEngine` / `ChatRoom`: after Done, host checks persona + reply and may warn. Default no-op. Warnings do not rewrite history. Implementations (rules or LLM) stay with the host.
 - Optional `RelationSource` for `ChatRoom`: host supplies a `RelationSnapshot` (free-form stage + slots + optional note). The engine injects and does not score. A `Supplier` is re-read every turn. Not mounted by `ContextAssembler.defaults()`. Pre-rendered blobs may still use `ExtraTextSource`.
