@@ -57,6 +57,7 @@ public final class ChatRoom {
         private int maxSteps = ChatEngine.DEFAULT_MAX_STEPS;
         private ToolRegistry tools;
         private RoomIdentity identity = RoomIdentity.empty();
+        private ConsistencyGuard consistencyGuard = ConsistencyGuard.noop();
 
         public Builder roomId(String roomId) {
             this.roomId = roomId;
@@ -126,6 +127,16 @@ public final class ChatRoom {
             return identity(RoomIdentity.of(scopes));
         }
 
+        /**
+         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop()}.
+         */
+        public Builder consistencyGuard(ConsistencyGuard consistencyGuard) {
+            this.consistencyGuard = consistencyGuard == null
+                    ? ConsistencyGuard.noop()
+                    : consistencyGuard;
+            return this;
+        }
+
         public ChatRoom build() {
             Room room = new Room(roomId, personas, identity);
             SpeakerPolicy policy = speakerPolicy != null
@@ -144,6 +155,7 @@ public final class ChatRoom {
                     .maxSteps(maxSteps)
                     .tools(tools);
             listeners.forEach(engine::listener);
+            engine.consistencyGuard(consistencyGuard);
             return new ChatRoom(engine.build());
         }
     }

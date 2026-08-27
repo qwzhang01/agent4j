@@ -24,4 +24,12 @@ public interface ChatListener {
      */
     default void onError(Room room, ChatPersona speaker, String userText, String message, Throwable cause) {
     }
+
+    /**
+     * Optional {@link ConsistencyGuard} flagged this turn. History already
+     * has the original reply; the engine does not rewrite it.
+     */
+    default void onConsistencyWarning(Room room, ChatPersona speaker, String userText,
+                                      String reply, String warning) {
+    }
 }

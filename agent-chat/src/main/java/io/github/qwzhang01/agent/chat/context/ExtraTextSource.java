@@ -7,8 +7,11 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import java.util.List;
 
 /**
- * Host-supplied atmosphere / lore / relationship text. Injected as a
- * system message after whatever sources were registered before it.
+ * Host-supplied atmosphere / narrative text. Injected as a system
+ * message after whatever sources were registered before it.
+ * <p>
+ * Structured relationship views use {@link RelationSource}. Worldbook
+ * entries use {@link LoreSource}.
  */
 public final class ExtraTextSource implements ContextSource {
 

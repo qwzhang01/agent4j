@@ -71,11 +71,11 @@ Runtime  agent-core / model / security / mcp / observability
 | **LLM 抽取（指令业务给）** | ③ | 框架抽取器已有；Moonlit prompt/Policy 已接（T12 ✅）。聊天写回仍待 T14 | T01–T02 + T12 ✅；T14 接线 |
 | **人设渲染接口** | ① | `PersonaRenderer` + `PersonaSpec`（T21 ✅）；Moonlit 去掉产品占位符，场景/记忆仍走 ExtraText / MemorySource | 引擎挂钩；实现在产品 |
 | **Room 上的身份键** | ② | `RoomIdentity` + `ChatRoom.Builder.scopes`（T22 ✅）；字符串，不依赖 channel | MemorySource 可继承；群聊 pair 仍按说话人 |
-| **一致性挂钩** | ② | 无人设锚点校验、无 OOC | 接口 `ConsistencyGuard`，默认 no-op；实现可后做或产品做 |
-| **Worldbook** | ① | 只有 `ExtraTextSource` 整段塞 | 通用 `LoreSource`（按关键词/触发器抽条目）；**格式/词库在产品** |
-| **解耦的关系槽** | ⑤ | 关系在 Moonlit 业务或 tavern 游戏里 | 引擎只要 `RelationSnapshot` → Extra/System；公式在产品 |
+| **一致性挂钩** | ② | `ConsistencyGuard`（T26 ✅）默认 no-op；告警不改写 | 规则或 LLM 实现在产品，不内置 Moonlit 人设 |
+| **Worldbook** | ① | `LoreSource`（T24 ✅）：关键词/正则命中本轮 userText 才注入；**格式/词库在产品** | 引擎挂钩；SillyTavern 卡导入仍是产品/小工具 |
+| **解耦的关系槽** | ⑤ | `RelationSnapshot` + `RelationSource`（T25 ✅）；只注入不算分 | 公式/状态机仍在产品；预渲染文案可继续 ExtraText |
 | **群聊轮流 / 导演** | ④ | 只有 Solo / Mention | T06；LLM 导演更后 |
-| **角色评测集** | ⑦ | Eval 不测「还记不记得 / 会不会串戏」 | 框架给 runner；用例在 `examples` 或 Moonlit 测 |
+| **角色评测集** | ⑦ | `CharacterEvalTest`（T27 ✅）：跨轮 subject、群聊不串 scope、人设不改写 | Mock 查请求；不绑 LLM-as-judge |
 | **按角色/场景选模型** | ⑥ | 有 Router，无角色策略 | 产品配；引擎不立法 |
 | **语义检索** | ③ | 无向量 | 后置；先 keyword + importance |
 | **SillyTavern 卡导入** | ① | 无 | 产品或独立小工具，不进引擎核心 |
@@ -131,7 +131,7 @@ Wave 4  完整引擎：lore / 关系槽 / 一致性 / 角色评测 = T24–T27
 可选    dueAt、导演、向量、卡导入     = T04、T28+
 ```
 
-一次仍只做一项。下一项：**T24**（`LoreSource`；T23 默认跳过）。
+一次仍只做一项。Wave 4（T24–T27）已收口。**T28** 默认后置。
 
 ---
 

@@ -1,7 +1,7 @@
 # ToDo：AI 角色引擎（agent-chat + memory × Moonlit）
 
-> 状态：📋 逐项推进（2026-08-26）  
-> 下一项：**T24**（T22 `RoomIdentity` 已接线；T23 默认跳过）  
+> 状态：📋 Wave 4 收口（2026-08-27）  
+> 下一项：**T28**（LLM 导演选人，**默认后置**；T23 默认跳过）  
 > 组织蓝图：[`architecture-character-engine.md`](architecture-character-engine.md)  
 > 原则：**框架 = 角色怎么活（通用挂钩）；产品 = 怎么卖、抽什么、何时提醒。不写 birthday / 外卖进框架。不拆 20 个 Maven 模块。**
 
@@ -264,31 +264,35 @@ channel:{groupRoomId}
 
 ### T24 · `LoreSource`（① 世界书，通用触发）
 
-- [ ] `ContextSource`：业务传入条目 + 触发器（关键词/正则）；命中则注入
-- [ ] 词库、SillyTavern 卡格式在产品或导入工具
+- [x] `ContextSource`：业务传入条目 + 触发器（关键词/正则）；命中则注入
+- [x] 词库、SillyTavern 卡格式在产品或导入工具
 - **模块：** `agent-chat`  
-- **类：** 新建 `LoreSource`
+- **类：** 新建 `LoreSource` / `LoreEntry` / `LoreTrigger`
+- **说明：** 只扫本轮 `userText`，不扫历史。不默认挂。词库/卡格式仍在产品。下一项 T25。
 
 ### T25 · `RelationSnapshot` 源（⑤ 解耦关系，不是 tavern）
 
-- [ ] 业务每轮给一段/一个结构（阶段、数字槽）；引擎只注入，不算分
-- [ ] Moonlit 状态机仍在产品
+- [x] 业务每轮给一段/一个结构（阶段、数字槽）；引擎只注入，不算分
+- [x] Moonlit 状态机仍在产品
 - **模块：** `agent-chat`  
-- **类：** 新建 `RelationSource` 或约定走 `ExtraTextSource`（若够用则本项取消）
+- **类：** 新建 `RelationSnapshot` / `RelationSource`（`ExtraTextSource` 仍可塞预渲染文案）
+- **说明：** 引擎不解释 stage/槽名、不限幅、不依赖 tavern。`Supplier` 每轮重读。Moonlit 可继续走 ExtraText。下一项 T26。
 
 ### T26 · `ConsistencyGuard` 挂钩（② 防漂）
 
-- [ ] 接口：人设锚点 + 本轮回复 → OK / 告警；默认 no-op
-- [ ] 实现（规则或 LLM）可后做，**不**内置 Moonlit 人设
+- [x] 接口：人设锚点 + 本轮回复 → OK / 告警；默认 no-op
+- [x] 实现（规则或 LLM）可后做，**不**内置 Moonlit 人设
 - **模块：** `agent-chat`  
-- **类：** 新建接口；`ChatEngine` 在 Done 后可选调用
+- **类：** 新建 `ConsistencyGuard` / `ConsistencyVerdict`；`ChatEngine` 在 Done 后可选调用
+- **说明：** 告警不改写历史。出错/无人说话不调。实现留给产品。下一项 T27。
 
 ### T27 · 角色向 eval 用例（⑦）
 
-- [ ] 固定剧本：跨轮是否召回 subject、群聊是否串 scope、无人设改写
-- [ ] 用 Mock，不绑真 LLM-as-judge
-- **模块：** `agent-chat` 或 `examples`  
-- **类：** 新建测试 / `CharacterEvalExample`
+- [x] 固定剧本：跨轮是否召回 subject、群聊是否串 scope、无人设改写
+- [x] 用 Mock，不绑真 LLM-as-judge
+- **模块：** `agent-chat`  
+- **类：** 新建 `CharacterEvalTest`
+- **说明：** 查模型请求原文。群聊按说话人拼 pair，不把全员 pair 挂在房间 identity。Wave 4 收口。T28 默认后置。
 
 ### T28 · LLM 导演选人（④ 后置）
 

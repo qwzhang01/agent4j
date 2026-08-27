@@ -1,6 +1,6 @@
 # agent-chat 架构设计：房间对话引擎
 
-> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T16 Wave 1 + T17–T22 完成（2026-08-26）——下一项 T24（T23 默认跳过）
+> 状态：✅ M1–M5 + T05 `MemorySource` + T06 `RoundRobinSpeaker` 已落地；T08–T16 Wave 1 + T17–T27 完成（2026-08-27）——T28 默认后置（T23 默认跳过）
 > 模块：`agent-chat` Maven 模块
 > 依赖：compile `agent-core` + `agent-memory`（`MemorySource` 可选挂上）；`agent-model` test scope
 > **不依赖** `agent-tavern` / workflow / scheduler / channel / product / enterprise / security
@@ -29,6 +29,7 @@ Room + 用户这一句
   → ContextAssembler 拼上下文
   → Agent.stream 往外吐字
   → 把这句话写进房间历史
+  → 可选 ConsistencyGuard（默认 no-op；告警不改写回复）
   → ChatListener 通知业务（记记忆 / 改关系 / 落库，引擎不管）
 ```
 
@@ -95,7 +96,9 @@ ContextSource
   HistorySource        房间最近 N 条（默认 20）
   MemorySource         ✅ T05。可选；`MemoryRetriever` + 业务 scope 白名单 + limit。**不默认挂**
                        T22：无显式 list 时继承 `Room.scopes()`；显式空 list 仍不召回
-  ExtraTextSource      业务塞场景氛围 / 世界书 / 关系说明（一段字符串）
+  ExtraTextSource      业务塞场景氛围 / 主角叙事（一段字符串，整段注入）
+  LoreSource           ✅ T24。可选；业务传入条目 + 关键词/正则。本轮 userText 命中才注入。**不默认挂**。词库/卡格式在产品
+  RelationSource       ✅ T25。可选；`RelationSnapshot`（stage + 槽 + 可选文案）。只注入，不算分。**不默认挂**。状态机在产品；预渲染文案仍可走 ExtraText
 
 PersonaRenderer        ✅ T21。结构化 PersonaSpec → system 文本。引擎不解释 attributes 键、不写占位符词表。
   ChatPersona.render(spec, renderer)；renderer 为 null 时用 spec 的 systemPrompt 原文。
@@ -110,7 +113,7 @@ ContextAssembler
 
 ```text
 ChatEngine
-  持有：Room、SpeakerPolicy、ContextAssembler、ModelClient、ChatListener[]
+  持有：Room、SpeakerPolicy、ContextAssembler、ModelClient、ChatListener[]、可选 ConsistencyGuard
 
   stream(userText, listener: Consumer<AgentEvent>)
     1. 把 user 句写入 history
@@ -119,7 +122,8 @@ ChatEngine
        systemPrompt = persona.systemPrompt，maxSteps 默认 1（纯聊天）
     4. agent.stream(...)，把 ContentDelta / Done / Error 转给调用方
     5. Done 后把 assistant 句写入 history
-    6. 通知 ChatListener.onReplied(room, speaker, userText, reply)
+    6. 可选 ConsistencyGuard（默认 no-op）；告警 → onConsistencyWarning，**不改写**回复
+    7. 通知 ChatListener.onReplied(room, speaker, userText, reply)
 
   say(userText) → 完整回复字符串（测试用，内部走 stream 收齐）
 ```
@@ -133,6 +137,10 @@ ChatListener
   onReplied(...)
   onNoSpeaker(...)
   onError(...)
+  onConsistencyWarning(...)   # T26：Guard 告警时；默认空
+
+ConsistencyGuard             ✅ T26。人设锚点（ChatPersona）+ 本轮回复 → OK / 告警。默认 no-op。
+  实现（规则或 LLM）在产品；引擎不内置 OOC 词表，不改写历史。
 ```
 
 引擎不改亲密度、不写 MySQL、不解析动作台词。Moonlit 在 listener 里做。
@@ -149,7 +157,7 @@ ChatListener
 | 必须 `@` | 一对一不能靠点名 |
 | 改写人设 | 人设是业务资产 |
 | Spring | 装配走现有 starter；本模块无 Spring |
-| 向量世界书 | ExtraTextSource 先够；检索留给业务或 memory |
+| 向量世界书 | 关键词/正则走 `LoreSource`（T24）；向量检索仍留给业务或 memory |
 | 记忆抽什么 / 何时提醒 | 见 §9：框架只提供 Store / Extractor 接口 / 召回注入；subject 词表、cron、生日/外卖规则在 Moonlit |
 
 ---
@@ -179,12 +187,15 @@ agent-chat/
     ChatPersona.java
     PersonaRenderer.java       # T21
     PersonaSpec.java
+    RelationSnapshot.java      # T25：阶段 + 槽，引擎不打分
     Room.java
     RoomIdentity.java          # T22：opaque scopes
     RoomMessage.java
     ChatEngine.java
     ChatRoom.java              # M5 门面
     ChatListener.java
+    ConsistencyGuard.java      # T26：默认 no-op
+    ConsistencyVerdict.java
     speaker/
       SpeakerPolicy.java
       SoloSpeaker.java
@@ -197,6 +208,10 @@ agent-chat/
       HistorySource.java
       ExtraTextSource.java
       MemorySource.java        # T05：可选召回，不默认挂
+      LoreSource.java          # T24：关键词/正则触发，不默认挂
+      LoreEntry.java
+      LoreTrigger.java
+      RelationSource.java      # T25：只注入快照，不算分
 ```
 
 ---
@@ -212,7 +227,7 @@ Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_mess
 换模型层时：
 
 1. 一个「用户 × 角色」会话 = 一个 `Room`（members 1 人）
-2. 人设走 `PersonaRenderer`（Moonlit 去掉产品占位符）；场景/关系 `ExtraTextSource`；记忆 `MemorySource`
+2. 人设走 `PersonaRenderer`（Moonlit 去掉产品占位符）；场景 `ExtraTextSource`；关系 `RelationSource`（或仍走 ExtraText 预渲染文案）；记忆 `MemorySource`；世界书条目 `LoreSource`（词库在产品）
 3. `ChatEngine.stream` 接到现在的 `SseEmitter`
 4. `onReplied` 里走现在的 `afterStreamComplete`
 
@@ -245,12 +260,14 @@ ChatRoom.builder()
   .identity(RoomIdentity.of(scopes))                    // T22：挂在 Room 上
   .source(new PersonaSource())
   .source(new MemorySource(retriever, limit))           // 无显式 list → 继承 Room.scopes()
+  .source(new LoreSource(entries))                      // T24：可选；不默认挂
+  .source(new RelationSource(snapshot))                 // T25：可选；不算分。Moonlit 也可继续 ExtraText
   .source(new HistorySource())
   .source(new ExtraTextSource(sceneAndRelation))
   .listener(moonlitListener)
 ```
 
-`ContextAssembler.defaults()` 与 `ChatRoom` **不**默认挂 `MemorySource`；一旦 `.source(...)` 自定义列表，需自行带上 Persona + History。
+`ContextAssembler.defaults()` 与 `ChatRoom` **不**默认挂 `MemorySource` / `LoreSource` / `RelationSource`；一旦 `.source(...)` 自定义列表，需自行带上 Persona + History。
 
 ---
 
@@ -277,8 +294,12 @@ ChatRoom.builder()
 | T20 Flutter 入口 | ✅ 记忆 VO `subject`；会话未读=主动消息入口；聊天 Tab 群列表/建房/群气泡 `personaId`。无推送 SDK |
 | T21 PersonaRenderer | ✅ 接口 + `PersonaSpec`；无渲染器时 `ChatPersona.systemPrompt` 原文；Moonlit 去掉产品占位符，不内联场景/记忆 |
 | T22 RoomIdentity | ✅ Room / `ChatRoom.Builder` 带 opaque scopes；`MemorySource` 可继承；不依赖 channel。群房 identity 只有 user+channel，pair 仍按说话人重算 |
+| T24 LoreSource | ✅ 条目 + 关键词/正则；本轮 userText 命中才注入；不默认挂；词库/卡格式在产品 |
+| T25 RelationSnapshot | ✅ `RelationSource` 注入 stage/槽/文案；不算分、不限幅、不依赖 tavern。Moonlit 状态机仍在产品，可继续 ExtraText |
+| T26 ConsistencyGuard | ✅ Done 后可选校验；默认 no-op；告警不改写历史。实现留给产品，不内置人设 |
+| T27 角色向 eval | ✅ `CharacterEvalTest`：跨轮召回 subject、群聊不串 pair scope、人设原文。Mock，无 LLM-as-judge |
 
-Moonlit P0 安全审核仍优先于新聊天 UX 上线（控制塔约束）。下一项 **T24**（`LoreSource`；T23 默认跳过）。
+Moonlit P0 安全审核仍优先于新聊天 UX 上线（控制塔约束）。Wave 4 收口。**T28** 默认后置。
 
 ---
 

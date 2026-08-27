@@ -23,6 +23,10 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
 - Example: `StreamingAgentExample`
 - Room conversation engine (`agent-chat`): `ChatRoom` / `ChatEngine`, `SoloSpeaker` + `MentionSpeaker`, `PersonaSource` / `HistorySource` / `ExtraTextSource` / optional `MemorySource`, `ChatListener`. Default `maxSteps` 1, no tools, no tavern dependency. Example: `ChatRoomExample`
+- Character-engine eval scripts (`CharacterEvalTest`): cross-turn subject recall, group pair-scope isolation, persona text unchanged. MockModelClient only; no LLM-as-judge.
+- Optional `ConsistencyGuard` on `ChatEngine` / `ChatRoom`: after Done, host checks persona + reply and may warn. Default no-op. Warnings do not rewrite history. Implementations (rules or LLM) stay with the host.
+- Optional `RelationSource` for `ChatRoom`: host supplies a `RelationSnapshot` (free-form stage + slots + optional note). The engine injects and does not score. A `Supplier` is re-read every turn. Not mounted by `ContextAssembler.defaults()`. Pre-rendered blobs may still use `ExtraTextSource`.
+- Optional `LoreSource` for `ChatRoom`: host supplies entries plus keyword/regex triggers. Matches this turn's user text only. Not mounted by `ContextAssembler.defaults()`. Vocabularies and card formats stay with the host.
 - Optional `MemorySource` for `ChatRoom`: host supplies `MemoryRetriever` + scopes + limit. Not mounted by `ContextAssembler.defaults()`. Extract / remind stay with the host.
 - `RoundRobinSpeaker`: group rooms rotate the answering persona in member order without @mention. Composable as `MentionSpeaker` fallback.
 - `MemoryExtractor` is now an interface; keyword rules live in `KeywordMemoryExtractor`. Write path (`extractAndStore`) is shared. Business-specific subjects stay out of the extractor.

@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 /**
  * One room turn: pick a speaker, assemble context, stream, then notify
  * the host. Does not persist, score relationships, or rewrite persona.
+ * Optional {@link ConsistencyGuard} may warn after Done; default is no-op.
  */
 public final class ChatEngine {
 
@@ -35,10 +36,11 @@ public final class ChatEngine {
     private final int maxSteps;
     private final ToolRegistry tools;
     private final List<ChatListener> listeners;
+    private final ConsistencyGuard consistencyGuard;
 
     ChatEngine(Room room, SpeakerPolicy speakerPolicy, ContextAssembler assembler,
                ModelClient modelClient, int maxSteps, ToolRegistry tools,
-               List<ChatListener> listeners) {
+               List<ChatListener> listeners, ConsistencyGuard consistencyGuard) {
         this.room = Objects.requireNonNull(room, "room");
         this.speakerPolicy = Objects.requireNonNull(speakerPolicy, "speakerPolicy");
         this.assembler = Objects.requireNonNull(assembler, "assembler");
@@ -49,6 +51,9 @@ public final class ChatEngine {
         this.maxSteps = maxSteps;
         this.tools = tools;
         this.listeners = List.copyOf(listeners);
+        this.consistencyGuard = consistencyGuard == null
+                ? ConsistencyGuard.noop()
+                : consistencyGuard;
     }
 
     public static Builder builder() {
@@ -106,6 +111,7 @@ public final class ChatEngine {
                 if (event instanceof AgentEvent.Done done) {
                     String reply = done.finalAnswer() == null ? "" : done.finalAnswer();
                     room.append(RoomMessage.assistant(speaker.personaId(), reply));
+                    checkConsistency(speaker, userText, reply);
                     fireReplied(speaker, userText, reply);
                 } else if (event instanceof AgentEvent.Error err) {
                     fireError(speaker, userText, err.message(), err.cause());
@@ -117,6 +123,32 @@ public final class ChatEngine {
             fireError(speaker, userText, e.getMessage(), e);
             listener.accept(new AgentEvent.Error(
                     e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), e));
+        }
+    }
+
+    private void checkConsistency(ChatPersona speaker, String userText, String reply) {
+        ConsistencyVerdict verdict;
+        try {
+            verdict = consistencyGuard.check(room, speaker, userText, reply);
+        } catch (RuntimeException e) {
+            log.warn("ConsistencyGuard.check failed: {}", e.getMessage());
+            return;
+        }
+        if (verdict == null || verdict.consistent()) {
+            return;
+        }
+        log.warn("consistency warning in room '{}': {}", room.roomId(), verdict.warning());
+        fireConsistencyWarning(speaker, userText, reply, verdict.warning());
+    }
+
+    private void fireConsistencyWarning(ChatPersona speaker, String userText, String reply,
+                                        String warning) {
+        for (ChatListener listener : listeners) {
+            try {
+                listener.onConsistencyWarning(room, speaker, userText, reply, warning);
+            } catch (RuntimeException e) {
+                log.warn("ChatListener.onConsistencyWarning failed: {}", e.getMessage());
+            }
         }
     }
 
@@ -159,6 +191,7 @@ public final class ChatEngine {
         private int maxSteps = DEFAULT_MAX_STEPS;
         private ToolRegistry tools;
         private final List<ChatListener> listeners = new ArrayList<>();
+        private ConsistencyGuard consistencyGuard = ConsistencyGuard.noop();
 
         public Builder room(Room room) {
             this.room = room;
@@ -195,6 +228,16 @@ public final class ChatEngine {
             return this;
         }
 
+        /**
+         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop()}.
+         */
+        public Builder consistencyGuard(ConsistencyGuard consistencyGuard) {
+            this.consistencyGuard = consistencyGuard == null
+                    ? ConsistencyGuard.noop()
+                    : consistencyGuard;
+            return this;
+        }
+
         public ChatEngine build() {
             return new ChatEngine(
                     room,
@@ -203,7 +246,8 @@ public final class ChatEngine {
                     modelClient,
                     maxSteps,
                     tools,
-                    listeners);
+                    listeners,
+                    consistencyGuard);
         }
     }
 }

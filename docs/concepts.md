@@ -58,13 +58,15 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 |------|------|
 | `ChatRoom` / `ChatEngine` | 一次 `say(userLine)`：选人 → 组 messages → `ModelClient.stream` → 通知 Listener |
 | `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker`（可组合） |
-| `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` |
-| `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回 |
+| `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` / `LoreSource` / `RelationSource` |
+| `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回。可选 `onConsistencyWarning` |
+| `ConsistencyGuard` | Done 后可选防漂：人设锚点 + 回复 → OK/告警。默认 no-op，不改写历史 |
 | `RoomIdentity` | 房间身份：opaque memory-scope 字符串。引擎不解析前缀、不依赖 channel |
+| `RelationSnapshot` | 关系快照：自由 stage + 槽。`RelationSource` 只注入，不算分 |
 
-默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。`RoomIdentity` 把 user/session/pair 等 scope 字符串挂在 Room 上，`MemorySource` 无显式 list 时继承。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 已开口），见 `notes/architecture-agent-chat.md` §9。Moonlit 1:1 聊天已走 `ChatRoom.stream`（T15）。
+默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` / `LoreSource` / `RelationSource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。`RoomIdentity` 把 user/session/pair 等 scope 字符串挂在 Room 上，`MemorySource` 无显式 list 时继承。`LoreSource` 只扫本轮用户句（关键词/正则），词库在产品。`RelationSource` 注入 `RelationSnapshot`（stage + 槽），不算分；预渲染关系文案仍可走 `ExtraTextSource`。`ConsistencyGuard` 默认 no-op；告警不改写回复。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 已开口），见 `notes/architecture-agent-chat.md` §9。Moonlit 1:1 聊天已走 `ChatRoom.stream`（T15）。
 
-模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。
+模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。角色向 eval：`CharacterEvalTest`（Mock，无 LLM-as-judge）。
 
 ## Governance
 
