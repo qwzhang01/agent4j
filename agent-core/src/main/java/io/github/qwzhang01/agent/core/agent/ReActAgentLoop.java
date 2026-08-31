@@ -50,6 +50,28 @@ public class ReActAgentLoop implements AgentLoop {
 
     @Override
     public AgentState execute(AgentConfig config, AgentState state) {
+        // Non-streaming = the same loop with a no-op event sink.
+        runLoop(config, state, e -> { },
+                (client, request, s, sink) -> client.chat(request));
+        return state;
+    }
+
+    @Override
+    public void stream(AgentConfig config, AgentState state, Consumer<AgentEvent> sink) {
+        runLoop(config, state, sink, ReActAgentLoop::invokeStream);
+    }
+
+    /**
+     * The single ReAct loop. Streaming is not a second algorithm: it is the
+     * same state transition projected through a different event sink.
+     * {@link #execute} uses a no-op sink and returns the final state;
+     * {@link #stream} forwards {@link AgentEvent}s to the caller's sink.
+     *
+     * @param invoker produces the model response; may emit intermediate
+     *                {@link AgentEvent}s (e.g. ContentDelta) while doing so
+     */
+    private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
+                         ModelInvoker invoker) {
         ModelClient modelClient = config.getModelClient();
         state.setStatus(AgentState.Status.RUNNING);
 
@@ -67,69 +89,9 @@ public class ReActAgentLoop implements AgentLoop {
             // --------------------------------------------
             ModelResponse response;
             try {
-                response = modelClient.chat(request);
+                response = invoker.invoke(modelClient, request, state, sink);
             } catch (Exception e) {
                 log.error("[{}] Model call failed at step {}: {}",
-                        config.getName(), state.getCurrentStep(), e.getMessage());
-                state.setStatus(AgentState.Status.ERROR);
-                state.setLastError("Model call failed: " + e.getMessage());
-                return state;
-            }
-
-            // --------------------------------------------
-            // 3. Handle response: tool calls or final answer
-            // --------------------------------------------
-            if (response.hasToolCalls()) {
-                // Add assistant message with tool calls to history
-                state.addMessage(ChatMessage.assistantWithTools(
-                        response.content(), response.toolCalls()));
-
-                // Execute each tool call
-                state.setStatus(AgentState.Status.EXECUTING_TOOL);
-                for (ToolCall toolCall : response.toolCalls()) {
-                    log.info("[{}] Executing tool: {}", config.getName(), toolCall.name());
-                    String result = toolExecutor.execute(toolCall);
-                    // Add tool result to conversation
-                    state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
-                }
-
-                state.setStatus(AgentState.Status.RUNNING);
-            } else {
-                // Model gave a final answer
-                state.addMessage(ChatMessage.assistant(response.content()));
-                state.setStatus(AgentState.Status.DONE);
-                log.info("[{}] Completed in {} steps", config.getName(), state.getCurrentStep());
-                return state;
-            }
-        }
-
-        // --------------------------------------------
-        // 4. Max steps exceeded
-        // --------------------------------------------
-        if (!state.hasStepsRemaining()) {
-            log.warn("[{}] Max steps ({}) exceeded", config.getName(), state.getMaxSteps());
-            state.setStatus(AgentState.Status.MAX_STEPS_EXCEEDED);
-        }
-
-        return state;
-    }
-
-    @Override
-    public void stream(AgentConfig config, AgentState state, Consumer<AgentEvent> sink) {
-        ModelClient modelClient = config.getModelClient();
-        state.setStatus(AgentState.Status.RUNNING);
-
-        while (state.hasStepsRemaining() && !state.isTerminal()) {
-            state.incrementStep();
-            log.debug("[{}] Step {}", config.getName(), state.getCurrentStep());
-
-            ModelRequest request = buildRequest(config, state);
-
-            ModelResponse response;
-            try (Stream<StreamEvent> events = modelClient.stream(request)) {
-                response = consumeStream(events, state, sink);
-            } catch (Exception e) {
-                log.error("[{}] Model stream failed at step {}: {}",
                         config.getName(), state.getCurrentStep(), e.getMessage());
                 state.setStatus(AgentState.Status.ERROR);
                 state.setLastError("Model call failed: " + e.getMessage());
@@ -147,21 +109,28 @@ public class ReActAgentLoop implements AgentLoop {
                 return;
             }
 
+            // --------------------------------------------
+            // 3. Handle response: tool calls or final answer
+            // --------------------------------------------
             if (response.hasToolCalls()) {
+                // Add assistant message with tool calls to history
                 state.addMessage(ChatMessage.assistantWithTools(
                         response.content(), response.toolCalls()));
 
+                // Execute each tool call
                 state.setStatus(AgentState.Status.EXECUTING_TOOL);
                 for (ToolCall toolCall : response.toolCalls()) {
                     log.info("[{}] Executing tool: {}", config.getName(), toolCall.name());
                     sink.accept(new AgentEvent.ToolStarted(toolCall));
                     String result = toolExecutor.execute(toolCall);
+                    // Add tool result to conversation
                     state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
                     sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
                 }
 
                 state.setStatus(AgentState.Status.RUNNING);
             } else {
+                // Model gave a final answer
                 state.addMessage(ChatMessage.assistant(response.content()));
                 state.setStatus(AgentState.Status.DONE);
                 log.info("[{}] Completed in {} steps", config.getName(), state.getCurrentStep());
@@ -171,10 +140,30 @@ public class ReActAgentLoop implements AgentLoop {
             }
         }
 
+        // --------------------------------------------
+        // 4. Max steps exceeded
+        // --------------------------------------------
         if (!state.hasStepsRemaining()) {
             log.warn("[{}] Max steps ({}) exceeded", config.getName(), state.getMaxSteps());
             state.setStatus(AgentState.Status.MAX_STEPS_EXCEEDED);
             sink.accept(new AgentEvent.Done(SimpleAgent.MAX_STEPS_PLACEHOLDER, state));
+        }
+    }
+
+    /**
+     * Produces a model response for the unified loop. Implementations may emit
+     * intermediate {@link AgentEvent}s while producing the response.
+     */
+    @FunctionalInterface
+    private interface ModelInvoker {
+        ModelResponse invoke(ModelClient modelClient, ModelRequest request,
+                             AgentState state, Consumer<AgentEvent> sink) throws Exception;
+    }
+
+    private static ModelResponse invokeStream(ModelClient modelClient, ModelRequest request,
+                                              AgentState state, Consumer<AgentEvent> sink) throws Exception {
+        try (Stream<StreamEvent> events = modelClient.stream(request)) {
+            return consumeStream(events, state, sink);
         }
     }
 
