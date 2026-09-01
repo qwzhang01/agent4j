@@ -41,18 +41,24 @@ Coordinates:
 - Parent: `io.github.qwzhang01:seven-agent`
 - BOM: `io.github.qwzhang01:seven-agent-bom`
 
-`examples` is **not** published. The `release` profile sets `excludeArtifacts=examples` on `central-publishing-maven-plugin`. Do not add `skipPublishing` on the `examples` module — it is last in the reactor and would drop the whole bundle.
+`examples` is **not** published. The parent POM sets `excludeArtifacts=examples` on `central-publishing-maven-plugin`. Do not add `skipPublishing` on the `examples` module — it is last in the reactor and would drop the whole bundle.
 
-Publish (uploads a bundle, waits for validation, then you click Publish in the Portal):
+The Central plugin lives in the main build (`extensions=true`) so it owns `deploy`. The stock `maven-deploy-plugin` is skipped: this project has no `distributionManagement`. `skipPublishing` defaults to `false`, so a plain `deploy` (IDE or CLI) **uploads**. Use `-Dskip.central.publish=true` only for a local-only dry run.
+
+GPG signs in the `deploy` phase (not `verify`), so CI `./mvnw verify` does not need a key. Unsigned bundles will fail Portal validation.
+
+Publish (signs, uploads a bundle, waits for validation, then you click Publish in the Portal):
 
 ```bash
 export JAVA_HOME=/path/to/jdk-17
-./mvnw -P release -DskipTests deploy
+./mvnw -DskipTests deploy
 ```
+
+IntelliJ: Command line `deploy -DskipTests`, keep `-s` pointing at the `settings.xml` that has `avinzhang-opensource`. Profiles are optional (`release` only tightens javadoc `failOnError`).
 
 `autoPublish` is `false`. After the build prints a `deploymentId`, finish at https://central.sonatype.com/publishing/deployments.
 
-Required local config (not in git):
+Required local config (not in git). The plugin looks up `publishingServerId` (default `central`) in the Maven `settings.xml` **that this build actually loads**. `~/.m2/settings.xml` is the CLI/Cursor default; IntelliJ may point at another file.
 
 ```xml
 <settings>
@@ -66,7 +72,9 @@ Required local config (not in git):
 </settings>
 ```
 
-GPG: `maven-gpg-plugin` signs during `verify` with `--pinentry-mode loopback`. Passphrase via `MAVEN_GPG_PASSPHRASE` or your agent.
+This repo defaults `central.serverId` to `avinzhang-opensource` (the Portal token id already in the maintainer `settings.xml`). Override with `-Dcentral.serverId=...` if needed. Pass `-s <settings-file>` when the CLI would otherwise load an empty `~/.m2/settings.xml`.
+
+GPG: `maven-gpg-plugin` signs during `deploy` with `--pinentry-mode loopback`. Passphrase via `MAVEN_GPG_PASSPHRASE` or your agent.
 
 ## After the release
 

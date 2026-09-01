@@ -4,7 +4,7 @@
 
 ## Maven Central
 
-坐标是 `io.github.qwzhang01:seven-agent:0.1.0`。发布走 `./mvnw -P release deploy`，`examples` 不进 bundle。Portal 尚未点 Publish 时，克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。
+坐标是 `io.github.qwzhang01:seven-agent:0.1.0`。发布走 `./mvnw -DskipTests deploy`，`examples` 不进 bundle。Portal 尚未点 Publish 时，克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。
 
 用法见 [getting-started.md](getting-started.md)。
 
