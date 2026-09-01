@@ -5,9 +5,11 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be `0.1.0`.
+The current Maven version is `0.1.0`.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-09-01
 
 ### Added
 
@@ -19,6 +21,7 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - CI workflow for Maven verify (JDK 17 / 21)
 - Bill of Materials (`seven-agent-bom`) for coordinated dependency versions
 - Maven Wrapper (`./mvnw`, Maven 3.9.9)
+- Maven Central `release` profile: GPG signing + `central-publishing-maven-plugin` (`examples` excluded)
 - Agent-level streaming: `Agent.stream(userInput, listener)` emits `AgentEvent` (content deltas, tool start/finish, Done, Error) while `ReActAgentLoop` consumes `ModelClient.stream`. `run()` is unchanged.
 - Optional Spring Boot starter module (`agent-spring-boot-starter`): `agent4j.*` config, `ModelClient` bean, `AgentFactory`; core stays Spring-free
 - Example: `StreamingAgentExample`
@@ -53,6 +56,7 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - T07 docs: `architecture-agent-chat.md` §9 clarifies engine vs product for memory (recall vs extract/remind); `docs/concepts.md` adds ChatRoom; `docs/modules.md` adds wiring table for Moonlit-style apps.
 - `agent-memory` packages follow the write/read/compact/govern pipelines: root stays the wiring surface; implementations live in `extract/`, `store/`, `context/`, `session/` (`tools/` unchanged).
 - Drop Spring Boot parent POM in favor of a standalone Maven parent
-- Open-source packaging for GitHub (`qwzhang01/agent4j`) and intended Maven Central coordinates
+- Open-source packaging for GitHub (`qwzhang01/agent4j`) and Maven Central coordinates
 
-[Unreleased]: https://github.com/qwzhang01/agent4j/commits/main
+[Unreleased]: https://github.com/qwzhang01/agent4j/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.0

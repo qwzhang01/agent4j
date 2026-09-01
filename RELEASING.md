@@ -1,12 +1,14 @@
 # Releasing
 
-Maintainer notes for cutting a version of agent4j. The first public release will be `0.1.0`. The current Maven version is `0.1.0-SNAPSHOT`.
+Maintainer notes for cutting a version of agent4j. The current Maven version is `0.1.0`.
 
 ## Prerequisites
 
-- `mvn -B verify` (or `./mvnw -B verify`) is green
+- JDK 17+ (`JAVA_HOME` must not be 8; javadoc `--release 17` fails on JDK 8)
+- `./mvnw -B verify` is green
 - Changelog `[Unreleased]` notes are complete and accurate
-- No secrets or unpublished credentials in the tree
+- `~/.m2/settings.xml` has a `central` server with a Central Portal user token
+- GPG key is available locally (or via `MAVEN_GPG_PASSPHRASE` + loopback pinentry)
 
 Do not push a release tag unless verify is green.
 
@@ -34,17 +36,41 @@ git push origin vX.Y.Z
 
 ## Maven Central
 
-Maven Central is **not wired yet**. GPG signing and portal credentials are pending.
-
-Intended coordinates:
+Coordinates:
 
 - Parent: `io.github.qwzhang01:seven-agent`
 - BOM: `io.github.qwzhang01:seven-agent-bom`
 
-Do not announce Central availability until publish credentials and the staging flow are in place.
+`examples` is **not** published. The `release` profile sets `excludeArtifacts=examples` on `central-publishing-maven-plugin`. Do not add `skipPublishing` on the `examples` module — it is last in the reactor and would drop the whole bundle.
+
+Publish (uploads a bundle, waits for validation, then you click Publish in the Portal):
+
+```bash
+export JAVA_HOME=/path/to/jdk-17
+./mvnw -P release -DskipTests deploy
+```
+
+`autoPublish` is `false`. After the build prints a `deploymentId`, finish at https://central.sonatype.com/publishing/deployments.
+
+Required local config (not in git):
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>central</id>
+      <username><!-- Portal token username --></username>
+      <password><!-- Portal token password --></password>
+    </server>
+  </servers>
+</settings>
+```
+
+GPG: `maven-gpg-plugin` signs during `verify` with `--pinentry-mode loopback`. Passphrase via `MAVEN_GPG_PASSPHRASE` or your agent.
 
 ## After the release
 
 1. Bump parent POM and BOM back to the next SNAPSHOT (for example `0.1.1-SNAPSHOT`).
 2. Push the SNAPSHOT bump.
 3. Confirm GitHub Releases / Discussions notes point at the tag, not at SNAPSHOT artifacts.
+4. Only then announce Central coordinates in the README.

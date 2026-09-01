@@ -4,10 +4,10 @@
 
 | Version | Supported |
 | --- | --- |
-| `0.1.x` (unreleased SNAPSHOT) | Yes |
+| `0.1.x` | Yes |
 | `main` branch | Yes |
 
-No public release has been tagged yet. The current Maven version is `0.1.0-SNAPSHOT`. Security fixes land on `main` and will ship in the first `0.1.x` release.
+The current Maven version is `0.1.0`. Security fixes land on `main` and ship in the next `0.1.x` release.
 
 ## Reporting a vulnerability
 

@@ -1,11 +1,11 @@
 # 模块一览
 
-父工程：`io.github.qwzhang01:seven-agent:0.1.0-SNAPSHOT`（`packaging=pom`）。  
+父工程：`io.github.qwzhang01:seven-agent:0.1.0`（`packaging=pom`）。  
 库模块按需依赖，**不要**把整个父工程当 jar 引进业务。
 
-`0.1.0` 上 Central 之后，用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本，再声明具体 `artifactId`。在此之前：本仓库 `mvn install`，下游写相同 `groupId` + `0.1.0-SNAPSHOT`。
+`0.1.0` 上 Central 之后，用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本，再声明具体 `artifactId`。Portal 通过前：本仓库 `mvn install`，下游写相同 `groupId` + `0.1.0`。
 
-`examples` 只演示，不是发布库。
+`examples` 只演示，**不发布**（`release` profile 的 `excludeArtifacts`）。
 
 | artifactId | 职责 | 典型依赖方 |
 |------------|------|------------|

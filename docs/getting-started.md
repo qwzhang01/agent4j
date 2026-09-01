@@ -3,8 +3,8 @@
 一句话：一个**可持久化、可观测、可治理、可热插拔**的 Java Agent Runtime。
 
 仓库：[github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)  
-坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.0-SNAPSHOT`  
-当前**未上 Maven Central**，请从源码构建。
+坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.0`  
+Central 发布走 `./mvnw -P release deploy`。Portal 通过前请从源码构建。
 
 `notes/` 是学习笔记，**不是用户契约**。对外行为以本目录文档、公开 API 与测试为准。
 
@@ -97,7 +97,7 @@ String response = agent.run("What time is it now?");
 
 ## 接到你自己的项目
 
-当前版本是 `0.1.0-SNAPSHOT`，**尚未发布到 Maven Central**。在本仓库执行 `mvn install` 后，下游项目用相同 `groupId` / `version` 引用模块。
+当前版本是 `0.1.0`。Portal 通过前，在本仓库执行 `mvn install` 后，下游项目用相同 `groupId` / `version` 引用模块。
 
 `0.1.0` 上 Central 之后，用 BOM 对齐版本：
 
@@ -136,7 +136,7 @@ String response = agent.run("What time is it now?");
 <dependency>
   <groupId>io.github.qwzhang01</groupId>
   <artifactId>agent-spring-boot-starter</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 

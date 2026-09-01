@@ -1,14 +1,12 @@
 # v1 边界与已知限制
 
-版本：`0.1.0-SNAPSHOT`。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
+版本：`0.1.0`。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
 
-## 还没上 Maven Central
+## Maven Central
 
-坐标是 `io.github.qwzhang01:seven-agent:0.1.0-SNAPSHOT`。Central 上没有这个版本。
+坐标是 `io.github.qwzhang01:seven-agent:0.1.0`。发布走 `./mvnw -P release deploy`，`examples` 不进 bundle。Portal 尚未点 Publish 时，克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。
 
-用法：克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。BOM（`seven-agent-bom`）只在 **0.1.0 发布到 Central 之后**按 [getting-started.md](getting-started.md) 使用。
-
-API 以源码和测试为准，SNAPSHOT 可能改。
+用法见 [getting-started.md](getting-started.md)。
 
 ## 运行时不依赖 Spring
 

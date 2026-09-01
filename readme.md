@@ -3,11 +3,11 @@
 [![CI](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml/badge.svg)](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
-[![Maven](https://img.shields.io/badge/Maven-0.1.0--SNAPSHOT-lightgrey.svg)](https://github.com/qwzhang01/agent4j)
+[![Maven](https://img.shields.io/badge/Maven-0.1.0-blue.svg)](https://github.com/qwzhang01/agent4j)
 
 > A persistent, observable, governable, hot-pluggable Java Agent Runtime.
 
-可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。当前版本 `0.1.0-SNAPSHOT`，**尚未发布到 Maven Central**——请从源码构建。
+可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。当前版本 `0.1.0`。Central 发布走 `./mvnw -P release deploy`（见 [RELEASING.md](RELEASING.md)）；Portal 通过前请从源码构建。
 
 这不是 LangChain4j / Spring AI 的替代品。它强调：断点恢复、工具治理、沙箱、轨迹导出，以及企业 / 酒馆 / 编码三个领域 Profile 共用同一套 Runtime。
 
@@ -55,7 +55,7 @@ System.out.println(agent.run("What time is it?"));
 | [示例](examples/README.md) | 33 个可运行 `main`，从 `MockAgentExample` 开始 |
 | [贡献](CONTRIBUTING.md) | 怎么跑测试、PR 约定 |
 | [安全](SECURITY.md) | 漏洞请走 GitHub Security Advisory |
-| [发布](RELEASING.md) | 打 tag 与 Central（凭证未接） |
+| [发布](RELEASING.md) | 打 tag；`./mvnw -P release deploy` 上 Central |
 
 `notes/` 是 18 周学习笔记与设计蓝图，**不是 API 合同**。归档首页：[notes/v1-development-log.md](notes/v1-development-log.md)。
 
@@ -87,7 +87,7 @@ examples             可运行示例（不发布）
 
 最小接入：`agent-core` + `agent-model`。其余按需加。企业 / 酒馆 / 编码是同一 Runtime 上的三个 Profile，不是三套框架。
 
-`0.1.0` 上 Central 之后：
+`0.1.0` 上 Central 之后（Portal 点 Publish 完成）：
 
 ```xml
 <dependencyManagement>
@@ -103,13 +103,13 @@ examples             可运行示例（不发布）
 </dependencyManagement>
 ```
 
-现在请先 `./mvnw install`，再用 `0.1.0-SNAPSHOT`。
+Portal 通过前请先 `./mvnw install`，再用 `0.1.0`。
 
 ## 现状
 
 | 项 | 事实 |
 |----|------|
-| 版本 | `0.1.0-SNAPSHOT`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
+| 版本 | `0.1.0`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
 | 测试 | 1186，`./mvnw -B test` 全绿 |
 | CI | GitHub Actions，JDK 17 + 21 |
 | 许可证 | [Apache-2.0](LICENSE) |

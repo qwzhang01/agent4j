@@ -33,7 +33,7 @@ AgentScope（含 Java 实现）强调多 Agent 消息传递、会话与研究型
 - 只要一个 chat completion 封装，或只要 Spring 自动配置。
 - 需要丰富的现成 RAG / 向量库 / 评估平台，且不想自己装。
 - 需要 Docker/WASM 沙箱、MCP SSE、HTTP A2A、真 Git、OTel、训练闭环——这些是 [v1 非目标](limitations.md)。
-- 当前只能从源码 `mvn install`，没有 Central 稳定版。
+- Portal 完成 Publish 之前，只能从源码 `mvn install`，没有 Central 稳定版。
 
 ## 什么时候值得试
 

@@ -7,12 +7,23 @@
     <parent>
         <groupId>io.github.qwzhang01</groupId>
         <artifactId>seven-agent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>examples</artifactId>
     <name>Agent Framework Examples</name>
     <description>Example agents and usage demos</description>
+
+    <properties>
+        <!-- Demo module only. central-publishing-maven-plugin ignores maven.deploy.skip
+             and uploads one bundle from the last reactor module; do NOT set
+             skipPublishing here (examples is last and would drop the whole upload).
+             Parent release profile excludeArtifacts=examples is the real gate. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <gpg.skip>true</gpg.skip>
+    </properties>
 
     <dependencies>
         <dependency>

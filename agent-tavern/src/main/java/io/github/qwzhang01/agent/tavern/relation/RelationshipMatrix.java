@@ -40,8 +40,8 @@ public final class RelationshipMatrix {
      * Apply an adjustment for a character at a given turn, honoring the
      * per-turn accumulated limit.
      *
-     * @return {@link Applied} on success (value clamped to 0-100),
-     *         {@link Rejected} when the net change would exceed the policy
+     * @return {@link ApplyResult.Applied} on success (value clamped to 0-100),
+     *         {@link ApplyResult.Rejected} when the net change would exceed the policy
      */
     public ApplyResult apply(String characterId, int delta, int turnNo) {
         if (characterId == null || characterId.isBlank()) {

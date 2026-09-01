@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.memory;
 
 /**
- * Write-gate policy for memory entries (Stage 8 D6 - pollution defense, gate 1 & 2).
+ * Write-gate policy for memory entries (Stage 8 D6 - pollution defense, gate 1 and 2).
  * <p>
  * Three checks (gate 3 - supersede - is handled by the write flow, not here):
  * <ol>
