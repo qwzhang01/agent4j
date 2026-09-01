@@ -35,6 +35,18 @@ The current Maven version is `0.1.0-SNAPSHOT`. The first public release will be 
 - `MemoryRetriever.recallForContext` ranks by importance (then recency) before applying topN. Hosts map product priority (e.g. user-edited) onto importance at write time.
 - Optional `MemoryEntry.dueAt` plus `MemoryQuery` due window (`dueFrom` / `dueTo`). No scheduler and no product meaning for the timestamp.
 - `LlmMemoryExtractor` parses optional JSON `dueAt` (ISO-8601 Instant or offset). Invalid values are ignored; the rest of the entry is kept.
+- `ReasoningConfig` (`agent-core`): provider-neutral reasoning intent — `auto` / `enabled` / `disabled` plus an optional `effort` hint. Set per request via `ModelRequest.builder().reasoning(...)` / `disableReasoning()`, or as a client-wide default.
+- `OpenAiModelClient.Flavor`: endpoint identity auto-detected from `baseUrl` (Ark, Qwen, DeepSeek, OpenRouter, OpenAI, generic), used only to pick the vendor's reasoning request switch.
+- Tolerant reasoning-channel reader (`ChatDelta`): every field name seen in the wild (`reasoning_content` / `reasoning` / `thinking`, including the nested form) is read with a fallback chain, so an unknown OpenAI-compatible endpoint works without a framework change.
+- `extraBody` escape hatch on `OpenAiModelClient` / `AnthropicModelClient`: vendor-specific fields merged verbatim into the request body. Standard fields win on collision, so the hatch cannot corrupt the protocol.
+- `agent4j.model.reasoning.mode` / `.effort` and `agent4j.model.extra-body` configuration properties.
+
+### Fixed
+
+- **Streaming never terminated against Volcengine Ark.** Ark's final SSE chunk carries `content:""` and `finish_reason:"stop"` together; the parser returned early on the content branch, so `finish_reason` was never observed, `StreamEvent.Done` was never emitted, and `ReActAgentLoop` failed every turn with "Stream ended without a Done event". Every chunk is now inspected for every field, in a fixed order, with the terminal check last.
+- Streamed tool-call `arguments` are merged by `index` across chunks. Previously every fragment but the last was discarded, so a tool call split across chunks arrived incomplete.
+- Streams that end after `[DONE]` without `finish_reason` now emit a terminal event instead of being reported as an incomplete stream. A stream that produced nothing usable surfaces an `Error` rather than an empty answer that would be persisted as a blank reply.
+- SSE `data:` lines without the conventional trailing space are now accepted.
 
 ### Changed
 

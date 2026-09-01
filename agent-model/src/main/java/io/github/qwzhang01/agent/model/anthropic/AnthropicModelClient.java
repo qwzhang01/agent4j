@@ -16,7 +16,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -52,12 +55,19 @@ public class AnthropicModelClient implements ModelClient {
     private static final String DEFAULT_API_VERSION = "2023-06-01";
     private static final int DEFAULT_MAX_TOKENS = 4096;
 
+    /**
+     * Anthropic's documented floor for {@code thinking.budget_tokens}.
+     */
+    private static final int MIN_THINKING_BUDGET = 1024;
+
     private final HttpClient httpClient;
     private final String baseUrl;
     private final String apiKey;
     private final String apiVersion;
     private final String defaultModel;
     private final int defaultMaxTokens;
+    private final ReasoningConfig defaultReasoning;
+    private final Map<String, Object> extraBody;
 
     // ============ Constructors ============
 
@@ -80,14 +90,52 @@ public class AnthropicModelClient implements ModelClient {
 
     public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
                                 String defaultModel, int defaultMaxTokens, Duration timeout) {
+        this(baseUrl, apiKey, apiVersion, defaultModel, defaultMaxTokens, timeout, null, null);
+    }
+
+    public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
+                                String defaultModel, int defaultMaxTokens, Duration timeout,
+                                ReasoningConfig defaultReasoning) {
+        this(baseUrl, apiKey, apiVersion, defaultModel, defaultMaxTokens, timeout,
+                defaultReasoning, null);
+    }
+
+    /**
+     * @param defaultReasoning client-wide reasoning default; null means
+     *                         {@link ReasoningConfig#auto()}. A request-level
+     *                         config always wins.
+     * @param extraBody        vendor-specific fields merged into every request
+     *                         body (e.g. {@code thinking.budget_tokens}, since a
+     *                         thinking budget is an Anthropic-only knob and has
+     *                         no place in the provider-neutral
+     *                         {@link ReasoningConfig}). May be null.
+     */
+    public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
+                                String defaultModel, int defaultMaxTokens, Duration timeout,
+                                ReasoningConfig defaultReasoning, Map<String, Object> extraBody) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.apiKey = apiKey;
         this.apiVersion = apiVersion;
         this.defaultModel = defaultModel;
         this.defaultMaxTokens = defaultMaxTokens;
+        this.defaultReasoning = defaultReasoning;
+        this.extraBody = extraBody == null
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(extraBody));
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    /**
+     * Request-level reasoning wins over the client default, which in turn wins
+     * over {@link ReasoningConfig#auto()}.
+     */
+    private ReasoningConfig resolveReasoning(ModelRequest request) {
+        if (request.reasoning() != null) {
+            return request.reasoning();
+        }
+        return defaultReasoning != null ? defaultReasoning : ReasoningConfig.auto();
     }
 
     // ============ ModelClient ============
@@ -272,6 +320,29 @@ public class AnthropicModelClient implements ModelClient {
             body.put("temperature", request.temperature());
         }
 
+        // Extended thinking: {"thinking":{"type":"enabled","budget_tokens":N}}.
+        // Anthropic requires budget_tokens when enabled and requires it to be
+        // smaller than max_tokens, so derive a safe default. To set it
+        // explicitly, pass extraBody {"thinking": {"budget_tokens": N}} —
+        // a thinking budget is Anthropic-only and has no place in the
+        // provider-neutral ReasoningConfig.
+        ReasoningConfig reasoning = resolveReasoning(request);
+        if (!reasoning.isAuto()) {
+            ObjectNode thinking = body.putObject("thinking");
+            if (reasoning.isDisabled()) {
+                thinking.put("type", "disabled");
+            } else {
+                int maxTokens = body.path("max_tokens").asInt(defaultMaxTokens);
+                int budget = Math.max(MIN_THINKING_BUDGET, maxTokens / 2);
+                if (budget >= maxTokens) {
+                    // Keep room for the answer itself, else Anthropic rejects the call.
+                    budget = Math.max(MIN_THINKING_BUDGET, maxTokens - MIN_THINKING_BUDGET);
+                }
+                thinking.put("type", "enabled");
+                thinking.put("budget_tokens", budget);
+            }
+        }
+
         // Response format (structured output)
         // Anthropic doesn't have native JSON mode like OpenAI,
         // but we can use system prompt instructions as a hint.
@@ -286,7 +357,24 @@ public class AnthropicModelClient implements ModelClient {
             body.put("system", existingSystem.isEmpty() ? jsonInstruction : existingSystem + "\n" + jsonInstruction);
         }
 
+        // Escape hatch last: standard fields above win on collision, so a
+        // vendor-specific override can never corrupt the protocol itself.
+        mergeExtraBody(body);
+
         return body;
+    }
+
+    private void mergeExtraBody(ObjectNode body) {
+        if (extraBody.isEmpty()) {
+            return;
+        }
+        extraBody.forEach((key, value) -> {
+            if (body.has(key)) {
+                log.warn("extraBody key '{}' collides with a standard request field; ignoring it", key);
+                return;
+            }
+            body.set(key, mapper.valueToTree(value));
+        });
     }
 
     // ============ Response Parsing ============
@@ -393,11 +481,17 @@ public class AnthropicModelClient implements ModelClient {
                                     String text = delta.path("text").asText("");
                                     contentBuilder.append(text);
                                     yield (StreamEvent) new StreamEvent.ContentDelta(text);
+                                } else if ("thinking_delta".equals(deltaType)) {
+                                    // Extended thinking is the model's scratchpad:
+                                    // parsed so it is accounted for, never emitted
+                                    // as content.
+                                    yield null;
                                 } else if ("input_json_delta".equals(deltaType)) {
                                     // Accumulate partial JSON for tool input
                                     // (handled in content_block_stop)
                                     yield null;
                                 }
+                                // signature_delta and future block kinds: ignore
                                 yield null;
                             }
 

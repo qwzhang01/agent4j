@@ -15,6 +15,8 @@ import java.util.List;
  * @param maxTokens      max output tokens, null for provider default
  * @param stream         whether to stream the response
  * @param responseFormat response format spec (e.g. JSON schema), null for free text
+ * @param reasoning      reasoning ("thinking") control; null means
+ *                       {@link ReasoningConfig#auto()} — inherit provider default
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ModelRequest(
@@ -24,8 +26,21 @@ public record ModelRequest(
         Double temperature,
         Integer maxTokens,
         boolean stream,
-        ResponseFormat responseFormat
+        ResponseFormat responseFormat,
+        ReasoningConfig reasoning
 ) {
+    // ============ Backward-compatible Constructor ============
+
+    /**
+     * Seven-arg constructor kept for source compatibility with the
+     * pre-reasoning signature. Reasoning defaults to {@link ReasoningConfig#auto()}.
+     */
+    public ModelRequest(String model, List<ChatMessage> messages, List<String> tools,
+                        Double temperature, Integer maxTokens, boolean stream,
+                        ResponseFormat responseFormat) {
+        this(model, messages, tools, temperature, maxTokens, stream, responseFormat, null);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -63,6 +78,7 @@ public record ModelRequest(
         private Integer maxTokens;
         private boolean stream;
         private ResponseFormat responseFormat;
+        private ReasoningConfig reasoning;
 
         public Builder model(String model) {
             this.model = model;
@@ -104,8 +120,17 @@ public record ModelRequest(
             return this;
         }
 
+        /**
+         * Sets reasoning ("thinking") control. Null inherits the provider default.
+         */
+        public Builder reasoning(ReasoningConfig reasoning) {
+            this.reasoning = reasoning;
+            return this;
+        }
+
         public ModelRequest build() {
-            return new ModelRequest(model, messages, tools, temperature, maxTokens, stream, responseFormat);
+            return new ModelRequest(model, messages, tools, temperature, maxTokens, stream,
+                    responseFormat, reasoning);
         }
     }
 }

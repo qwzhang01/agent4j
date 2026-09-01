@@ -80,6 +80,19 @@ String response = agent.run("What time is it now?");
 
 `OpenAiModelClient` 走 Java `HttpClient`，兼容 OpenAI、Azure OpenAI、Ollama 等 OpenAI-compatible 端点，以及火山方舟的兼容接口。构造参数（`apiKey` / `baseUrl` / `defaultModel` / timeout）以 `agent-model` 里 `OpenAiModelClient` 的 javadoc 与测试为准，这里不展开以免过期。
 
+### 推理模型（reasoning）
+
+火山方舟 `doubao-seed-*`、DeepSeek-R1、Qwen3 思考模式这类模型，会把思维链放在与 `content` 分离的另一个字段里（`reasoning_content` / `reasoning` / `thinking`，各家叫法不同）。客户端**始终**把这条通道挡在答案之外。
+
+请求侧有两个正交的旋钮：
+
+| 旋钮 | 用途 | 放哪 |
+|---|---|---|
+| `ReasoningConfig` | 跨厂商通用的意图：`auto` / `enabled` / `disabled` + `effort` | `ModelRequest.reasoning()` 或客户端默认值 |
+| `extraBody` | 厂商特有字段，原样并入请求体 | 客户端构造参数 / `agent4j.model.extra-body` |
+
+框架不枚举供应商：响应侧靠容忍式读取（见 `ChatDelta`），请求侧靠逃生舱。这样每来一个新兼容端点都不需要改框架。某家不支持你请求的开关时会打 warning，而不是静默丢弃你的意图。
+
 生产环境通常还会叠装饰器：`RetryModelClient`、`TimeoutModelClient`、`FallbackModelClient`、`StructuredOutputModelClient`。见 `DecoratedModelClientExample`。
 
 ## 接到你自己的项目
@@ -140,6 +153,12 @@ agent4j:
     base-url: https://api.openai.com/v1
     name: gpt-4o-mini
     timeout: 60s
+    reasoning:          # 推理模型：只表达"意图"，各家 wire 格式由客户端翻译
+      mode: disabled    # auto | enabled | disabled
+      effort: medium    # 可选：low | medium | high（仅部分厂商支持）
+    extra-body:         # 逃生舱：厂商特有字段，原样并入请求体
+      thinking:
+        budget_tokens: 8000
   retry:
     enabled: false
     max-attempts: 3
@@ -147,6 +166,8 @@ agent4j:
     enabled: false
     duration: 30s
 ```
+
+`reasoning` 只放**跨厂商通用**的意图。某家独有的旋钮（Anthropic 的 `budget_tokens`、OpenAI 的 `include` 等）走 `extra-body`，不要塞进核心模型——这样下一个新厂商出现时不需要改框架。与标准字段冲突时以标准字段为准，`extra-body` 无法破坏协议。
 
 注入 `ModelClient` 与 `AgentFactory`。**不要**指望有一个全局 `Agent` bean——角色各有 system prompt，用工厂按角色创建：
 

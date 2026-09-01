@@ -3,6 +3,8 @@ package io.github.qwzhang01.agent.spring;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Configuration properties for the optional agent4j Spring Boot starter.
@@ -17,6 +19,12 @@ import java.time.Duration;
  *     base-url: https://api.openai.com/v1
  *     name: gpt-4o-mini
  *     timeout: 60s
+ *     reasoning:            # provider-neutral reasoning intent
+ *       mode: disabled      # auto | enabled | disabled
+ *       effort: medium      # optional: low | medium | high
+ *     extra-body:           # escape hatch for vendor-specific fields
+ *       thinking:
+ *         budget_tokens: 8000
  *   retry:
  *     enabled: false
  *     max-attempts: 3
@@ -103,6 +111,28 @@ public class AgentProperties {
          */
         private Duration timeout = Duration.ofSeconds(60);
 
+        /**
+         * Reasoning ("thinking") control applied to every request unless the
+         * request itself carries a {@code ReasoningConfig}.
+         */
+        private final Reasoning reasoning = new Reasoning();
+
+        /**
+         * Vendor-specific fields merged verbatim into every request body.
+         * <p>
+         * The escape hatch for anything the provider-neutral {@code reasoning}
+         * block cannot express, and for endpoints this framework has never
+         * heard of. Example — a thinking budget (Anthropic-only knob):
+         * <pre>
+         * extra-body:
+         *   thinking:
+         *     budget_tokens: 8000
+         * </pre>
+         * Standard request fields win on collision, so this can never corrupt
+         * the protocol itself.
+         */
+        private Map<String, Object> extraBody = new LinkedHashMap<>();
+
         public String getProvider() {
             return provider;
         }
@@ -141,6 +171,69 @@ public class AgentProperties {
 
         public void setTimeout(Duration timeout) {
             this.timeout = timeout;
+        }
+
+        public Reasoning getReasoning() {
+            return reasoning;
+        }
+
+        public Map<String, Object> getExtraBody() {
+            return extraBody;
+        }
+
+        public void setExtraBody(Map<String, Object> extraBody) {
+            this.extraBody = extraBody == null ? new LinkedHashMap<>() : extraBody;
+        }
+
+        /**
+         * Maps to {@code ReasoningConfig}, shared by the OpenAI-compatible and
+         * Anthropic clients. {@code mode} defaults to {@code auto} — no switch
+         * is sent and the model default applies.
+         * <p>
+         * Only provider-neutral intent lives here. Vendor-specific knobs belong
+         * in {@link Model#getExtraBody()}.
+         */
+        public static class Reasoning {
+
+            /**
+             * {@code auto} | {@code enabled} | {@code disabled}.
+             */
+            private ReasoningMode mode = ReasoningMode.auto;
+
+            /**
+             * Effort hint: {@code low} | {@code medium} | {@code high}
+             * (OpenAI o-series, OpenRouter). Optional. Providers that ignore it
+             * log a warning rather than failing.
+             */
+            private String effort;
+
+            public ReasoningMode getMode() {
+                return mode;
+            }
+
+            public void setMode(ReasoningMode mode) {
+                this.mode = mode;
+            }
+
+            public String getEffort() {
+                return effort;
+            }
+
+            public void setEffort(String effort) {
+                this.effort = effort;
+            }
+
+            /**
+             * Relaxed YAML enum: accepts any case.
+             * <p>
+             * Unknown values deliberately do <strong>not</strong> fall back to
+             * {@code auto} — a typo like {@code disabeld} would then silently
+             * ship the wrong behaviour. Spring Boot's binder fails fast with a
+             * clear message listing the valid values instead.
+             */
+            public enum ReasoningMode {
+                auto, enabled, disabled
+            }
         }
     }
 

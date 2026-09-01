@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.spring;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.client.RetryModelClient;
 import io.github.qwzhang01.agent.core.client.TimeoutModelClient;
+import io.github.qwzhang01.agent.core.model.ReasoningConfig;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
 import io.github.qwzhang01.agent.model.openai.OpenAiModelClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -69,16 +70,42 @@ public class AgentAutoConfiguration {
     private static ModelClient createBaseClient(AgentProperties properties) {
         AgentProperties.Model model = properties.getModel();
         String provider = model.getProvider() == null ? "openai" : model.getProvider().trim().toLowerCase();
+        ReasoningConfig reasoning = toReasoningConfig(model.getReasoning());
+        Duration timeout = model.getTimeout() != null ? model.getTimeout() : Duration.ofSeconds(60);
         return switch (provider) {
             case "openai" -> new OpenAiModelClient(
                     model.getBaseUrl(),
                     model.getApiKey(),
                     model.getName(),
-                    model.getTimeout() != null ? model.getTimeout() : Duration.ofSeconds(60));
+                    timeout,
+                    // flavor auto-detected from baseUrl; explicit reasoning default
+                    null,
+                    reasoning,
+                    model.getExtraBody());
             case "mock" -> MockModelClient.ruleBased();
             default -> throw new IllegalArgumentException(
                     "Unknown agent4j.model.provider '" + model.getProvider()
                             + "'. Supported values: openai, mock");
         };
+    }
+
+    /**
+     * Translates the YAML block into the core {@link ReasoningConfig}.
+     * {@code auto} with no effort hint collapses to null so the core default applies.
+     */
+    private static ReasoningConfig toReasoningConfig(AgentProperties.Model.Reasoning reasoning) {
+        if (reasoning == null) {
+            return null;
+        }
+        ReasoningConfig.Mode mode = switch (reasoning.getMode()) {
+            case enabled -> ReasoningConfig.Mode.ENABLED;
+            case disabled -> ReasoningConfig.Mode.DISABLED;
+            default -> ReasoningConfig.Mode.AUTO;
+        };
+        boolean hasEffort = reasoning.getEffort() != null && !reasoning.getEffort().isBlank();
+        if (mode == ReasoningConfig.Mode.AUTO && !hasEffort) {
+            return null;
+        }
+        return new ReasoningConfig(mode, reasoning.getEffort());
     }
 }
