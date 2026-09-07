@@ -6,7 +6,7 @@
 
     <groupId>io.github.qwzhang01</groupId>
     <artifactId>seven-agent</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <packaging>pom</packaging>
     <name>Java Agent Framework</name>
     <description>A persistent, observable, governable, hot-pluggable Java Agent Runtime</description>

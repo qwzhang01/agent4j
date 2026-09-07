@@ -2,8 +2,8 @@
 
 一句话：一个**可持久化、可观测、可治理、可热插拔**的 Java Agent Runtime。
 
-仓库：[github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)  
-坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.0`  
+仓库：[github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)
+坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.0`
 Central 发布走 `./mvnw -DskipTests deploy`。Portal 通过前请从源码构建。
 
 `notes/` 是学习笔记，**不是用户契约**。对外行为以本目录文档、公开 API 与测试为准。
@@ -107,7 +107,7 @@ String response = agent.run("What time is it now?");
     <dependency>
       <groupId>io.github.qwzhang01</groupId>
       <artifactId>seven-agent-bom</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.1</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -136,7 +136,7 @@ String response = agent.run("What time is it now?");
 <dependency>
   <groupId>io.github.qwzhang01</groupId>
   <artifactId>agent-spring-boot-starter</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
