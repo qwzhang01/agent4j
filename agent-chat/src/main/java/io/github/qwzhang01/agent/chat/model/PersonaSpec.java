@@ -12,9 +12,13 @@ import java.util.Map;
  *
  * @param personaId    stable id (required)
  * @param displayName  shown name (blank defaults to personaId)
+ * @param version      opaque version tag for the persona definition; null when unset.
+ *                     Populated by the host (e.g. "v2.1.0" or an ISO timestamp) and
+ *                     forwarded to {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace}
+ *                     so that replies can be correlated to a specific persona revision.
  * @param attributes   product-owned fields; null values dropped
  */
-public record PersonaSpec(String personaId, String displayName, Map<String, String> attributes) {
+public record PersonaSpec(String personaId, String displayName, String version, Map<String, String> attributes) {
 
     public static final String SYSTEM_PROMPT = "systemPrompt";
     public static final String GREETING = "greeting";
@@ -24,14 +28,33 @@ public record PersonaSpec(String personaId, String displayName, Map<String, Stri
             throw new IllegalArgumentException("personaId must not be null or blank");
         }
         displayName = (displayName == null || displayName.isBlank()) ? personaId : displayName;
+        // version is nullable — no normalization needed
         attributes = copyAttributes(attributes);
     }
 
+    /** Convenience constructor for tests and simple cases: {@code version = null}. */
+    public PersonaSpec(String personaId, String displayName, Map<String, String> attributes) {
+        this(personaId, displayName, null, attributes);
+    }
+
+    /**
+     * Factory without version ({@code version = null}).
+     * Backward-compatible entry point for all callers that do not track persona versions.
+     */
     public static PersonaSpec of(String personaId, String systemPrompt) {
+        return of(personaId, null, systemPrompt);
+    }
+
+    /**
+     * Factory with an explicit version tag.
+     *
+     * @param version opaque version string (e.g. "v2.1.0", ISO timestamp); null is allowed
+     */
+    public static PersonaSpec of(String personaId, String version, String systemPrompt) {
         if (systemPrompt == null || systemPrompt.isBlank()) {
-            return new PersonaSpec(personaId, personaId, Map.of());
+            return new PersonaSpec(personaId, personaId, version, Map.of());
         }
-        return new PersonaSpec(personaId, personaId, Map.of(SYSTEM_PROMPT, systemPrompt));
+        return new PersonaSpec(personaId, personaId, version, Map.of(SYSTEM_PROMPT, systemPrompt));
     }
 
     public String attribute(String key) {

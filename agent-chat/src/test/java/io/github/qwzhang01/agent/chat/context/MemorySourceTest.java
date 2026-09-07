@@ -180,10 +180,58 @@ class MemorySourceTest {
         assertTrue(joined(model.requests.get(0).messages()).contains("oat latte"));
     }
 
+    // ============ SUMMARY pool isolation ============
+
+    /**
+     * A high-importance SUMMARY must occupy at most 1 slot and must NOT displace
+     * FACT entries: with limit=5 and (5 FACTs + 1 SUMMARY), the result must be
+     * exactly 1 SUMMARY + 4 FACTs.
+     */
+    @Test
+    void summaryHoldsOwnSlot_factNotSqueezeOutBySummary() {
+        InMemoryMemoryStore store = new InMemoryMemoryStore();
+        for (int i = 1; i <= 5; i++) {
+            writeType(store, "user:u1", "fact-" + i, "fact content " + i, 0.6, MemoryType.FACT);
+        }
+        // SUMMARY has very high importance - should NOT push any FACT out of top-5
+        writeType(store, "user:u1", "sum", "session summary", 0.99, MemoryType.SUMMARY);
+
+        MemorySource source = new MemorySource(
+                new MemoryRetriever(store), List.of("user:u1"), 5);
+        String text = source.contribute(new Room("r", List.of(LUNA)), LUNA, "hi").get(0).content();
+
+        assertTrue(text.contains("session summary"), "SUMMARY should appear in context");
+        long factCount = text.lines().filter(l -> l.contains("fact content")).count();
+        assertEquals(4, factCount, "exactly 4 FACT entries should fill the remaining 4 slots");
+    }
+
+    /** When there is no SUMMARY, all limit slots go to non-SUMMARY entries. */
+    @Test
+    void noSummary_allSlotsGoToFacts() {
+        InMemoryMemoryStore store = new InMemoryMemoryStore();
+        for (int i = 1; i <= 6; i++) {
+            writeType(store, "user:u1", "fact-" + i, "fact content " + i, 0.6, MemoryType.FACT);
+        }
+
+        MemorySource source = new MemorySource(
+                new MemoryRetriever(store), List.of("user:u1"), 5);
+        String text = source.contribute(new Room("r", List.of(LUNA)), LUNA, "hi").get(0).content();
+
+        long factCount = text.lines().filter(l -> l.contains("fact content")).count();
+        assertEquals(5, factCount, "all 5 slots go to FACTs when there is no SUMMARY");
+    }
+
+    // ============ Helpers ============
+
     private static void write(InMemoryMemoryStore store, String scope, String subject,
                               String content, double importance) {
+        writeType(store, scope, subject, content, importance, MemoryType.PREFERENCE);
+    }
+
+    private static void writeType(InMemoryMemoryStore store, String scope, String subject,
+                                   String content, double importance, MemoryType type) {
         store.write(new MemoryEntry(
-                null, scope, MemoryType.PREFERENCE, subject, content, importance,
+                null, scope, type, subject, content, importance,
                 MemoryProvenance.userSaid("u1", "r1", T0),
                 MemoryStatus.ACTIVE, T0, null));
     }

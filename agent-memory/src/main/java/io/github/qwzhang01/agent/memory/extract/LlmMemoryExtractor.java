@@ -9,8 +9,10 @@ import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryExtractor;
+import io.github.qwzhang01.agent.memory.MemoryPolicy;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryStatus;
+import io.github.qwzhang01.agent.memory.MemoryStore;
 import io.github.qwzhang01.agent.memory.MemoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 /**
  * {@link MemoryExtractor} that asks a model to propose structured entries.
@@ -30,6 +35,13 @@ import java.util.Objects;
  * not interpret {@code subject} values — they are stored as the model returned
  * them. Invalid JSON or a failed model call yields an empty list (no invented
  * memories).
+ * <p>
+ * <b>Async + sampling</b>: use {@link #extractAsync} to run extraction off the
+ * calling thread with probabilistic down-sampling.  The sample decision is
+ * {@code Math.floorMod(sessionHash ^ seed, 100) < sampleRate} where
+ * {@code sessionHash} is {@code sessionId.hashCode()}.  This formula is
+ * deterministic across JVM restarts for the same input pair, so replaying a
+ * session always makes the same sampling decision.
  */
 public class LlmMemoryExtractor implements MemoryExtractor {
 
@@ -53,22 +65,65 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final double DEFAULT_IMPORTANCE = 0.7;
 
+    /** Default rate: always extract (100 = 100%). Preserves pre-sampling behaviour. */
+    private static final int DEFAULT_SAMPLE_RATE = 100;
+
     private final ModelClient modelClient;
     private final String instructions;
+    /** 0 = never, 100 = always, 1–99 = probabilistic. */
+    private final int sampleRate;
+    /** XOR salt for the sampling hash; same seed → same decision for same sessionId. */
+    private final long seed;
+    /** {@code null} = use {@link ForkJoinPool#commonPool()} via {@code supplyAsync}. */
+    private final Executor executor;
 
+    /** Backward-compatible: synchronous, always extracts. */
     public LlmMemoryExtractor(ModelClient modelClient) {
-        this(modelClient, DEFAULT_INSTRUCTIONS);
+        this(modelClient, DEFAULT_INSTRUCTIONS, DEFAULT_SAMPLE_RATE, 0L, null);
     }
 
+    /** Backward-compatible: synchronous, always extracts, custom instructions. */
     public LlmMemoryExtractor(ModelClient modelClient, String instructions) {
+        this(modelClient, instructions, DEFAULT_SAMPLE_RATE, 0L, null);
+    }
+
+    /**
+     * With sampling; uses {@link java.util.concurrent.ForkJoinPool#commonPool()} for async.
+     *
+     * @param sampleRate 0–100; percentage of sessions that trigger extraction
+     * @param seed       XOR salt for the sampling hash (e.g. per-deployment constant)
+     */
+    public LlmMemoryExtractor(ModelClient modelClient, String instructions,
+                               int sampleRate, long seed) {
+        this(modelClient, instructions, sampleRate, seed, null);
+    }
+
+    /**
+     * Full constructor.
+     *
+     * @param executor   thread pool for async extraction; {@code null} = ForkJoinPool.commonPool
+     */
+    public LlmMemoryExtractor(ModelClient modelClient, String instructions,
+                               int sampleRate, long seed, Executor executor) {
+        if (sampleRate < 0 || sampleRate > 100) {
+            throw new IllegalArgumentException(
+                    "sampleRate must be in [0, 100], got: " + sampleRate);
+        }
         this.modelClient = Objects.requireNonNull(modelClient, "modelClient");
         this.instructions = (instructions == null || instructions.isBlank())
                 ? DEFAULT_INSTRUCTIONS
                 : instructions;
+        this.sampleRate = sampleRate;
+        this.seed = seed;
+        this.executor = executor;
     }
 
     public String instructions() {
         return instructions;
+    }
+
+    public int sampleRate() {
+        return sampleRate;
     }
 
     @Override
@@ -92,6 +147,51 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         String raw = response == null ? null : response.content();
         return parseMemories(raw, scope, baseProvenance);
     }
+
+    // ============ Async + Sampling ============
+
+    /**
+     * Runs the full extract-and-store pipeline asynchronously.
+     * <p>
+     * The call returns immediately with a {@link CompletableFuture}.
+     * If the sampling check decides to skip this session, the future
+     * completes at once with {@code 0} (no model call is made).
+     * Any runtime exception in the extraction pipeline is caught:
+     * the future always completes normally (never exceptionally).
+     *
+     * @param sessionId stable identifier for the session or conversation;
+     *                  used to compute the sampling hash; {@code null} → treated as empty string
+     * @return future of the number of entries actually stored, or {@code 0} if skipped / failed
+     */
+    public CompletableFuture<Integer> extractAsync(
+            List<ChatMessage> messages, String scope,
+            MemoryProvenance provenance, MemoryPolicy policy,
+            MemoryStore store, String sessionId) {
+        if (!shouldSample(sessionId)) {
+            return CompletableFuture.completedFuture(0);
+        }
+        Supplier<Integer> task = () -> extractAndStore(messages, scope, provenance, policy, store);
+        CompletableFuture<Integer> future = (executor != null)
+                ? CompletableFuture.supplyAsync(task, executor)
+                : CompletableFuture.supplyAsync(task);
+        return future.exceptionally(e -> {
+            log.warn("extractAsync failed for session '{}': {}", sessionId, e.getMessage());
+            return 0;
+        });
+    }
+
+    /**
+     * Sampling decision: {@code Math.floorMod(sessionHash ^ seed, 100) < sampleRate}.
+     * Deterministic for identical inputs across JVM restarts.
+     */
+    private boolean shouldSample(String sessionId) {
+        if (sampleRate <= 0) return false;
+        if (sampleRate >= 100) return true;
+        long hash = sessionId == null ? 0L : (long) sessionId.hashCode();
+        return Math.floorMod(hash ^ seed, 100L) < sampleRate;
+    }
+
+    // ============ Transcript + Parse ============
 
     static String renderTranscript(List<ChatMessage> messages) {
         StringBuilder sb = new StringBuilder();

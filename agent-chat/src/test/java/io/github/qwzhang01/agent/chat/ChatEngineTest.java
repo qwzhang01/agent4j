@@ -37,9 +37,10 @@ class ChatEngineTest {
 
         engine.stream("hi", events::add);
 
-        assertEquals(2, events.size());
+        assertEquals(3, events.size());
         assertEquals(new AgentEvent.ContentDelta("hello there"), events.get(0));
-        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(1));
+        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(1));
+        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(2));
         assertEquals("hello there", done.finalAnswer());
         assertEquals(2, engine.room().history().size());
         assertEquals("luna", engine.room().history().get(1).speakerId());

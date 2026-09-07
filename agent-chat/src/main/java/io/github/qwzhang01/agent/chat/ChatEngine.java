@@ -1,11 +1,14 @@
 package io.github.qwzhang01.agent.chat;
 
 import io.github.qwzhang01.agent.chat.context.ContextAssembler;
+import io.github.qwzhang01.agent.chat.context.ExtraTextSource;
+import io.github.qwzhang01.agent.chat.context.MemorySource;
 import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
 import io.github.qwzhang01.agent.chat.guard.ConsistencyVerdict;
 import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.chat.model.RoomMessage;
+import io.github.qwzhang01.agent.chat.retry.RetryPolicy;
 import io.github.qwzhang01.agent.chat.speaker.SpeakerPolicy;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentEvent;
@@ -42,10 +45,12 @@ public final class ChatEngine {
     private final ToolRegistry tools;
     private final List<ChatListener> listeners;
     private final ConsistencyGuard consistencyGuard;
+    private final RetryPolicy retryPolicy;
 
     ChatEngine(Room room, SpeakerPolicy speakerPolicy, ContextAssembler assembler,
                ModelClient modelClient, int maxSteps, ToolRegistry tools,
-               List<ChatListener> listeners, ConsistencyGuard consistencyGuard) {
+               List<ChatListener> listeners, ConsistencyGuard consistencyGuard,
+               RetryPolicy retryPolicy) {
         this.room = Objects.requireNonNull(room, "room");
         this.speakerPolicy = Objects.requireNonNull(speakerPolicy, "speakerPolicy");
         this.assembler = Objects.requireNonNull(assembler, "assembler");
@@ -59,6 +64,7 @@ public final class ChatEngine {
         this.consistencyGuard = consistencyGuard == null
                 ? ConsistencyGuard.noop()
                 : consistencyGuard;
+        this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;
     }
 
     public static Builder builder() {
@@ -86,6 +92,15 @@ public final class ChatEngine {
     /**
      * Append the user line, pick a speaker, stream, then write the reply.
      * An empty pick calls {@link ChatListener#onNoSpeaker} and emits no events.
+     * <p>
+     * Emits a {@link AgentEvent.TurnTrace} immediately before the final
+     * {@link AgentEvent.Done} so that listeners can audit context, cost, and timing.
+     * <p>
+     * When a {@link RetryPolicy} is configured, replies that trigger
+     * {@link RetryPolicy#shouldRetry} are regenerated (up to
+     * {@link RetryPolicy#maxAttempts()} times). Each attempt streams its
+     * {@link AgentEvent.ContentDelta}s through {@code listener}; only the
+     * accepted reply's TurnTrace and Done are emitted.
      */
     public void stream(String userText, Consumer<AgentEvent> listener) {
         Objects.requireNonNull(listener, "listener");
@@ -102,33 +117,108 @@ public final class ChatEngine {
         }
         ChatPersona speaker = picked.get();
 
-        List<ChatMessage> prefix = assembler.assemble(room, speaker, userText);
-        AgentState state = new AgentState();
-        prefix.forEach(state::addMessage);
+        long startNanos = System.nanoTime();
+        // Base prefix: assembled once; retry attempts may append retryExtraText.
+        List<ChatMessage> basePrefix = assembler.assemble(room, speaker, userText);
 
-        // systemPrompt stays null: PersonaSource already injected it.
-        AgentConfig config = new AgentConfig(
-                speaker.personaId(), null, modelClient, tools, maxSteps);
-        SimpleAgent agent = new SimpleAgent(config);
+        String finalReply = "";
+        AgentState finalState = new AgentState();
+        int retriesDone = 0;
 
-        try {
-            agent.stream(ChatMessage.user(userText), state, event -> {
-                if (event instanceof AgentEvent.Done done) {
-                    String reply = done.finalAnswer() == null ? "" : done.finalAnswer();
-                    room.append(RoomMessage.assistant(speaker.personaId(), reply));
-                    checkConsistency(speaker, userText, reply);
-                    fireReplied(speaker, userText, reply);
-                } else if (event instanceof AgentEvent.Error err) {
-                    fireError(speaker, userText, err.message(), err.cause());
-                }
-                listener.accept(event);
-            });
-        } catch (RuntimeException e) {
-            log.error("chat stream failed in room '{}': {}", room.roomId(), e.getMessage());
-            fireError(speaker, userText, e.getMessage(), e);
-            listener.accept(new AgentEvent.Error(
-                    e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), e));
+        while (true) {
+            List<ChatMessage> attemptPrefix = buildAttemptPrefix(basePrefix, retriesDone);
+            AgentState state = new AgentState();
+            attemptPrefix.forEach(state::addMessage);
+
+            AgentConfig config = new AgentConfig(
+                    speaker.personaId(), null, modelClient, tools, maxSteps);
+            SimpleAgent agent = new SimpleAgent(config);
+
+            final String[] replyHolder = {""};
+            final boolean[] errorOccurred = {false};
+
+            try {
+                agent.stream(ChatMessage.user(userText), state, event -> {
+                    if (event instanceof AgentEvent.Done done) {
+                        replyHolder[0] = done.finalAnswer() == null ? "" : done.finalAnswer();
+                        // Done is NOT forwarded here; emitted once at the end of all retries.
+                    } else if (event instanceof AgentEvent.Error err) {
+                        fireError(speaker, userText, err.message(), err.cause());
+                        listener.accept(event);
+                        errorOccurred[0] = true;
+                    } else {
+                        listener.accept(event);  // ContentDelta etc. stream through normally
+                    }
+                });
+            } catch (RuntimeException e) {
+                log.error("chat stream failed in room '{}': {}", room.roomId(), e.getMessage());
+                fireError(speaker, userText, e.getMessage(), e);
+                listener.accept(new AgentEvent.Error(
+                        e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), e));
+                return;
+            }
+
+            if (errorOccurred[0]) {
+                return;  // Do not retry on model errors.
+            }
+
+            finalReply = replyHolder[0];
+            finalState = state;
+
+            boolean shouldRetry = retryPolicy.shouldRetry(finalReply, retriesDone);
+            if (!shouldRetry || retriesDone >= retryPolicy.maxAttempts()) {
+                break;
+            }
+            retriesDone++;
+            log.info("ChatEngine retry {}/{} in room '{}'",
+                    retriesDone, retryPolicy.maxAttempts(), room.roomId());
         }
+
+        // Emit TurnTrace (before Done), update room history, fire listeners, emit Done.
+        long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
+        listener.accept(buildTurnTrace(speaker, basePrefix, finalReply, latencyMs));
+        room.append(RoomMessage.assistant(speaker.personaId(), finalReply));
+        checkConsistency(speaker, userText, finalReply);
+        fireReplied(speaker, userText, finalReply);
+        listener.accept(new AgentEvent.Done(finalReply, finalState));
+    }
+
+    /**
+     * Returns the base prefix for the first attempt, or base + retryExtraText for retries.
+     */
+    private List<ChatMessage> buildAttemptPrefix(List<ChatMessage> basePrefix, int retriesDone) {
+        if (retriesDone == 0) {
+            return basePrefix;
+        }
+        String extra = retryPolicy.retryExtraText();
+        if (extra == null || extra.isBlank()) {
+            return basePrefix;
+        }
+        List<ChatMessage> augmented = new ArrayList<>(basePrefix);
+        augmented.add(ChatMessage.system(extra));
+        return augmented;
+    }
+
+    private AgentEvent.TurnTrace buildTurnTrace(ChatPersona speaker, List<ChatMessage> prefix,
+                                                 String reply, long latencyMs) {
+        List<String> recalledSubjects = assembler.sources().stream()
+                .filter(s -> s instanceof MemorySource)
+                .flatMap(s -> ((MemorySource) s).lastRecalledSubjects().stream())
+                .toList();
+        int extraBytes = assembler.sources().stream()
+                .filter(s -> s instanceof ExtraTextSource)
+                .mapToInt(s -> ((ExtraTextSource) s).lastOutputBytes())
+                .sum();
+        int promptChars = prefix.stream()
+                .mapToInt(m -> m.content() == null ? 0 : m.content().length())
+                .sum();
+        return new AgentEvent.TurnTrace(
+                speaker.version(),
+                recalledSubjects,
+                extraBytes,
+                promptChars,
+                reply.length(),
+                latencyMs);
     }
 
     private void checkConsistency(ChatPersona speaker, String userText, String reply) {
@@ -197,6 +287,7 @@ public final class ChatEngine {
         private ToolRegistry tools;
         private final List<ChatListener> listeners = new ArrayList<>();
         private ConsistencyGuard consistencyGuard = ConsistencyGuard.noop();
+        private RetryPolicy retryPolicy = RetryPolicy.never();
 
         public Builder room(Room room) {
             this.room = room;
@@ -243,6 +334,15 @@ public final class ChatEngine {
             return this;
         }
 
+        /**
+         * Optional retry policy for hard-label violations detected post-completion.
+         * {@code null} defaults to {@link RetryPolicy#never()} (no retries).
+         */
+        public Builder retryPolicy(RetryPolicy retryPolicy) {
+            this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;
+            return this;
+        }
+
         public ChatEngine build() {
             return new ChatEngine(
                     room,
@@ -252,7 +352,8 @@ public final class ChatEngine {
                     maxSteps,
                     tools,
                     listeners,
-                    consistencyGuard);
+                    consistencyGuard,
+                    retryPolicy);
         }
     }
 }

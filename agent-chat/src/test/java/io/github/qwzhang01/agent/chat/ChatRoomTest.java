@@ -27,9 +27,10 @@ class ChatRoomTest {
         List<AgentEvent> events = new ArrayList<>();
         room.stream("hi", events::add);
 
-        assertEquals(2, events.size());
+        assertEquals(3, events.size());
         assertEquals(new AgentEvent.ContentDelta("hey"), events.get(0));
-        assertInstanceOf(AgentEvent.Done.class, events.get(1));
+        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(1));
+        assertInstanceOf(AgentEvent.Done.class, events.get(2));
         assertEquals("again-hey", room.say("again"));
     }
 

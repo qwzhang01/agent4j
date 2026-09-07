@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,5 +63,30 @@ class PersonaRendererTest {
     void nullRendererPromptFromRendererNullBecomesEmpty() {
         ChatPersona persona = ChatPersona.render(PersonaSpec.of("a", null), spec -> null);
         assertEquals("", persona.systemPrompt());
+    }
+
+    @Test
+    void versionPropagatesFromSpecToPersona() {
+        PersonaSpec spec = PersonaSpec.of("luna", "v1.3.7", "You are Luna.");
+        assertEquals("v1.3.7", spec.version());
+
+        ChatPersona persona = ChatPersona.render(spec, null);
+        assertEquals("v1.3.7", persona.version(),
+                "version must flow from PersonaSpec through ChatPersona.render");
+    }
+
+    @Test
+    void nullVersionIsForwardedAsNull() {
+        PersonaSpec spec = PersonaSpec.of("luna", "You are Luna.");   // no version
+        assertNull(spec.version());
+
+        ChatPersona persona = ChatPersona.render(spec, null);
+        assertNull(persona.version(), "null version must survive the render pipeline intact");
+    }
+
+    @Test
+    void convenienceConstructorDefaultsVersionToNull() {
+        PersonaSpec spec = new PersonaSpec("luna", "Luna", Map.of(PersonaSpec.SYSTEM_PROMPT, "hi"));
+        assertNull(spec.version(), "3-arg constructor must default version to null");
     }
 }

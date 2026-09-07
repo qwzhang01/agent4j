@@ -18,9 +18,12 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -153,6 +156,83 @@ class LlmMemoryExtractorTest {
                 "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"x\",\"content\":\"  \"}]}",
                 "user:u1", PROV);
         assertTrue(entries.isEmpty());
+    }
+
+    // ============ extractAsync + sampling ============
+
+    /** sampleRate=100 → extracts every session; result is stored asynchronously. */
+    @Test
+    void extractAsync_sampleRate100_alwaysExtracts() throws ExecutionException, InterruptedException {
+        MockModelClient model = MockModelClient.scripted().respondText(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"color\",\"content\":\"likes blue\",\"importance\":0.8}]}");
+        LlmMemoryExtractor extractor = new LlmMemoryExtractor(model, null, 100, 0L);
+        InMemoryMemoryStore store = new InMemoryMemoryStore();
+
+        int stored = extractor.extractAsync(
+                List.of(ChatMessage.user("I like blue")),
+                "user:u1", PROV, new MemoryPolicy(0.5), store, "session-1").get();
+
+        assertEquals(1, stored);
+        assertFalse(store.query(
+                io.github.qwzhang01.agent.memory.MemoryQuery.builder()
+                        .scopes(List.of("user:u1")).build()).isEmpty());
+    }
+
+    /**
+     * sampleRate=0 → extraction is skipped; model must not be called at all.
+     * The future completes immediately with {@code 0}.
+     */
+    @Test
+    void extractAsync_sampleRate0_neverCallsModel() throws ExecutionException, InterruptedException {
+        ModelClient failIfCalled = new ModelClient() {
+            @Override
+            public ModelResponse chat(ModelRequest r) {
+                throw new AssertionError("model must not be called when sampleRate=0");
+            }
+
+            @Override
+            public Stream<StreamEvent> stream(ModelRequest r) {
+                return Stream.empty();
+            }
+        };
+        LlmMemoryExtractor extractor = new LlmMemoryExtractor(failIfCalled, null, 0, 0L);
+        InMemoryMemoryStore store = new InMemoryMemoryStore();
+
+        int result = extractor.extractAsync(
+                List.of(ChatMessage.user("hello")),
+                "user:u1", PROV, new MemoryPolicy(0.5), store, "any-session").get();
+
+        assertEquals(0, result);
+        assertTrue(store.query(
+                io.github.qwzhang01.agent.memory.MemoryQuery.builder()
+                        .scopes(List.of("user:u1")).build()).isEmpty());
+    }
+
+    /**
+     * When the store throws during write, the future must complete normally
+     * (not exceptionally) and return {@code 0}.
+     */
+    @Test
+    void extractAsync_onRuntimeException_completesNormally() throws ExecutionException, InterruptedException {
+        MockModelClient model = MockModelClient.scripted().respondText(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"x\",\"content\":\"something\",\"importance\":0.8}]}");
+        LlmMemoryExtractor extractor = new LlmMemoryExtractor(model, null, 100, 0L,
+                Runnable::run);  // inline executor for deterministic test
+
+        InMemoryMemoryStore throwingStore = new InMemoryMemoryStore() {
+            @Override
+            public MemoryEntry write(MemoryEntry entry) {
+                throw new RuntimeException("store unavailable");
+            }
+        };
+
+        CompletableFuture<Integer> future = extractor.extractAsync(
+                List.of(ChatMessage.user("hi")),
+                "user:u1", PROV, new MemoryPolicy(0.5), throwingStore, "session-fail");
+
+        assertEquals(0, future.get(), "future must complete normally with 0 on failure");
+        assertFalse(future.isCompletedExceptionally(),
+                "future must not complete exceptionally");
     }
 
     private static final class RecordingClient implements ModelClient {

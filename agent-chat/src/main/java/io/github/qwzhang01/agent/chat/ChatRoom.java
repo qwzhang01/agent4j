@@ -6,6 +6,7 @@ import io.github.qwzhang01.agent.chat.guard.ConsistencyGuard;
 import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.model.Room;
 import io.github.qwzhang01.agent.chat.model.RoomIdentity;
+import io.github.qwzhang01.agent.chat.retry.RetryPolicy;
 import io.github.qwzhang01.agent.chat.speaker.MentionSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SoloSpeaker;
 import io.github.qwzhang01.agent.chat.speaker.SpeakerPolicy;
@@ -62,6 +63,7 @@ public final class ChatRoom {
         private ToolRegistry tools;
         private RoomIdentity identity = RoomIdentity.empty();
         private ConsistencyGuard consistencyGuard = ConsistencyGuard.noop();
+        private RetryPolicy retryPolicy = RetryPolicy.never();
 
         public Builder roomId(String roomId) {
             this.roomId = roomId;
@@ -141,6 +143,15 @@ public final class ChatRoom {
             return this;
         }
 
+        /**
+         * Optional retry policy for hard-label violations detected after a reply completes.
+         * {@code null} defaults to {@link RetryPolicy#never()} (no retries, backward-compatible).
+         */
+        public Builder retryPolicy(RetryPolicy retryPolicy) {
+            this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;
+            return this;
+        }
+
         public ChatRoom build() {
             Room room = new Room(roomId, personas, identity);
             SpeakerPolicy policy = speakerPolicy != null
@@ -157,7 +168,8 @@ public final class ChatRoom {
                     .assembler(assembled)
                     .modelClient(modelClient)
                     .maxSteps(maxSteps)
-                    .tools(tools);
+                    .tools(tools)
+                    .retryPolicy(retryPolicy);
             listeners.forEach(engine::listener);
             engine.consistencyGuard(consistencyGuard);
             return new ChatRoom(engine.build());

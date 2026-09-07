@@ -6,9 +6,11 @@ import io.github.qwzhang01.agent.chat.model.RoomIdentity;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
+import io.github.qwzhang01.agent.memory.MemoryType;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Optional recall slice: {@link MemoryRetriever} + host-supplied scopes + limit.
@@ -32,6 +34,8 @@ public final class MemorySource implements ContextSource {
     /** {@code null} = inherit from {@link Room#scopes()} */
     private final List<String> scopes;
     private final int limit;
+    /** Subjects of memory entries injected in the most recent {@link #contribute} call. */
+    private volatile List<String> lastRecalledSubjects = List.of();
 
     /**
      * Inherit scopes from the room identity. No topN cut-off.
@@ -80,6 +84,16 @@ public final class MemorySource implements ContextSource {
         return limit;
     }
 
+    /**
+     * Subject keys of all entries injected during the most recent {@link #contribute} call.
+     * Empty list if the source has never been called or contributed nothing.
+     * Used by {@link io.github.qwzhang01.agent.chat.ChatEngine} to populate
+     * {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace#recalledSubjects()}.
+     */
+    public List<String> lastRecalledSubjects() {
+        return lastRecalledSubjects;
+    }
+
     public List<String> resolveScopes(Room room) {
         if (scopes != null) {
             return scopes;
@@ -93,7 +107,28 @@ public final class MemorySource implements ContextSource {
         if (visible.isEmpty()) {
             return List.of();
         }
-        List<MemoryEntry> memories = retriever.recallForContext(visible, limit);
+
+        // SUMMARY pool: always capped at 1 slot so that high-importance summaries
+        // never crowd out topic-specific FACT / EPISODE / PREFERENCE entries.
+        List<MemoryEntry> summaries = retriever.recallSummaries(visible);
+        List<MemoryEntry> usedSummaries = summaries.isEmpty()
+                ? List.of()
+                : List.of(summaries.get(0));
+
+        // Fact/Event pool: remaining slots, SUMMARY type excluded.
+        // Fetch all entries (respects subclass overrides such as Moonlit's log_* filter),
+        // strip any SUMMARY that slipped through, then cap at the remaining slot count.
+        int factLimit = (limit <= 0) ? 0 : Math.max(0, limit - usedSummaries.size());
+        List<MemoryEntry> facts = retriever.recallForContext(visible, 0, userText).stream()
+                .filter(e -> e.type() != MemoryType.SUMMARY)
+                .limit(factLimit <= 0 ? Long.MAX_VALUE : factLimit)
+                .toList();
+
+        List<MemoryEntry> memories = Stream.concat(usedSummaries.stream(), facts.stream()).toList();
+        lastRecalledSubjects = memories.stream()
+                .map(MemoryEntry::subject)
+                .filter(Objects::nonNull)
+                .toList();
         if (memories.isEmpty()) {
             return List.of();
         }
