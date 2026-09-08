@@ -24,7 +24,7 @@ import java.util.List;
  * <ol>
  *   <li>Read {@code state.getMessages()}</li>
  *   <li>If estimated tokens exceed budget -> {@link ContextCompressor} summarizes
- *       the oldest messages into one summary, keeping system + recent K</li>
+ *       the oldest history into one summary, keeping recent K messages</li>
  *   <li>Rewrite {@code state.getMessages()} in place (checkpoint consistency)</li>
  *   <li>Archive the original compressed messages to {@link MemoryStore} as a
  *       {@link MemoryType#SUMMARY} entry (if store + scope configured)</li>
@@ -42,7 +42,7 @@ public class CompressingContextBuilder implements ContextBuilder {
 
     /**
      * @param modelClient  model used for summarization
-     * @param budgetTokens token budget before compaction triggers
+     * @param budgetTokens history-only budget; reserve persona/tool/output tokens separately
      * @param keepRecent   messages to keep verbatim at the tail
      * @param archiveStore optional store for archiving compressed originals (null = no archive)
      * @param archiveScope scope under which to archive summaries (null = no archive)
@@ -64,7 +64,7 @@ public class CompressingContextBuilder implements ContextBuilder {
             return new ArrayList<>(messages);
         }
 
-        // Rewrite state in place (Stage 8 D4: checkpointed state matches what was sent)
+        // Rewrite persisted history; instructions and transient context remain request-only.
         messages.clear();
         messages.addAll(result.compressed());
 

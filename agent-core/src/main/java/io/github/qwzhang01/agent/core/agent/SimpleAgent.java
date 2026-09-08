@@ -71,9 +71,6 @@ public class SimpleAgent implements Agent {
         if (userMessage.role() != ChatRole.USER) {
             throw new IllegalArgumentException("userMessage must have role USER");
         }
-        if (state.getMessages().isEmpty() && config.getSystemPrompt() != null) {
-            state.addMessage(ChatMessage.system(config.getSystemPrompt()));
-        }
         state.addMessage(userMessage);
 
         state.setMaxSteps(config.getMaxSteps());

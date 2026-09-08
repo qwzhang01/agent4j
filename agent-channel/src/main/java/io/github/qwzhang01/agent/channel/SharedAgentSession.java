@@ -310,8 +310,8 @@ public class SharedAgentSession {
                     + task.owner() + "', not '" + fromUser + "' - cannot hand off someone else's task");
         }
 
-        // 1) Conversation continuity: inject the baton-pass note into the shared state
-        sharedState.addMessage(io.github.qwzhang01.agent.core.model.ChatMessage.system(
+        // 1) Conversation continuity: human handover is history, not privileged instructions.
+        sharedState.addMessage(io.github.qwzhang01.agent.core.model.ChatMessage.user(
                 "[handoff] task " + taskId + " owner " + fromUser + " -> " + toUser
                         + (note != null && !note.isBlank() ? " | note: " + note : "")));
 

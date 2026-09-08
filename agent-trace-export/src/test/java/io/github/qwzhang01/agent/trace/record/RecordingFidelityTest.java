@@ -97,15 +97,20 @@ class RecordingFidelityTest {
                     "step " + (i + 1) + " state must equal the captured model input");
         }
 
-        // step 1 saw [system, user]; step 2 saw the TRIMMED window [assistant, tool]
+        // Every request retains its persona, even when the builder trims history.
         assertEquals(List.of(ChatRole.SYSTEM, ChatRole.USER),
                 trajectory.steps().get(0).state().stream().map(ChatMessage::role).toList());
         var step2State = trajectory.steps().get(1).state();
-        assertEquals(2, step2State.size());
-        assertEquals(List.of(ChatRole.ASSISTANT, ChatRole.TOOL),
+        assertEquals(3, step2State.size());
+        assertEquals(List.of(ChatRole.SYSTEM, ChatRole.ASSISTANT, ChatRole.TOOL),
                 step2State.stream().map(ChatMessage::role).toList());
-        // ...and that is NOT the full history the loop kept in AgentState (7 messages)
-        assertEquals(7, state.getMessages().size());
+        // State keeps six history messages; only the model boundary owns the persona.
+        assertEquals(6, state.getMessages().size());
+        assertTrue(state.getMessages().stream().noneMatch(m -> m.role() == ChatRole.SYSTEM));
+        for (var request : capturing.requests) {
+            assertEquals("You are the system under test.", request.get(0).content());
+            assertEquals(1, request.stream().filter(m -> m.role() == ChatRole.SYSTEM).count());
+        }
         assertNotEquals(state.getMessages(), step2State);
 
         // logical channel keeps the full conversation for trainers

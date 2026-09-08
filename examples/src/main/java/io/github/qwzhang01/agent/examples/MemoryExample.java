@@ -42,7 +42,7 @@ public class MemoryExample {
         // ---- Turn 1: user states a preference ----
         System.out.println("--- Turn 1: User states a preference ---");
         session.addUser("记住我喜欢深色模式");
-        AgentState state1 = session.toAgentState("You are a helpful assistant.");
+        AgentState state1 = session.toAgentState();
         System.out.println("User: 记住我喜欢深色模式");
 
         List<ChatMessage> ctx1 = ctxBuilder.build(null, state1);
@@ -62,7 +62,7 @@ public class MemoryExample {
         // ---- Turn 2: user asks a question ----
         System.out.println("--- Turn 2: User asks a related question ---");
         session.addUser("帮我设置界面");
-        AgentState state2 = session.toAgentState("You are a helpful assistant.");
+        AgentState state2 = session.toAgentState();
         System.out.println("User: 帮我设置界面");
 
         List<ChatMessage> ctx2 = ctxBuilder.build(null, state2);

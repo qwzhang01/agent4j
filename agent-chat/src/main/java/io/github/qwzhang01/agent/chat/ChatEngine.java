@@ -121,7 +121,8 @@ public final class ChatEngine {
 
         long startNanos = System.nanoTime();
         // Base prefix: assembled once; retry attempts may append retryExtraText.
-        List<ChatMessage> basePrefix = assembler.assemble(room, speaker, userText);
+        var prepared = assembler.prepare(room, speaker, userText);
+        List<ChatMessage> basePrefix = prepared.prefix();
 
         String finalReply = "";
         List<ChatMessage> finalPrefix = basePrefix;
@@ -131,10 +132,18 @@ public final class ChatEngine {
         while (true) {
             List<ChatMessage> attemptPrefix = buildAttemptPrefix(basePrefix, retriesDone);
             AgentState state = new AgentState();
-            attemptPrefix.forEach(state::addMessage);
+            prepared.history().forEach(state::addMessage);
+            int historySize = prepared.history().size();
 
             AgentConfig config = new AgentConfig(
-                    speaker.personaId(), null, modelClient, tools, maxSteps);
+                    speaker.personaId(), prepared.systemPrompt(), modelClient, tools, maxSteps,
+                    (activeConfig, currentState) -> {
+                        // Keep retrieved context out of state; include each new tool round once.
+                        List<ChatMessage> context = new ArrayList<>(attemptPrefix);
+                        context.addAll(currentState.getMessages().subList(
+                                historySize, currentState.getMessages().size()));
+                        return context;
+                    });
             SimpleAgent agent = new SimpleAgent(config);
 
             final String[] replyHolder = {""};
@@ -166,7 +175,11 @@ public final class ChatEngine {
             }
 
             finalReply = replyHolder[0];
-            finalPrefix = attemptPrefix;
+            finalPrefix = new ArrayList<>();
+            if (prepared.systemPrompt() != null && !prepared.systemPrompt().isBlank()) {
+                finalPrefix.add(ChatMessage.system(prepared.systemPrompt()));
+            }
+            finalPrefix.addAll(attemptPrefix);
             finalState = state;
 
             boolean shouldRetry = retryPolicy.shouldRetry(finalReply, retriesDone);

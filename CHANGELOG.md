@@ -9,6 +9,12 @@ The current Maven version is `0.1.0`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: persona is request-scoped, not conversation history.** ReAct injects `AgentConfig.systemPrompt` at each model request after context building; `AgentState` no longer receives it from `SimpleAgent.prepare`. Replace `AgentState(systemPrompt, userInput)` with `AgentState(userInput)` and `ChatSession.toAgentState(systemPrompt)` with `toAgentState()`, configuring the persona on `AgentConfig`.
+- Old checkpoints containing a leading persona require explicit `AgentState.migrateLegacySystemPrompt(oldPrompt)` before execution; unmatched or additional SYSTEM history fails closed rather than being silently deleted. See [migration and decision 23](notes/architecture-stance-decision-23-system-prompt-at-request-boundary.md).
+- Window/memory builders operate on history without a persona slot. ContextBuilder may return transient SYSTEM context but must not inject persona or persist SYSTEM into state. ChatEngine separates PersonaSource, HistorySource and transient sources; human handoff notes use USER history rather than SYSTEM privilege.
+
 ## [0.1.0] - 2026-09-01
 
 ### Added

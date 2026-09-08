@@ -18,7 +18,7 @@ import java.util.List;
  * Demonstrates:
  * - A long conversation exceeding the token budget
  * - ContextCompressor summarizing old messages into one summary
- * - System prompt + recent K messages preserved verbatim
+ * - Recent K history messages preserved; persona belongs to AgentConfig, outside compaction
  * - Original messages archived to MemoryStore as a SUMMARY entry
  * <p>
  * Run: mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.CompressionExample
@@ -39,7 +39,6 @@ public class CompressionExample {
 
         // Build a long conversation that exceeds the budget
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("You are a debugging assistant."));
         for (int i = 1; i <= 8; i++) {
             state.addMessage(ChatMessage.user("I tried solution " + i + " but got error code " + (i * 100)
                     + " with a very long description that repeats ".repeat(3)));

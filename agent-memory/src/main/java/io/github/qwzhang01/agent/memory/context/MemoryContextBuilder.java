@@ -4,7 +4,6 @@ import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
-import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
@@ -25,7 +24,7 @@ import java.util.List;
  * <ol>
  *   <li>Compact: if messages exceed budget, summarize old messages (keeps state consistent)</li>
  *   <li>Recall: retrieve active memories visible from the configured scopes</li>
- *   <li>Inject: render memories as a context block right after the system prompt</li>
+ *   <li>Inject: prepend memories to history; the loop adds the persona before this context</li>
  * </ol>
  * Memory injection is NOT written back to state (it's re-retrieved each turn).
  */
@@ -83,20 +82,11 @@ public class MemoryContextBuilder implements ContextBuilder {
             return new ArrayList<>(messages);
         }
 
-        // 3. Inject memories after the system prompt
+        // 3. Prepend retrieval to history, without touching the state's identity.
         String memoryBlock = renderMemories(memories);
-        List<ChatMessage> assembled = new ArrayList<>();
-        boolean injected = false;
-        for (ChatMessage m : messages) {
-            assembled.add(m);
-            if (!injected && m.role() == ChatRole.SYSTEM) {
-                assembled.add(ChatMessage.user("[Known memories]\n" + memoryBlock));
-                injected = true;
-            }
-        }
-        if (!injected) {
-            assembled.add(0, ChatMessage.user("[Known memories]\n" + memoryBlock));
-        }
+        List<ChatMessage> assembled = new ArrayList<>(messages.size() + 1);
+        assembled.add(ChatMessage.user("[Known memories]\n" + memoryBlock));
+        assembled.addAll(messages);
 
         log.debug("Injected {} memories into context (scopes={})", memories.size(), scopes);
         return assembled;

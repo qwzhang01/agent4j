@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
@@ -203,10 +204,20 @@ public class ReActAgentLoop implements AgentLoop {
     // ============ Private Helpers ============
 
     private ModelRequest buildRequest(AgentConfig config, AgentState state) {
-        // Stage 8: use ContextBuilder if configured, otherwise passthrough (backward compatible)
-        List<ChatMessage> messages = config.getContextBuilder() != null
+        // Reject legacy personas before a builder can trim/compact them away.
+        requireHistoryOnly(state.getMessages());
+        List<ChatMessage> context = config.getContextBuilder() != null
                 ? config.getContextBuilder().build(config, state)
-                : new ArrayList<>(state.getMessages());
+                : state.getMessages();
+        requireHistoryOnly(state.getMessages());
+
+        // Own the request list: a builder may return an immutable list or live state.
+        List<ChatMessage> messages = new ArrayList<>(context.size() + 1);
+        String systemPrompt = config.getSystemPrompt();
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            messages.add(ChatMessage.system(systemPrompt));
+        }
+        messages.addAll(context);
 
         var builder = ModelRequest.builder()
                 .messages(messages);
@@ -218,5 +229,14 @@ public class ReActAgentLoop implements AgentLoop {
         }
 
         return builder.build();
+    }
+
+    private static void requireHistoryOnly(List<ChatMessage> messages) {
+        if (messages.stream().anyMatch(message -> message.role() == ChatRole.SYSTEM)) {
+            throw new IllegalArgumentException("SYSTEM instructions must come from AgentConfig.systemPrompt, "
+                    + "not AgentState. For old checkpoints, explicitly call "
+                    + "AgentState.migrateLegacySystemPrompt with the old persona; "
+                    + "migrate other SYSTEM events separately.");
+        }
     }
 }

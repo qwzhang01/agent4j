@@ -17,7 +17,7 @@ class AgentStateJsonTest {
 
     @Test
     void roundTripPreservesMessagesStepsAndStatus() throws Exception {
-        AgentState original = new AgentState("sys", "hello");
+        AgentState original = new AgentState("hello");
         original.addMessage(ChatMessage.assistant("hi"));
         original.incrementStep();
         original.incrementStep();
@@ -36,10 +36,10 @@ class AgentStateJsonTest {
 
     @Test
     void snapshotIsIndependentCopy() {
-        AgentState original = new AgentState("sys", "hello");
+        AgentState original = new AgentState("hello");
         AgentState snap = original.snapshot();
         original.addMessage(ChatMessage.assistant("later"));
-        assertEquals(2, snap.getMessages().size());
-        assertEquals(3, original.getMessages().size());
+        assertEquals(1, snap.getMessages().size());
+        assertEquals(2, original.getMessages().size());
     }
 }

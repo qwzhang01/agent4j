@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +13,13 @@ import java.util.List;
  * Mutable state of an Agent run.
  * <p>
  * This is the single source of truth for one Agent execution:
- * - Conversation messages (history)
+ * - Conversation messages (history, never agent instructions)
  * - Current step count (for max-step enforcement)
  * - Status (where the loop currently is)
+ * <p>
+ * Agent instructions belong to {@link AgentConfig#getSystemPrompt()} and are
+ * injected by the loop at the model boundary. Old checkpoints must explicitly
+ * migrate their leading persona with {@link #migrateLegacySystemPrompt(String)}.
  * <p>
  * Stage 6: Jackson-serializable so {@code AgentNode} can park a snapshot
  * on the workflow blackboard ({@code agentState:{nodeId}}) and restore
@@ -39,11 +44,27 @@ public class AgentState {
 
     // ============ Constructors ============
 
-    public AgentState(String systemPrompt, String userInput) {
-        if (systemPrompt != null) {
-            messages.add(ChatMessage.system(systemPrompt));
-        }
+    /** Create conversation history with one user message, without agent instructions. */
+    public AgentState(String userInput) {
         messages.add(ChatMessage.user(userInput));
+    }
+
+    /**
+     * Explicitly migrate the leading persona from an old checkpoint.
+     * The caller must supply the OLD agent's exact prompt, not the target agent's.
+     * Fails without modifying history if the leading message does not match.
+     * Other SYSTEM messages are intentionally not removed: their meaning cannot
+     * be inferred safely and requires caller-side migration.
+     *
+     * @param expectedPrompt exact legacy persona text
+     */
+    public void migrateLegacySystemPrompt(String expectedPrompt) {
+        if (expectedPrompt == null || messages.isEmpty()
+                || messages.get(0).role() != ChatRole.SYSTEM
+                || !expectedPrompt.equals(messages.get(0).content())) {
+            throw new IllegalArgumentException("Legacy leading SYSTEM does not match expectedPrompt");
+        }
+        messages.remove(0);
     }
 
     public List<ChatMessage> getMessages() {

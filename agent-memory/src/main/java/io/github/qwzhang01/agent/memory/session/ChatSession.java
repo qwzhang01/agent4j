@@ -2,7 +2,6 @@ package io.github.qwzhang01.agent.memory.session;
 
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
-import io.github.qwzhang01.agent.core.model.ChatRole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +12,9 @@ import java.util.List;
  * Holds the multi-turn message history that spans across Agent runs within
  * one conversation. Each turn:
  * <ol>
- *   <li>{@link #toAgentState} builds a fresh AgentState from session history + system prompt</li>
+ *   <li>{@link #toAgentState} builds a fresh AgentState from session history only</li>
  *   <li>The Agent runs (producing new messages in AgentState)</li>
- *   <li>{@link #syncFrom} pulls the updated non-system messages back into session history</li>
+ *   <li>{@link #syncFrom} pulls the updated history back into session history</li>
  * </ol>
  * <p>
  * This is the "Session Memory" layer in the three-tier model (Stage 8 §2.1):
@@ -47,13 +46,10 @@ public class ChatSession {
     }
 
     /**
-     * Build a fresh AgentState from session history + system prompt.
+     * Build a fresh AgentState from history. Configure instructions on AgentConfig.
      */
-    public AgentState toAgentState(String systemPrompt) {
+    public AgentState toAgentState() {
         AgentState state = new AgentState();
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
-            state.addMessage(ChatMessage.system(systemPrompt));
-        }
         for (ChatMessage msg : history) {
             state.addMessage(msg);
         }
@@ -61,15 +57,11 @@ public class ChatSession {
     }
 
     /**
-     * Sync non-system messages from AgentState back into session history.
+     * Sync conversation history from AgentState back into session history.
      * Called after an Agent run to capture new messages.
      */
     public void syncFrom(AgentState state) {
         history.clear();
-        for (ChatMessage msg : state.getMessages()) {
-            if (msg.role() != ChatRole.SYSTEM) {
-                history.add(msg);
-            }
-        }
+        history.addAll(state.getMessages());
     }
 }

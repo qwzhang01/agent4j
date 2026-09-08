@@ -214,10 +214,10 @@ class MemoryPipelineTest {
         session.addUser("hello");
         session.addAssistant("hi there");
 
-        AgentState state = session.toAgentState("you are helpful");
-        assertEquals(3, state.getMessages().size());
-        assertEquals(ChatRole.SYSTEM, state.getMessages().get(0).role());
-        assertEquals("hello", state.getMessages().get(1).content());
+        AgentState state = session.toAgentState();
+        assertEquals(2, state.getMessages().size());
+        assertEquals(ChatRole.USER, state.getMessages().get(0).role());
+        assertEquals("hello", state.getMessages().get(0).content());
 
         // Simulate agent adding a new message
         state.addMessage(ChatMessage.assistant("how can I help?"));
@@ -230,7 +230,7 @@ class MemoryPipelineTest {
     // ============ MemoryContextBuilder ============
 
     @Test
-    void contextBuilder_injectsMemoriesAfterSystem() {
+    void contextBuilder_prependsMemoriesWithoutPersistingThem() {
         store.write(new MemoryEntry(null, "user:u1", MemoryType.PREFERENCE, "diet", "allergic to peanuts", 0.9,
                 MemoryProvenance.userSaid("u1", "r1", Instant.now()), MemoryStatus.ACTIVE, Instant.now(), null));
 
@@ -238,17 +238,15 @@ class MemoryPipelineTest {
                 retriever, List.of("user:u1"), null, null, null, 0);
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("you are a helpful assistant"));
         state.addMessage(ChatMessage.user("what should I eat?"));
 
         List<ChatMessage> result = builder.build(null, state);
 
-        // [system, memories, user]
-        assertEquals(3, result.size());
-        assertEquals(ChatRole.SYSTEM, result.get(0).role());
-        assertEquals(ChatRole.USER, result.get(1).role());
-        assertTrue(result.get(1).content().contains("allergic to peanuts"));
-        assertEquals("what should I eat?", result.get(2).content());
+        assertEquals(2, result.size());
+        assertEquals(ChatRole.USER, result.get(0).role());
+        assertTrue(result.get(0).content().contains("allergic to peanuts"));
+        assertEquals("what should I eat?", result.get(1).content());
+        assertEquals(1, state.getMessages().size(), "retrieval must not enter history");
     }
 
     @Test
@@ -257,11 +255,10 @@ class MemoryPipelineTest {
                 retriever, List.of("user:u1"), null, null, null, 0);
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("sys"));
         state.addMessage(ChatMessage.user("hi"));
 
         List<ChatMessage> result = builder.build(null, state);
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -276,7 +273,6 @@ class MemoryPipelineTest {
                 retriever, List.of("user:u1"), compressor, store, "session:s1", 0);
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("sys"));
         state.addMessage(ChatMessage.user("long old message ".repeat(10)));
         state.addMessage(ChatMessage.assistant("long old response ".repeat(10)));
         state.addMessage(ChatMessage.user("recent 1"));
@@ -284,12 +280,11 @@ class MemoryPipelineTest {
 
         List<ChatMessage> result = builder.build(null, state);
 
-        // After compaction: [sys, summary, recent1, recent2] + memory injection after sys
-        // = [sys, memories, summary, recent1, recent2]
-        assertEquals(5, result.size());
-        assertEquals(ChatRole.SYSTEM, result.get(0).role());
-        assertTrue(result.get(1).content().contains("allergic to peanuts"), "memory injected");
-        assertTrue(result.get(2).content().contains("summary"), "compaction summary present");
+        // Persona is injected later by the loop: [memories, summary, recent1, recent2].
+        assertEquals(4, result.size());
+        assertEquals(ChatRole.USER, result.get(0).role());
+        assertTrue(result.get(0).content().contains("allergic to peanuts"), "memory injected");
+        assertTrue(result.get(1).content().contains("summary"), "compaction summary present");
     }
 
     // ============ End-to-End Multi-Turn Memory Loop ============
@@ -307,7 +302,7 @@ class MemoryPipelineTest {
 
         // --- Turn 1: user states a preference ---
         session.addUser("记住我对花生过敏");
-        AgentState state1 = session.toAgentState("you are helpful");
+        AgentState state1 = session.toAgentState();
         AgentConfig config1 = new AgentConfig("test", "you are helpful", mc, null, 5, ctxBuilder);
 
         // Run agent (manually, since we're testing memory not the loop)
@@ -325,7 +320,7 @@ class MemoryPipelineTest {
 
         // --- Turn 2: user asks a question, memory should be injected ---
         session.addUser("帮我推荐午餐");
-        AgentState state2 = session.toAgentState("you are helpful");
+        AgentState state2 = session.toAgentState();
 
         List<ChatMessage> ctx2 = ctxBuilder.build(config1, state2);
 

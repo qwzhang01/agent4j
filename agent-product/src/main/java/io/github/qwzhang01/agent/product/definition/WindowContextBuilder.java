@@ -4,16 +4,15 @@ import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
-import io.github.qwzhang01.agent.core.model.ChatRole;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Built-in short-term memory strategy: keep the system prompt plus the most recent
- * N messages (Stage 13 M13.1, {@code spec.memory.shortTerm: {strategy: window}}).
+ * Built-in short-term memory strategy: keep the most recent N history
+ * messages (Stage 13 M13.1, {@code spec.memory.shortTerm: {strategy: window}}).
  * <p>
- * Read-time trimming: the returned list is what the model sees; the agent state
+ * Read-time trimming: the loop prepends the persona after this builder; the agent state
  * keeps the FULL history (trace/audit stay complete). This is deliberately
  * different from {@code CompressingContextBuilder} (Stage 8), which rewrites
  * state in place - windowing is lossy visibility, compaction is lossy state.
@@ -27,7 +26,7 @@ public final class WindowContextBuilder implements ContextBuilder {
     private final int maxMessages;
 
     /**
-     * @param maxMessages messages kept verbatim after the system prompt (&gt; 0)
+     * @param maxMessages history messages kept verbatim (&gt; 0), excluding instructions
      */
     public WindowContextBuilder(int maxMessages) {
         if (maxMessages <= 0) {
@@ -43,16 +42,6 @@ public final class WindowContextBuilder implements ContextBuilder {
             return new ArrayList<>(messages);
         }
 
-        List<ChatMessage> window = new ArrayList<>(maxMessages + 1);
-
-        // Keep the leading system prompt (persona) if present.
-        int from = messages.size() - maxMessages;
-        if (!messages.isEmpty() && messages.get(0).role() == ChatRole.SYSTEM) {
-            window.add(messages.get(0));
-            from = Math.max(from, 1);
-        }
-
-        window.addAll(messages.subList(from, messages.size()));
-        return window;
+        return new ArrayList<>(messages.subList(messages.size() - maxMessages, messages.size()));
     }
 }

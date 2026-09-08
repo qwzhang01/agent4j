@@ -142,25 +142,24 @@ class CharacterMemoryTest {
     // ============ Context Builder Injection ============
 
     @Test
-    @DisplayName("memories are injected right after the system prompt as [Known memories]")
+    @DisplayName("memory builder returns retrieval and history; the loop owns persona injection")
     void memoriesInjectedAfterSystemPrompt() {
         store.write(episode("agent:marcus", "mead", "The player bought me a mead last visit"));
 
         CharacterMemory memory = new CharacterMemory(store);
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("You are Marcus."));
         state.addMessage(ChatMessage.user("Hello!"));
 
         AgentConfig config = new AgentConfig("marcus", "You are Marcus.", null, null);
         List<ChatMessage> built = memory.contextBuilder("marcus", "game-1").build(config, state);
 
-        assertEquals(3, built.size());
-        assertEquals(ChatRole.SYSTEM, built.get(0).role());
-        assertEquals(ChatRole.USER, built.get(1).role());
-        assertTrue(built.get(1).content().contains("[Known memories]"),
+        assertEquals(2, built.size());
+        assertEquals(ChatRole.USER, built.get(0).role());
+        assertTrue(built.get(0).content().contains("[Known memories]"),
                 "the injection block is a stable contract (changing it breaks replay/debug tooling)");
-        assertTrue(built.get(1).content().contains("mead"));
-        assertEquals("Hello!", built.get(2).content());
+        assertTrue(built.get(0).content().contains("mead"));
+        assertEquals("Hello!", built.get(1).content());
+        assertEquals(List.of(ChatMessage.user("Hello!")), state.getMessages());
     }
 
     @Test

@@ -42,6 +42,8 @@ class ChatEngineTest {
         assertInstanceOf(AgentEvent.TurnTrace.class, events.get(1));
         AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(2));
         assertEquals("hello there", done.finalAnswer());
+        assertTrue(done.state().getMessages().stream().noneMatch(m -> m.role() == ChatRole.SYSTEM));
+        assertEquals(2, done.state().getMessages().size());
         assertEquals(2, engine.room().history().size());
         assertEquals("luna", engine.room().history().get(1).speakerId());
     }
@@ -80,6 +82,33 @@ class ChatEngineTest {
         assertEquals(ChatRole.ASSISTANT, second.get(3).role());
         assertEquals("remember me?", second.get(4).content());
         assertEquals(ChatRole.USER, second.get(4).role());
+    }
+
+    @Test
+    void extraAndCustomRetrievalStayOutOfDoneStateAcrossToolRounds() {
+        var registry = new io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry();
+        RecordingModelClient model = recording(MockModelClient.scripted()
+                .respondToolCalls(io.github.qwzhang01.agent.core.model.ToolCall.of("c1", "missing", "{}"))
+                .respondText("answer"));
+        ChatEngine engine = ChatEngine.builder()
+                .room(new Room("r", List.of(LUNA)))
+                .speakerPolicy(new SoloSpeaker())
+                .assembler(new ContextAssembler(List.of(new PersonaSource(), new HistorySource(),
+                        new ExtraTextSource("scene"),
+                        (room, speaker, text) -> List.of(ChatMessage.user("retrieved fact")))))
+                .modelClient(model).tools(registry).maxSteps(3).build();
+        List<AgentEvent> events = new ArrayList<>();
+        engine.stream("question", events::add);
+        var done = assertInstanceOf(AgentEvent.Done.class, events.get(events.size() - 1));
+        assertEquals(List.of(ChatRole.USER, ChatRole.ASSISTANT, ChatRole.TOOL, ChatRole.ASSISTANT),
+                done.state().getMessages().stream().map(ChatMessage::role).toList());
+        assertEquals("question", done.state().getMessages().get(0).content());
+        assertEquals(2, model.requests.size());
+        for (var request : model.requests) {
+            assertEquals("You are Luna.", request.messages().get(0).content());
+            assertEquals(1, request.messages().stream().filter(m -> "scene".equals(m.content())).count());
+            assertEquals(1, request.messages().stream().filter(m -> "retrieved fact".equals(m.content())).count());
+        }
     }
 
     @Test

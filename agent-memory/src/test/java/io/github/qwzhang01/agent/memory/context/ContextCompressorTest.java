@@ -146,7 +146,6 @@ class ContextCompressorTest {
                 mc, 10, 2, store, "session:s1");
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("sys"));
         state.addMessage(ChatMessage.user("long message 1 ".repeat(10)));
         state.addMessage(ChatMessage.assistant("long response 1 ".repeat(10)));
         state.addMessage(ChatMessage.user("recent 1"));
@@ -174,7 +173,6 @@ class ContextCompressorTest {
                 mc, 10, 2, null, null);
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("sys"));
         state.addMessage(ChatMessage.user("long ".repeat(20)));
         state.addMessage(ChatMessage.assistant("long ".repeat(20)));
         state.addMessage(ChatMessage.user("r1"));
@@ -191,11 +189,10 @@ class ContextCompressorTest {
                 mc, 100000, 4, new InMemoryMemoryStore(), "session:s1");
 
         AgentState state = new AgentState();
-        state.addMessage(ChatMessage.system("sys"));
         state.addMessage(ChatMessage.user("hi"));
 
         List<ChatMessage> result = builder.build(null, state);
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
         assertEquals(state.getMessages(), result);
     }
 

@@ -152,9 +152,9 @@ class SharedAgentSessionCollabTest {
         assertEquals(1, session.handoffs().size());
 
         assertTrue(session.sharedState().getMessages().stream()
-                        .anyMatch(m -> m.role() == ChatRole.SYSTEM && m.content() != null
+                        .anyMatch(m -> m.role() == ChatRole.USER && m.content() != null
                                 && m.content().contains("[handoff]") && m.content().contains("alice -> bob")),
-                "a system baton note must be injected into the shared state");
+                "a user-level baton note must be recorded in shared history");
     }
 
     @Test

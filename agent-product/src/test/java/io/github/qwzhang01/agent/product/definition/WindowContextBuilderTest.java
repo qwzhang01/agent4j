@@ -1,29 +1,28 @@
 package io.github.qwzhang01.agent.product.definition;
 
+import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
+import io.github.qwzhang01.agent.core.agent.SimpleAgent;
+import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.model.ModelRequest;
+import io.github.qwzhang01.agent.core.model.ModelResponse;
+import io.github.qwzhang01.agent.core.model.StreamEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * M13.1 window builder tests: read-time trimming that never touches state.
- */
+/** Read-time windowing never owns instructions or mutates full history. */
 class WindowContextBuilderTest {
-
-    private static ChatMessage msg(ChatRole role, String text) {
-        return role == ChatRole.SYSTEM ? ChatMessage.system(text) : ChatMessage.user(text);
-    }
 
     private AgentState stateWith(int count) {
         AgentState state = new AgentState();
         for (int i = 1; i <= count; i++) {
-            state.addMessage(msg(ChatRole.USER, "m" + i));
+            state.addMessage(ChatMessage.user("m" + i));
         }
         return state;
     }
@@ -32,52 +31,32 @@ class WindowContextBuilderTest {
     void shortHistoryPassesThroughUntouched() {
         AgentState state = stateWith(3);
         List<ChatMessage> window = new WindowContextBuilder(10).build(null, state);
-
-        assertEquals(3, window.size());
-        assertEquals("m1", window.get(0).content());
+        assertEquals(state.getMessages(), window);
+        assertNotSame(state.getMessages(), window);
     }
 
     @Test
-    void longHistoryKeepsSystemPlusRecentN() {
-        AgentState state = new AgentState();
-        state.addMessage(msg(ChatRole.SYSTEM, "persona"));
-        for (int i = 1; i <= 10; i++) {
-            state.addMessage(msg(ChatRole.USER, "m" + i));
-        }
-
+    void longHistoryKeepsExactlyRecentN() {
+        AgentState state = stateWith(10);
         List<ChatMessage> window = new WindowContextBuilder(4).build(null, state);
-
-        assertEquals(5, window.size()); // system + 4 most recent
-        assertEquals(ChatRole.SYSTEM, window.get(0).role());
-        assertEquals("m7", window.get(1).content());
-        assertEquals("m10", window.get(4).content());
-    }
-
-    @Test
-    void longHistoryWithoutSystemKeepsRecentN() {
-        AgentState state = stateWith(10);
-
-        List<ChatMessage> window = new WindowContextBuilder(3).build(null, state);
-
-        assertEquals(3, window.size());
-        assertEquals("m8", window.get(0).content());
-        assertEquals("m10", window.get(2).content());
-    }
-
-    @Test
-    void trimmingIsReadTimeOnlyStateStaysComplete() {
-        AgentState state = stateWith(10);
-        new WindowContextBuilder(3).build(null, state);
-
-        assertEquals(10, state.getMessages().size(),
-                "windowing must NOT rewrite state (that is compaction's contract, Stage 8)");
+        assertEquals(4, window.size());
+        assertEquals("m7", window.get(0).content());
+        assertEquals("m10", window.get(3).content());
+        assertEquals(10, state.getMessages().size());
     }
 
     @Test
     void exactlyAtWindowSizePassesThrough() {
         AgentState state = stateWith(4);
-        List<ChatMessage> window = new WindowContextBuilder(4).build(null, state);
-        assertEquals(4, window.size());
+        assertEquals(state.getMessages(), new WindowContextBuilder(4).build(null, state));
+    }
+
+    @Test
+    void emptyHistoryProducesIndependentEmptyWindow() {
+        AgentState state = new AgentState();
+        var window = new WindowContextBuilder(1).build(null, state);
+        assertTrue(window.isEmpty());
+        assertNotSame(state.getMessages(), window);
     }
 
     @Test
@@ -87,18 +66,30 @@ class WindowContextBuilderTest {
     }
 
     @Test
-    void systemIsKeptEvenWhenItWouldFallInsideTheWindow() {
-        // 6 messages: system + 5 user; window 10 -> everything fits (system not duplicated)
-        AgentState state = new AgentState();
-        state.addMessage(msg(ChatRole.SYSTEM, "persona"));
-        for (int i = 1; i <= 5; i++) {
-            state.addMessage(msg(ChatRole.USER, "m" + i));
-        }
-        List<ChatMessage> window = new WindowContextBuilder(10).build(null, state);
+    void personaIsOutsideWindowAndNeverWrittenToHistory() {
+        var model = new CapturingModel();
+        AgentState state = stateWith(10);
+        var config = new AgentConfig("window", "current persona", model, null, 5,
+                new WindowContextBuilder(1));
+        new SimpleAgent(config).run("latest", state);
+        assertEquals(List.of(ChatMessage.system("current persona"), ChatMessage.user("latest")),
+                model.request.messages());
+        assertEquals(12, state.getMessages().size());
+        assertTrue(state.getMessages().stream().noneMatch(m -> m.role() == ChatRole.SYSTEM));
+    }
 
-        assertEquals(6, window.size());
-        long systemCount = window.stream().filter(m -> m.role() == ChatRole.SYSTEM).count();
-        assertEquals(1, systemCount);
-        assertTrue(window.stream().anyMatch(m -> "m5".equals(m.content())));
+    private static class CapturingModel implements ModelClient {
+        private ModelRequest request;
+
+        @Override
+        public ModelResponse chat(ModelRequest request) {
+            this.request = request;
+            return ModelResponse.text("ok");
+        }
+
+        @Override
+        public Stream<StreamEvent> stream(ModelRequest request) {
+            return Stream.of(new StreamEvent.Done(chat(request)));
+        }
     }
 }
