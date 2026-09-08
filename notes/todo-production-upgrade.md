@@ -18,7 +18,7 @@
 - 异步/采样抽取
 - stream 重试策略接口
 
-### Moonlit 做（M 系列，见 `MOONLIT_BACKLOG.md` §6）
+### Moonlit 做（M 系列，已完成，已从 `MOONLIT_BACKLOG.md` 待办删掉）
 
 - 情绪状态机、关系事件驱动、危机分类
 - 黄金集 / LLM-judge 回归
@@ -161,6 +161,23 @@
 
 **模块：** `agent-memory`  
 **类：** 新建 `RankingStrategy` 及内置实现；改 `MemoryRetriever`
+
+---
+
+## D. Code Review 修复（2026-09-08，针对 A1–A8 提交 `122878e` 的复查）
+
+> 来源：对 A1–A8 逐项代码审查后发现的 1 个真实 Bug + 5 项生产可靠性加固。全部已修复，全仓库测试通过（agent-core 32 + agent-memory 96 + agent-chat 128，BUILD SUCCESS，0 failures）。
+
+- [x] **P0 Bug**：`MemorySource.contribute()` 的 `factLimit` 复用 `0` 同时表达"无限制"和"槏位已耗尽"两种含义；当 `limit == summary 槏位数`（如 `limit=1` 且存在一条 SUMMARY）时，FACT 限额被误判为无限制，SUMMARY 之外的全部 FACT 都会泄漏进上下文。改用 `long` + `Long.MAX_VALUE` 单一"无限制"哨兵，消除歧义。新增回归测试 `MemorySourceTest.limitEqualsSummarySlots_factBudgetIsZero_notUnlimited`。
+- [x] **P0 并发风险**：`MemorySource.lastRecalledSubjects` / `ExtraTextSource.lastOutputBytes` 是"上次 contribute() 调用"快照，若同一实例被注册到多个 `ChatRoom`，或同一 room 被并发调用，`TurnTrace` 会读到别的会话的数据。已在 `ContextSource`/`MemorySource`/`ExtraTextSource` 类级 Javadoc 补充"一个实例只能属于一个 room、同一时间只处理一轮"的强约束说明。
+- [x] **P1**：重试期间旧的 `ContentDelta` 无边界信号，UI 无法感知"上一段要作废"。新增 `AgentEvent.RetryStarted(discardedReply, attemptNumber, maxAttempts)`，在 `ChatEngine` 决定重试时于旧 attempt 结束、新 attempt 开始前发出；未配置 `RetryPolicy` 时从不发出（默认行为不变）。新增 `RetryPolicyTest` 三个用例覆盖"不重试不发"、"内容与序号正确"、"maxAttempts 封顶下计数正确"。
+- [x] **P1**：`TurnTrace.promptTokens` 重试场景下统计口径不准——`buildTurnTrace` 始终用第一次 `assemble()` 的 `basePrefix`，未计入被接受那次尝试末尾追加的 `retryExtraText`。改为传入被接受尝试的 `attemptPrefix`。新增测试 `turnTrace_promptTokens_reflectsAcceptedAttemptsPrefix_includingRetryExtraText`。
+- [x] **P2**：`LlmMemoryExtractor.extractAsync` 未显式传 `Executor` 时静默退化到 `ForkJoinPool.commonPool()`，与其它并行流任务抢占共享池。改为退化到专用的、daemon 线程、有界固定大小的 `DEFAULT_EXECUTOR`；生产环境仍建议显式注入自有线程池。
+- [x] **P2**：`RankingStrategy` 接口 Javadoc 中"Two built-in implementations are provided"措辞让 `HybridRankingStrategy`（当前为空壳委托）显得像完整实现。补充"production-ready / not yet implemented"的明确标注，并将用法示例改回 `ImportanceRankingStrategy`。
+- [x] 顺手统一 `ChatEngine.buildTurnTrace` 里的 `instanceof` 写法（去掉裸强转，和文件里其余模式匹配风格一致）。
+
+**模块：** `agent-chat`、`agent-core`、`agent-memory`  
+**类：** 改 `MemorySource`、`ExtraTextSource`、`ContextSource`、`ChatEngine`、`AgentEvent`（新增 `RetryStarted`）、`LlmMemoryExtractor`、`RankingStrategy`；测试改 `MemorySourceTest`、`RetryPolicyTest`
 
 ---
 

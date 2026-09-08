@@ -61,7 +61,9 @@ public sealed interface AgentEvent {
      * @param extraTextBytes   UTF-8 byte size of all
      *                         {@link io.github.qwzhang01.agent.chat.context.ExtraTextSource}
      *                         contributions after budget truncation
-     * @param promptTokens     estimated prompt token count (character-count approximation)
+     * @param promptTokens     estimated prompt token count (character-count approximation),
+     *                         measured on the exact prefix sent for the accepted attempt
+     *                         (includes any retry-extra text appended for later attempts)
      * @param completionTokens estimated completion token count (character-count approximation)
      * @param latencyMs        wall-clock milliseconds from context assembly start to Done
      */
@@ -73,5 +75,23 @@ public sealed interface AgentEvent {
             int completionTokens,
             long latencyMs
     ) implements AgentEvent {
+    }
+
+    /**
+     * Emitted by {@link io.github.qwzhang01.agent.chat.ChatEngine} when a completed
+     * reply is discarded by a {@code RetryPolicy} and a new generation attempt is
+     * about to start.
+     * <p>
+     * Signals UI listeners to discard/reset any {@link ContentDelta}s accumulated
+     * for the current turn so far: the next {@code ContentDelta} belongs to a fresh
+     * attempt, not a continuation of the discarded one. Never emitted when no
+     * {@code RetryPolicy} is configured (default behavior is unchanged).
+     *
+     * @param discardedReply the full text of the attempt being thrown away
+     * @param attemptNumber  1-based index of the attempt about to start (2 = first retry)
+     * @param maxAttempts    the configured {@code RetryPolicy#maxAttempts()}
+     */
+    record RetryStarted(String discardedReply, int attemptNumber, int maxAttempts)
+            implements AgentEvent {
     }
 }

@@ -24,6 +24,15 @@ import java.util.List;
  * zeroing out all instruction context.  Tokens are approximated by
  * character count (1 char ≈ 1 token); swap {@link #estimateTokens} via
  * subclass to plug in a real tokenizer.
+ * <p>
+ * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastOutputBytes()}
+ * is a "last {@code contribute()} call" snapshot used by
+ * {@link io.github.qwzhang01.agent.chat.ChatEngine} to build {@code TurnTrace} right
+ * after {@code contribute()} returns on the same thread. Each {@code ChatRoom}/
+ * {@code ChatEngine} must own its own {@code ExtraTextSource} instance; if the same
+ * instance is registered on two rooms, or the same room's {@code stream()} is invoked
+ * concurrently from multiple threads, one turn's {@code TurnTrace} can observe another
+ * turn's byte count.
  */
 public class ExtraTextSource implements ContextSource {
 
@@ -35,7 +44,10 @@ public class ExtraTextSource implements ContextSource {
     private final String text;
     /** {@link #NO_LIMIT} or a positive character budget. */
     private final int maxTokens;
-    /** UTF-8 byte size of the text emitted by the most recent {@link #contribute} call. */
+    /**
+     * UTF-8 byte size of the text emitted by the most recent {@link #contribute} call.
+     * See the class-level thread-safety note: one instance = one room, one turn at a time.
+     */
     private volatile int lastOutputBytes;
 
     /**

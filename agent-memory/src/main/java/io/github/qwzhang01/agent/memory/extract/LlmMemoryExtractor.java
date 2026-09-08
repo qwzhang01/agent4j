@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 /**
@@ -68,13 +69,32 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     /** Default rate: always extract (100 = 100%). Preserves pre-sampling behaviour. */
     private static final int DEFAULT_SAMPLE_RATE = 100;
 
+    /**
+     * Shared fallback pool used only when the host does not inject its own {@link Executor}.
+     * <p>
+     * Deliberately <em>not</em> {@link java.util.concurrent.ForkJoinPool#commonPool()}: that
+     * pool is shared with unrelated parallel streams throughout the JVM, and an LLM call can
+     * block a common-pool worker for seconds — starving unrelated {@code parallelStream()}
+     * work elsewhere in the host application. This pool is small, bounded, and uses daemon
+     * threads so it never blocks JVM shutdown. Hosts running non-trivial extraction volume
+     * should inject a purpose-sized {@link Executor} via the full constructor instead of
+     * relying on this fallback.
+     */
+    private static final Executor DEFAULT_EXECUTOR = Executors.newFixedThreadPool(
+            Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
+            runnable -> {
+                Thread t = new Thread(runnable, "agent4j-memory-extract");
+                t.setDaemon(true);
+                return t;
+            });
+
     private final ModelClient modelClient;
     private final String instructions;
     /** 0 = never, 100 = always, 1–99 = probabilistic. */
     private final int sampleRate;
     /** XOR salt for the sampling hash; same seed → same decision for same sessionId. */
     private final long seed;
-    /** {@code null} = use {@link ForkJoinPool#commonPool()} via {@code supplyAsync}. */
+    /** {@code null} = use {@link #DEFAULT_EXECUTOR} (a dedicated bounded pool, not commonPool). */
     private final Executor executor;
 
     /** Backward-compatible: synchronous, always extracts. */
@@ -88,7 +108,7 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     }
 
     /**
-     * With sampling; uses {@link java.util.concurrent.ForkJoinPool#commonPool()} for async.
+     * With sampling; uses the shared {@link #DEFAULT_EXECUTOR} for async extraction.
      *
      * @param sampleRate 0–100; percentage of sessions that trigger extraction
      * @param seed       XOR salt for the sampling hash (e.g. per-deployment constant)
@@ -101,7 +121,10 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     /**
      * Full constructor.
      *
-     * @param executor   thread pool for async extraction; {@code null} = ForkJoinPool.commonPool
+     * @param executor thread pool for async extraction; {@code null} falls back to a small
+     *                 dedicated daemon pool shared by all {@code LlmMemoryExtractor} instances
+     *                 (see {@link #DEFAULT_EXECUTOR}). Production hosts with meaningful
+     *                 extraction volume should inject their own sized {@link Executor}.
      */
     public LlmMemoryExtractor(ModelClient modelClient, String instructions,
                                int sampleRate, long seed, Executor executor) {
@@ -171,9 +194,8 @@ public class LlmMemoryExtractor implements MemoryExtractor {
             return CompletableFuture.completedFuture(0);
         }
         Supplier<Integer> task = () -> extractAndStore(messages, scope, provenance, policy, store);
-        CompletableFuture<Integer> future = (executor != null)
-                ? CompletableFuture.supplyAsync(task, executor)
-                : CompletableFuture.supplyAsync(task);
+        CompletableFuture<Integer> future = CompletableFuture.supplyAsync(
+                task, executor != null ? executor : DEFAULT_EXECUTOR);
         return future.exceptionally(e -> {
             log.warn("extractAsync failed for session '{}': {}", sessionId, e.getMessage());
             return 0;

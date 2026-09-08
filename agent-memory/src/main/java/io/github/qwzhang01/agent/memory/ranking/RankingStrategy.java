@@ -11,17 +11,22 @@ import java.util.List;
  * (already filtered by scope and status) and must return them in preference order:
  * index 0 is the highest-priority entry that should appear in the LLM context window.
  *
- * <p>Two built-in implementations are provided:
+ * <p>Two implementations ship with this module, at different maturity levels:
  * <ul>
- *   <li>{@link ImportanceRankingStrategy} – token-overlap + importance weighted sum
- *       (the default behaviour preserved from {@code MemoryRetriever} pre-A8).</li>
- *   <li>{@link HybridRankingStrategy} – stub for future embedding-cosine fusion;
- *       currently delegates to {@link ImportanceRankingStrategy}.</li>
+ *   <li>{@link ImportanceRankingStrategy} – <b>production-ready</b>: token-overlap +
+ *       importance weighted sum (the default behaviour preserved from
+ *       {@code MemoryRetriever} pre-A8).</li>
+ *   <li>{@link HybridRankingStrategy} – <b>not yet implemented</b>: a placeholder that
+ *       currently delegates 100% of its ranking to {@link ImportanceRankingStrategy}.
+ *       Constructing it today has no behavioral effect beyond using the default
+ *       strategy directly; do not depend on embedding-based ranking until its
+ *       Javadoc says otherwise.</li>
  * </ul>
  *
- * <p>Typical usage via {@code MemoryRetriever}:
+ * <p>Typical usage via {@code MemoryRetriever} (production default; equivalent to the
+ * 1-arg constructor):
  * <pre>{@code
- * MemoryRetriever retriever = new MemoryRetriever(store, new HybridRankingStrategy());
+ * MemoryRetriever retriever = new MemoryRetriever(store, new ImportanceRankingStrategy());
  * }</pre>
  */
 public interface RankingStrategy {

@@ -221,6 +221,31 @@ class MemorySourceTest {
         assertEquals(5, factCount, "all 5 slots go to FACTs when there is no SUMMARY");
     }
 
+    /**
+     * Regression for the "limit == summary slots used" boundary: with limit=1 and one
+     * SUMMARY present, the SUMMARY consumes the only slot, so the FACT budget must be
+     * exactly 0 — not "unlimited". Previously {@code factLimit == 0} was misread as the
+     * NO_LIMIT sentinel and every FACT leaked into the context alongside the SUMMARY.
+     */
+    @Test
+    void limitEqualsSummarySlots_factBudgetIsZero_notUnlimited() {
+        InMemoryMemoryStore store = new InMemoryMemoryStore();
+        writeType(store, "user:u1", "sum", "session summary", 0.99, MemoryType.SUMMARY);
+        for (int i = 1; i <= 3; i++) {
+            writeType(store, "user:u1", "fact-" + i, "fact content " + i, 0.6, MemoryType.FACT);
+        }
+
+        MemorySource source = new MemorySource(
+                new MemoryRetriever(store), List.of("user:u1"), 1);
+        String text = source.contribute(new Room("r", List.of(LUNA)), LUNA, "hi").get(0).content();
+
+        assertTrue(text.contains("session summary"), "the single slot must go to the SUMMARY");
+        long factCount = text.lines().filter(l -> l.contains("fact content")).count();
+        assertEquals(0, factCount,
+                "FACT budget must be exactly 0 when limit is fully consumed by SUMMARY, "
+                        + "not unlimited");
+    }
+
     // ============ Helpers ============
 
     private static void write(InMemoryMemoryStore store, String scope, String subject,

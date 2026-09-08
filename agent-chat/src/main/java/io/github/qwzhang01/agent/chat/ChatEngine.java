@@ -99,8 +99,10 @@ public final class ChatEngine {
      * When a {@link RetryPolicy} is configured, replies that trigger
      * {@link RetryPolicy#shouldRetry} are regenerated (up to
      * {@link RetryPolicy#maxAttempts()} times). Each attempt streams its
-     * {@link AgentEvent.ContentDelta}s through {@code listener}; only the
-     * accepted reply's TurnTrace and Done are emitted.
+     * {@link AgentEvent.ContentDelta}s through {@code listener}; before a discarded
+     * attempt is retried, an {@link AgentEvent.RetryStarted} event is emitted so the
+     * host can reset any partial rendering. Only the accepted reply's TurnTrace and
+     * Done are emitted.
      */
     public void stream(String userText, Consumer<AgentEvent> listener) {
         Objects.requireNonNull(listener, "listener");
@@ -122,6 +124,7 @@ public final class ChatEngine {
         List<ChatMessage> basePrefix = assembler.assemble(room, speaker, userText);
 
         String finalReply = "";
+        List<ChatMessage> finalPrefix = basePrefix;
         AgentState finalState = new AgentState();
         int retriesDone = 0;
 
@@ -163,6 +166,7 @@ public final class ChatEngine {
             }
 
             finalReply = replyHolder[0];
+            finalPrefix = attemptPrefix;
             finalState = state;
 
             boolean shouldRetry = retryPolicy.shouldRetry(finalReply, retriesDone);
@@ -172,11 +176,15 @@ public final class ChatEngine {
             retriesDone++;
             log.info("ChatEngine retry {}/{} in room '{}'",
                     retriesDone, retryPolicy.maxAttempts(), room.roomId());
+            // Tell listeners to discard whatever ContentDelta the just-finished attempt
+            // streamed: the next ContentDelta belongs to a brand-new attempt.
+            listener.accept(new AgentEvent.RetryStarted(
+                    finalReply, retriesDone + 1, retryPolicy.maxAttempts()));
         }
 
         // Emit TurnTrace (before Done), update room history, fire listeners, emit Done.
         long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        listener.accept(buildTurnTrace(speaker, basePrefix, finalReply, latencyMs));
+        listener.accept(buildTurnTrace(speaker, finalPrefix, finalReply, latencyMs));
         room.append(RoomMessage.assistant(speaker.personaId(), finalReply));
         checkConsistency(speaker, userText, finalReply);
         fireReplied(speaker, userText, finalReply);
@@ -202,12 +210,12 @@ public final class ChatEngine {
     private AgentEvent.TurnTrace buildTurnTrace(ChatPersona speaker, List<ChatMessage> prefix,
                                                  String reply, long latencyMs) {
         List<String> recalledSubjects = assembler.sources().stream()
-                .filter(s -> s instanceof MemorySource)
-                .flatMap(s -> ((MemorySource) s).lastRecalledSubjects().stream())
+                .filter(source -> source instanceof MemorySource)
+                .flatMap(source -> ((MemorySource) source).lastRecalledSubjects().stream())
                 .toList();
         int extraBytes = assembler.sources().stream()
-                .filter(s -> s instanceof ExtraTextSource)
-                .mapToInt(s -> ((ExtraTextSource) s).lastOutputBytes())
+                .filter(source -> source instanceof ExtraTextSource)
+                .mapToInt(source -> ((ExtraTextSource) source).lastOutputBytes())
                 .sum();
         int promptChars = prefix.stream()
                 .mapToInt(m -> m.content() == null ? 0 : m.content().length())

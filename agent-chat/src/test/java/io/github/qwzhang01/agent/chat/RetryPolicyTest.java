@@ -143,6 +143,162 @@ class RetryPolicyTest {
         assertTrue(secondHasExtra, "retry attempt must contain retryExtraText");
     }
 
+    // ============ RetryStarted event ============
+
+    @Test
+    void retryStarted_notEmittedWhenNoRetryHappens() {
+        ChatRoom room = ChatRoom.builder()
+                .roomId("r")
+                .persona(LUNA)
+                .modelClient(MockModelClient.scripted().respondText("fine"))
+                .build();
+
+        List<AgentEvent> events = new ArrayList<>();
+        room.stream("hi", events::add);
+
+        assertTrue(events.stream().noneMatch(e -> e instanceof AgentEvent.RetryStarted),
+                "no RetryPolicy configured -> RetryStarted must never fire");
+    }
+
+    @Test
+    void retryStarted_firesOnceBeforeSecondAttempt_carriesDiscardedReply() {
+        MockModelClient model = MockModelClient.scripted()
+                .respondText("bad reply")
+                .respondText("good reply");
+
+        RetryPolicy policy = new RetryPolicy() {
+            @Override
+            public boolean shouldRetry(String reply, int retriesDone) {
+                return reply.contains("bad");
+            }
+
+            @Override
+            public int maxAttempts() { return 1; }
+
+            @Override
+            public String retryExtraText() { return "try again"; }
+        };
+
+        ChatRoom room = ChatRoom.builder()
+                .roomId("r")
+                .persona(LUNA)
+                .modelClient(model)
+                .retryPolicy(policy)
+                .build();
+
+        List<AgentEvent> events = new ArrayList<>();
+        room.stream("hi", events::add);
+
+        List<AgentEvent.RetryStarted> retries = events.stream()
+                .filter(e -> e instanceof AgentEvent.RetryStarted)
+                .map(e -> (AgentEvent.RetryStarted) e)
+                .toList();
+        assertEquals(1, retries.size(), "exactly one RetryStarted for one retry");
+        assertEquals("bad reply", retries.get(0).discardedReply(),
+                "RetryStarted must carry the reply that is being thrown away");
+        assertEquals(2, retries.get(0).attemptNumber(), "2 = first retry, per contract");
+        assertEquals(1, retries.get(0).maxAttempts());
+
+        // RetryStarted must land strictly between the discarded attempt's ContentDelta
+        // and the next attempt's first ContentDelta (i.e. before the model is re-invoked).
+        int retryIdx = indexOfFirst(events, AgentEvent.RetryStarted.class);
+        int doneIdx = indexOfFirst(events, AgentEvent.Done.class);
+        assertTrue(retryIdx >= 0 && retryIdx < doneIdx,
+                "RetryStarted must be emitted before the final Done");
+    }
+
+    @Test
+    void retryStarted_countMatchesActualRetries_underMaxAttemptsCap() {
+        // Policy always triggers but maxAttempts = 1 -> exactly 1 RetryStarted, not more.
+        MockModelClient model = MockModelClient.scripted()
+                .respondText("still bad")
+                .respondText("still bad 2");
+
+        RetryPolicy alwaysRetry = new RetryPolicy() {
+            @Override
+            public boolean shouldRetry(String reply, int retriesDone) { return true; }
+
+            @Override
+            public int maxAttempts() { return 1; }
+
+            @Override
+            public String retryExtraText() { return "try harder"; }
+        };
+
+        ChatRoom room = ChatRoom.builder()
+                .roomId("r")
+                .persona(LUNA)
+                .modelClient(model)
+                .retryPolicy(alwaysRetry)
+                .build();
+
+        List<AgentEvent> events = new ArrayList<>();
+        room.stream("hi", events::add);
+
+        long retryStartedCount = events.stream().filter(e -> e instanceof AgentEvent.RetryStarted).count();
+        assertEquals(1, retryStartedCount, "maxAttempts=1 caps retries, so only 1 RetryStarted");
+    }
+
+    // ============ TurnTrace.promptTokens accuracy on retry ============
+
+    /**
+     * TurnTrace.promptTokens must reflect the exact prefix sent for the *accepted*
+     * attempt, including any retryExtraText appended for that attempt — not the
+     * pre-retry basePrefix (which under-counts by the retryExtraText length).
+     */
+    @Test
+    void turnTrace_promptTokens_reflectsAcceptedAttemptsPrefix_includingRetryExtraText() {
+        MockModelClient model = MockModelClient.scripted()
+                .respondText("bad")
+                .respondText("good");
+
+        String extraText = "IMPORTANT: never say bad things, be nice instead.";
+        RetryPolicy policy = new RetryPolicy() {
+            @Override
+            public boolean shouldRetry(String reply, int retriesDone) {
+                return reply.contains("bad");
+            }
+
+            @Override
+            public int maxAttempts() { return 1; }
+
+            @Override
+            public String retryExtraText() { return extraText; }
+        };
+
+        ChatRoom room = ChatRoom.builder()
+                .roomId("r")
+                .persona(LUNA)
+                .modelClient(model)
+                .retryPolicy(policy)
+                .build();
+
+        List<AgentEvent> events = new ArrayList<>();
+        room.stream("hi", events::add);
+
+        AgentEvent.TurnTrace trace = (AgentEvent.TurnTrace) events.stream()
+                .filter(e -> e instanceof AgentEvent.TurnTrace)
+                .findFirst().orElseThrow();
+
+        // Baseline: same room/persona/history with no retry at all -> prefix length
+        // without the extra text. The accepted-attempt prefix must be exactly that
+        // baseline plus the retryExtraText length (the message ChatEngine appends).
+        ChatRoom baseline = ChatRoom.builder()
+                .roomId("r2")
+                .persona(LUNA)
+                .modelClient(MockModelClient.scripted().respondText("good"))
+                .build();
+        List<AgentEvent> baselineEvents = new ArrayList<>();
+        baseline.stream("hi", baselineEvents::add);
+        AgentEvent.TurnTrace baselineTrace = (AgentEvent.TurnTrace) baselineEvents.stream()
+                .filter(e -> e instanceof AgentEvent.TurnTrace)
+                .findFirst().orElseThrow();
+
+        assertEquals(baselineTrace.promptTokens() + extraText.length(), trace.promptTokens(),
+                "promptTokens on retry must count the retryExtraText appended for the "
+                        + "accepted attempt, not just the pre-retry basePrefix");
+    }
+
     // ============ maxAttempts cap — no infinite loop ============
 
     @Test

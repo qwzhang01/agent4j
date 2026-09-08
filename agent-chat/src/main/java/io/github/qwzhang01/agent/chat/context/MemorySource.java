@@ -27,6 +27,15 @@ import java.util.stream.Stream;
  * <p>
  * This class does not extract, schedule, or interpret {@code subject}.
  * The host decides what is in the store and which scopes are visible.
+ * <p>
+ * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastRecalledSubjects()}
+ * is a "last {@code contribute()} call" snapshot used by
+ * {@link io.github.qwzhang01.agent.chat.ChatEngine} to build {@code TurnTrace} right
+ * after {@code contribute()} returns on the same thread. Each {@code ChatRoom}/
+ * {@code ChatEngine} must own its own {@code MemorySource} instance; if the same
+ * instance is registered on two rooms, or the same room's {@code stream()} is invoked
+ * concurrently from multiple threads, one turn's {@code TurnTrace} can observe another
+ * turn's recalled subjects.
  */
 public final class MemorySource implements ContextSource {
 
@@ -34,7 +43,10 @@ public final class MemorySource implements ContextSource {
     /** {@code null} = inherit from {@link Room#scopes()} */
     private final List<String> scopes;
     private final int limit;
-    /** Subjects of memory entries injected in the most recent {@link #contribute} call. */
+    /**
+     * Subjects of memory entries injected in the most recent {@link #contribute} call.
+     * See the class-level thread-safety note: one instance = one room, one turn at a time.
+     */
     private volatile List<String> lastRecalledSubjects = List.of();
 
     /**
@@ -118,10 +130,18 @@ public final class MemorySource implements ContextSource {
         // Fact/Event pool: remaining slots, SUMMARY type excluded.
         // Fetch all entries (respects subclass overrides such as Moonlit's log_* filter),
         // strip any SUMMARY that slipped through, then cap at the remaining slot count.
-        int factLimit = (limit <= 0) ? 0 : Math.max(0, limit - usedSummaries.size());
+        // NOTE: "no cut-off" (limit <= 0) and "zero slots left" (limit == summary slots
+        // used) are both expressed with the integer 0 in different places, so they must
+        // NOT share a single sentinel check — otherwise "zero slots left" would be
+        // misread as "unlimited" and SUMMARY's dedicated slot would be defeated by an
+        // unbounded FACT pool. Use a long with Long.MAX_VALUE as the one true "no
+        // cut-off" sentinel instead.
+        long factLimit = (limit <= 0)
+                ? Long.MAX_VALUE
+                : Math.max(0, limit - usedSummaries.size());
         List<MemoryEntry> facts = retriever.recallForContext(visible, 0, userText).stream()
                 .filter(e -> e.type() != MemoryType.SUMMARY)
-                .limit(factLimit <= 0 ? Long.MAX_VALUE : factLimit)
+                .limit(factLimit)
                 .toList();
 
         List<MemoryEntry> memories = Stream.concat(usedSummaries.stream(), facts.stream()).toList();
