@@ -78,9 +78,22 @@ public sealed interface AgentEvent {
     }
 
     /**
+     * The active agent transferred the conversation to another agent
+     * (Stage 19). Emitted right after the handoff tool result is written
+     * into history and before the next model call, which already runs
+     * under the new config.
+     *
+     * @param fromAgent config name that declared and invoked the handoff
+     * @param toAgent   config name that now owns the loop
+     * @param toolName  the handoff tool the model called
+     */
+    record Handoff(String fromAgent, String toAgent, String toolName) implements AgentEvent {
+    }
+
+    /**
      * Emitted by {@link io.github.qwzhang01.agent.chat.ChatEngine} when a completed
-     * reply is discarded by a {@code RetryPolicy} and a new generation attempt is
-     * about to start.
+     * reply is discarded by a {@code RetryPolicy} and a new generation attempt
+     * is about to start.
      * <p>
      * Signals UI listeners to discard/reset any {@link ContentDelta}s accumulated
      * for the current turn so far: the next {@code ContentDelta} belongs to a fresh

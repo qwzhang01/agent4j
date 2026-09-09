@@ -8,6 +8,7 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
+import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 import org.slf4j.Logger;
@@ -67,33 +68,38 @@ public class ReActAgentLoop implements AgentLoop {
      * same state transition projected through a different event sink.
      * {@link #execute} uses a no-op sink and returns the final state;
      * {@link #stream} forwards {@link AgentEvent}s to the caller's sink.
+     * <p>
+     * Stage 19: the loop does not own a single config. It starts with the
+     * entry config, but a declared handoff swaps the active config mid-run
+     * (persona, model client, tools, context builder) while the shared
+     * {@link AgentState} — history plus the global step budget — survives.
      *
      * @param invoker produces the model response; may emit intermediate
      *                {@link AgentEvent}s (e.g. ContentDelta) while doing so
      */
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          ModelInvoker invoker) {
-        ModelClient modelClient = config.getModelClient();
+        AgentConfig currentConfig = config;
         state.setStatus(AgentState.Status.RUNNING);
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
             state.incrementStep();
-            log.debug("[{}] Step {}", config.getName(), state.getCurrentStep());
+            log.debug("[{}] Step {}", currentConfig.getName(), state.getCurrentStep());
 
             // --------------------------------------------
             // 1. Build model request from current state
             // --------------------------------------------
-            ModelRequest request = buildRequest(config, state);
+            ModelRequest request = buildRequest(currentConfig, state);
 
             // --------------------------------------------
-            // 2. Call the model
+            // 2. Call the model (via the CURRENT config's client)
             // --------------------------------------------
             ModelResponse response;
             try {
-                response = invoker.invoke(modelClient, request, state, sink);
+                response = invoker.invoke(currentConfig.getModelClient(), request, state, sink);
             } catch (Exception e) {
                 log.error("[{}] Model call failed at step {}: {}",
-                        config.getName(), state.getCurrentStep(), e.getMessage());
+                        currentConfig.getName(), state.getCurrentStep(), e.getMessage());
                 state.setStatus(AgentState.Status.ERROR);
                 state.setLastError("Model call failed: " + e.getMessage());
                 sink.accept(new AgentEvent.Error(state.getLastError(), e));
@@ -118,15 +124,51 @@ public class ReActAgentLoop implements AgentLoop {
                 state.addMessage(ChatMessage.assistantWithTools(
                         response.content(), response.toolCalls()));
 
-                // Execute each tool call
+                // Execute each tool call. Plain tools run first in order;
+                // a handoff executes last, after this response's remaining
+                // plain work is done and recorded.
                 state.setStatus(AgentState.Status.EXECUTING_TOOL);
+                ToolCall pendingHandoffCall = null;
+                HandoffSpec pendingHandoffSpec = null;
                 for (ToolCall toolCall : response.toolCalls()) {
-                    log.info("[{}] Executing tool: {}", config.getName(), toolCall.name());
+                    HandoffSpec spec = findDeclaredHandoff(currentConfig, toolCall);
+                    if (spec != null) {
+                        if (pendingHandoffCall != null) {
+                            // Multiple handoff calls in one response: the first wins,
+                            // later ones are unreachable because the active config
+                            // changes. Record as a tool error to keep every
+                            // toolCall paired with a toolResult.
+                            state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(),
+                                    "[ERROR] Handoff '" + toolCall.name() + "' skipped: another "
+                                            + "handoff in the same response already transferred "
+                                            + "the conversation."));
+                            continue;
+                        }
+                        pendingHandoffCall = toolCall;
+                        pendingHandoffSpec = spec;
+                        continue;
+                    }
+                    log.info("[{}] Executing tool: {}", currentConfig.getName(), toolCall.name());
                     sink.accept(new AgentEvent.ToolStarted(toolCall));
-                    String result = toolExecutor.execute(toolCall);
+                    String result = executePlainTool(config, currentConfig, toolCall);
                     // Add tool result to conversation
                     state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
                     sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
+                }
+
+                if (pendingHandoffCall != null) {
+                    // Synthetic tool result must reference the model-generated
+                    // tool_use id, so the assistant toolCall stays paired with a
+                    // tool result (provider-required invariant).
+                    state.addMessage(ChatMessage.tool(pendingHandoffCall.id(),
+                            pendingHandoffCall.name(),
+                            "Conversation transferred to agent '" + pendingHandoffSpec.targetName() + "'."));
+                    AgentConfig fromConfig = currentConfig;
+                    currentConfig = pendingHandoffSpec.target();
+                    log.info("[{}] Handoff via '{}': now running as [{}]",
+                            fromConfig.getName(), pendingHandoffSpec.toolName(), currentConfig.getName());
+                    sink.accept(new AgentEvent.Handoff(fromConfig.getName(), currentConfig.getName(),
+                            pendingHandoffSpec.toolName()));
                 }
 
                 state.setStatus(AgentState.Status.RUNNING);
@@ -134,7 +176,7 @@ public class ReActAgentLoop implements AgentLoop {
                 // Model gave a final answer
                 state.addMessage(ChatMessage.assistant(response.content()));
                 state.setStatus(AgentState.Status.DONE);
-                log.info("[{}] Completed in {} steps", config.getName(), state.getCurrentStep());
+                log.info("[{}] Completed in {} steps", currentConfig.getName(), state.getCurrentStep());
                 String answer = response.content() != null ? response.content() : "";
                 sink.accept(new AgentEvent.Done(answer, state));
                 return;
@@ -145,10 +187,57 @@ public class ReActAgentLoop implements AgentLoop {
         // 4. Max steps exceeded
         // --------------------------------------------
         if (!state.hasStepsRemaining()) {
-            log.warn("[{}] Max steps ({}) exceeded", config.getName(), state.getMaxSteps());
+            log.warn("[{}] Max steps ({}) exceeded", currentConfig.getName(), state.getMaxSteps());
             state.setStatus(AgentState.Status.MAX_STEPS_EXCEEDED);
             sink.accept(new AgentEvent.Done(SimpleAgent.MAX_STEPS_PLACEHOLDER, state));
         }
+    }
+
+    /**
+     * Returns the declared handoff spec matching this tool call, or null for
+     * plain tools. A handoff is only recognized when the CURRENT config
+     * declared it — a model cannot reach an undeclared agent.
+     */
+    private HandoffSpec findDeclaredHandoff(AgentConfig currentConfig, ToolCall toolCall) {
+        for (HandoffSpec spec : currentConfig.getHandoffs()) {
+            if (spec.toolName().equals(toolCall.name())) {
+                return spec;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Runs a plain tool under the CURRENT config's executor.
+     * <p>
+     * Iron rule: the ENTRY config always routes through the executor this
+     * loop was constructed with (which hosts may have wrapped with
+     * governance/audit decorators). Only a swapped-in target config gets a
+     * plain {@link DefaultToolExecutor} over its own registry — the loop
+     * cannot re-weave host decorations it never saw.
+     */
+    private String executePlainTool(AgentConfig entryConfig, AgentConfig currentConfig, ToolCall toolCall) {
+        if (currentConfig == entryConfig) {
+            return toolExecutor.execute(toolCall);
+        }
+        return executorFor(currentConfig).execute(toolCall);
+    }
+
+    /**
+     * Cache of plain executors for swapped-in handoff target configs.
+     * Keyed by config identity — AgentConfig has no equals (identity by
+     * design), so the map degrades gracefully if a host rebuilds configs.
+     */
+    private final java.util.Map<AgentConfig, ToolExecutor> targetExecutors =
+            new java.util.IdentityHashMap<>();
+
+    private ToolExecutor executorFor(AgentConfig currentConfig) {
+        return targetExecutors.computeIfAbsent(currentConfig, cfg -> {
+            ToolRegistry registry = cfg.getToolRegistry();
+            return registry != null
+                    ? new DefaultToolExecutor(registry)
+                    : new DefaultToolExecutor(new InMemoryToolRegistry());
+        });
     }
 
     /**
@@ -224,8 +313,19 @@ public class ReActAgentLoop implements AgentLoop {
 
         // Attach tool schemas if registry has tools
         ToolRegistry registry = config.getToolRegistry();
+        List<String> schemas = new ArrayList<>();
         if (registry != null && !registry.listTools().isEmpty()) {
-            builder.tools(registry.getToolSchemas());
+            schemas.addAll(registry.getToolSchemas());
+        }
+        // Handoff tools (Stage 19): expose declared transfer targets to the
+        // model as no-arg tools, alongside plain tools.
+        if (!config.getHandoffs().isEmpty()) {
+            for (HandoffSpec spec : config.getHandoffs()) {
+                schemas.add(spec.toolSchema());
+            }
+        }
+        if (!schemas.isEmpty()) {
+            builder.tools(schemas);
         }
 
         return builder.build();
