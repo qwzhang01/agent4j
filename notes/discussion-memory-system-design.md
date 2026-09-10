@@ -2,7 +2,7 @@
 
 日期：2026-09-10
 来源：9 轮架构教学讨论（搬家场景驱动，从「教我 agent 架构」到「更高一层抽象」）
-状态：写侧生命周期分流已落地代码（agent-memory 109/109 全绿，已提交 a50028c）；读侧 embedding（第①步）已落地（2026-09-10，全仓 22 模块 BUILD SUCCESS）；对账环、分层注入、持久化未动
+状态：写侧生命周期分流已落地代码（agent-memory 109/109 全绿，已提交 a50028c）；读侧 embedding（第①步）已落地（2026-09-10，全仓 22 模块 BUILD SUCCESS）；对账环 + 双时间轴三戳（第②步）已落地（2026-09-10，agent-memory 129/129 全绿，全仓 22 模块串行 BUILD SUCCESS）；分层注入、持久化未动
 系列：`discussion-*` 讨论沉淀；代码改动事实见 `v1-development-log.md`，本文只沉淀设计结论
 
 ---
@@ -223,10 +223,10 @@ else invent a new short key. If updating, also set "lifecycle":
 - EVOLVE/CONFLICT 生命周期分流，10 个文件改动，agent-memory 109/109 全绿，JDK 17 全仓 22 模块 BUILD SUCCESS，未提交 git
 - 记忆三问框架、三把尺子、双时间轴四戳、抽象阶梯 L1-L5、投影渐进路线、一本账三个索引——设计结论全部收敛，见上文各节
 
-未做（四步路线，① 已完成）：
+未做（四步路线，① ② 已完成）：
 
 - ① 读侧 embedding（字段 + 相似度检索）——已落地（2026-09-10）：`EmbeddingClient` 端口（agent-core）+ `OpenAiEmbeddingClient`（agent-model）+ `MemoryEntry.embedding` 字段与 `embedText()` + `EmbeddingMemoryStore` 写侧装饰器 + `HybridRankingStrategy` 转正（α·cosine + β·token + γ·importance，默认 0.5/0.3/0.2）；agent-core 57 + agent-model 51 + agent-memory 124 全绿
-- ② 对账环（写入前召回旧账给 LLM 对比挑键）+ 时间戳三件套（invalidAt / validFrom / validAt）
+- ② 对账环（写入前召回旧账给 LLM 对比挑键）+ 时间戳三件套（invalidAt / validFrom / validAt）——已落地（2026-09-10）：`MemoryReconciler`（recallForContext 捞 20 条旧账喂抽取器，scope 隔离，软失败）+ `MemoryEntry` 第 14/15/16 字段（validFrom/validAt/invalidAt，四兼容构造器存量零改动）+ supersede 统一走 `closedAs` 双轴关闭（旧条 validAt=新条业务起点，invalidAt=now）+ `MemoryDecision` 决策事件（九字段 schema + `MemoryDecisionListener` 监听口）+ 三处 supersede 位点（管线/save_memory/admin approve）落账规则统一；agent-memory 129/129 全绿，全仓 22 模块串行 BUILD SUCCESS
 - ③ 分层注入（core 常驻 + archival 按需）
 - ④ 持久化（PG + pgvector + 偏索引 + 事务）
 

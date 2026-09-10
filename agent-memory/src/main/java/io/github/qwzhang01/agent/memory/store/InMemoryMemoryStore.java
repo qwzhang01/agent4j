@@ -43,7 +43,10 @@ public class InMemoryMemoryStore implements MemoryStore {
                 entry.expireAt(),
                 entry.dueAt(),
                 entry.lifecycle(),
-                entry.embedding()
+                entry.embedding(),
+                entry.validFrom(),
+                entry.validAt(),
+                entry.invalidAt()
         );
         entries.put(id, stored);
         return stored;

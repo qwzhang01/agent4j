@@ -55,14 +55,20 @@ public class LlmMemoryExtractor implements MemoryExtractor {
 
     private static final String FORMAT_HINT = """
             Reply with JSON only, no markdown:
-            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7,"lifecycle":"EVOLVE|CONFLICT","dueAt":"2026-08-26T12:00:00Z"}]}
+            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7,"lifecycle":"EVOLVE|CONFLICT","dueAt":"2026-08-26T12:00:00Z","validFrom":"2026-08-20T00:00:00Z"}]}
             Use {"memories":[]} if there is nothing to store.
             type must be one of those five names; if unsure use FACT.
             importance is optional, 0.0–1.0.
-            lifecycle is optional and only set when the conversation earlier stated something about the same subject:
+            If an "Existing subjects" list is provided, prefer it:
+              set "subject" to an EXISTING one when the memory updates that topic,
+              else invent a new short key.
+            lifecycle is optional and only set when an existing entry about the subject is being replaced:
               EVOLVE   = the old info was once true but changed (moved cities, new job, quit smoking, now prefers)
               CONFLICT = the old info was wrong from the start ("you remembered it wrong", "I never had/said that")
-            Omit lifecycle when the conversation contains no earlier statement about the subject.
+            Omit lifecycle when no existing entry about the subject is being replaced.
+            validFrom is optional ISO-8601 (Instant or offset) business time: when the fact
+            became true in the world (e.g. "I moved last week" -> last week's date). Omit when
+            the conversation gives no such time; then it defaults to the recording time.
             dueAt is optional ISO-8601 (Instant or offset). Omit when there is no later follow-up time.
             This module does not interpret dueAt; hosts use it for their own scans.
             """;
@@ -157,6 +163,19 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     @Override
     public List<MemoryEntry> extract(List<ChatMessage> messages, String scope,
                                      MemoryProvenance baseProvenance) {
+        return extract(messages, scope, baseProvenance, List.of());
+    }
+
+    /**
+     * Reconciliation-aware extraction (memory route step 2): recalled old
+     * entries are rendered as an "Existing subjects" block in the system prompt
+     * so the model can pick an existing key instead of inventing a drifting
+     * one, and judge lifecycle against what the old entries actually said.
+     */
+    @Override
+    public List<MemoryEntry> extract(List<ChatMessage> messages, String scope,
+                                     MemoryProvenance baseProvenance,
+                                     List<MemoryEntry> evidence) {
         if (messages == null || messages.isEmpty()) {
             return List.of();
         }
@@ -164,7 +183,8 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         try {
             response = modelClient.chat(ModelRequest.builder()
                     .messages(List.of(
-                            ChatMessage.system(instructions + "\n" + FORMAT_HINT),
+                            ChatMessage.system(instructions + "\n" + FORMAT_HINT
+                                    + renderExistingSubjects(evidence)),
                             ChatMessage.user(renderTranscript(messages))))
                     .responseFormat(ModelRequest.ResponseFormat.json())
                     .build());
@@ -174,6 +194,21 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         }
         String raw = response == null ? null : response.content();
         return parseMemories(raw, scope, baseProvenance);
+    }
+
+    /**
+     * Render the recalled old entries as the "Existing subjects" prompt block.
+     * Empty evidence renders nothing — identical to the pre-reconciliation prompt.
+     */
+    static String renderExistingSubjects(List<MemoryEntry> evidence) {
+        if (evidence == null || evidence.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("\nExisting subjects:\n");
+        for (MemoryEntry e : evidence) {
+            sb.append("- ").append(e.subject()).append(": ").append(e.content()).append('\n');
+        }
+        return sb.toString();
     }
 
     // ============ Async + Sampling ============
@@ -273,7 +308,11 @@ public class LlmMemoryExtractor implements MemoryExtractor {
                     now,
                     null,
                     parseDueAt(node),
-                    parseLifecycle(node)
+                    parseLifecycle(node),
+                    null,
+                    parseValidFrom(node),
+                    null,
+                    null
             ));
         }
         return List.copyOf(out);
@@ -327,13 +366,39 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         if (raw.isBlank()) {
             return null;
         }
+        return parseInstant(raw, "dueAt");
+    }
+
+    /**
+     * Parses the optional {@code validFrom} field (business-axis start time).
+     * Same tolerance as dueAt: ISO-8601 Instant or offset; anything else is
+     * ignored (null) rather than failing the whole entry.
+     */
+    private static Instant parseValidFrom(JsonNode node) {
+        JsonNode value = node.get("validFrom");
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        String raw = value.asText("").trim();
+        if (raw.isBlank()) {
+            return null;
+        }
+        return parseInstant(raw, "validFrom");
+    }
+
+    /**
+     * Shared ISO-8601 parsing with offset fallback; malformed values are
+     * logged and dropped (null), never thrown — a bad timestamp must not
+     * discard an otherwise good memory.
+     */
+    private static Instant parseInstant(String raw, String field) {
         try {
             return Instant.parse(raw);
         } catch (DateTimeParseException ignored) {
             try {
                 return OffsetDateTime.parse(raw).toInstant();
             } catch (DateTimeParseException e) {
-                log.warn("LLM extract dueAt ignored: {}", raw);
+                log.warn("LLM extract {} ignored: {}", field, raw);
                 return null;
             }
         }

@@ -7,6 +7,8 @@ import io.github.qwzhang01.agent.core.tool.ToolException;
 import io.github.qwzhang01.agent.memory.*;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,7 +64,8 @@ public class MemoryTools {
                             "subject": { "type": "string", "description": "Topic key, e.g. 'dietary-restriction'" },
                             "content": { "type": "string", "description": "The fact or preference to remember" },
                             "type": { "type": "string", "enum": ["PREFERENCE","FACT","EVENT"], "description": "Memory type (default: FACT)" },
-                            "lifecycle": { "type": "string", "enum": ["EVOLVE","CONFLICT"], "description": "Only set when replacing an older memory about the same subject. EVOLVE = old info was once true but changed (e.g. moved city). CONFLICT = old info was wrong from the start (default)." }
+                            "lifecycle": { "type": "string", "enum": ["EVOLVE","CONFLICT"], "description": "Only set when replacing an older memory about the same subject. EVOLVE = old info was once true but changed (e.g. moved city). CONFLICT = old info was wrong from the start (default)." },
+                            "validFrom": { "type": "string", "description": "Optional ISO-8601 timestamp: when the fact became true in the world (business time, e.g. '2026-09-04T00:00:00Z' when the user says they moved last week). Omit when the fact is true as of now." }
                           },
                           "required": ["subject", "content"]
                         }""";
@@ -78,19 +81,28 @@ public class MemoryTools {
                     MemoryLifecycle lifecycle = arguments.has("lifecycle")
                             ? parseLifecycle(arguments.get("lifecycle").asText())
                             : null;
+                    Instant validFrom = arguments.has("validFrom")
+                            ? parseTimestamp(arguments.get("validFrom").asText())
+                            : null;
 
                     // importance=1.0 -> explicit save bypasses threshold (D8)
                     MemoryEntry candidate = new MemoryEntry(
                             null, scope, type, subject, content, 1.0,
                             MemoryProvenance.modelDerived(actorId, null, Instant.now()),
-                            MemoryStatus.ACTIVE, Instant.now(), null, null, lifecycle
+                            MemoryStatus.ACTIVE, Instant.now(), null, null, lifecycle,
+                            null, validFrom, null, null
                     );
 
                     // Apply policy: supersede if same subject has different content
                     if (policy.shouldSupersede(candidate, store)) {
                         MemoryStatus target = MemoryLifecycle.supersedeTarget(lifecycle);
                         store.findActiveBySubject(scope, subject)
-                                .ifPresent(old -> store.update(old.withStatus(target)));
+                                .ifPresent(old -> {
+                                    Instant newBusinessStart = candidate.validFrom() != null
+                                            ? candidate.validFrom()
+                                            : Instant.now();
+                                    store.update(old.closedAs(target, newBusinessStart, Instant.now()));
+                                });
                     }
 
                     // Apply default status (channel -> PENDING_REVIEW)
@@ -114,6 +126,25 @@ public class MemoryTools {
             return MemoryLifecycle.valueOf(raw.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
+        }
+    }
+
+    /**
+     * Optional ISO-8601 timestamp argument (Instant or offset). Malformed
+     * values degrade to null — a bad timestamp never fails the whole save.
+     */
+    private static Instant parseTimestamp(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(raw.trim());
+        } catch (DateTimeParseException ignored) {
+            try {
+                return OffsetDateTime.parse(raw.trim()).toInstant();
+            } catch (DateTimeParseException e) {
+                return null;
+            }
         }
     }
 

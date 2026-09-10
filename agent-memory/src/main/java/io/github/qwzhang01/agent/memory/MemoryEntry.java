@@ -12,6 +12,17 @@ import java.time.Instant;
  * status (for the review lifecycle) and importance (for write-gating).
  * <p>
  * Stage 8 D2: memory is structured entries, not raw messages.
+ * <p>
+ * <b>Bi-temporal timestamps (reconciliation step 2)</b>: the entry carries two
+ * axes of time. Business axis ({@code validFrom}/{@code validAt}) answers
+ * "when was this fact true in the world" (event time). System axis
+ * ({@code createdAt}/{@code invalidAt}) answers "when did the ledger record /
+ * close this line" (processing time). When a supersede closes an old entry,
+ * its {@code validAt} is set to the NEW fact's business time (the user moved
+ * last week, not this Monday when the system learned it), and its
+ * {@code invalidAt} is set to now (the ledger closes the line now). The two
+ * must never share values, or interval queries answer "when did I move"
+ * with the recording date.
  *
  * @param id          unique identifier
  * @param scope       namespace (e.g. "user:u1", "channel:c1")
@@ -21,7 +32,7 @@ import java.time.Instant;
  * @param importance  0.0 ~ 1.0; write-gate threshold and context-recall rank
  * @param provenance  where this memory came from
  * @param status      lifecycle status
- * @param createdAt   when it was first written
+ * @param createdAt   when it was first written (system axis: recording time)
  * @param expireAt    TTL deadline (null = permanent); after this the entry is not retrievable
  * @param dueAt       optional due time with no built-in meaning (null = none).
  *                    Hosts use it for their own scans; this module does not schedule jobs.
@@ -33,6 +44,20 @@ import java.time.Instant;
  *                    on write by {@code EmbeddingMemoryStore} (read-side step 1).
  *                    Null on legacy entries; hybrid ranking degrades those to
  *                    token-overlap scoring instead of crashing.
+ * @param validFrom   business axis: when this fact became true in the world (event time).
+ *                    Null = unknown; treat as "true since first recorded" for interval
+ *                    queries. Parsed from the extractor's optional {@code validFrom}
+ *                    output when the conversation states a business time (e.g. "I
+ *                    moved last week"); null otherwise.
+ * @param validAt     business axis: when this fact stopped being true in the world.
+ *                    Null = still true. Set by the supersede path to the REPLACING
+ *                    entry's {@code validFrom} (new fact's business start) — not to
+ *                    wall-clock now, so "when did I move" answers with the business
+ *                    date, and the old/new intervals on the business axis never overlap.
+ * @param invalidAt   system axis: when the ledger closed this line (null = open line).
+ *                    Set to now when a supersede/archive transition is applied. Audit
+ *                    queries filter on this to answer "what did the system know at
+ *                    time T" (createdAt ≤ T &lt; invalidAt).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemoryEntry(
@@ -48,48 +73,63 @@ public record MemoryEntry(
         Instant expireAt,
         Instant dueAt,
         MemoryLifecycle lifecycle,
-        float[] embedding
+        float[] embedding,
+        Instant validFrom,
+        Instant validAt,
+        Instant invalidAt
 ) {
-    /** Backward-compatible constructor: no due time, no lifecycle, no embedding. */
+    /** Backward-compatible constructor: no due time, no lifecycle, no embedding, no timestamps. */
     public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
                        double importance, MemoryProvenance provenance, MemoryStatus status,
                        Instant createdAt, Instant expireAt) {
         this(id, scope, type, subject, content, importance, provenance, status,
-                createdAt, expireAt, null, null, null);
+                createdAt, expireAt, null, null, null, null, null, null);
     }
 
-    /** Backward-compatible constructor: no lifecycle, no embedding. */
+    /** Backward-compatible constructor: no lifecycle, no embedding, no timestamps. */
     public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
                        double importance, MemoryProvenance provenance, MemoryStatus status,
                        Instant createdAt, Instant expireAt, Instant dueAt) {
         this(id, scope, type, subject, content, importance, provenance, status,
-                createdAt, expireAt, dueAt, null, null);
+                createdAt, expireAt, dueAt, null, null, null, null, null);
     }
 
-    /** Backward-compatible constructor: no embedding. */
+    /** Backward-compatible constructor: no embedding, no timestamps. */
     public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
                        double importance, MemoryProvenance provenance, MemoryStatus status,
                        Instant createdAt, Instant expireAt, Instant dueAt,
                        MemoryLifecycle lifecycle) {
         this(id, scope, type, subject, content, importance, provenance, status,
-                createdAt, expireAt, dueAt, lifecycle, null);
+                createdAt, expireAt, dueAt, lifecycle, null, null, null, null);
+    }
+
+    /** Backward-compatible constructor: no timestamps. */
+    public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
+                       double importance, MemoryProvenance provenance, MemoryStatus status,
+                       Instant createdAt, Instant expireAt, Instant dueAt,
+                       MemoryLifecycle lifecycle, float[] embedding) {
+        this(id, scope, type, subject, content, importance, provenance, status,
+                createdAt, expireAt, dueAt, lifecycle, embedding, null, null, null);
     }
 
     // ============ With Methods (for governance transitions) ============
 
     public MemoryEntry withStatus(MemoryStatus newStatus) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, newStatus, createdAt, expireAt, dueAt, lifecycle, embedding);
+                provenance, newStatus, createdAt, expireAt, dueAt, lifecycle, embedding,
+                validFrom, validAt, invalidAt);
     }
 
     public MemoryEntry withContent(String newContent) {
         return new MemoryEntry(id, scope, type, subject, newContent, importance,
-                provenance, status, createdAt, expireAt, dueAt, lifecycle, null);
+                provenance, status, createdAt, expireAt, dueAt, lifecycle, null,
+                validFrom, validAt, invalidAt);
     }
 
     public MemoryEntry withDueAt(Instant newDueAt) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, status, createdAt, expireAt, newDueAt, lifecycle, embedding);
+                provenance, status, createdAt, expireAt, newDueAt, lifecycle, embedding,
+                validFrom, validAt, invalidAt);
     }
 
     /**
@@ -98,7 +138,26 @@ public record MemoryEntry(
      */
     public MemoryEntry withEmbedding(float[] newEmbedding) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, status, createdAt, expireAt, dueAt, lifecycle, newEmbedding);
+                provenance, status, createdAt, expireAt, dueAt, lifecycle, newEmbedding,
+                validFrom, validAt, invalidAt);
+    }
+
+    // ============ Bi-temporal transitions (reconciliation step 2) ============
+
+    /**
+     * Close this entry on both axes: business axis ends at the replacing fact's
+     * business start ({@code newValidAt}, the new entry's {@code validFrom}), system
+     * axis ends at {@code closedAt} (now). Status change goes through
+     * {@link #withStatus} separately; this method only stamps the axes.
+     * <p>
+     * Callers must pass {@code newValidAt} = replacing entry's {@code validFrom}
+     * (falling back to its {@code createdAt} when the replacing fact carries no
+     * business time), never wall-clock now — see class javadoc.
+     */
+    public MemoryEntry closedAs(MemoryStatus newStatus, Instant newValidAt, Instant closedAt) {
+        return new MemoryEntry(id, scope, type, subject, content, importance,
+                provenance, newStatus, createdAt, expireAt, dueAt, lifecycle, embedding,
+                validFrom, newValidAt, closedAt);
     }
 
     /**

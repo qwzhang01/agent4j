@@ -51,7 +51,10 @@ public class MemoryAdmin {
      * <p>
      * If an older ACTIVE entry with the same subject exists, its fate follows
      * the approved entry's lifecycle: EVOLVE -> HISTORICAL (once true, changed),
-     * CONFLICT / null -> SUPERSEDED (wrong from the start).
+     * CONFLICT / null -> SUPERSEDED (wrong from the start). The old entry is
+     * closed on both time axes (business axis at the approved entry's business
+     * start, system axis now) — same ledger rule as the extract pipeline and
+     * the save_memory tool.
      */
     public MemoryEntry approve(String entryId) {
         MemoryEntry entry = requireEntry(entryId);
@@ -60,8 +63,14 @@ public class MemoryAdmin {
         }
         // If there's an existing ACTIVE entry with the same subject, supersede it first
         store.findActiveBySubject(entry.scope(), entry.subject())
-                .ifPresent(old -> store.update(
-                        old.withStatus(MemoryLifecycle.supersedeTarget(entry.lifecycle()))));
+                .ifPresent(old -> {
+                    Instant newBusinessStart = entry.validFrom() != null
+                            ? entry.validFrom()
+                            : Instant.now();
+                    store.update(old.closedAs(
+                            MemoryLifecycle.supersedeTarget(entry.lifecycle()),
+                            newBusinessStart, Instant.now()));
+                });
         MemoryEntry approved = entry.withStatus(MemoryStatus.ACTIVE);
         store.update(approved);
         log.info("Approved entry {} in scope {}", entryId, entry.scope());
