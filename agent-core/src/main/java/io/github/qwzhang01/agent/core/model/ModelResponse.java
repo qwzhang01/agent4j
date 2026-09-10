@@ -43,7 +43,46 @@ public record ModelResponse(
 
     // ============ Nested ============
 
+    /**
+     * Token usage as billed by the provider.
+     * <p>
+     * Accounting semantics (E3, decision 26): {@code promptTokens} is the FULL
+     * billed prompt size including any cache-hit portion; {@code cachedTokens}
+     * is the subset served from the prompt cache (KV cache). A provider that
+     * does not report cache detail leaves it 0 - consumers cannot distinguish
+     * "no cache hit" from "not reported", which is the same honest-zero
+     * discipline as the other fields. Anthropic clients fold
+     * {@code cache_read + cache_creation} into {@code promptTokens} and report
+     * {@code cache_read} as {@code cachedTokens} so every provider maps onto
+     * one billing shape: {@code cost = uncached * base + cached * read}.
+     * <p>
+     * Normalized: negative cachedTokens becomes 0; cachedTokens never exceeds
+     * promptTokens (a cache hit larger than the prompt is a provider bug we
+     * refuse to propagate downstream).
+     *
+     * @param promptTokens     full billed prompt tokens (uncached + cached)
+     * @param completionTokens completion tokens
+     * @param totalTokens      total tokens as reported
+     * @param cachedTokens     prompt tokens served from cache (0 = none/unreported)
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record TokenUsage(int promptTokens, int completionTokens, int totalTokens) {
+    public record TokenUsage(int promptTokens, int completionTokens, int totalTokens, int cachedTokens) {
+
+        public TokenUsage {
+            if (cachedTokens < 0) {
+                cachedTokens = 0;
+            }
+            if (cachedTokens > promptTokens) {
+                cachedTokens = promptTokens;
+            }
+        }
+
+        /**
+         * Three-arg constructor kept for source compatibility with the
+         * pre-E3 signature (no cache detail: cachedTokens = 0).
+         */
+        public TokenUsage(int promptTokens, int completionTokens, int totalTokens) {
+            this(promptTokens, completionTokens, totalTokens, 0);
+        }
     }
 }

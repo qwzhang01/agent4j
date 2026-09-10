@@ -54,7 +54,7 @@ class TrajectoryCodecTest {
                 "agent_name", "prompt_sha256", "tools", "max_steps", "started_at",
                 "finished_at", "duration_ms", "token_usage", "last_error", "custom",
                 // token usage
-                "prompt_tokens", "completion_tokens", "total_tokens",
+                "prompt_tokens", "completion_tokens", "total_tokens", "cached_tokens",
                 // message + tool call
                 "role", "content", "tool_calls", "tool_call_id", "name", "id", "arguments",
                 // step + action + observation

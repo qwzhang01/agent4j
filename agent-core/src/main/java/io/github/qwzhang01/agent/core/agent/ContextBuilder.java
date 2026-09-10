@@ -16,6 +16,21 @@ import java.util.List;
  * - token budget enforcement
  * - compaction / compression of old messages (pi-style)
  * <p>
+ * Prefix-stability clause (E3, decision 26): implementations SHOULD keep the
+ * leading portion of the returned message list stable across calls within one
+ * conversation. Prompt caches (KV caches) bill by longest-common-prefix: a
+ * rewritten leading history destroys the accumulated hit and re-pays the
+ * cache-write premium on providers that charge one (Anthropic-style explicit
+ * caching: read 0.1x, write 1.25x). When compaction MUST rewrite, prefer a
+ * FROZEN summary text that later turns append onto, over a summary that
+ * changes every call - E3 measured a 24% cache-value loss from flapping
+ * summaries alone (same volumes, only stability differed). Caveat: under
+ * providers with free implicit caching (OpenAI-style), stability buys less
+ * and aggressive compaction may win on volume - the discipline is priced by
+ * the provider, not universal. Violating this clause is not a compile error;
+ * it is a billing event. Visibility (cachedTokens in TokenUsage) is the
+ * enforcement mechanism of this contract, not a type-system check.
+ * <p>
  * When an {@link AgentConfig} has no context builder ({@code null}),
  * {@link ReActAgentLoop} falls back to passing {@code state.getMessages()}
  * through, then prepends the current system prompt at the model boundary.

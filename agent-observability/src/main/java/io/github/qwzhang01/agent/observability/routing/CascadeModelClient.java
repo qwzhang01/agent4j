@@ -149,6 +149,9 @@ public final class CascadeModelClient implements ModelClient {
     /**
      * Sum both attempts' token usage into one honest number; null when neither
      * tier reported usage (mocks / clients that do not fill usage).
+     * <p>
+     * E3: cachedTokens are summed too - cheap and premium are separate cache
+     * domains, each hit is a real billing event (see CacheSimulatingModelClient).
      */
     private static ModelResponse.TokenUsage mergeUsage(ModelResponse cheapResponse,
                                                        ModelResponse premiumResponse) {
@@ -161,7 +164,9 @@ public final class CascadeModelClient implements ModelClient {
                 + (premiumUsage == null ? 0 : premiumUsage.promptTokens());
         int completion = (cheapUsage == null ? 0 : cheapUsage.completionTokens())
                 + (premiumUsage == null ? 0 : premiumUsage.completionTokens());
-        return new ModelResponse.TokenUsage(prompt, completion, prompt + completion);
+        int cached = (cheapUsage == null ? 0 : cheapUsage.cachedTokens())
+                + (premiumUsage == null ? 0 : premiumUsage.cachedTokens());
+        return new ModelResponse.TokenUsage(prompt, completion, prompt + completion, cached);
     }
 
     /**

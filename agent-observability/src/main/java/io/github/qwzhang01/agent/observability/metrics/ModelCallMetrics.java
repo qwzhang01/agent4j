@@ -11,6 +11,7 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
  * @param promptTokens     prompt tokens reported by the model (0 if usage not reported)
  * @param completionTokens completion tokens reported by the model (0 if usage not reported)
  * @param totalTokens      total tokens reported by the model (0 if usage not reported)
+ * @param cachedTokens     prompt tokens served from cache (0 if none/unreported, E3)
  * @param finishReason     finish reason from the response (null on failure)
  * @param error            failure description, null on success - the delegate's
  *                         exception is recorded and rethrown, never swallowed here
@@ -21,8 +22,18 @@ public record ModelCallMetrics(
         int promptTokens,
         int completionTokens,
         int totalTokens,
+        int cachedTokens,
         String finishReason,
         String error) {
+
+    /**
+     * Seven-arg constructor kept for source compatibility with the pre-E3
+     * signature (no cache detail: cachedTokens = 0).
+     */
+    public ModelCallMetrics(String model, long latencyMs, int promptTokens, int completionTokens,
+                            int totalTokens, String finishReason, String error) {
+        this(model, latencyMs, promptTokens, completionTokens, totalTokens, 0, finishReason, error);
+    }
 
     public boolean success() {
         return error == null;
@@ -42,12 +53,13 @@ public record ModelCallMetrics(
                 usage != null ? usage.promptTokens() : 0,
                 usage != null ? usage.completionTokens() : 0,
                 usage != null ? usage.totalTokens() : 0,
+                usage != null ? usage.cachedTokens() : 0,
                 response.finishReason(),
                 null);
     }
 
     /** From a failed call - no tokens, no finish reason, the error text stays. */
     static ModelCallMetrics failure(String model, long latencyMs, String error) {
-        return new ModelCallMetrics(model, latencyMs, 0, 0, 0, null, error);
+        return new ModelCallMetrics(model, latencyMs, 0, 0, 0, 0, null, error);
     }
 }

@@ -425,13 +425,20 @@ public class AnthropicModelClient implements ModelClient {
             String finishReason = mapStopReason(stopReason);
 
             // Parse usage
+            // E3 billing shape: promptTokens = full billed input (input + cache_read
+            // + cache_creation - all real prompt spend); cachedTokens = cache_read
+            // only (the 0.1x portion). cache_creation is a WRITE premium (1.25x)
+            // handled by CachePricing, not a read hit - never fold it into cached.
             ModelResponse.TokenUsage usage = null;
             JsonNode usageNode = root.path("usage");
             if (!usageNode.isMissingNode()) {
                 int inputTokens = usageNode.path("input_tokens").asInt(0);
                 int outputTokens = usageNode.path("output_tokens").asInt(0);
-                usage = new ModelResponse.TokenUsage(inputTokens, outputTokens,
-                        inputTokens + outputTokens);
+                int cacheRead = usageNode.path("cache_read_input_tokens").asInt(0);
+                int cacheCreation = usageNode.path("cache_creation_input_tokens").asInt(0);
+                int fullPrompt = inputTokens + cacheRead + cacheCreation;
+                usage = new ModelResponse.TokenUsage(fullPrompt, outputTokens,
+                        fullPrompt + outputTokens, cacheRead);
             }
 
             String content = textContent.length() > 0 ? textContent.toString() : null;
@@ -461,6 +468,11 @@ public class AnthropicModelClient implements ModelClient {
         // State accumulators (captured by the stream pipeline)
         StringBuilder contentBuilder = new StringBuilder();
         List<ToolCall> toolCallsBuilder = new ArrayList<>();
+        // message_start carries the prompt-side usage (input + cache fields);
+        // message_delta only carries output_tokens - both halves are needed
+        // for the E3 billing shape (fullPrompt, cachedTokens).
+        java.util.concurrent.atomic.AtomicReference<ModelResponse.TokenUsage> promptUsage =
+                new java.util.concurrent.atomic.AtomicReference<>();
 
         // Parse the SSE: pairs of "event: xxx" / "data: {...}" lines
         return lines
@@ -473,6 +485,22 @@ public class AnthropicModelClient implements ModelClient {
                         String type = event.path("type").asText("");
 
                         StreamEvent parsed = switch (type) {
+                            case "message_start" -> {
+                                // Prompt-side usage lives here (input_tokens +
+                                // cache_read/cache_creation); fold to the E3
+                                // billing shape and keep for the Done event.
+                                JsonNode usageNode = event.path("message").path("usage");
+                                if (!usageNode.isMissingNode()) {
+                                    int inputTokens = usageNode.path("input_tokens").asInt(0);
+                                    int cacheRead = usageNode.path("cache_read_input_tokens").asInt(0);
+                                    int cacheCreation = usageNode.path("cache_creation_input_tokens").asInt(0);
+                                    int fullPrompt = inputTokens + cacheRead + cacheCreation;
+                                    promptUsage.set(new ModelResponse.TokenUsage(
+                                            fullPrompt, 0, fullPrompt, cacheRead));
+                                }
+                                yield null;
+                            }
+
                             case "content_block_delta" -> {
                                 JsonNode delta = event.path("delta");
                                 String deltaType = delta.path("type").asText("");
@@ -520,7 +548,14 @@ public class AnthropicModelClient implements ModelClient {
                                 ModelResponse.TokenUsage usage = null;
                                 if (!usageNode.isMissingNode()) {
                                     int outputTokens = usageNode.path("output_tokens").asInt(0);
-                                    usage = new ModelResponse.TokenUsage(0, outputTokens, outputTokens);
+                                    ModelResponse.TokenUsage promptSide = promptUsage.get();
+                                    if (promptSide != null) {
+                                        int fullPrompt = promptSide.promptTokens();
+                                        usage = new ModelResponse.TokenUsage(fullPrompt, outputTokens,
+                                                fullPrompt + outputTokens, promptSide.cachedTokens());
+                                    } else {
+                                        usage = new ModelResponse.TokenUsage(0, outputTokens, outputTokens);
+                                    }
                                 }
 
                                 ModelResponse finalResponse = new ModelResponse(

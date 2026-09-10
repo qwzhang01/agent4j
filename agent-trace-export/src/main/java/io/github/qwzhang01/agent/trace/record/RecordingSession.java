@@ -168,15 +168,17 @@ final class RecordingSession implements RunSession {
         int prompt = 0;
         int completion = 0;
         int total = 0;
+        int cached = 0;
         for (TrajectoryStep step : steps) {
             var usage = step.action() != null ? step.action().usage() : null;
             if (usage != null) {
                 prompt += usage.promptTokens();
                 completion += usage.completionTokens();
                 total += usage.totalTokens();
+                cached += usage.cachedTokens();
             }
         }
-        return new ModelResponse.TokenUsage(prompt, completion, total);
+        return new ModelResponse.TokenUsage(prompt, completion, total, cached);
     }
 
     private void requireNotFinished() {

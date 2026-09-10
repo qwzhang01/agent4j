@@ -215,6 +215,7 @@ public final class MetricsCollector implements MetricsSink {
         private int promptTokens;
         private int completionTokens;
         private int totalTokens;
+        private int cachedTokens;
         private long costMicros;
         private RunMetrics finished;
 
@@ -229,6 +230,7 @@ public final class MetricsCollector implements MetricsSink {
             promptTokens += m.promptTokens();
             completionTokens += m.completionTokens();
             totalTokens += m.totalTokens();
+            cachedTokens += m.cachedTokens();
             if (!m.success()) {
                 modelErrors++;
             }
@@ -256,7 +258,7 @@ public final class MetricsCollector implements MetricsSink {
             long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
             finished = new RunMetrics(runId, agentName, status, lastError, durationMs,
                     modelCalls, modelErrors, toolCalls, deniedTools,
-                    new ModelResponse.TokenUsage(promptTokens, completionTokens, totalTokens),
+                    new ModelResponse.TokenUsage(promptTokens, completionTokens, totalTokens, cachedTokens),
                     costMicros);
             return finished;
         }

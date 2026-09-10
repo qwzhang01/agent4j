@@ -439,7 +439,8 @@ public class OpenAiModelClient implements ModelClient {
                 usage = new ModelResponse.TokenUsage(
                         usageNode.path("prompt_tokens").asInt(0),
                         usageNode.path("completion_tokens").asInt(0),
-                        usageNode.path("total_tokens").asInt(0)
+                        usageNode.path("total_tokens").asInt(0),
+                        usageNode.path("prompt_tokens_details").path("cached_tokens").asInt(0)
                 );
             }
 
@@ -568,7 +569,8 @@ public class OpenAiModelClient implements ModelClient {
             usage = new ModelResponse.TokenUsage(
                     usageNode.path("prompt_tokens").asInt(0),
                     usageNode.path("completion_tokens").asInt(0),
-                    usageNode.path("total_tokens").asInt(0));
+                    usageNode.path("total_tokens").asInt(0),
+                    usageNode.path("prompt_tokens_details").path("cached_tokens").asInt(0));
         }
 
         /**

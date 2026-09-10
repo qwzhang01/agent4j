@@ -250,6 +250,7 @@ public final class TrajectoryCodec {
         node.put("prompt_tokens", usage.promptTokens());
         node.put("completion_tokens", usage.completionTokens());
         node.put("total_tokens", usage.totalTokens());
+        node.put("cached_tokens", usage.cachedTokens());
         return node;
     }
 
@@ -260,7 +261,8 @@ public final class TrajectoryCodec {
         return new ModelResponse.TokenUsage(
                 node.path("prompt_tokens").asInt(0),
                 node.path("completion_tokens").asInt(0),
-                node.path("total_tokens").asInt(0));
+                node.path("total_tokens").asInt(0),
+                node.path("cached_tokens").asInt(0));
     }
 
     private ObjectNode toolCallToJson(ToolCall call) {

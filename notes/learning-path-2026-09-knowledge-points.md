@@ -52,6 +52,8 @@
 
 **agent4j 对照**：E3 实验本质：ContextBuilder 契约要不要写死"前缀稳定性"。
 
+**E3 落定（2026-09-10）**：契约写进 ContextBuilder javadoc（弱约束 + 代价告知），可见性做硬（TokenUsage.cachedTokens 全链路）。两个反直觉发现：①体量缩减压过缓存损失（flapping 改写仍比不压缩便宜），稳定性变量单独值 24%；②计价风格反转结论——写免费（OpenAI 式）时 flapping 反超 stable，前缀纪律是供应商定价的，不是普适真理。详见 `experiment-e3-prompt-caching.md` 与决策 26。
+
 **自测**：说清 agent4j compaction 对缓存命中率的影响链。
 
 ---
