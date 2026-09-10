@@ -2,6 +2,7 @@
 
 > 四周学习计划（`learning-path-2026-09-knowledge-points.md`）的第 3 个实验：E3 = KP3（Prompt Caching）落定实验。
 > 回答决策 26 的核心问题：**ContextBuilder 契约要不要写进前缀稳定性；决策 9（compaction 就地改写）打掉缓存的真实代价是多少。**
+> 架构叙事（做什么/为什么/怎么做，含分层论证与 git 心智模型）见 [experiment-e3-architecture-walkthrough.md](experiment-e3-architecture-walkthrough.md) · 决策五字段见 [architecture-stance-decision-26-cache-visibility-and-prefix-stability.md](architecture-stance-decision-26-cache-visibility-and-prefix-stability.md)
 
 ## 一、实验设计
 
