@@ -4,6 +4,7 @@ import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.core.agent.ContextBuilder;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.memory.ConversationAnchors;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryRetriever;
@@ -27,6 +28,27 @@ import java.util.List;
  *   <li>Inject: prepend memories to history; the loop adds the persona before this context</li>
  * </ol>
  * Memory injection is NOT written back to state (it's re-retrieved each turn).
+ * <p>
+ * <b>Layered injection (memory roadmap step 3).</b> The seven-arg constructor
+ * enables Letta-style two-tier injection; the six-arg constructor keeps the
+ * legacy single-block behaviour bit-for-bit (all existing call sites compile
+ * and behave unchanged):
+ * <ul>
+ *   <li><b>Core tier</b> ({@code importance >= layering.coreImportanceThreshold()}):
+ *       always-on working set. Injected at the head as {@code [Core memories]},
+ *       never ranked by the query, never dropped by the token budget.</li>
+ *   <li><b>Archival tier</b> (everything else): paged in beside the last USER
+ *       message as {@code [Known memories]}, ranked by relevance to that
+ *       message (the same anchor the WRITE side's reconciliation recall uses
+ *       — {@link ConversationAnchors}), trimmed by the token budget.</li>
+ * </ul>
+ * Read-side query routing here is the read-side completion of step 1's
+ * hybrid ranking: the semantic path now runs on the injection path, not only
+ * inside {@code search_memory}.
+ * <p>
+ * Soft failure: any recall failure degrades this turn's injection to "no
+ * memories" (log warn, return the history untouched). Injection is additive;
+ * a broken memory read must never break the chat loop.
  */
 public class MemoryContextBuilder implements ContextBuilder {
 
@@ -39,7 +61,17 @@ public class MemoryContextBuilder implements ContextBuilder {
     private final String archiveScope;
     private final int recallLimit;
 
+    /** Layering policy; {@code null} = legacy single-block path (six-arg ctor). */
+    private final MemoryLayering layering;
+    /** Max archival-tier entries to page in (layered path only). */
+    private final int archivalLimit;
+
     /**
+     * Legacy single-block constructor: recall + importance-then-recency rank +
+     * one {@code [Known memories]} USER message at the head. All existing call
+     * sites (channel / tavern / enterprise / examples) compile and behave
+     * unchanged — the layered path is opt-in.
+     *
      * @param retriever    memory retriever
      * @param scopes       scopes visible in this context (e.g. [user:u1, channel:c1])
      * @param compressor   optional compactor (null = no compaction)
@@ -51,12 +83,42 @@ public class MemoryContextBuilder implements ContextBuilder {
                                 ContextCompressor compressor,
                                 MemoryStore archiveStore, String archiveScope,
                                 int recallLimit) {
+        this(retriever, scopes, compressor, archiveStore, archiveScope, recallLimit,
+                null, 0);
+    }
+
+    /**
+     * Layered constructor (roadmap step 3): core tier at the head
+     * ({@code [Core memories]}), archival tier beside the last USER message
+     * ({@code [Known memories]}), ranked by query relevance and trimmed by
+     * the token budget.
+     *
+     * @param retriever     memory retriever
+     * @param scopes        scopes visible in this context
+     * @param compressor    optional compactor (null = no compaction)
+     * @param archiveStore  optional store for compaction archives
+     * @param archiveScope  scope for compaction archives
+     * @param recallLimit   kept for source compatibility; the layered path
+     *                      bounds archival with {@code archivalLimit} instead
+     *                      (0 = no limit on archival)
+     * @param layering      layering policy (core threshold + token budget);
+     *                      {@code null} falls back to the legacy single block
+     * @param archivalLimit max archival-tier entries to page in (0 = no limit)
+     */
+    public MemoryContextBuilder(MemoryRetriever retriever, List<String> scopes,
+                                ContextCompressor compressor,
+                                MemoryStore archiveStore, String archiveScope,
+                                int recallLimit,
+                                MemoryLayering layering,
+                                int archivalLimit) {
         this.retriever = retriever;
         this.scopes = scopes;
         this.compressor = compressor;
         this.archiveStore = archiveStore;
         this.archiveScope = archiveScope;
         this.recallLimit = recallLimit;
+        this.layering = layering;
+        this.archivalLimit = archivalLimit;
     }
 
     @Override
@@ -73,22 +135,62 @@ public class MemoryContextBuilder implements ContextBuilder {
             }
         }
 
-        // 2. Recall memories
-        List<MemoryEntry> memories = recallLimit > 0
-                ? retriever.recallForContext(scopes, recallLimit)
-                : retriever.recall(scopes);
+        // 2. Recall memories — soft failure: a broken recall degrades this
+        // turn's injection to "no memories", never breaks the loop.
+        List<MemoryEntry> memories;
+        try {
+            memories = recallLimit > 0
+                    ? retriever.recallForContext(scopes, recallLimit)
+                    : retriever.recall(scopes);
+        } catch (RuntimeException e) {
+            log.warn("Memory recall failed; injecting no memories this turn: {}", e.getMessage());
+            return new ArrayList<>(messages);
+        }
 
         if (memories.isEmpty()) {
             return new ArrayList<>(messages);
         }
 
-        // 3. Prepend retrieval to history, without touching the state's identity.
-        String memoryBlock = renderMemories(memories);
-        List<ChatMessage> assembled = new ArrayList<>(messages.size() + 1);
-        assembled.add(ChatMessage.user("[Known memories]\n" + memoryBlock));
-        assembled.addAll(messages);
+        // 3a. Legacy path: one block at the head (six-arg ctor behaviour).
+        if (layering == null) {
+            String memoryBlock = renderMemories(memories);
+            List<ChatMessage> assembled = new ArrayList<>(messages.size() + 1);
+            assembled.add(ChatMessage.user("[Known memories]\n" + memoryBlock));
+            assembled.addAll(messages);
+            log.debug("Injected {} memories into context (scopes={})", memories.size(), scopes);
+            return assembled;
+        }
 
-        log.debug("Injected {} memories into context (scopes={})", memories.size(), scopes);
+        // 3b. Layered path: split by policy, rank archival by the query anchor,
+        // assemble two blocks (core head, archival beside the turn).
+        String anchor = ConversationAnchors.lastUserMessage(messages);
+        List<MemoryEntry> core = new ArrayList<>();
+        List<MemoryEntry> archival = new ArrayList<>();
+        for (MemoryEntry m : memories) {
+            (layering.isCore(m) ? core : archival).add(m);
+        }
+        if (anchor != null && !anchor.isBlank() && !archival.isEmpty()) {
+            try {
+                // Re-rank the whole visible pool by query relevance, keep the
+                // non-core head of it, then cap at archivalLimit. This keeps the
+                // ranking contract inside MemoryRetriever (one ranking authority).
+                archival = retriever.recallForContext(scopes, 0, anchor)
+                        .stream()
+                        .filter(layering::isNotCore)
+                        .limit(archivalLimit > 0 ? archivalLimit : Integer.MAX_VALUE)
+                        .toList();
+            } catch (RuntimeException e) {
+                log.warn("Archival re-rank failed; falling back to importance order: {}",
+                        e.getMessage());
+            }
+        }
+        if (archivalLimit > 0 && archival.size() > archivalLimit) {
+            archival = archival.subList(0, archivalLimit);
+        }
+
+        List<ChatMessage> assembled = LayeredMemoryAssembler.assemble(core, messages, archival, layering);
+        log.debug("Layered injection: {} core + {} archival memories (scopes={})",
+                core.size(), archival.size(), scopes);
         return assembled;
     }
 
