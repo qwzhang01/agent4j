@@ -82,6 +82,14 @@ public sealed interface AgentEvent {
      * (Stage 19). Emitted right after the handoff tool result is written
      * into history and before the next model call, which already runs
      * under the new config.
+     * <p>
+     * Continuation contract: {@link AgentState} records no "currently active
+     * config", so this event is the only place a host can learn who owns the
+     * loop after a transfer. A host that survives across runs (multi-turn
+     * conversations, checkpoint restore) must remember the last
+     * {@code toAgent} and re-enter the next run through that agent —
+     * re-entering the entry agent silently misaligns the transfer recorded
+     * in history with the persona actually answering.
      *
      * @param fromAgent config name that declared and invoked the handoff
      * @param toAgent   config name that now owns the loop

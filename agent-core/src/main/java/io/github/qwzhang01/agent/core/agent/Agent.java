@@ -37,6 +37,16 @@ public interface Agent {
     /**
      * Run the agent with a user input, continuing from an existing state.
      * Used for multi-turn conversations.
+     * <p>
+     * Continuation contract (Stage 19): {@link AgentState} deliberately records
+     * no "currently active config" — identity is configuration, not history.
+     * If this state's history contains a handoff (a {@code transfer_to_*}
+     * tool result), re-entering through THIS agent runs the entry persona
+     * against a history whose last turn belongs to another agent. The caller
+     * MUST instead re-enter through the last handoff target's agent, learned
+     * from {@link AgentEvent.Handoff}. Until P3 adds an explicit resolver,
+     * re-entering the entry config after a handoff silently misaligns history
+     * with the executing persona.
      *
      * @param userInput user's question or instruction
      * @param state     existing conversation state (will be mutated)

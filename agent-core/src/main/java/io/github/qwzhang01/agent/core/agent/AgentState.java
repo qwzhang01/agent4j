@@ -25,6 +25,13 @@ import java.util.List;
  * on the workflow blackboard ({@code agentState:{nodeId}}) and restore
  * it after a process restart. Stage 14 records trajectory at the model
  * boundary instead of dumping this object.
+ * <p>
+ * Stage 19 boundary: this state deliberately records no "currently active
+ * config". Identity is configuration (AgentConfig.systemPrompt), not history —
+ * and AgentConfig itself is not serializable. After a handoff, a resumed run
+ * defaults to the ENTRY config's persona; hosts must re-enter through the
+ * last handoff target (learned from {@link AgentEvent.Handoff}) to keep the
+ * executor aligned with the transfer recorded in history.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
