@@ -16,11 +16,11 @@ import java.util.List;
  *   <li>{@link ImportanceRankingStrategy} – <b>production-ready</b>: token-overlap +
  *       importance weighted sum (the default behaviour preserved from
  *       {@code MemoryRetriever} pre-A8).</li>
- *   <li>{@link HybridRankingStrategy} – <b>not yet implemented</b>: a placeholder that
- *       currently delegates 100% of its ranking to {@link ImportanceRankingStrategy}.
- *       Constructing it today has no behavioral effect beyond using the default
- *       strategy directly; do not depend on embedding-based ranking until its
- *       Javadoc says otherwise.</li>
+ *   <li>{@link HybridRankingStrategy} – <b>production-ready since read-side embedding
+ *       (step 1)</b>: fuses embedding cosine similarity (α), token overlap (β) and
+ *       importance (γ), defaulting to 0.5 / 0.3 / 0.2. Requires an
+ *       {@code EmbeddingClient}; degrades gracefully to lexical + importance when
+ *       vectors or the provider are unavailable.</li>
  * </ul>
  *
  * <p>Typical usage via {@code MemoryRetriever} (production default; equivalent to the

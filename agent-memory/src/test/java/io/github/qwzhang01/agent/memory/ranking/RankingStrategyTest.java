@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.memory.ranking;
 
+import io.github.qwzhang01.agent.core.client.EmbeddingClient;
 import io.github.qwzhang01.agent.memory.*;
 import io.github.qwzhang01.agent.memory.store.InMemoryMemoryStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,19 +88,28 @@ class RankingStrategyTest {
         assertTrue(ranked.isEmpty());
     }
 
-    // ============ HybridRankingStrategy (stub) ============
+    // ============ HybridRankingStrategy (production since step 1) ============
 
+    /**
+     * The former stub-delegation test is obsolete: HybridRankingStrategy now
+     * fuses semantic + lexical + importance. Its degradation contract (no
+     * query → identical to ImportanceRankingStrategy) lives in
+     * {@code HybridRankingStrategyTest}; here we keep one guard that the
+     * no-arg-query path still equals the default strategy's ordering.
+     */
     @Test
-    void hybridStrategy_delegatesToImportanceRanking() {
+    void hybridStrategy_noQuery_matchesImportanceRanking() {
         write("s", "coffee",    "user likes black coffee", 0.3, NEW);
         write("s", "interview", "next week job interview",  0.5, NEW);
 
         List<MemoryEntry> candidates = store.query(MemoryQuery.builder().scopes(List.of("s")).build());
-        List<MemoryEntry> byImportance = new ImportanceRankingStrategy().rank(candidates, "coffee");
-        List<MemoryEntry> byHybrid     = new HybridRankingStrategy().rank(candidates, "coffee");
+        List<MemoryEntry> byImportance = new ImportanceRankingStrategy().rank(candidates, null);
+
+        HybridRankingStrategy hybrid = new HybridRankingStrategy(text -> new float[]{1.0f});
+        List<MemoryEntry> byHybrid = hybrid.rank(candidates, null);
 
         assertEquals(contents(byImportance), contents(byHybrid),
-                "stub HybridRankingStrategy must produce identical results to ImportanceRankingStrategy");
+                "no-query hybrid must produce identical results to ImportanceRankingStrategy");
     }
 
     // ============ RankingStrategy.defaults() factory ============

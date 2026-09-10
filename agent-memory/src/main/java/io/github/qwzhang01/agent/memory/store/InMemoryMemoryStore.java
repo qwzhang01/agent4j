@@ -42,7 +42,8 @@ public class InMemoryMemoryStore implements MemoryStore {
                 entry.createdAt() != null ? entry.createdAt() : Instant.now(),
                 entry.expireAt(),
                 entry.dueAt(),
-                entry.lifecycle()
+                entry.lifecycle(),
+                entry.embedding()
         );
         entries.put(id, stored);
         return stored;
