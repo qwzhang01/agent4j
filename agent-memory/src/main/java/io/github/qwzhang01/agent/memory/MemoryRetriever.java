@@ -105,6 +105,30 @@ public class MemoryRetriever {
     }
 
     /**
+     * Recall the currently-visible entries for an exact subject (ACTIVE only).
+     * Scope isolation applies as everywhere else.
+     */
+    public List<MemoryEntry> recallBySubject(List<String> scopes, String subject) {
+        return store.query(MemoryQuery.builder().scopes(scopes).subject(subject).build());
+    }
+
+    /**
+     * Recall the full timeline of a subject: the current ACTIVE entry plus
+     * every HISTORICAL predecessor, newest first. SUPERSEDED entries (old
+     * content that was wrong from the start) are never included.
+     * <p>
+     * Backs the {@code include_history} mode of {@code search_memory}: answering
+     * "where did I live before?" without polluting the default context.
+     */
+    public List<MemoryEntry> recallSubjectHistory(List<String> scopes, String subject) {
+        return store.query(MemoryQuery.builder()
+                .scopes(scopes)
+                .subject(subject)
+                .statuses(MemoryStatus.ACTIVE, MemoryStatus.HISTORICAL)
+                .build());
+    }
+
+    /**
      * Recall the most important memories for the current context.
      * Delegates to {@link #recallForContext(List, int, String)} with no query.
      *

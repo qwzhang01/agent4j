@@ -25,6 +25,10 @@ import java.time.Instant;
  * @param expireAt    TTL deadline (null = permanent); after this the entry is not retrievable
  * @param dueAt       optional due time with no built-in meaning (null = none).
  *                    Hosts use it for their own scans; this module does not schedule jobs.
+ * @param lifecycle   how this entry relates to an older same-subject entry it replaces:
+ *                    {@link MemoryLifecycle#EVOLVE} (old content was once true, then changed)
+ *                    or {@link MemoryLifecycle#CONFLICT} (old content was wrong from the start).
+ *                    Null = not judged; the write path then treats it as CONFLICT.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemoryEntry(
@@ -38,31 +42,40 @@ public record MemoryEntry(
         MemoryStatus status,
         Instant createdAt,
         Instant expireAt,
-        Instant dueAt
+        Instant dueAt,
+        MemoryLifecycle lifecycle
 ) {
-    /** Backward-compatible constructor: no due time. */
+    /** Backward-compatible constructor: no due time, no lifecycle. */
     public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
                        double importance, MemoryProvenance provenance, MemoryStatus status,
                        Instant createdAt, Instant expireAt) {
         this(id, scope, type, subject, content, importance, provenance, status,
-                createdAt, expireAt, null);
+                createdAt, expireAt, null, null);
+    }
+
+    /** Backward-compatible constructor: no lifecycle. */
+    public MemoryEntry(String id, String scope, MemoryType type, String subject, String content,
+                       double importance, MemoryProvenance provenance, MemoryStatus status,
+                       Instant createdAt, Instant expireAt, Instant dueAt) {
+        this(id, scope, type, subject, content, importance, provenance, status,
+                createdAt, expireAt, dueAt, null);
     }
 
     // ============ With Methods (for governance transitions) ============
 
     public MemoryEntry withStatus(MemoryStatus newStatus) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, newStatus, createdAt, expireAt, dueAt);
+                provenance, newStatus, createdAt, expireAt, dueAt, lifecycle);
     }
 
     public MemoryEntry withContent(String newContent) {
         return new MemoryEntry(id, scope, type, subject, newContent, importance,
-                provenance, status, createdAt, expireAt, dueAt);
+                provenance, status, createdAt, expireAt, dueAt, lifecycle);
     }
 
     public MemoryEntry withDueAt(Instant newDueAt) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
-                provenance, status, createdAt, expireAt, newDueAt);
+                provenance, status, createdAt, expireAt, newDueAt, lifecycle);
     }
 
     /**

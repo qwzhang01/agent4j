@@ -11,13 +11,17 @@ import java.util.Objects;
  * scopes are visible for the current context. The store will never return
  * entries outside this list (Stage 8 D3 isolation).
  *
- * @param scopes  scopes to search within (e.g. [user:u1, channel:c1])
- * @param type    optional type filter (null = any)
- * @param subject optional exact subject filter (null = any)
- * @param keyword optional keyword filter matched against content (null/blank = any)
- * @param limit   max results (0 or negative = no limit)
- * @param dueFrom inclusive lower bound on {@link MemoryEntry#dueAt()} (null = no min)
- * @param dueTo   inclusive upper bound on {@link MemoryEntry#dueAt()} (null = no max)
+ * @param scopes   scopes to search within (e.g. [user:u1, channel:c1])
+ * @param type     optional type filter (null = any)
+ * @param subject  optional exact subject filter (null = any)
+ * @param keyword  optional keyword filter matched against content (null/blank = any)
+ * @param limit    max results (0 or negative = no limit)
+ * @param dueFrom  inclusive lower bound on {@link MemoryEntry#dueAt()} (null = no min)
+ * @param dueTo    inclusive upper bound on {@link MemoryEntry#dueAt()} (null = no max)
+ * @param statuses optional status filter (null/empty = ACTIVE only, the default view).
+ *                 History lookups pass e.g. [ACTIVE, HISTORICAL] to surface
+ *                 replaced-but-once-true entries. SUPERSEDED is audit-only and is
+ *                 returned only when explicitly listed.
  */
 public record MemoryQuery(
         List<String> scopes,
@@ -26,7 +30,8 @@ public record MemoryQuery(
         String keyword,
         int limit,
         Instant dueFrom,
-        Instant dueTo
+        Instant dueTo,
+        List<MemoryStatus> statuses
 ) {
 
     public static Builder builder() {
@@ -49,6 +54,7 @@ public record MemoryQuery(
         private int limit;
         private Instant dueFrom;
         private Instant dueTo;
+        private List<MemoryStatus> statuses;
 
         public Builder scopes(List<String> scopes) {
             this.scopes = scopes;
@@ -96,9 +102,19 @@ public record MemoryQuery(
             return this;
         }
 
+        public Builder statuses(List<MemoryStatus> statuses) {
+            this.statuses = statuses;
+            return this;
+        }
+
+        public Builder statuses(MemoryStatus... statuses) {
+            this.statuses = List.of(statuses);
+            return this;
+        }
+
         public MemoryQuery build() {
             Objects.requireNonNull(scopes, "scopes must not be null");
-            return new MemoryQuery(scopes, type, subject, keyword, limit, dueFrom, dueTo);
+            return new MemoryQuery(scopes, type, subject, keyword, limit, dueFrom, dueTo, statuses);
         }
     }
 }

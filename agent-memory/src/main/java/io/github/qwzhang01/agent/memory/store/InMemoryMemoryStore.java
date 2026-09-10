@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -40,7 +41,8 @@ public class InMemoryMemoryStore implements MemoryStore {
                 entry.status(),
                 entry.createdAt() != null ? entry.createdAt() : Instant.now(),
                 entry.expireAt(),
-                entry.dueAt()
+                entry.dueAt(),
+                entry.lifecycle()
         );
         entries.put(id, stored);
         return stored;
@@ -48,11 +50,16 @@ public class InMemoryMemoryStore implements MemoryStore {
 
     @Override
     public List<MemoryEntry> query(MemoryQuery query) {
+        // Default view is ACTIVE-only; explicit statuses opt into e.g. HISTORICAL.
+        Set<MemoryStatus> allowed = (query.statuses() == null || query.statuses().isEmpty())
+                ? Set.of(MemoryStatus.ACTIVE)
+                : Set.copyOf(query.statuses());
+
         Stream<MemoryEntry> stream = entries.values().stream()
                 // Scope isolation: only entries in the explicitly requested scopes
                 .filter(e -> query.scopes().contains(e.scope()))
-                // Only ACTIVE entries are retrievable (pending/rejected/superseded/excluded)
-                .filter(e -> e.status() == MemoryStatus.ACTIVE)
+                // Only allowed statuses are retrievable (pending/rejected/superseded excluded by default)
+                .filter(e -> allowed.contains(e.status()))
                 // TTL: lazily filter expired entries
                 .filter(e -> !e.isExpired(Instant.now()));
 

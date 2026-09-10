@@ -8,7 +8,11 @@ package io.github.qwzhang01.agent.memory;
  * ACTIVE          - live, retrievable, injected into context
  * PENDING_REVIEW  - written but awaiting admin approval (channel scope default)
  * REJECTED        - admin rejected, not retrievable
- * SUPERSEDED      - replaced by a newer entry with the same subject (kept for audit)
+ * SUPERSEDED      - replaced because the old content was wrong from the start
+ *                   (lifecycle=CONFLICT); audit-only, never returned by queries
+ * HISTORICAL      - replaced because the old content was once true but changed
+ *                   (lifecycle=EVOLVE, e.g. "I moved to Shanghai" replaces "lives in Shenzhen");
+ *                   excluded from the default context, visible to explicit history queries
  * EXPIRED         - TTL passed, lazily filtered on retrieval
  * </pre>
  */
@@ -17,5 +21,6 @@ public enum MemoryStatus {
     PENDING_REVIEW,
     REJECTED,
     SUPERSEDED,
+    HISTORICAL,
     EXPIRED
 }

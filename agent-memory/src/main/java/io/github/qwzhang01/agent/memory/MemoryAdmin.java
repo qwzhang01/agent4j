@@ -48,6 +48,10 @@ public class MemoryAdmin {
 
     /**
      * Approve a pending entry -> becomes ACTIVE.
+     * <p>
+     * If an older ACTIVE entry with the same subject exists, its fate follows
+     * the approved entry's lifecycle: EVOLVE -> HISTORICAL (once true, changed),
+     * CONFLICT / null -> SUPERSEDED (wrong from the start).
      */
     public MemoryEntry approve(String entryId) {
         MemoryEntry entry = requireEntry(entryId);
@@ -56,7 +60,8 @@ public class MemoryAdmin {
         }
         // If there's an existing ACTIVE entry with the same subject, supersede it first
         store.findActiveBySubject(entry.scope(), entry.subject())
-                .ifPresent(old -> store.update(old.withStatus(MemoryStatus.SUPERSEDED)));
+                .ifPresent(old -> store.update(
+                        old.withStatus(MemoryLifecycle.supersedeTarget(entry.lifecycle()))));
         MemoryEntry approved = entry.withStatus(MemoryStatus.ACTIVE);
         store.update(approved);
         log.info("Approved entry {} in scope {}", entryId, entry.scope());

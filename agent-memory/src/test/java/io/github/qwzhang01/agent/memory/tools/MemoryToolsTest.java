@@ -87,6 +87,80 @@ class MemoryToolsTest {
     }
 
     @Test
+    void saveMemory_evolveMarksOldAsHistorical() throws Exception {
+        Tool save = MemoryTools.saveMemory(store, "user:u1", policy, "test-model");
+
+        ObjectNode args1 = mapper.createObjectNode();
+        args1.put("subject", "home-city");
+        args1.put("content", "lives in Shenzhen");
+        save.execute(args1);
+
+        ObjectNode args2 = mapper.createObjectNode();
+        args2.put("subject", "home-city");
+        args2.put("content", "moved to Shanghai");
+        args2.put("lifecycle", "EVOLVE");
+        save.execute(args2);
+
+        List<MemoryEntry> all = store.listByScope("user:u1");
+        assertEquals(2, all.size(), "old + new kept");
+        assertEquals(MemoryStatus.HISTORICAL, all.stream()
+                .filter(e -> e.content().equals("lives in Shenzhen")).findFirst().orElseThrow().status());
+        assertEquals(MemoryStatus.ACTIVE, all.stream()
+                .filter(e -> e.content().equals("moved to Shanghai")).findFirst().orElseThrow().status());
+    }
+
+    @Test
+    void searchMemory_includeHistory_returnsTimeline() throws Exception {
+        Tool save = MemoryTools.saveMemory(store, "user:u1", policy, "test-model");
+
+        ObjectNode args1 = mapper.createObjectNode();
+        args1.put("subject", "home-city");
+        args1.put("content", "lives in Shenzhen");
+        save.execute(args1);
+
+        ObjectNode args2 = mapper.createObjectNode();
+        args2.put("subject", "home-city");
+        args2.put("content", "moved to Shanghai");
+        args2.put("lifecycle", "EVOLVE");
+        save.execute(args2);
+
+        Tool search = MemoryTools.searchMemory(retriever, List.of("user:u1"));
+        ObjectNode searchArgs = mapper.createObjectNode();
+        searchArgs.put("subject", "home-city");
+        searchArgs.put("include_history", true);
+
+        String result = search.execute(searchArgs);
+        assertTrue(result.contains("moved to Shanghai"), "current value present: " + result);
+        assertTrue(result.contains("lives in Shenzhen"), "historical value present: " + result);
+        assertTrue(result.contains("(historical)"), "historical marker present: " + result);
+        assertTrue(result.contains("Found 2"), "both versions returned: " + result);
+    }
+
+    @Test
+    void searchMemory_subjectOnly_returnsActiveVersion() throws Exception {
+        Tool save = MemoryTools.saveMemory(store, "user:u1", policy, "test-model");
+
+        ObjectNode args1 = mapper.createObjectNode();
+        args1.put("subject", "home-city");
+        args1.put("content", "lives in Shenzhen");
+        save.execute(args1);
+
+        ObjectNode args2 = mapper.createObjectNode();
+        args2.put("subject", "home-city");
+        args2.put("content", "moved to Shanghai");
+        args2.put("lifecycle", "EVOLVE");
+        save.execute(args2);
+
+        Tool search = MemoryTools.searchMemory(retriever, List.of("user:u1"));
+        ObjectNode searchArgs = mapper.createObjectNode();
+        searchArgs.put("subject", "home-city");
+
+        String result = search.execute(searchArgs);
+        assertTrue(result.contains("moved to Shanghai"));
+        assertFalse(result.contains("lives in Shenzhen"), "history stays hidden without include_history");
+    }
+
+    @Test
     void saveMemory_defaultTypeIsFact() throws Exception {
         Tool save = MemoryTools.saveMemory(store, "user:u1", policy, "test-model");
 

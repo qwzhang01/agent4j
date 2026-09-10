@@ -106,6 +106,80 @@ class MemoryPipelineTest {
         assertTrue(policy.shouldSupersede(corrected, store));
     }
 
+    // ============ EVOLVE vs CONFLICT (lifecycle-aware supersede) ============
+
+    @Test
+    void extractWrite_evolveMarksOldAsHistorical_notSuperseded() {
+        // Old fact stored first
+        store.write(entry("user:u1", "home-city", "lives in Shenzhen", 0.8));
+
+        // New candidate judged EVOLVE: old content was once true but changed
+        MemoryExtractor extractor = (messages, scope, provenance) -> List.of(
+                new MemoryEntry(null, "user:u1", MemoryType.FACT, "home-city",
+                        "moved to Shanghai", 0.8, provenance,
+                        MemoryStatus.ACTIVE, Instant.now(), null, null, MemoryLifecycle.EVOLVE));
+        MemoryPolicy policy = new MemoryPolicy(0.5);
+
+        int stored = extractor.extractAndStore(List.of(), "user:u1",
+                MemoryProvenance.userSaid("u1", "r2", Instant.now()), policy, store);
+
+        assertEquals(1, stored);
+        List<MemoryEntry> all = store.listByScope("user:u1");
+        assertEquals(2, all.size(), "old + new kept");
+        assertEquals(MemoryStatus.HISTORICAL, all.stream()
+                .filter(e -> e.content().equals("lives in Shenzhen")).findFirst().orElseThrow().status(),
+                "EVOLVE -> old entry becomes HISTORICAL, not SUPERSEDED");
+
+        // Default view hides the old city; history view exposes it
+        assertEquals(1, retriever.recallBySubject(List.of("user:u1"), "home-city").size());
+        List<MemoryEntry> timeline = retriever.recallSubjectHistory(List.of("user:u1"), "home-city");
+        assertEquals(2, timeline.size(), "history query returns the full timeline");
+    }
+
+    @Test
+    void extractWrite_conflictKeepsSuperSededBehaviour() {
+        store.write(entry("user:u1", "diet", "allergic to peanuts", 0.8));
+
+        // CONFLICT: the old memory was wrong from the start
+        MemoryExtractor extractor = (messages, scope, provenance) -> List.of(
+                new MemoryEntry(null, "user:u1", MemoryType.PREFERENCE, "diet",
+                        "never allergic, you remembered it wrong", 0.8, provenance,
+                        MemoryStatus.ACTIVE, Instant.now(), null, null, MemoryLifecycle.CONFLICT));
+        MemoryPolicy policy = new MemoryPolicy(0.5);
+
+        extractor.extractAndStore(List.of(), "user:u1",
+                MemoryProvenance.userSaid("u1", "r2", Instant.now()), policy, store);
+
+        List<MemoryEntry> all = store.listByScope("user:u1");
+        assertEquals(MemoryStatus.SUPERSEDED, all.stream()
+                .filter(e -> e.content().equals("allergic to peanuts")).findFirst().orElseThrow().status(),
+                "CONFLICT -> old entry becomes SUPERSEDED (audit-only)");
+
+        // SUPERSEDED never appears in the history view
+        List<MemoryEntry> timeline = retriever.recallSubjectHistory(List.of("user:u1"), "diet");
+        assertEquals(1, timeline.size(), "history view shows only the ACTIVE correction");
+    }
+
+    @Test
+    void extractWrite_nullLifecycleFallsBackToSuperseded() {
+        store.write(entry("user:u1", "diet", "allergic to peanuts", 0.8));
+
+        // No lifecycle judgement: backward-compatible SUPERSEDED behaviour
+        MemoryExtractor extractor = (messages, scope, provenance) -> List.of(
+                new MemoryEntry(null, "user:u1", MemoryType.PREFERENCE, "diet",
+                        "not allergic", 0.8, provenance,
+                        MemoryStatus.ACTIVE, Instant.now(), null));
+        MemoryPolicy policy = new MemoryPolicy(0.5);
+
+        extractor.extractAndStore(List.of(), "user:u1",
+                MemoryProvenance.userSaid("u1", "r2", Instant.now()), policy, store);
+
+        List<MemoryEntry> all = store.listByScope("user:u1");
+        assertEquals(MemoryStatus.SUPERSEDED, all.stream()
+                .filter(e -> e.content().equals("allergic to peanuts")).findFirst().orElseThrow().status(),
+                "null lifecycle -> SUPERSEDED, identical to pre-change behaviour");
+    }
+
     @Test
     void policy_explicitSaveBypassesThreshold() {
         // importance=1.0 (explicit save_memory) passes any threshold

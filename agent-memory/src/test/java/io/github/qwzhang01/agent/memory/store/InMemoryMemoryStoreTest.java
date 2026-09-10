@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.memory.store;
 
 import io.github.qwzhang01.agent.memory.MemoryEntry;
+import io.github.qwzhang01.agent.memory.MemoryLifecycle;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryQuery;
 import io.github.qwzhang01.agent.memory.MemoryScope;
@@ -227,6 +228,51 @@ class InMemoryMemoryStoreTest {
         var found = store.findActiveBySubject("user:u1", "diet");
         assertTrue(found.isPresent());
         assertEquals("right", found.get().content());
+    }
+
+    // ============ HISTORICAL status (evolved memories) ============
+
+    @Test
+    void historical_notReturnedByDefault_visibleWithExplicitStatuses() {
+        store.write(entry("user:u1", "home", "lives in Shenzhen", MemoryStatus.HISTORICAL));
+        store.write(entry("user:u1", "home", "moved to Shanghai", MemoryStatus.ACTIVE));
+
+        // Default view: ACTIVE only, old city invisible
+        List<MemoryEntry> def = store.query(MemoryQuery.builder().scopes(List.of("user:u1")).build());
+        assertEquals(1, def.size());
+        assertEquals("moved to Shanghai", def.get(0).content());
+
+        // Explicit history view: full timeline of the subject
+        List<MemoryEntry> hist = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .statuses(MemoryStatus.ACTIVE, MemoryStatus.HISTORICAL)
+                .build());
+        assertEquals(2, hist.size());
+
+        // Explicit audit view must also be possible
+        List<MemoryEntry> supersededOnly = store.query(MemoryQuery.builder()
+                .scopes(List.of("user:u1"))
+                .statuses(MemoryStatus.SUPERSEDED)
+                .build());
+        assertTrue(supersededOnly.isEmpty(), "SUPERSEDED stays audit-only unless listed");
+    }
+
+    @Test
+    void write_preservesLifecycle() {
+        MemoryEntry stored = store.write(new MemoryEntry(
+                null, "user:u1", MemoryType.FACT, "k", "v", 0.8,
+                MemoryProvenance.userSaid("u1", "r1", Instant.now()),
+                MemoryStatus.ACTIVE, Instant.now(), null, null, MemoryLifecycle.EVOLVE));
+        assertEquals(MemoryLifecycle.EVOLVE, store.findById(stored.id()).orElseThrow().lifecycle());
+    }
+
+    @Test
+    void findActiveBySubject_ignoresHistorical() {
+        store.write(entry("user:u1", "diet", "old", MemoryStatus.HISTORICAL));
+        store.write(entry("user:u1", "diet", "new", MemoryStatus.ACTIVE));
+        var found = store.findActiveBySubject("user:u1", "diet");
+        assertTrue(found.isPresent());
+        assertEquals("new", found.get().content());
     }
 
     // ============ CRUD ============

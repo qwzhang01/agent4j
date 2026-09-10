@@ -9,6 +9,7 @@ import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryExtractor;
+import io.github.qwzhang01.agent.memory.MemoryLifecycle;
 import io.github.qwzhang01.agent.memory.MemoryPolicy;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryStatus;
@@ -54,10 +55,14 @@ public class LlmMemoryExtractor implements MemoryExtractor {
 
     private static final String FORMAT_HINT = """
             Reply with JSON only, no markdown:
-            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7,"dueAt":"2026-08-26T12:00:00Z"}]}
+            {"memories":[{"type":"FACT|PREFERENCE|EVENT|EPISODE|SUMMARY","subject":"free-key","content":"text","importance":0.7,"lifecycle":"EVOLVE|CONFLICT","dueAt":"2026-08-26T12:00:00Z"}]}
             Use {"memories":[]} if there is nothing to store.
             type must be one of those five names; if unsure use FACT.
             importance is optional, 0.0–1.0.
+            lifecycle is optional and only set when the conversation earlier stated something about the same subject:
+              EVOLVE   = the old info was once true but changed (moved cities, new job, quit smoking, now prefers)
+              CONFLICT = the old info was wrong from the start ("you remembered it wrong", "I never had/said that")
+            Omit lifecycle when the conversation contains no earlier statement about the subject.
             dueAt is optional ISO-8601 (Instant or offset). Omit when there is no later follow-up time.
             This module does not interpret dueAt; hosts use it for their own scans.
             """;
@@ -267,7 +272,8 @@ public class LlmMemoryExtractor implements MemoryExtractor {
                     MemoryStatus.ACTIVE,
                     now,
                     null,
-                    parseDueAt(node)
+                    parseDueAt(node),
+                    parseLifecycle(node)
             ));
         }
         return List.copyOf(out);
@@ -330,6 +336,28 @@ public class LlmMemoryExtractor implements MemoryExtractor {
                 log.warn("LLM extract dueAt ignored: {}", raw);
                 return null;
             }
+        }
+    }
+
+    /**
+     * Parses the optional {@code lifecycle} field. Only the exact enum names
+     * EVOLVE / CONFLICT are accepted; anything else (including a missing field)
+     * yields {@code null} = not judged, which the write path treats as CONFLICT.
+     */
+    private static MemoryLifecycle parseLifecycle(JsonNode node) {
+        JsonNode value = node.get("lifecycle");
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        String raw = value.asText("").trim();
+        if (raw.isBlank()) {
+            return null;
+        }
+        try {
+            return MemoryLifecycle.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            log.warn("LLM extract lifecycle ignored: {}", raw);
+            return null;
         }
     }
 

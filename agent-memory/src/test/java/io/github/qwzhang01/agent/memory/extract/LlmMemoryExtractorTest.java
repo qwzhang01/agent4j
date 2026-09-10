@@ -8,6 +8,7 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.memory.MemoryEntry;
 import io.github.qwzhang01.agent.memory.MemoryExtractor;
+import io.github.qwzhang01.agent.memory.MemoryLifecycle;
 import io.github.qwzhang01.agent.memory.MemoryPolicy;
 import io.github.qwzhang01.agent.memory.MemoryProvenance;
 import io.github.qwzhang01.agent.memory.MemoryQuery;
@@ -148,6 +149,43 @@ class LlmMemoryExtractorTest {
         assertEquals(1, entries.size());
         assertEquals("keep me", entries.get(0).content());
         assertNull(entries.get(0).dueAt());
+    }
+
+    @Test
+    void lifecycleEvolveIsParsed() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                """
+                        {"memories":[{"type":"FACT","subject":"home-city","content":"moved to Shanghai","importance":0.8,"lifecycle":"EVOLVE"}]}
+                        """,
+                "user:u1", PROV);
+        assertEquals(1, entries.size());
+        assertEquals(MemoryLifecycle.EVOLVE, entries.get(0).lifecycle());
+    }
+
+    @Test
+    void lifecycleConflictIsParsed() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"k\",\"content\":\"v\",\"lifecycle\":\"CONFLICT\"}]}",
+                "user:u1", PROV);
+        assertEquals(MemoryLifecycle.CONFLICT, entries.get(0).lifecycle());
+    }
+
+    @Test
+    void invalidLifecycleBecomesNull_unknownValuesDoNotDropTheEntry() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"k\",\"content\":\"keep me\",\"lifecycle\":\"MAYBE\"}]}",
+                "user:u1", PROV);
+        assertEquals(1, entries.size());
+        assertNull(entries.get(0).lifecycle(), "unknown lifecycle = not judged");
+    }
+
+    @Test
+    void missingLifecycleStaysNull() {
+        List<MemoryEntry> entries = LlmMemoryExtractor.parseMemories(
+                "{\"memories\":[{\"type\":\"FACT\",\"subject\":\"k\",\"content\":\"v\"}]}",
+                "user:u1", PROV);
+        assertEquals(1, entries.size());
+        assertNull(entries.get(0).lifecycle());
     }
 
     @Test
