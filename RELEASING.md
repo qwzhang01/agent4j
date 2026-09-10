@@ -78,7 +78,7 @@ GPG: `maven-gpg-plugin` signs during `deploy` with `--pinentry-mode loopback`. P
 
 ## After the release
 
-1. Bump parent POM and BOM back to the next SNAPSHOT (for example `0.1.1-SNAPSHOT`).
+1. Bump parent POM and BOM back to the next SNAPSHOT (for example `0.1.2-SNAPSHOT`).
 2. Push the SNAPSHOT bump.
 3. Confirm GitHub Releases / Discussions notes point at the tag, not at SNAPSHOT artifacts.
 4. Only then announce Central coordinates in the README.

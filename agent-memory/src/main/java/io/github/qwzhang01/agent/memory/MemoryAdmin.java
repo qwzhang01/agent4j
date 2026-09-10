@@ -61,18 +61,24 @@ public class MemoryAdmin {
         if (entry.status() != MemoryStatus.PENDING_REVIEW) {
             throw new IllegalStateException("Entry " + entryId + " is not pending (status=" + entry.status() + ")");
         }
-        // If there's an existing ACTIVE entry with the same subject, supersede it first
-        store.findActiveBySubject(entry.scope(), entry.subject())
-                .ifPresent(old -> {
-                    Instant newBusinessStart = entry.validFrom() != null
-                            ? entry.validFrom()
-                            : Instant.now();
-                    store.update(old.closedAs(
-                            MemoryLifecycle.supersedeTarget(entry.lifecycle()),
-                            newBusinessStart, Instant.now()));
-                });
         MemoryEntry approved = entry.withStatus(MemoryStatus.ACTIVE);
-        store.update(approved);
+        // If an older ACTIVE entry holds the same subject, close it and activate
+        // this pending row in ONE atomic ledger move (store-level transaction on
+        // the PG backend): the close can never land while the activation fails,
+        // which would leave the subject with zero ACTIVE lines. The upsert-on-id
+        // write inside the move activates the existing pending row in place.
+        Optional<MemoryEntry> oldOpt = store.findActiveBySubject(entry.scope(), entry.subject());
+        if (oldOpt.isPresent()) {
+            MemoryEntry old = oldOpt.get();
+            Instant newBusinessStart = entry.validFrom() != null
+                    ? entry.validFrom()
+                    : Instant.now();
+            store.supersede(old.closedAs(
+                    MemoryLifecycle.supersedeTarget(entry.lifecycle()),
+                    newBusinessStart, Instant.now()), approved);
+        } else {
+            store.update(approved);
+        }
         log.info("Approved entry {} in scope {}", entryId, entry.scope());
         return approved;
     }
@@ -106,11 +112,11 @@ public class MemoryAdmin {
 
     /**
      * Supersede an entry: mark the old one SUPERSEDED and write a corrected ACTIVE entry.
-     * Used when an admin corrects a wrong memory.
+     * Used when an admin corrects a wrong memory. The close and the correction ride
+     * the store's atomic supersede move (one transaction on the PG backend).
      */
     public MemoryEntry supersede(String entryId, String newContent, String adminId) {
         MemoryEntry old = requireEntry(entryId);
-        store.update(old.withStatus(MemoryStatus.SUPERSEDED));
 
         MemoryEntry corrected = new MemoryEntry(
                 null, old.scope(), old.type(), old.subject(), newContent,
@@ -118,7 +124,7 @@ public class MemoryAdmin {
                 MemoryProvenance.adminEdit(adminId, Instant.now()),
                 MemoryStatus.ACTIVE, Instant.now(), null
         );
-        MemoryEntry stored = store.write(corrected);
+        MemoryEntry stored = store.supersede(old.withStatus(MemoryStatus.SUPERSEDED), corrected);
         log.info("Admin {} superseded entry {} with new entry {}", adminId, entryId, stored.id());
         return stored;
     }

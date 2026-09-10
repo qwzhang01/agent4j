@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -93,21 +94,28 @@ public class MemoryTools {
                             null, validFrom, null, null
                     );
 
-                    // Apply policy: supersede if same subject has different content
-                    if (policy.shouldSupersede(candidate, store)) {
-                        MemoryStatus target = MemoryLifecycle.supersedeTarget(lifecycle);
-                        store.findActiveBySubject(scope, subject)
-                                .ifPresent(old -> {
-                                    Instant newBusinessStart = candidate.validFrom() != null
-                                            ? candidate.validFrom()
-                                            : Instant.now();
-                                    store.update(old.closedAs(target, newBusinessStart, Instant.now()));
-                                });
-                    }
-
                     // Apply default status (channel -> PENDING_REVIEW)
                     MemoryStatus status = policy.defaultStatusForScope(scope);
-                    MemoryEntry stored = store.write(candidate.withStatus(status));
+                    MemoryEntry toStore = candidate.withStatus(status);
+
+                    // Apply policy: supersede if same subject has different content.
+                    // Close-old + write-new ride the store's atomic supersede move —
+                    // never two separate writes that can fail halfway and leave the
+                    // subject with zero or two ACTIVE lines.
+                    Optional<MemoryEntry> oldOpt = policy.shouldSupersede(candidate, store)
+                            ? store.findActiveBySubject(scope, subject)
+                            : Optional.empty();
+                    if (oldOpt.isPresent()) {
+                        MemoryEntry old = oldOpt.get();
+                        Instant newBusinessStart = candidate.validFrom() != null
+                                ? candidate.validFrom()
+                                : Instant.now();
+                        store.supersede(old.closedAs(
+                                MemoryLifecycle.supersedeTarget(lifecycle), newBusinessStart, Instant.now()),
+                                toStore);
+                    } else {
+                        store.write(toStore);
+                    }
 
                     return "Saved memory [" + type + "] subject='" + subject + "' (status=" + status + ")";
                 } catch (Exception e) {

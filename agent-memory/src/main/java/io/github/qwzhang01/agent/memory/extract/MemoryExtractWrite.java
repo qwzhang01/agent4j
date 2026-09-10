@@ -80,18 +80,28 @@ public final class MemoryExtractWrite {
             if (policy.shouldSupersede(candidate, store)) {
                 MemoryStatus target = MemoryLifecycle.supersedeTarget(candidate.lifecycle());
                 Optional<MemoryEntry> oldOpt = store.findActiveBySubject(candidate.scope(), candidate.subject());
-                oldOpt.ifPresent(old -> {
+                MemoryStatus defaultStatus = policy.defaultStatusForScope(candidate.scope());
+                MemoryEntry written;
+                if (oldOpt.isPresent()) {
+                    MemoryEntry old = oldOpt.get();
                     // Bi-temporal close: business axis ends at the new fact's business start;
                     // system axis ends now. Never stamp validAt with wall-clock now.
                     Instant newBusinessStart = candidate.validFrom() != null
                             ? candidate.validFrom()
                             : candidate.createdAt();
-                    store.update(old.closedAs(target, newBusinessStart, Instant.now()));
-                    log.debug("Marked old entry {} as {} for subject {} (validAt={}, invalidAt={})",
+                    // One atomic ledger move: close-old + write-new ride the store's
+                    // supersede (a single transaction on the PG backend), never two
+                    // separate writes that can fail halfway and leave the subject
+                    // with zero or two ACTIVE lines.
+                    written = store.supersede(old.closedAs(target, newBusinessStart, Instant.now()),
+                            candidate.withStatus(defaultStatus));
+                    log.debug("Superseded old entry {} as {} for subject {} (validAt={}, invalidAt={})",
                             old.id(), target, old.subject(), newBusinessStart, Instant.now());
-                });
-                MemoryStatus defaultStatus = policy.defaultStatusForScope(candidate.scope());
-                MemoryEntry written = store.write(candidate.withStatus(defaultStatus));
+                } else {
+                    // Policy said supersede but no ACTIVE line exists (e.g. it
+                    // expired): a plain write, nothing to close.
+                    written = store.write(candidate.withStatus(defaultStatus));
+                }
                 stored++;
                 report(decisionListener, MemoryDecision.update(
                         candidate.subject(), candidate.lifecycle(),

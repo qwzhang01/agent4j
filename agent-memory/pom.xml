@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.qwzhang01</groupId>
         <artifactId>seven-agent</artifactId>
-        <version>0.1.1</version>
+        <version>0.1.2</version>
     </parent>
 
     <artifactId>agent-memory</artifactId>
@@ -31,6 +31,15 @@
         <dependency>
             <groupId>io.github.qwzhang01</groupId>
             <artifactId>agent-model</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Real-PostgreSQL contract runs (PgMemoryStoreContractTest), gated behind
+             AGENT4J_PG_TEST=true: the embedded binary download is too heavy for
+             the daily build, which still proves the port contract in-memory. -->
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <version>2.0.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

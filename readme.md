@@ -95,7 +95,7 @@ examples             可运行示例（不发布）
     <dependency>
       <groupId>io.github.qwzhang01</groupId>
       <artifactId>seven-agent-bom</artifactId>
-      <version>0.1.1</version>
+      <version>0.1.2</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>

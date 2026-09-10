@@ -76,6 +76,20 @@ public class EmbeddingMemoryStore implements MemoryStore {
         return delegate.update(vectorize(entry));
     }
 
+    /**
+     * Vectorize both lines, then ride the delegate's atomic supersede move.
+     * Without this override the interface default would decompose the move
+     * into two separate delegate calls — correct for the in-memory reference,
+     * but it would silently discard the single-transaction guarantee of a
+     * persistent delegate (e.g. {@code PgMemoryStore}).
+     */
+    @Override
+    public MemoryEntry supersede(MemoryEntry closedOld, MemoryEntry newEntry) {
+        MemoryEntry closed = closedOld.embedding() != null ? closedOld : vectorize(closedOld);
+        MemoryEntry replacement = newEntry.embedding() != null ? newEntry : vectorize(newEntry);
+        return delegate.supersede(closed, replacement);
+    }
+
     @Override
     public Optional<MemoryEntry> findById(String id) {
         return delegate.findById(id);
