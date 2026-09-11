@@ -39,6 +39,8 @@
 
 **agent4j 对照**：A2（SUMMARY 独立槽位）+ A3（ExtraText 预算）是点状预算；缺管整个 messages 的全局预算管理器。
 
+**KP2 落定（2026-09-12）**：`ContextWindowBudget` 把四本账写成 record（`historyBudget()` = total − system − tools − output）；`ContextWindowEnforcer` 是 `ContextBuilder` 装饰器，超限丢最旧逻辑单元（assistant+tool 成对）。Decision 24 P2：`HandoffInputFilter` 挂在 `HandoffSpec` 上，只裁下一跳的 **请求**，不改 `AgentState`。三种携带：`IDENTITY`（全量，默认）/ `keepWithin(budget)`（复用同一套 trim）/ `lastTurn()`（从最后一条 USER 起）。摘要携带不是 filter，走目标 `ContextBuilder` 压缩。
+
 **自测**：给 agent4j 设计全局预算器，说清四本账占比与超支截断顺序。
 
 ### KP3 · Prompt Caching：缓存反向约束上下文设计

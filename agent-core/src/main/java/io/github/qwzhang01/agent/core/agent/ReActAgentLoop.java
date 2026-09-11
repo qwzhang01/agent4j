@@ -80,6 +80,8 @@ public class ReActAgentLoop implements AgentLoop {
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          ModelInvoker invoker) {
         AgentConfig currentConfig = config;
+        AgentConfig handoffFrom = null;
+        HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;
         state.setStatus(AgentState.Status.RUNNING);
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
@@ -89,7 +91,7 @@ public class ReActAgentLoop implements AgentLoop {
             // --------------------------------------------
             // 1. Build model request from current state
             // --------------------------------------------
-            ModelRequest request = buildRequest(currentConfig, state);
+            ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter);
 
             // --------------------------------------------
             // 2. Call the model (via the CURRENT config's client)
@@ -165,6 +167,8 @@ public class ReActAgentLoop implements AgentLoop {
                             "Conversation transferred to agent '" + pendingHandoffSpec.targetName() + "'."));
                     AgentConfig fromConfig = currentConfig;
                     currentConfig = pendingHandoffSpec.target();
+                    handoffFrom = fromConfig;
+                    activeInputFilter = pendingHandoffSpec.inputFilter();
                     log.info("[{}] Handoff via '{}': now running as [{}]",
                             fromConfig.getName(), pendingHandoffSpec.toolName(), currentConfig.getName());
                     sink.accept(new AgentEvent.Handoff(fromConfig.getName(), currentConfig.getName(),
@@ -292,13 +296,17 @@ public class ReActAgentLoop implements AgentLoop {
 
     // ============ Private Helpers ============
 
-    private ModelRequest buildRequest(AgentConfig config, AgentState state) {
+    private ModelRequest buildRequest(AgentConfig config, AgentState state,
+                                      AgentConfig handoffFrom, HandoffInputFilter inputFilter) {
         // Reject legacy personas before a builder can trim/compact them away.
         requireHistoryOnly(state.getMessages());
         List<ChatMessage> context = config.getContextBuilder() != null
                 ? config.getContextBuilder().build(config, state)
                 : state.getMessages();
         requireHistoryOnly(state.getMessages());
+        if (handoffFrom != null && inputFilter != null) {
+            context = inputFilter.filter(context, handoffFrom, config);
+        }
 
         // Own the request list: a builder may return an immutable list or live state.
         List<ChatMessage> messages = new ArrayList<>(context.size() + 1);

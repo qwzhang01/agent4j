@@ -10,17 +10,20 @@ package io.github.qwzhang01.agent.core.agent;
  * (persona, model client, tools, context builder) while the shared
  * {@link AgentState} — history and the global step budget — stays.
  * <p>
- * This mirrors the OpenAI Agents SDK shape (handoffs hold direct target
- * references, so circular graphs like A&#8596;B assemble naturally) instead
- * of a name-based registry lookup.
+ * {@link #inputFilter()} trims what the <em>next</em> model request carries
+ * (Decision 24 P2). It does not rewrite {@link AgentState}. Default is
+ * {@link HandoffInputFilter#IDENTITY} (full carry).
  *
  * @param target      the agent config to transfer to; must not be the
  *                    declaring config itself (validated by {@code AgentConfig})
  * @param toolName    the tool name the model calls to trigger the transfer
  * @param description sent to the model inside the tool schema; clarity
  *                    matters — it tells the model WHEN to transfer
+ * @param inputFilter request-boundary history filter for the target; null
+ *                    is normalized to {@link HandoffInputFilter#IDENTITY}
  */
-public record HandoffSpec(AgentConfig target, String toolName, String description) {
+public record HandoffSpec(AgentConfig target, String toolName, String description,
+                          HandoffInputFilter inputFilter) {
 
     public HandoffSpec {
         if (target == null) {
@@ -32,6 +35,14 @@ public record HandoffSpec(AgentConfig target, String toolName, String descriptio
         if (description == null || description.isBlank()) {
             description = "Transfer the conversation to agent '" + target.getName() + "'.";
         }
+        if (inputFilter == null) {
+            inputFilter = HandoffInputFilter.IDENTITY;
+        }
+    }
+
+    /** Three-arg form: full-carry filter. Kept so existing call sites compile. */
+    public HandoffSpec(AgentConfig target, String toolName, String description) {
+        this(target, toolName, description, null);
     }
 
     /**
@@ -45,6 +56,15 @@ public record HandoffSpec(AgentConfig target, String toolName, String descriptio
     /** Declares a handoff with a custom tool name and description. */
     public static HandoffSpec of(AgentConfig target, String toolName, String description) {
         return new HandoffSpec(target, toolName, description);
+    }
+
+    /** Same as {@link #to(AgentConfig)} with an explicit request-boundary filter. */
+    public static HandoffSpec to(AgentConfig target, HandoffInputFilter inputFilter) {
+        return to(target).withInputFilter(inputFilter);
+    }
+
+    public HandoffSpec withInputFilter(HandoffInputFilter inputFilter) {
+        return new HandoffSpec(target, toolName, description, inputFilter);
     }
 
     String targetName() {

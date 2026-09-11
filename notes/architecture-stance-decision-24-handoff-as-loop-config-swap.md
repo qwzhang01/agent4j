@@ -39,9 +39,13 @@ flowchart LR
 
 决策 23 把人格从历史中拉出、放入 config 请求级注入——这正是本次 handoff 能成立的前提。若人格还住在 `messages[0]`，切换 config 就得重写历史，整条路线回到对比替代①的死胡同。两个决策合起来构成完整主张：身份是配置，历史是事实；换身份不伪造事实。
 
+## P2 落定（2026-09-12）
+
+`HandoffInputFilter` 已落地：挂在 `HandoffSpec.inputFilter`，`runLoop` 在换牌后把它记到循环局部变量，下一轮 `buildRequest` 在 ContextBuilder 之后、拼 system prompt 之前调用。`AgentState` 零改写。默认 `IDENTITY`（存量 7 个 handoff 用例行为不变）。`keepWithin(ContextWindowBudget)` 与 `ContextWindowEnforcer.trimToBudget` 共用成对裁剪；`lastTurn()` 从最后一条 USER 带到交接 tool pair。
+
 ## 本次没有做的事
 
-- 没有实现 `HandoffInputFilter` / 历史预算裁剪（P2，接 Token Budgeting 四本账）。
+- ~~没有实现 `HandoffInputFilter` / 历史预算裁剪（P2，接 Token Budgeting 四本账）。~~ 已落（见上节）。
 - 没有做 handoff 边界的 guardrail（链中 agent 的输入防护，P3）。
 - 没有做乒乓检测（A↔B 无限互转时只有全局步数兜底；显式往返计数是 P3）。
 - 没有把「续跑契约」做成机制：`AgentState` 仍不持久化活跃身份，`HandoffTargetResolver` + `lastActiveAgentName` 留 P3；本轮只把契约写进三处 javadoc 与本卡（2026-09-10）。
