@@ -55,12 +55,11 @@ import java.util.function.UnaryOperator;
  * agent-security from this module (same boundary discipline as the mcp
  * client) -- plug Stage 9's sanitizer in at the assembly layer.
  * <p>
- * v1 honest boundaries: synchronous execution only (no working-state
- * streaming, no push notifications), in-memory task store (lost on
- * restart), no task continuation (a message carrying {@code message.taskId}
- * is refused loudly, not silently re-run), binds 127.0.0.1 only (a
- * production deployment behind a reverse proxy needs a host parameter --
- * v2), and the agent runs on the handler thread.
+ * v2: {@code message/stream} (SSE), {@code tasks/pushNotification/set}
+ * (webhook on terminal / input-required), and {@code message.taskId}
+ * continues an {@code input-required} task. Still in-memory, 127.0.0.1,
+ * text parts only. The advertised card always reports
+ * {@link A2ACapabilities#v2()}.
  */
 public class HttpA2AServer implements AutoCloseable {
 
@@ -151,7 +150,7 @@ public class HttpA2AServer implements AutoCloseable {
             String method = exchange.getRequestMethod().toUpperCase();
             if (WELL_KNOWN_PATH.equals(path)) {
                 if ("GET".equals(method)) {
-                    byte[] body = A2AJson.cardJson(card, wellKnownUrlOverride())
+                    byte[] body = A2AJson.cardJson(cardWithV2Caps(), wellKnownUrlOverride())
                             .toString().getBytes(StandardCharsets.UTF_8);
                     respond(exchange, 200, body);
                 } else {
@@ -198,7 +197,12 @@ public class HttpA2AServer implements AutoCloseable {
         try {
             switch (method) {
                 case "message/send" -> result = handleSend(request.path("params"));
+                case "message/stream" -> {
+                    handleStream(exchange, id, request.path("params"));
+                    return;
+                }
                 case "tasks/get" -> result = handleGet(request.path("params"));
+                case "tasks/pushNotification/set" -> result = handlePushSet(request.path("params"));
                 default -> {
                     respondJson(exchange, A2AJson.rpcError(id, -32601, "method not found: " + method));
                     return;
@@ -218,14 +222,71 @@ public class HttpA2AServer implements AutoCloseable {
     // ============ message/send ============
 
     private ObjectNode handleSend(JsonNode params) {
+        StoredTask stored = acceptAndRun(params, null);
+        return toTaskJson(stored);
+    }
+
+    /**
+     * {@code message/stream}: same accept/run as send, but the response is SSE.
+     * Events: {@code status} (working / terminal) and {@code artifact} (final text).
+     * JSON-RPC id is not replayed on the stream — the events ARE the result.
+     */
+    private void handleStream(HttpExchange exchange, JsonNode id, JsonNode params) throws IOException {
+        StoredTask working;
+        try {
+            working = beginTask(params);
+        } catch (ProtocolError e) {
+            respondJson(exchange, A2AJson.rpcError(id, e.code(), e.getMessage()));
+            return;
+        }
+        exchange.getResponseHeaders().set("Content-Type", "text/event-stream");
+        exchange.getResponseHeaders().set("Cache-Control", "no-cache");
+        exchange.sendResponseHeaders(200, 0);
+        try (OutputStream out = exchange.getResponseBody()) {
+            if (working.status() == A2ATaskStatus.REJECTED) {
+                writeSse(out, "status", toTaskJson(working));
+                out.flush();
+                return;
+            }
+            writeSse(out, "status", A2AJson.taskJson(working.taskId(), working.contextId(),
+                    A2ATaskStatus.WORKING, null, List.of()));
+            StoredTask done = finishTask(working, working.pendingText());
+            writeSse(out, "artifact", toTaskJson(done));
+            writeSse(out, "status", toTaskJson(done));
+            out.flush();
+        }
+    }
+
+    private ObjectNode handlePushSet(JsonNode params) {
+        JsonNode idNode = params.get("id");
+        if (idNode == null || idNode.isNull()) {
+            throw new ProtocolError(-32602, "params.id is required");
+        }
+        String url = params.path("pushNotificationConfig").path("url").asText("");
+        if (url.isBlank()) {
+            throw new ProtocolError(-32602, "params.pushNotificationConfig.url is required");
+        }
+        StoredTask existing = tasks.get(idNode.asText());
+        if (existing == null) {
+            return null;
+        }
+        StoredTask updated = existing.withPushUrl(url);
+        tasks.put(updated.taskId(), updated);
+        notifyPush(updated);
+        ObjectNode ok = A2AJson.mapper().createObjectNode();
+        ok.put("id", updated.taskId());
+        ok.put("url", url);
+        return ok;
+    }
+
+    /**
+     * Parse / sanitize / allocate (or resume) without running the agent yet.
+     * Used by SSE so we can emit {@code working} before {@code agent.run}.
+     */
+    private StoredTask beginTask(JsonNode params) {
         JsonNode message = params.path("message");
         if (!message.isObject()) {
             throw new ProtocolError(-32602, "params.message is required");
-        }
-        JsonNode continuationId = message.get("taskId");
-        if (continuationId != null && !continuationId.isNull()) {
-            throw new ProtocolError(-32001,
-                    "v1: task continuation is not supported; send a fresh message without message.taskId");
         }
         String text = A2AJson.firstTextPart(message.path("parts"));
         if (text == null) {
@@ -233,11 +294,33 @@ public class HttpA2AServer implements AutoCloseable {
                     "message must contain a text part (v1 understands text parts only)");
         }
 
-        String taskId = UUID.randomUUID().toString();
-        String contextId = message.path("contextId").isTextual()
-                ? message.get("contextId").asText() : UUID.randomUUID().toString();
+        JsonNode continuationId = message.get("taskId");
+        String taskId;
+        String contextId;
+        AgentState state;
+        String pushUrl;
+        if (continuationId != null && !continuationId.isNull()) {
+            StoredTask existing = tasks.get(continuationId.asText());
+            if (existing == null) {
+                throw new ProtocolError(-32001, "task not found: " + continuationId.asText());
+            }
+            if (existing.status() != A2ATaskStatus.INPUT_REQUIRED) {
+                throw new ProtocolError(-32602,
+                        "task '" + existing.taskId() + "' is " + existing.status().label()
+                                + "; only input-required tasks can be continued");
+            }
+            taskId = existing.taskId();
+            contextId = existing.contextId();
+            state = existing.state() == null ? new AgentState() : existing.state();
+            pushUrl = existing.pushUrl();
+        } else {
+            taskId = UUID.randomUUID().toString();
+            contextId = message.path("contextId").isTextual()
+                    ? message.get("contextId").asText() : UUID.randomUUID().toString();
+            state = new AgentState();
+            pushUrl = null;
+        }
 
-        // Inbound defense: wire text is untrusted input to our agent's prompt.
         try {
             if (inboundSanitizer != null) {
                 text = inboundSanitizer.apply(text);
@@ -245,34 +328,92 @@ public class HttpA2AServer implements AutoCloseable {
         } catch (RuntimeException e) {
             log.warn("[A2A] inbound sanitizer rejected task {} on agent '{}': {}",
                     taskId, card.name(), e.getMessage());
-            tasks.put(taskId, new StoredTask(taskId, contextId, A2ATaskStatus.REJECTED,
-                    "rejected by inbound policy: " + e.getMessage(), List.of()));
-            return A2AJson.taskJson(taskId, contextId, A2ATaskStatus.REJECTED,
-                    "rejected by inbound policy: " + e.getMessage(), List.of());
+            StoredTask rejected = new StoredTask(taskId, contextId, A2ATaskStatus.REJECTED,
+                    "rejected by inbound policy: " + e.getMessage(), List.of(), state, pushUrl, null);
+            tasks.put(taskId, rejected);
+            notifyPush(rejected);
+            return rejected.withPendingText(null);
         }
+        StoredTask skeleton = new StoredTask(taskId, contextId, A2ATaskStatus.WORKING,
+                null, List.of(), state, pushUrl, text);
+        tasks.put(taskId, skeleton);
+        return skeleton;
+    }
 
-        AgentState state = new AgentState();
+    private StoredTask acceptAndRun(JsonNode params, OutputStream ignored) {
+        StoredTask begun = beginTask(params);
+        if (begun.status() == A2ATaskStatus.REJECTED) {
+            return begun;
+        }
+        return finishTask(begun, begun.pendingText());
+    }
+
+    private StoredTask finishTask(StoredTask begun, String text) {
+        if (begun.status() == A2ATaskStatus.REJECTED) {
+            return begun;
+        }
+        AgentState state = begun.state() == null ? new AgentState() : begun.state();
         try {
-            String output = agent.run(text, state);
+            String output = agent.run(text == null ? "" : text, state);
             if (state.getStatus() == AgentState.Status.ERROR
                     || state.getStatus() == AgentState.Status.MAX_STEPS_EXCEEDED) {
                 String reason = state.getLastError() == null
                         ? state.getStatus().toString() : state.getLastError();
-                tasks.put(taskId, new StoredTask(taskId, contextId, A2ATaskStatus.FAILED,
-                        reason, List.of()));
-                return A2AJson.taskJson(taskId, contextId, A2ATaskStatus.FAILED, reason, List.of());
+                return store(begun, A2ATaskStatus.FAILED, reason, List.of(), state);
             }
             A2AArtifact artifact = A2AArtifact.text("artifact-1", output == null ? "" : output);
-            tasks.put(taskId, new StoredTask(taskId, contextId, A2ATaskStatus.COMPLETED,
-                    null, List.of(artifact)));
-            return A2AJson.taskJson(taskId, contextId, A2ATaskStatus.COMPLETED,
-                    null, List.of(artifact));
+            return store(begun, A2ATaskStatus.COMPLETED, null, List.of(artifact), state);
+        } catch (A2AInputRequiredException e) {
+            return store(begun, A2ATaskStatus.INPUT_REQUIRED, e.getMessage(), List.of(), state);
         } catch (RuntimeException e) {
-            log.warn("[A2A] agent '{}' threw on task {}: {}", card.name(), taskId, e.getMessage());
-            tasks.put(taskId, new StoredTask(taskId, contextId, A2ATaskStatus.FAILED,
-                    e.getMessage(), List.of()));
-            return A2AJson.taskJson(taskId, contextId, A2ATaskStatus.FAILED, e.getMessage(), List.of());
+            log.warn("[A2A] agent '{}' threw on task {}: {}", card.name(), begun.taskId(), e.getMessage());
+            return store(begun, A2ATaskStatus.FAILED, e.getMessage(), List.of(), state);
         }
+    }
+
+    private StoredTask store(StoredTask begun, A2ATaskStatus status, String message,
+                             List<A2AArtifact> artifacts, AgentState state) {
+        StoredTask stored = new StoredTask(begun.taskId(), begun.contextId(), status,
+                message, artifacts, state, begun.pushUrl(), null);
+        tasks.put(stored.taskId(), stored);
+        notifyPush(stored);
+        return stored;
+    }
+
+    private ObjectNode toTaskJson(StoredTask task) {
+        return A2AJson.taskJson(task.taskId(), task.contextId(), task.status(),
+                task.statusMessage(), task.artifacts());
+    }
+
+    private void notifyPush(StoredTask task) {
+        if (task.pushUrl() == null || task.pushUrl().isBlank()) {
+            return;
+        }
+        if (task.status() == A2ATaskStatus.WORKING || task.status() == A2ATaskStatus.SUBMITTED) {
+            return;
+        }
+        try {
+            java.net.http.HttpClient.newHttpClient().send(
+                    java.net.http.HttpRequest.newBuilder(java.net.URI.create(task.pushUrl()))
+                            .timeout(java.time.Duration.ofSeconds(5))
+                            .header("Content-Type", "application/json")
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(toTaskJson(task).toString()))
+                            .build(),
+                    java.net.http.HttpResponse.BodyHandlers.discarding());
+        } catch (Exception e) {
+            log.warn("[A2A] push to {} failed for task {}: {}", task.pushUrl(), task.taskId(), e.toString());
+        }
+    }
+
+    private static void writeSse(OutputStream out, String event, ObjectNode data) throws IOException {
+        String payload = "event: " + event + "\ndata: " + data + "\n\n";
+        out.write(payload.getBytes(StandardCharsets.UTF_8));
+        out.flush();
+    }
+
+    private AgentCard cardWithV2Caps() {
+        return new AgentCard(card.name(), card.description(), card.skills(),
+                card.endpoint(), card.version(), card.url(), A2ACapabilities.v2());
     }
 
     // ============ tasks/get ============
@@ -336,6 +477,14 @@ public class HttpA2AServer implements AutoCloseable {
     }
 
     private record StoredTask(String taskId, String contextId, A2ATaskStatus status,
-                              String statusMessage, List<A2AArtifact> artifacts) {
+                              String statusMessage, List<A2AArtifact> artifacts,
+                              AgentState state, String pushUrl, String pendingText) {
+        StoredTask withPushUrl(String url) {
+            return new StoredTask(taskId, contextId, status, statusMessage, artifacts, state, url, pendingText);
+        }
+
+        StoredTask withPendingText(String text) {
+            return new StoredTask(taskId, contextId, status, statusMessage, artifacts, state, pushUrl, text);
+        }
     }
 }

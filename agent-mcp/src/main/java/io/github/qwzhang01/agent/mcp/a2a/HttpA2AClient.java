@@ -42,10 +42,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * error envelope) throw {@link A2AHttpException} instead -- the call itself
  * broke, no task answer exists.
  * <p>
- * v1 honest boundaries: no {@code message/stream} (SSE), no push
- * notifications, no task continuation, and {@link #sendMessage} throws
- * {@link UnsupportedOperationException} because mapping a fire-and-forget
- * message onto "create a task" would be a semantic lie.
+ * v2 adds {@link #continueTask} ({@code message.taskId}),
+ * {@link #streamTask} ({@code message/stream} SSE), and
+ * {@link #setPushUrl} ({@code tasks/pushNotification/set}).
+ * {@link #sendMessage} still refuses — fire-and-forget is not task resume.
  */
 public class HttpA2AClient implements A2AClient {
 
@@ -124,7 +124,100 @@ public class HttpA2AClient implements A2AClient {
         log.debug("A2A task {} -> remote {} status {}",
                 task.taskId(), remote.taskId(),
                 remote.status() == null ? "?" : remote.status().label());
+        return interpretTaskResult(task.taskId(), resultTask, remote);
+    }
 
+    /**
+     * Continue a task the peer paused as {@code input-required}.
+     * {@code taskId} is the local id from {@link #sendTask} or the remote id
+     * from the pause payload.
+     */
+    public JsonNode continueTask(String taskId, String text) {
+        Objects.requireNonNull(taskId, "taskId");
+        String remoteId = localToRemoteTask.getOrDefault(taskId, taskId);
+        ObjectNode request = A2AJson.messageContinueRequest(rpcIds.getAndIncrement(), remoteId, text);
+        JsonNode resultTask = rpc(request).path("result");
+        A2ATask remote = A2AJson.taskFrom(resultTask);
+        if (remote.taskId() != null) {
+            localToRemoteTask.put(taskId, remote.taskId());
+        }
+        return interpretTaskResult(taskId, resultTask, remote);
+    }
+
+    /**
+     * Delegate via {@code message/stream}. Returns SSE events in order
+     * (working status, artifact, terminal status). Also records the id map
+     * so {@link #getTaskStatus} works afterwards.
+     */
+    public List<A2AStreamEvent> streamTask(A2ATask task) {
+        Objects.requireNonNull(task, "task");
+        ObjectNode request = A2AJson.messageStreamRequest(rpcIds.getAndIncrement(), task);
+        List<A2AStreamEvent> events = new java.util.ArrayList<>();
+        try {
+            java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/"))
+                    .timeout(timeout)
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(request.toString()))
+                    .build();
+            java.net.http.HttpResponse<java.util.stream.Stream<String>> response =
+                    http.send(httpRequest, java.net.http.HttpResponse.BodyHandlers.ofLines());
+            if (response.statusCode() != 200) {
+                throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                        "A2A stream " + baseUrl + " returned HTTP " + response.statusCode(), null);
+            }
+            String eventType = null;
+            StringBuilder data = new StringBuilder();
+            try (java.util.stream.Stream<String> lines = response.body()) {
+                for (String line : (Iterable<String>) lines::iterator) {
+                    if (line.startsWith("event:")) {
+                        eventType = line.substring(6).trim();
+                    } else if (line.startsWith("data:")) {
+                        if (data.length() > 0) {
+                            data.append('\n');
+                        }
+                        data.append(line.substring(5).trim());
+                    } else if (line.isBlank() && eventType != null) {
+                        JsonNode payload = A2AJson.mapper().readTree(data.toString());
+                        events.add(new A2AStreamEvent(eventType, payload));
+                        A2ATask remote = A2AJson.taskFrom(payload);
+                        if (remote.taskId() != null) {
+                            localToRemoteTask.put(task.taskId(), remote.taskId());
+                        }
+                        eventType = null;
+                        data.setLength(0);
+                    }
+                }
+            }
+            return events;
+        } catch (A2AHttpException e) {
+            throw e;
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                    "A2A stream failure to " + baseUrl + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Attach a webhook to a task previously sent through this client.
+     * The server POSTs the task JSON on input-required / terminal states
+     * (and immediately if the task is already past working).
+     */
+    public void setPushUrl(String taskId, String webhookUrl) {
+        Objects.requireNonNull(taskId, "taskId");
+        Objects.requireNonNull(webhookUrl, "webhookUrl");
+        String remoteId = localToRemoteTask.get(taskId);
+        if (remoteId == null) {
+            throw new IllegalArgumentException("task '" + taskId + "' was never sent through this client");
+        }
+        ObjectNode request = A2AJson.pushSetRequest(rpcIds.getAndIncrement(), remoteId, webhookUrl);
+        rpc(request);
+    }
+
+    private JsonNode interpretTaskResult(String localId, JsonNode resultTask, A2ATask remote) {
         A2ATaskStatus status = remote.status();
         if (status == A2ATaskStatus.COMPLETED) {
             ObjectNode out = A2AJson.mapper().createObjectNode();
@@ -136,7 +229,6 @@ public class HttpA2AClient implements A2AClient {
             return out;
         }
         if (status == A2ATaskStatus.INPUT_REQUIRED) {
-            // The peer paused mid-task: data, not an exception (it did work).
             ObjectNode out = A2AJson.mapper().createObjectNode();
             out.put("status", status.label());
             out.put("taskId", remote.taskId());
@@ -145,10 +237,9 @@ public class HttpA2AClient implements A2AClient {
             }
             return out;
         }
-        // failed / canceled / rejected: same semantics as InProcessA2AClient.
         String message = resultTask.path("status").path("message").isTextual()
                 ? resultTask.path("status").path("message").asText() : "";
-        throw new IllegalStateException("A2A task '" + task.taskId()
+        throw new IllegalStateException("A2A task '" + localId
                 + "' ended in state '" + (status == null ? "unknown" : status.label())
                 + "' on " + baseUrl + (message.isBlank() ? "" : ": " + message));
     }

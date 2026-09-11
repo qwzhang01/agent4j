@@ -19,4 +19,12 @@ public record A2ACapabilities(boolean streaming, boolean pushNotifications,
     public static A2ACapabilities none() {
         return new A2ACapabilities(false, false, false);
     }
+
+    /**
+     * What {@link HttpA2AServer} actually implements in v2:
+     * {@code message/stream} + webhook push. No state-transition history store.
+     */
+    public static A2ACapabilities v2() {
+        return new A2ACapabilities(true, true, false);
+    }
 }

@@ -211,6 +211,45 @@ public final class A2AJson {
         return request;
     }
 
+    /**
+     * Continue an existing task: {@code message/send} with {@code message.taskId}.
+     * Spec: this field means "this message belongs to that task", not a new one.
+     */
+    public static ObjectNode messageContinueRequest(long rpcId, String remoteTaskId, String text) {
+        ObjectNode request = mapper().createObjectNode();
+        request.put("jsonrpc", "2.0");
+        request.put("id", rpcId);
+        request.put("method", "message/send");
+        ObjectNode params = request.putObject("params");
+        ObjectNode message = params.putObject("message");
+        message.put("messageId", UUID.randomUUID().toString());
+        message.put("role", "user");
+        message.put("taskId", remoteTaskId);
+        ObjectNode part = message.putArray("parts").addObject();
+        part.put("kind", "text");
+        part.put("text", text == null ? "" : text);
+        return request;
+    }
+
+    /** Same body as {@link #messageSendRequest} but method {@code message/stream}. */
+    public static ObjectNode messageStreamRequest(long rpcId, A2ATask task) {
+        ObjectNode request = messageSendRequest(rpcId, task);
+        request.put("method", "message/stream");
+        return request;
+    }
+
+    /** {@code tasks/pushNotification/set} — attach a webhook to a server task id. */
+    public static ObjectNode pushSetRequest(long rpcId, String remoteTaskId, String webhookUrl) {
+        ObjectNode request = mapper().createObjectNode();
+        request.put("jsonrpc", "2.0");
+        request.put("id", rpcId);
+        request.put("method", "tasks/pushNotification/set");
+        ObjectNode params = request.putObject("params");
+        params.put("id", remoteTaskId);
+        params.putObject("pushNotificationConfig").put("url", webhookUrl);
+        return request;
+    }
+
     /** Build a {@code tasks/get} request for a server-assigned task id. */
     public static ObjectNode tasksGetRequest(long rpcId, String taskId) {
         ObjectNode request = MAPPER.createObjectNode();

@@ -96,10 +96,10 @@ class HttpA2AServerProtocolTest {
     void unknownMethod_minus32601() throws Exception {
         start();
 
-        JsonNode response = post("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message/stream\"}");
+        JsonNode response = post("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tasks/explode\"}");
 
         assertEquals(-32601, response.path("error").path("code").asInt());
-        assertTrue(response.path("error").path("message").asText().contains("message/stream"));
+        assertTrue(response.path("error").path("message").asText().contains("tasks/explode"));
     }
 
     @Test
@@ -131,7 +131,7 @@ class HttpA2AServerProtocolTest {
         JsonNode response = post(body);
 
         assertEquals(-32001, response.path("error").path("code").asInt());
-        assertTrue(response.path("error").path("message").asText().contains("continuation"));
+        assertTrue(response.path("error").path("message").asText().contains("task not found"));
     }
 
     @Test

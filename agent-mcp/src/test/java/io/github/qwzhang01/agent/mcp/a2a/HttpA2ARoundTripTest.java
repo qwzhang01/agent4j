@@ -92,7 +92,8 @@ class HttpA2ARoundTripTest {
         assertEquals("remote", cards.get(0).name());
         assertEquals("translation", cards.get(0).skills().get(0));
         assertTrue(cards.get(0).url().startsWith("http://127.0.0.1:"));
-        assertFalse(cards.get(0).capabilities().streaming());  // honest v1 flags
+        assertTrue(cards.get(0).capabilities().streaming());
+        assertTrue(cards.get(0).capabilities().pushNotifications());
     }
 
     @Test
@@ -207,5 +208,70 @@ class HttpA2ARoundTripTest {
         // transport annotations, not agent input -- the spec keeps them out
         // of the message parts).
         assertEquals(List.of("review this PR"), seenPrompts);
+    }
+
+    @Test
+    void inputRequired_thenContinue_reusesState() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        Agent pausing = new Agent() {
+            @Override public String run(String in) { return run(in, new AgentState()); }
+            @Override public String run(String in, AgentState state) {
+                if (calls.incrementAndGet() == 1) {
+                    throw new A2AInputRequiredException("need the file");
+                }
+                return "got:" + in;
+            }
+            @Override public AgentConfig getConfig() { return null; }
+        };
+        HttpA2AClient client = startClient(pausing);
+
+        var paused = client.sendTask(new A2ATask("local-pause", "remote", "review",
+                MAPPER.createObjectNode().put("prompt", "review please"), "s", null));
+        assertEquals("input-required", paused.path("status").asText());
+        assertEquals(A2ATaskStatus.INPUT_REQUIRED, client.getTaskStatus("local-pause"));
+
+        var done = client.continueTask("local-pause", "file: Main.java");
+        assertEquals("got:file: Main.java", done.path("output").asText());
+        assertEquals(2, calls.get());
+        assertEquals(A2ATaskStatus.COMPLETED, client.getTaskStatus("local-pause"));
+    }
+
+    @Test
+    void streamTask_emitsWorkingThenCompleted() throws Exception {
+        HttpA2AClient client = startClient(fixedAgent("streamed", null));
+        List<A2AStreamEvent> events = client.streamTask(new A2ATask("local-s", "remote", "t",
+                MAPPER.createObjectNode().put("prompt", "go"), "s", null));
+
+        assertTrue(events.size() >= 2);
+        assertEquals("status", events.get(0).type());
+        assertEquals("working", events.get(0).data().path("status").path("state").asText());
+        assertEquals(A2ATaskStatus.COMPLETED, client.getTaskStatus("local-s"));
+        assertTrue(events.stream().anyMatch(e ->
+                "completed".equals(e.data().path("status").path("state").asText())));
+    }
+
+    @Test
+    void pushNotification_firesOnCompleted() throws Exception {
+        java.util.concurrent.CompletableFuture<String> posted = new java.util.concurrent.CompletableFuture<>();
+        com.sun.net.httpserver.HttpServer hook = com.sun.net.httpserver.HttpServer.create(
+                new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        hook.createContext("/", exchange -> {
+            posted.complete(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(200, 0);
+            exchange.close();
+        });
+        hook.start();
+        try {
+            HttpA2AClient client = startClient(fixedAgent("pushed", null));
+            client.sendTask(new A2ATask("local-p", "remote", "t",
+                    MAPPER.createObjectNode().put("prompt", "x"), "s", null));
+            client.setPushUrl("local-p", "http://127.0.0.1:" + hook.getAddress().getPort() + "/");
+            String body = posted.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            assertTrue(body.contains("completed"), body);
+            assertTrue(body.contains("pushed"), body);
+        } finally {
+            hook.stop(0);
+        }
     }
 }
