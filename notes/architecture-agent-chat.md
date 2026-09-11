@@ -222,7 +222,7 @@ agent-chat/
 ## 8. Moonlit 怎么坐上来
 
 角色引擎怎么组织、缺什么：[`architecture-character-engine.md`](architecture-character-engine.md)。  
-逐项清单：[`todo-moonlit-memory-chat.md`](todo-moonlit-memory-chat.md)。  
+逐项清单：角色引擎施工清单已并入 [`architecture-character-engine.md`](architecture-character-engine.md)。  
 **抽什么、何时提醒（生日、11:30 外卖等）只在 Moonlit**；框架不写业务词。
 
 Moonlit 继续管：过滤、配额、会员、关系状态机、`common_ai_messages`、SSE、动作/台词解析。

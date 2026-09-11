@@ -3,11 +3,11 @@
 [![CI](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml/badge.svg)](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
-[![Maven](https://img.shields.io/badge/Maven-0.1.0-blue.svg)](https://github.com/qwzhang01/agent4j)
+[![Maven](https://img.shields.io/badge/Maven-0.1.1-blue.svg)](https://github.com/qwzhang01/agent4j)
 
 > A persistent, observable, governable, hot-pluggable Java Agent Runtime.
 
-可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。当前版本 `0.1.0`。Central 发布走 `./mvnw -DskipTests deploy`（见 [RELEASING.md](RELEASING.md)）；Portal 通过前请从源码构建。
+可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。Central 最新版本 `0.1.1`（仓库开发版 `0.1.2` 未发布）。Central 发布走 `./mvnw -DskipTests deploy`（见 [RELEASING.md](RELEASING.md)）。
 
 这不是 LangChain4j / Spring AI 的替代品。它强调：断点恢复、工具治理、沙箱、轨迹导出，以及企业 / 酒馆 / 编码三个领域 Profile 共用同一套 Runtime。
 
@@ -16,7 +16,7 @@
 ```bash
 git clone https://github.com/qwzhang01/agent4j.git
 cd agent4j
-./mvnw -B verify          # 1186 tests
+./mvnw -B verify          # 全部测试
 ./mvnw install -DskipTests
 ./mvnw -pl examples compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
@@ -57,7 +57,7 @@ System.out.println(agent.run("What time is it?"));
 | [安全](SECURITY.md) | 漏洞请走 GitHub Security Advisory |
 | [发布](RELEASING.md) | 打 tag；`./mvnw -DskipTests deploy` 上 Central |
 
-`notes/` 是 18 周学习笔记与设计蓝图，**不是 API 合同**。归档首页：[notes/v1-development-log.md](notes/v1-development-log.md)。
+`notes/` 是 18 周学习笔记与设计蓝图，**不是 API 合同**。入口：[notes/README.md](notes/README.md)。
 
 ## 模块
 
@@ -71,7 +71,7 @@ agent-workflow       图引擎 · 7 种节点 · Checkpoint
 agent-scheduler      定时 / 事件恢复 · 任务队列
 agent-memory         工作 / 会话 / 长期记忆 + MemoryScope
 agent-security       权限 · 审批 · 注入净化 · 审计
-agent-mcp            MCP stdio + 进程内 A2A
+agent-mcp            MCP stdio + A2A（进程内 / HTTP 双向）
 agent-orchestrator   Supervisor / Worker 并行派发
 agent-channel        身份 · 共享会话 · 接力 · Ambient
 agent-product        YAML 定义 · 模板 · Prompt 版本 · Webhook
@@ -87,7 +87,7 @@ examples             可运行示例（不发布）
 
 最小接入：`agent-core` + `agent-model`。其余按需加。企业 / 酒馆 / 编码是同一 Runtime 上的三个 Profile，不是三套框架。
 
-`0.1.0` 上 Central 之后（Portal 点 Publish 完成）：
+已上 Central（最新 `0.1.1`），用 BOM 对齐版本：
 
 ```xml
 <dependencyManagement>
@@ -95,7 +95,7 @@ examples             可运行示例（不发布）
     <dependency>
       <groupId>io.github.qwzhang01</groupId>
       <artifactId>seven-agent-bom</artifactId>
-      <version>0.1.2</version>
+<version>0.1.1</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -103,14 +103,14 @@ examples             可运行示例（不发布）
 </dependencyManagement>
 ```
 
-Portal 通过前请先 `./mvnw install`，再用 `0.1.0`。
+要跟踪仓库开发版（`0.1.2`，未发布）：先 `./mvnw install`，再引用 `0.1.2`。
 
 ## 现状
 
 | 项 | 事实 |
 |----|------|
-| 版本 | `0.1.0`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
-| 测试 | 1186，`./mvnw -B test` 全绿 |
+| 版本 | Central 最新 `0.1.1`（开发版 `0.1.2` 未发布），SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
+| 测试 | 全仓 22 模块全绿（以 CI 为准），`./mvnw -B test` |
 | CI | GitHub Actions，JDK 17 + 21 |
 | 许可证 | [Apache-2.0](LICENSE) |
 | 运行时依赖 | Jackson + SLF4J；**无 Spring** |

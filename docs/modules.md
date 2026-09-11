@@ -1,9 +1,9 @@
 # 模块一览
 
-父工程：`io.github.qwzhang01:seven-agent:0.1.0`（`packaging=pom`）。  
+父工程：`io.github.qwzhang01:seven-agent:0.1.1`（Central 最新；仓库开发版 `0.1.2` 未发布，`packaging=pom`）。
 库模块按需依赖，**不要**把整个父工程当 jar 引进业务。
 
-`0.1.0` 上 Central 之后，用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本，再声明具体 `artifactId`。Portal 通过前：本仓库 `mvn install`，下游写相同 `groupId` + `0.1.0`。
+用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本（Central 最新 `0.1.1`），再声明具体 `artifactId`。要用仓库开发版（`0.1.2`，未发布）：本仓库 `mvn install`，下游写相同 `groupId` + `0.1.2`。
 
 `examples` 只演示，**不发布**（`release` profile 的 `excludeArtifacts`）。
 
@@ -17,7 +17,7 @@
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列 | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
-| `agent-mcp` | MCP stdio 客户端 + 进程内 A2A（SSE / HTTP 传输未做） | `agent-orchestrator`、MCP 示例 |
+| `agent-mcp` | MCP stdio 客户端 + A2A 双向：进程内客户端、`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get`）、`HttpA2AServer`（Agent 包装成端点，入站净化）。SSE / 推送 / 任务续跑未做 | `agent-orchestrator`、MCP / A2A 示例 |
 | `agent-orchestrator` | Supervisor / Worker / 并行派发 | 多 Agent 示例 |
 | `agent-channel` | 身份、共享会话、任务接力、Ambient | `agent-product`、频道示例 |
 | `agent-product` | YAML Agent 定义、模板、Prompt 版本、Webhook、DAG | 声明式 / Webhook 示例 |
@@ -41,4 +41,4 @@
 | `agent-chat` | `ChatRoom` / `ChatEngine`：选人、拼上下文、流式、`ChatListener`；`PersonaRenderer`；可选 `ConsistencyGuard` |
 | `agent-memory` | Store / Extractor / Retriever；可选 `MemorySource` 在 chat 侧挂载 |
 
-边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。`LoreSource` 只负责本轮关键词/正则命中后注入，词库在产品。`RelationSource` 只注入快照，不算分。`ConsistencyGuard` 默认 no-op，告警不改写。`DirectorSpeaker` 用独立 ModelClient + 业务 prompt 选人，可与 Mention 组合。角色向 eval：`CharacterEvalTest`。详见 `notes/architecture-agent-chat.md` §9 与 [`todo-moonlit-memory-chat.md`](../notes/todo-moonlit-memory-chat.md)（Wave 1–4 + T28 完成；T23 默认跳过）。
+边界：`MemorySource` 只负责**读进 prompt**；写什么、何时抽、何时提醒在 Moonlit（Listener + Job）。`LoreSource` 只负责本轮关键词/正则命中后注入，词库在产品。`RelationSource` 只注入快照，不算分。`ConsistencyGuard` 默认 no-op，告警不改写。`DirectorSpeaker` 用独立 ModelClient + 业务 prompt 选人，可与 Mention 组合。角色向 eval：`CharacterEvalTest`。详见 `notes/architecture-agent-chat.md` §9 与 `notes/architecture-character-engine.md`（Wave 1–4 + T28 完成；T23 默认跳过）。

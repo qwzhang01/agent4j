@@ -1,7 +1,7 @@
 # ToDo：引擎生产级升级（agent4j × Moonlit）
 
 > 状态：📋 规划中（2026-09-07）  
-> 前置：Wave 1–4 + T28 全部完成（`todo-moonlit-memory-chat.md`）  
+> 前置：Wave 1–4 + T28 全部完成（角色引擎施工清单，已并入 `architecture-character-engine.md`）  
 > 来源：Moonlit 代码 code-review 后识别的「demo → 生产」差距  
 > 原则：**框架只改通用挂钩，产品判断不进框架。每项独立可交付，做完再勾。**
 

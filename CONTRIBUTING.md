@@ -29,7 +29,7 @@ Fallback if the wrapper is unavailable:
 mvn -B verify
 ```
 
-The suite includes 1186 tests. `./mvnw verify` and `mvn test` should stay green.
+The suite spans all 22 modules. `./mvnw verify` and `mvn test` should stay green.
 
 ## Run one example
 

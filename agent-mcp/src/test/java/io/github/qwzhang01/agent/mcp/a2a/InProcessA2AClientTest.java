@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Stage 11 M11.4 tests: the in-process A2A client (protocol data model
- * round-trip, no real transport).
+ * round-trip, no real transport). Status labels are the spec dialect
+ * (working/completed/failed) since the enum unification.
  */
 class InProcessA2AClientTest {
 
@@ -50,7 +51,7 @@ class InProcessA2AClientTest {
 
         assertTrue(result.path("output").isTextual());
         assertEquals("found it", result.get("output").asText());
-        assertEquals("completed", client.getTaskStatus("t-1"));
+        assertEquals(A2ATaskStatus.COMPLETED, client.getTaskStatus("t-1"));
     }
 
     @Test
@@ -82,7 +83,7 @@ class InProcessA2AClientTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> client.sendTask(task));
         assertTrue(e.getMessage().contains("ghost"));
-        assertEquals("failed", client.getTaskStatus("t-3"));
+        assertEquals(A2ATaskStatus.FAILED, client.getTaskStatus("t-3"));
     }
 
     @Test
@@ -96,12 +97,12 @@ class InProcessA2AClientTest {
         IllegalStateException e = assertThrows(IllegalStateException.class,
                 () -> client.sendTask(task));
         assertTrue(e.getMessage().contains("model exploded"));
-        assertEquals("failed", client.getTaskStatus("t-4"));
+        assertEquals(A2ATaskStatus.FAILED, client.getTaskStatus("t-4"));
     }
 
     @Test
-    void getTaskStatus_unknownTask_returnsUnknown() {
-        assertEquals("unknown", new InProcessA2AClient().getTaskStatus("never-seen"));
+    void getTaskStatus_unknownTask_returnsNull() {
+        assertNull(new InProcessA2AClient().getTaskStatus("never-seen"));
     }
 
     @Test
@@ -123,5 +124,31 @@ class InProcessA2AClientTest {
         assertDoesNotThrow(() -> client.sendMessage(new A2AMessage(
                 "m-1", "supervisor", "researcher",
                 MAPPER.createObjectNode().put("text", "progress?"), null, "now")));
+    }
+
+    @Test
+    void legacyTaskConstructor_andSpecTaskStatus_dialectLabels() {
+        // Legacy 6-arg delegation shape still compiles with null wire fields.
+        A2ATask legacy = new A2ATask("t-5", "w", "review",
+                MAPPER.createObjectNode().put("prompt", "p"), "supervisor", null);
+        assertNull(legacy.contextId());
+        assertNull(legacy.status());
+        assertTrue(legacy.artifacts().isEmpty());
+
+        // Spec dialect labels round-trip.
+        assertEquals("input-required", A2ATaskStatus.INPUT_REQUIRED.label());
+        assertEquals(A2ATaskStatus.WORKING, A2ATaskStatus.fromLabel("working"));
+        assertNull(A2ATaskStatus.fromLabel("no-such-state"));
+        assertNull(A2ATaskStatus.fromLabel(null));
+    }
+
+    @Test
+    void legacyAgentCardConstructor_keepsEndpointAndDefaults() {
+        AgentCard card = new AgentCard("w", "d", List.of("review"), "in-process:w", "1.0");
+
+        assertEquals("in-process:w", card.endpoint());
+        assertEquals("in-process:w", card.url());  // legacy shape mirrors endpoint into url
+        assertFalse(card.capabilities().streaming());
+        assertFalse(card.capabilities().pushNotifications());
     }
 }

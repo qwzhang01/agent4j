@@ -52,6 +52,7 @@ IDE 里直接跑对应 `main` 即可。
 | `InjectionDefenseExample` | 工具回包注入：SANITIZE / TRUNCATE / BLOCK |
 | `McpExample` | 进程内 Mock MCP：发现工具 + 治理执行 |
 | `MultiAgentExample` | Supervisor 并行派发内部 Worker + 进程内 A2A |
+| `HttpA2AExample` | A2A 跨真实 HTTP：卡片发现 / `message/send` / 状态轮询 / 入站拒绝 / Supervisor 路由 |
 | `ChannelAgentExample` | 频道身份、共享会话、任务接力 |
 | `AmbientExample` | Ambient 主动推送 + 噪音闸 |
 | `TrajectoryExample` | 轨迹记录 → 奖励 → 采样 → JSONL → 回放 |

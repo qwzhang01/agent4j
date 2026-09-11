@@ -5,9 +5,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.0`.
+The current Maven version is `0.1.2`.
 
-## [Unreleased]
+## [0.1.2] - 2026-09-11
+
+### Added
+
+- **HTTP A2A, both directions (KP6).** agent4j is now a protocol citizen, not just a data-model tourist: `HttpA2AClient` speaks the A2A JSON-RPC dialect over real HTTP — `message/send` for task delegation, `tasks/get` for status polling, `GET /.well-known/agent.json` for discovery — and `HttpA2AServer` wraps an existing `Agent` as a protocol endpoint (JDK `HttpServer`, zero new dependencies; the agent itself is untouched, only how it answers the phone changes). The wire codec `A2AJson` is shared by both sides: where our model is richer than the spec (`taskType`/`sender`/`deadline`), the fields ride `params.metadata` so a spec peer that ignores metadata still round-trips what it understands; where the spec is richer than v1 (non-text parts), parsing skips instead of rejecting. Model alignment: `A2ATask` gains spec `contextId`/`status`/`artifacts` fields and `AgentCard` gains `url`/`capabilities`, with legacy 6-arg/5-arg constructors keeping all 170 existing construction sites compiling and behaving unchanged; task status is now the spec dialect (`working`/`completed`/`failed`/`input-required`/`canceled`/`rejected`, `A2ATaskStatus` enum) instead of free strings — `getTaskStatus` returns the enum, null for unknown tasks. Identity physics: the SERVER assigns task ids on the wire, so the HTTP client keeps a local-to-remote id map per instance. Defense on both sides of the wire: the server takes an optional inbound sanitizer (`UnaryOperator<String>`, a throwing sanitizer rejects the task as `rejected` BEFORE the agent runs — the a2a sibling of ExternalAgentWorker's outbound D5); the caller keeps wiring Stage 9's `ResultSanitizer` outbound as before. Honest v1 boundaries: synchronous execution only (no `message/stream` SSE, no push notifications), in-memory task store (lost on restart), no task continuation (a `message/send` carrying `message.taskId` is refused with `-32001`, loudly, not silently re-run), `sendMessage` refuses loudly over HTTP (the spec subset has no fire-and-forget method — faking it would silently CREATE a task), binds `127.0.0.1` only. New tests: `HttpA2ARoundTripTest` (real loopback sockets, zero mocks: full round-trip, discovery, failure, transport failure, restart-loses-store, inbound reject without running the agent, metadata rides the wire) and `HttpA2AServerProtocolTest` (raw-JSON protocol level: `-32601` unknown method, `-32700` parse error, `-32600` notification refusal, `-32001` continuation refusal / task-not-found, `-32602` non-text parts, HTTP verb rules, spec-dialect task shape). New example: `HttpA2AExample` (loopback demo: discover → send → poll → reject → supervisor routing over HTTP). agent-mcp 76/76 (59 existing + 17 new); agent-orchestrator 45/45 unchanged; full repo 22 modules BUILD SUCCESS.
 
 ### Added
 
