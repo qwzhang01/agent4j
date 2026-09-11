@@ -84,9 +84,11 @@ public class ProcessSandbox implements Sandbox {
                 );
             }
 
-            // 4. Run with java
+            // 4. Run with java. -Xmx is applied here (not to javac): the child's
+            // heap is the sandbox memory ceiling. memoryLimitBytes <= 0 means
+            // do not pass a cap (host JVM default).
             SandboxResult runResult = runProcess(
-                    List.of(javaBinary(), "-cp", sandboxDir.toString(), className),
+                    javaCommand(sandboxDir, className, spec),
                     sandboxDir,
                     spec,
                     "java"
@@ -105,6 +107,32 @@ public class ProcessSandbox implements Sandbox {
 
     private static String javaBinary() {
         return Path.of(System.getProperty("java.home"), "bin", "java").toString();
+    }
+
+    /**
+     * {@code java [-Xmx<bytes>] -cp <dir> <class>}.
+     * Suffix-less {@code -Xmx} is bytes (HotSpot). Prefer {@code m} when the
+     * limit is an exact megabyte so the flag stays readable in process lists.
+     */
+    static List<String> javaCommand(Path sandboxDir, String className, SandboxSpec spec) {
+        List<String> command = new java.util.ArrayList<>();
+        command.add(javaBinary());
+        long limit = spec.getMemoryLimitBytes();
+        if (limit > 0) {
+            command.add(xmxFlag(limit));
+        }
+        command.add("-cp");
+        command.add(sandboxDir.toString());
+        command.add(className);
+        return command;
+    }
+
+    static String xmxFlag(long bytes) {
+        long megabyte = 1024L * 1024L;
+        if (bytes >= megabyte && bytes % megabyte == 0) {
+            return "-Xmx" + (bytes / megabyte) + "m";
+        }
+        return "-Xmx" + bytes;
     }
 
     private static String javacBinary() {
