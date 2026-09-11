@@ -3,7 +3,7 @@
 一句话：一个**可持久化、可观测、可治理、可热插拔**的 Java Agent Runtime。
 
 仓库：[github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)
-坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.1`（Central 最新；仓库开发版 `0.1.2` 未发布）
+坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.2`（Central 最新）
 Central 发布走 `./mvnw -DskipTests deploy`。
 
 `notes/` 是学习笔记，**不是用户契约**。对外行为以本目录文档、公开 API 与测试为准。
@@ -97,7 +97,7 @@ String response = agent.run("What time is it now?");
 
 ## 接到你自己的项目
 
-Central 上最新版本是 `0.1.1`，直接引用即可。要用仓库开发版（`0.1.2`，未发布）：在本仓库执行 `mvn install` 后，下游项目用相同 `groupId` / `version` 引用模块。
+Central 上最新版本是 `0.1.2`，直接引用即可。
 
 用 BOM 对齐版本：
 
@@ -107,7 +107,7 @@ Central 上最新版本是 `0.1.1`，直接引用即可。要用仓库开发版�
     <dependency>
       <groupId>io.github.qwzhang01</groupId>
       <artifactId>seven-agent-bom</artifactId>
-<version>0.1.1</version>
+<version>0.1.2</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -136,11 +136,11 @@ Central 上最新版本是 `0.1.1`，直接引用即可。要用仓库开发版�
 <dependency>
   <groupId>io.github.qwzhang01</groupId>
   <artifactId>agent-spring-boot-starter</artifactId>
-<version>0.1.1</version>
+<version>0.1.2</version>
 </dependency>
 ```
 
-`0.1.1` 在 Central，直接引用；要用仓库开发版（`0.1.2`，未发布）先在本仓库执行 `./mvnw install`，再编译下游。
+`0.1.2` 在 Central，直接引用。
 
 `application.yml`：
 

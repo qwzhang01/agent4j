@@ -100,6 +100,8 @@
 - task 生命周期（submitted / working / input-required / completed / failed）对应"会话"粒度，不是"回合"。
 - agent4j 缺的是 handoff 语义层，不是协议层——先有语义，A2A 只是把语义 RPC 化。
 
+**KP6 落定（2026-09-11，commit 7faba88）**：双向 HTTP 落地——`HttpA2AClient`（message/send / tasks/get / agent-card 发现）+ `HttpA2AServer`（把既有 Agent 包成协议端点，agent 零改动），方言 codec `A2AJson` 两端共用。一手工程事实六条（SERVER 分配任务 id 的身份物理、metadata 逃生舱、REJECTED/FAILED 两种死法、三层失败语义、入站防线镜像出站 D5、loud refusal），v1 诚实边界（无 SSE/推送/续跑，127.0.0.1 only，无卡片签名验证），第三方互操作是下一个证伪点。详见 `experiment-kp6-a2a-protocol.md`。
+
 **自测**：说清 handoff 与 A2A 的映射关系。
 
 ### KP7 · 在线评估：生产 = 持续验证
