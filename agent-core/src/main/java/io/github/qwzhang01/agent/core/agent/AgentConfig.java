@@ -30,6 +30,7 @@ public class AgentConfig {
     private final int maxSteps;
     private final ContextBuilder contextBuilder;
     private final List<HandoffSpec> handoffs;
+    private final GuardrailChain guardrails;
 
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient, ToolRegistry toolRegistry) {
         this(name, systemPrompt, modelClient, toolRegistry, 10, null, List.of());
@@ -61,6 +62,16 @@ public class AgentConfig {
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
                        ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder,
                        List<HandoffSpec> handoffs) {
+        this(name, systemPrompt, modelClient, toolRegistry, maxSteps, contextBuilder, handoffs, null);
+    }
+
+    /**
+     * Full constructor with KP5 input/output guardrails.
+     * {@code null} guardrails means {@link GuardrailChain#none()}.
+     */
+    public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
+                       ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder,
+                       List<HandoffSpec> handoffs, GuardrailChain guardrails) {
         this.name = name;
         this.systemPrompt = systemPrompt;
         this.modelClient = modelClient;
@@ -68,6 +79,7 @@ public class AgentConfig {
         this.maxSteps = maxSteps;
         this.contextBuilder = contextBuilder;
         this.handoffs = handoffs == null ? List.of() : List.copyOf(handoffs);
+        this.guardrails = guardrails == null ? GuardrailChain.none() : guardrails;
         requireNoSelfHandoff();
         requireNoToolNameCollision();
     }
@@ -133,5 +145,12 @@ public class AgentConfig {
      */
     public List<HandoffSpec> getHandoffs() {
         return handoffs;
+    }
+
+    /**
+     * Input/output guardrail chain (KP5). Never null; empty means the doors are open.
+     */
+    public GuardrailChain getGuardrails() {
+        return guardrails;
     }
 }

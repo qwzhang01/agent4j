@@ -92,6 +92,10 @@ public class ReActAgentLoop implements AgentLoop {
             // 1. Build model request from current state
             // --------------------------------------------
             ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter);
+            request = applyInputGuardrails(currentConfig, state, request, sink);
+            if (state.getStatus() == AgentState.Status.ERROR) {
+                return;
+            }
 
             // --------------------------------------------
             // 2. Call the model (via the CURRENT config's client)
@@ -177,12 +181,16 @@ public class ReActAgentLoop implements AgentLoop {
 
                 state.setStatus(AgentState.Status.RUNNING);
             } else {
-                // Model gave a final answer
-                state.addMessage(ChatMessage.assistant(response.content()));
+                // Model gave a final answer — output door runs before state or Done.
+                String answer = response.content() != null ? response.content() : "";
+                String guarded = applyOutputGuardrails(currentConfig, state, answer, sink);
+                if (state.getStatus() == AgentState.Status.ERROR) {
+                    return;
+                }
+                state.addMessage(ChatMessage.assistant(guarded));
                 state.setStatus(AgentState.Status.DONE);
                 log.info("[{}] Completed in {} steps", currentConfig.getName(), state.getCurrentStep());
-                String answer = response.content() != null ? response.content() : "";
-                sink.accept(new AgentEvent.Done(answer, state));
+                sink.accept(new AgentEvent.Done(guarded, state));
                 return;
             }
         }
@@ -337,6 +345,98 @@ public class ReActAgentLoop implements AgentLoop {
         }
 
         return builder.build();
+    }
+
+    /**
+     * INPUT door: ContextBuilder already ran. Block refuses the turn.
+     * Rewrite changes the request only — AgentState keeps the original user text.
+     */
+    private ModelRequest applyInputGuardrails(AgentConfig config, AgentState state,
+                                              ModelRequest request, Consumer<AgentEvent> sink) {
+        GuardrailChain chain = config.getGuardrails();
+        if (chain.isEmpty()) {
+            return request;
+        }
+        String text = lastUserText(request.messages());
+        GuardrailVerdict verdict = chain.evaluate(
+                new GuardrailContext(GuardrailPhase.INPUT, text, config, state));
+        if (verdict instanceof GuardrailVerdict.Block block) {
+            state.setStatus(AgentState.Status.ERROR);
+            state.setLastError("input guardrail blocked: " + block.reason());
+            sink.accept(new AgentEvent.Error(state.getLastError(), null));
+            return request;
+        }
+        if (verdict instanceof GuardrailVerdict.Rewrite rewrite) {
+            return withLastUserText(request, rewrite.replacement());
+        }
+        return request;
+    }
+
+    /**
+     * OUTPUT door: before the answer is written to state or Done.
+     * Returns the text to persist, or leaves state in ERROR on Block.
+     */
+    private String applyOutputGuardrails(AgentConfig config, AgentState state,
+                                         String answer, Consumer<AgentEvent> sink) {
+        GuardrailChain chain = config.getGuardrails();
+        if (chain.isEmpty()) {
+            return answer;
+        }
+        GuardrailVerdict verdict = chain.evaluate(
+                new GuardrailContext(GuardrailPhase.OUTPUT, answer, config, state));
+        if (verdict instanceof GuardrailVerdict.Block block) {
+            state.setStatus(AgentState.Status.ERROR);
+            state.setLastError("output guardrail blocked: " + block.reason());
+            sink.accept(new AgentEvent.Error(state.getLastError(), null));
+            return answer;
+        }
+        if (verdict instanceof GuardrailVerdict.Rewrite rewrite) {
+            return rewrite.replacement();
+        }
+        return answer;
+    }
+
+    private static String lastUserText(List<ChatMessage> messages) {
+        if (messages == null) {
+            return "";
+        }
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            ChatMessage message = messages.get(i);
+            if (message.role() == ChatRole.USER) {
+                return message.content() == null ? "" : message.content();
+            }
+        }
+        return "";
+    }
+
+    private static ModelRequest withLastUserText(ModelRequest request, String replacement) {
+        List<ChatMessage> original = request.messages();
+        List<ChatMessage> copy = new ArrayList<>(original.size());
+        int lastUser = -1;
+        for (int i = original.size() - 1; i >= 0; i--) {
+            if (original.get(i).role() == ChatRole.USER) {
+                lastUser = i;
+                break;
+            }
+        }
+        for (int i = 0; i < original.size(); i++) {
+            ChatMessage message = original.get(i);
+            if (i == lastUser) {
+                copy.add(ChatMessage.user(replacement));
+            } else {
+                copy.add(message);
+            }
+        }
+        return ModelRequest.builder()
+                .model(request.model())
+                .messages(copy)
+                .tools(request.tools())
+                .temperature(request.temperature())
+                .maxTokens(request.maxTokens())
+                .stream(request.stream())
+                .responseFormat(request.responseFormat())
+                .reasoning(request.reasoning())
+                .build();
     }
 
     private static void requireHistoryOnly(List<ChatMessage> messages) {

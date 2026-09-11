@@ -87,6 +87,8 @@
 
 **agent4j 对照**：中间层已达标（决策 7/12/13）。input 插入点：ContextBuilder 之后、ModelInvoker 之前；output 插入点：AgentEvent sink 之前。
 
+**KP5 落定（2026-09-12）**：`Guardrail` / `GuardrailChain` 挂在 `AgentConfig`。INPUT 在 `buildRequest` 之后、模型调用之前；OUTPUT 在写 assistant / 发 `Done` 之前。Block 拒答；Rewrite 只改请求（INPUT，账本不动）或改落库与 Done（OUTPUT）。每条规则必报 `FAIL_CLOSED` / `FAIL_OPEN`。`SanitizerGuardrail` 把 Stage 9 `ResultSanitizer` 接到这两道门。工具层仍是 `GovernedToolExecutor`。
+
 **自测**：在 agent4j 里指出 input / output 两层的插入点。
 
 ---
@@ -103,6 +105,8 @@
 - agent4j 缺的是 handoff 语义层，不是协议层——先有语义，A2A 只是把语义 RPC 化。
 
 **KP6 落定（2026-09-11，commit 7faba88）**：双向 HTTP 落地——`HttpA2AClient`（message/send / tasks/get / agent-card 发现）+ `HttpA2AServer`（把既有 Agent 包成协议端点，agent 零改动），方言 codec `A2AJson` 两端共用。一手工程事实六条（SERVER 分配任务 id 的身份物理、metadata 逃生舱、REJECTED/FAILED 两种死法、三层失败语义、入站防线镜像出站 D5、loud refusal），v1 诚实边界（无 SSE/推送/续跑，127.0.0.1 only，无卡片签名验证），第三方互操作是下一个证伪点。详见 `experiment-kp6-a2a-protocol.md`。
+
+**A2A v2 落定（2026-09-12）**：① 续跑——`message.taskId` 只续 `input-required`（未知 id 仍 `-32001`；completed/failed 续跑 `-32602`）；`A2AInputRequiredException` 让 server 侧能停；`continueTask` 复用同一 task/context。② SSE——`message/stream` 出 `status(working)` → `artifact` → `status(terminal)`。③ 推送——`tasks/pushNotification/set` 绑 webhook，非 working 状态 POST 任务 JSON（已完成再绑也会立刻推一次）。卡片广告 `A2ACapabilities.v2()`（streaming+push，无 history）。仍无第三方互操作、无卡片签名、任务仍内存。
 
 **自测**：说清 handoff 与 A2A 的映射关系。
 

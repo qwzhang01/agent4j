@@ -38,6 +38,11 @@ public class DefaultResultSanitizer implements ResultSanitizer {
     private final List<Pattern> instructionOverride;
     private final List<Pattern> sensitiveExfil;
 
+    /** The strategy this instance applies on a hit. */
+    public Strategy strategy() {
+        return strategy;
+    }
+
     public DefaultResultSanitizer() {
         this(Strategy.SANITIZE);
     }
