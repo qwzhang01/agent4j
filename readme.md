@@ -3,11 +3,11 @@
 [![CI](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml/badge.svg)](https://github.com/qwzhang01/agent4j/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
-[![Maven](https://img.shields.io/badge/Maven-0.1.2-blue.svg)](https://github.com/qwzhang01/agent4j)
+[![Maven](https://img.shields.io/badge/Maven-0.1.3-blue.svg)](https://github.com/qwzhang01/agent4j)
 
 > A persistent, observable, governable, hot-pluggable Java Agent Runtime.
 
-可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。Central 最新版本 `0.1.2`。Central 发布走 `./mvnw -DskipTests deploy`（见 [RELEASING.md](RELEASING.md)）。
+可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。Central 最新版本 `0.1.3`。Central 发布走 `./mvnw -DskipTests deploy`（见 [RELEASING.md](RELEASING.md)）。
 
 这不是 LangChain4j / Spring AI 的替代品。它强调：断点恢复、工具治理、沙箱、轨迹导出，以及企业 / 酒馆 / 编码三个领域 Profile 共用同一套 Runtime。
 
@@ -87,7 +87,7 @@ examples             可运行示例（不发布）
 
 最小接入：`agent-core` + `agent-model`。其余按需加。企业 / 酒馆 / 编码是同一 Runtime 上的三个 Profile，不是三套框架。
 
-已上 Central（最新 `0.1.2`），用 BOM 对齐版本：
+已上 Central（最新 `0.1.3`），用 BOM 对齐版本：
 
 ```xml
 <dependencyManagement>
@@ -95,7 +95,7 @@ examples             可运行示例（不发布）
     <dependency>
       <groupId>io.github.qwzhang01</groupId>
       <artifactId>seven-agent-bom</artifactId>
-<version>0.1.2</version>
+<version>0.1.3</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -109,7 +109,7 @@ examples             可运行示例（不发布）
 
 | 项 | 事实 |
 |----|------|
-| 版本 | Central 最新 `0.1.2`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
+| 版本 | Central 最新 `0.1.3`，SemVer，见 [CHANGELOG.md](CHANGELOG.md) |
 | 测试 | 全仓 22 模块全绿（以 CI 为准），`./mvnw -B test` |
 | CI | GitHub Actions，JDK 17 + 21 |
 | 许可证 | [Apache-2.0](LICENSE) |

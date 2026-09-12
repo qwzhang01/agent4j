@@ -1,9 +1,9 @@
 # 模块一览
 
-父工程：`io.github.qwzhang01:seven-agent:0.1.2`（Central 最新，`packaging=pom`）。
+父工程：`io.github.qwzhang01:seven-agent:0.1.3`（Central 最新，`packaging=pom`）。
 库模块按需依赖，**不要**把整个父工程当 jar 引进业务。
 
-用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本（Central 最新 `0.1.2`），再声明具体 `artifactId`。
+用 `seven-agent-bom`（`type=pom` / `scope=import`）统一版本（Central 最新 `0.1.3`），再声明具体 `artifactId`。
 
 `examples` 只演示，**不发布**（`release` profile 的 `excludeArtifacts`）。
 
