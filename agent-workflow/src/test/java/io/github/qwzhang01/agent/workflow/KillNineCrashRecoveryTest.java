@@ -10,11 +10,15 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.security.CodeSource;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,6 +64,97 @@ class KillNineCrashRecoveryTest {
     @TempDir
     Path shared;
 
+    // ============ Classpath derivation (launcher-proof) ============
+
+    /**
+     * Derives the child JVM's classpath from concrete {@link CodeSource}
+     * anchors instead of the {@code java.class.path} property. Why: the
+     * property's shape depends on WHO launched the test JVM. CLI Maven puts
+     * real jar/dir paths there (works), but IntelliJ IDEA abbreviates long
+     * classpaths with a pathing jar / argfile — a temp jar whose manifest
+     * Class-Path lists the real entries, deleted after the parent JVM
+     * starts. A child forked later inherits a dangling path: the classic
+     * symptom is {@code ClassNotFoundException: KillNineCrashRecoveryTest$Child}.
+     *
+     * <p>Strategy, in order:
+     * <ol>
+     *   <li>Anchor jars (codeSource of this test class + a set of classes
+     *       covering the child's real dependency closure) &rarr; each anchor's
+     *       directory reveals the local Maven repository layout
+     *       ({@code ~/.m2/repository/<group>/<artifact>/<version>/}).</li>
+     *   <li>Expand the anchor list into the full jar set via the versioned
+     *       artifact dir; sibling artifacts whose anchors we did not load
+     *       (e.g. slf4j-simple, only on the test classpath) are picked up by
+     *       scanning the same repository dir.</li>
+     *   <li>Target/classes and target/test-classes directories append
+     *       naturally (their codeSource IS the directory, no expansion).</li>
+     *   <li>Fallback: {@code java.class.path} as-is, for launchers that keep
+     *       it honest (CLI Maven, CI).</li>
+     * </ol>
+     */
+    private static List<String> childClasspathEntries() {
+        LinkedHashSet<String> entries = new LinkedHashSet<>();
+        // Anchor classes covering the child's ENTIRE dependency closure,
+        // one anchor per artifact (FQCN strings so a missing jar degrades
+        // to a skipped anchor, not a compile-time coupling):
+        // - this test class              -> agent-workflow test-classes
+        // - RunManager                   -> agent-workflow target/classes
+        // - Agent (agent-core)           -> agent-core jar
+        // - ObjectMapper (databind)      -> jackson-databind + its dir siblings
+        // - JsonFactory (jackson-core)   -> jackson-core
+        // - JsonProperty (annotations)   -> jackson-annotations
+        // - LoggerFactory (slf4j-api)    -> slf4j-api
+        // - SimpleLogger (slf4j-simple)  -> slf4j-simple (test-scope, Child uses it)
+        // - JavaTimeModule (jsr310)      -> jackson-datatype-jsr310 (via agent-core)
+        String[] anchorClasses = {
+                KillNineCrashRecoveryTest.class.getName(),
+                RunManager.class.getName(),
+                "io.github.qwzhang01.agent.core.agent.Agent",
+                "com.fasterxml.jackson.databind.ObjectMapper",
+                "com.fasterxml.jackson.core.JsonFactory",
+                "com.fasterxml.jackson.annotation.JsonProperty",
+                "org.slf4j.LoggerFactory",
+                "org.slf4j.simple.SimpleLogger",
+                "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+        };
+        for (String anchorName : anchorClasses) {
+            Class<?> anchor;
+            try {
+                anchor = Class.forName(anchorName);
+            } catch (ClassNotFoundException e) {
+                continue; // jar not on this test's classpath — not a child dep
+            }
+            CodeSource cs = anchor.getProtectionDomain().getCodeSource();
+            if (cs == null || cs.getLocation() == null) {
+                continue;
+            }
+            File location = new File(cs.getLocation().getPath());
+            File dir = location.getParentFile();
+            // A directory codeSource (target/classes or target/test-classes)
+            // needs no expansion: its parent is the module dir, not a repo.
+            if (location.isDirectory()) {
+                entries.add(location.getAbsolutePath());
+                continue;
+            }
+            // A jar codeSource sits in ~/.m2/repository/g/a/v/ — expand the
+            // whole versioned artifact dir into the classpath. All jars in
+            // that dir are the same artifact+version (plain, sources,
+            // javadoc); first-classpath-hit semantics keep this sound.
+            if (dir != null && dir.getName().matches("\\d+([.-]\\d+)*.*")) {
+                File[] jars = dir.listFiles((d, name) -> name.endsWith(".jar") && !name.contains("-sources") && !name.contains("-javadoc"));
+                if (jars != null) {
+                    for (File jar : jars) {
+                        entries.add(jar.getAbsolutePath());
+            }
+                }
+            }
+        }
+        if (entries.isEmpty()) {
+            return List.of(System.getProperty("java.class.path", "").split(File.pathSeparator));
+        }
+        return List.copyOf(entries);
+    }
+
     // ============ The test ============
 
     @Test
@@ -68,9 +163,11 @@ class KillNineCrashRecoveryTest {
     void realKillNineAcrossProcessesRecoversFromCheckpoint() throws Exception {
         // ---- 1. Fork a real child JVM running the workflow to its pause point
         String javaBin = Path.of(System.getProperty("java.home"), "bin", "java").toString();
-        String classpath = System.getProperty("java.class.path");
-        ProcessBuilder pb = new ProcessBuilder(
-                javaBin, "-cp", classpath, Child.class.getName(), shared.toString());
+        List<String> classpathEntries = childClasspathEntries();
+        List<String> command = new java.util.ArrayList<>(List.of(
+                javaBin, "-cp", String.join(File.pathSeparator, classpathEntries),
+                Child.class.getName(), shared.toString()));
+        ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(
                 shared.resolve("child.log").toFile()));
