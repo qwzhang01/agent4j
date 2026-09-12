@@ -16,8 +16,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
+import io.github.qwzhang01.agent.core.tool.ToolExecutor;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -291,6 +295,90 @@ class HandoffLoopTest {
         assertEquals(AgentState.Status.MAX_STEPS_EXCEEDED, state.getStatus());
         assertEquals(3, state.getCurrentStep());
         assertTrue(answer.contains("max steps"));
+    }
+
+    @Test
+    void shouldResumeAsLastActiveAgentWhenReenteringEntry() {
+        var clientA = new RecordingScriptedMock()
+                .addResponse(ModelResponse.toolCalls(List.of(handoffCall("h1", "B"))));
+        var clientB = new RecordingScriptedMock()
+                .addResponse(ModelResponse.text("done by B"))
+                .addResponse(ModelResponse.text("still B"));
+
+        AgentConfig b = config("B", "You are B.", clientB);
+        AgentConfig a = config("A", "You are A.", clientA, List.of(HandoffSpec.to(b)));
+
+        AgentState state = new AgentState();
+        new SimpleAgent(a).run("start", state);
+        assertEquals("B", state.getLastActiveAgentName());
+
+        new SimpleAgent(a).run("follow-up", state);
+
+        assertEquals(1, clientA.requests.size(), "entry persona must not answer the resumed turn");
+        assertEquals(2, clientB.requests.size());
+        assertEquals("You are B.", clientB.requests.get(1).messages().get(0).content());
+        assertEquals("still B", state.getMessages().stream()
+                .filter(m -> m.role() == ChatRole.ASSISTANT && m.toolCalls() == null)
+                .map(ChatMessage::content)
+                .reduce((first, second) -> second).orElse(null));
+    }
+
+    @Test
+    void shouldFailClosedWhenLastActiveNameIsUnreachable() {
+        var clientA = new RecordingScriptedMock()
+                .addResponse(ModelResponse.text("should not run"));
+        AgentConfig a = config("A", "You are A.", clientA);
+
+        AgentState state = new AgentState();
+        state.setLastActiveAgentName("ghost");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> new SimpleAgent(a).run("hi", state));
+        assertTrue(ex.getMessage().contains("ghost"));
+        assertEquals(0, clientA.requests.size(), "unreachable identity must not call the model");
+    }
+
+    @Test
+    void shouldUseTargetOwnExecutorAfterHandoff() {
+        var clientA = new RecordingScriptedMock()
+                .addResponse(ModelResponse.toolCalls(List.of(handoffCall("h1", "B"))));
+        var clientB = new RecordingScriptedMock()
+                .addResponse(ModelResponse.toolCalls(List.of(
+                        ToolCall.of("t1", "echo", mapper.createObjectNode().put("input", "hi")))))
+                .addResponse(ModelResponse.text("done by B"));
+
+        var registry = new io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry();
+        registry.register(new SimpleAgentTest.EchoToolInline());
+        RecordingExecutor recorded = new RecordingExecutor(new DefaultToolExecutor(registry));
+
+        AgentConfig b = new AgentConfig("B", "You are B.", clientB, registry, 10, null,
+                List.of(), null, recorded);
+        AgentConfig a = new AgentConfig("A", "You are A.", clientA, null, 10, null,
+                List.of(HandoffSpec.to(b)));
+
+        AgentState state = new AgentState();
+        new SimpleAgent(a).run("start", state);
+
+        assertEquals(List.of("echo"), recorded.names);
+        ChatMessage echoResult = state.getMessages().stream()
+                .filter(m -> m.role() == ChatRole.TOOL && "t1".equals(m.toolCallId()))
+                .findFirst().orElseThrow();
+        assertEquals("Echo: hi", echoResult.content());
+    }
+
+    private static class RecordingExecutor implements ToolExecutor {
+        final List<String> names = new ArrayList<>();
+        private final ToolExecutor delegate;
+
+        RecordingExecutor(ToolExecutor delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String execute(ToolCall toolCall) {
+            names.add(toolCall.name());
+            return delegate.execute(toolCall);
+        }
     }
 
     private static class NoopTool implements io.github.qwzhang01.agent.core.tool.Tool {

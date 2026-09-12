@@ -2,7 +2,9 @@ package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
+import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 
 import java.util.Objects;
@@ -26,8 +28,7 @@ public class SimpleAgent implements Agent {
 
     public SimpleAgent(AgentConfig config) {
         this.config = config;
-        ToolRegistry registry = config.getToolRegistry();
-        this.loop = new ReActAgentLoop(registry != null ? registry : new InMemoryToolRegistry());
+        this.loop = new ReActAgentLoop(executorOf(config));
     }
 
     public SimpleAgent(AgentConfig config, AgentLoop loop) {
@@ -62,6 +63,14 @@ public class SimpleAgent implements Agent {
         Objects.requireNonNull(listener, "listener");
         prepare(userMessage, state);
         loop.stream(config, state, listener);
+    }
+
+    private static ToolExecutor executorOf(AgentConfig config) {
+        if (config.getToolExecutor() != null) {
+            return config.getToolExecutor();
+        }
+        ToolRegistry registry = config.getToolRegistry();
+        return new DefaultToolExecutor(registry != null ? registry : new InMemoryToolRegistry());
     }
 
     private void prepare(ChatMessage userMessage, AgentState state) {

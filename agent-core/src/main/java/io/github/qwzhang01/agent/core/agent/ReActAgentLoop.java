@@ -8,7 +8,6 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
-import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -38,9 +38,15 @@ public class ReActAgentLoop implements AgentLoop {
     private static final Logger log = LoggerFactory.getLogger(ReActAgentLoop.class);
 
     private final ToolExecutor toolExecutor;
+    private final HandoffTargetResolver resolver;
 
     public ReActAgentLoop(ToolExecutor toolExecutor) {
-        this.toolExecutor = toolExecutor;
+        this(toolExecutor, HandoffTargetResolver.graph());
+    }
+
+    public ReActAgentLoop(ToolExecutor toolExecutor, HandoffTargetResolver resolver) {
+        this.toolExecutor = Objects.requireNonNull(toolExecutor, "toolExecutor");
+        this.resolver = resolver == null ? HandoffTargetResolver.graph() : resolver;
     }
 
     /**
@@ -79,7 +85,7 @@ public class ReActAgentLoop implements AgentLoop {
      */
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          ModelInvoker invoker) {
-        AgentConfig currentConfig = config;
+        AgentConfig currentConfig = resolver.resolve(config, state.getLastActiveAgentName());
         AgentConfig handoffFrom = null;
         HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;
         state.setStatus(AgentState.Status.RUNNING);
@@ -171,6 +177,7 @@ public class ReActAgentLoop implements AgentLoop {
                             "Conversation transferred to agent '" + pendingHandoffSpec.targetName() + "'."));
                     AgentConfig fromConfig = currentConfig;
                     currentConfig = pendingHandoffSpec.target();
+                    state.setLastActiveAgentName(currentConfig.getName());
                     handoffFrom = fromConfig;
                     activeInputFilter = pendingHandoffSpec.inputFilter();
                     log.info("[{}] Handoff via '{}': now running as [{}]",
@@ -224,9 +231,10 @@ public class ReActAgentLoop implements AgentLoop {
      * <p>
      * Iron rule: the ENTRY config always routes through the executor this
      * loop was constructed with (which hosts may have wrapped with
-     * governance/audit decorators). Only a swapped-in target config gets a
-     * plain {@link DefaultToolExecutor} over its own registry — the loop
-     * cannot re-weave host decorations it never saw.
+     * governance/audit decorators). A swapped-in target uses
+     * {@link HandoffTargetResolver#executorFor} — typically the target's
+     * own {@link AgentConfig#getToolExecutor()}, else a plain
+     * {@link DefaultToolExecutor}. The loop never re-weaves host decorations.
      */
     private String executePlainTool(AgentConfig entryConfig, AgentConfig currentConfig, ToolCall toolCall) {
         if (currentConfig == entryConfig) {
@@ -236,7 +244,7 @@ public class ReActAgentLoop implements AgentLoop {
     }
 
     /**
-     * Cache of plain executors for swapped-in handoff target configs.
+     * Cache of resolvers' executors for swapped-in target configs.
      * Keyed by config identity — AgentConfig has no equals (identity by
      * design), so the map degrades gracefully if a host rebuilds configs.
      */
@@ -244,12 +252,7 @@ public class ReActAgentLoop implements AgentLoop {
             new java.util.IdentityHashMap<>();
 
     private ToolExecutor executorFor(AgentConfig currentConfig) {
-        return targetExecutors.computeIfAbsent(currentConfig, cfg -> {
-            ToolRegistry registry = cfg.getToolRegistry();
-            return registry != null
-                    ? new DefaultToolExecutor(registry)
-                    : new DefaultToolExecutor(new InMemoryToolRegistry());
-        });
+        return targetExecutors.computeIfAbsent(currentConfig, resolver::executorFor);
     }
 
     /**

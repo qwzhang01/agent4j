@@ -26,12 +26,11 @@ import java.util.List;
  * it after a process restart. Stage 14 records trajectory at the model
  * boundary instead of dumping this object.
  * <p>
- * Stage 19 boundary: this state deliberately records no "currently active
- * config". Identity is configuration (AgentConfig.systemPrompt), not history —
- * and AgentConfig itself is not serializable. After a handoff, a resumed run
- * defaults to the ENTRY config's persona; hosts must re-enter through the
- * last handoff target (learned from {@link AgentEvent.Handoff}) to keep the
- * executor aligned with the transfer recorded in history.
+ * Stage 19 / P3: identity is still configuration, not history — this object
+ * stores only the last active <em>name</em> ({@link #getLastActiveAgentName()}),
+ * never an {@link AgentConfig} reference. The loop resolves that name through
+ * {@link HandoffTargetResolver} on resume. Old checkpoints without the field
+ * stay on the entry persona (Jackson {@code ignoreUnknown}).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,6 +45,7 @@ public class AgentState {
     private int maxSteps = 10;
     private Status status = Status.IDLE;
     private String lastError;
+    private String lastActiveAgentName;
     public AgentState() {
     }
 
@@ -132,6 +132,19 @@ public class AgentState {
         this.lastError = lastError;
     }
 
+    /**
+     * Name of the config that last owned the loop after a handoff.
+     * Null means the entry persona. Persisted so a later
+     * {@code agent.run(input, state)} through the entry agent resumes as B.
+     */
+    public String getLastActiveAgentName() {
+        return lastActiveAgentName;
+    }
+
+    public void setLastActiveAgentName(String lastActiveAgentName) {
+        this.lastActiveAgentName = lastActiveAgentName;
+    }
+
     @JsonIgnore
     public boolean isTerminal() {
         return status == Status.DONE || status == Status.ERROR || status == Status.MAX_STEPS_EXCEEDED;
@@ -147,6 +160,7 @@ public class AgentState {
         copy.maxSteps = this.maxSteps;
         copy.status = this.status;
         copy.lastError = this.lastError;
+        copy.lastActiveAgentName = this.lastActiveAgentName;
         return copy;
     }
 

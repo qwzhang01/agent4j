@@ -24,6 +24,7 @@ class AgentStateJsonTest {
         original.setMaxSteps(8);
         original.setStatus(AgentState.Status.DONE);
         original.setLastError(null);
+        original.setLastActiveAgentName("specialist");
 
         AgentState restored = mapper.readValue(mapper.writeValueAsString(original), AgentState.class);
 
@@ -32,14 +33,26 @@ class AgentStateJsonTest {
         assertEquals(8, restored.getMaxSteps());
         assertEquals(AgentState.Status.DONE, restored.getStatus());
         assertNull(restored.getLastError());
+        assertEquals("specialist", restored.getLastActiveAgentName());
+    }
+
+    @Test
+    void missingLastActiveNameStaysNull() throws Exception {
+        String json = "{\"messages\":[],\"currentStep\":0,\"maxSteps\":10,\"status\":\"IDLE\"}";
+        AgentState restored = mapper.readValue(json, AgentState.class);
+        assertNull(restored.getLastActiveAgentName());
     }
 
     @Test
     void snapshotIsIndependentCopy() {
         AgentState original = new AgentState("hello");
+        original.setLastActiveAgentName("B");
         AgentState snap = original.snapshot();
         original.addMessage(ChatMessage.assistant("later"));
+        original.setLastActiveAgentName("C");
         assertEquals(1, snap.getMessages().size());
         assertEquals(2, original.getMessages().size());
+        assertEquals("B", snap.getLastActiveAgentName());
+        assertEquals("C", original.getLastActiveAgentName());
     }
 }

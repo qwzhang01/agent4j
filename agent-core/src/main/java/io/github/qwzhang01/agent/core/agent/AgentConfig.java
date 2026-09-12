@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.client.ModelClient;
+import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class AgentConfig {
     private final ContextBuilder contextBuilder;
     private final List<HandoffSpec> handoffs;
     private final GuardrailChain guardrails;
+    private final ToolExecutor toolExecutor;
 
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient, ToolRegistry toolRegistry) {
         this(name, systemPrompt, modelClient, toolRegistry, 10, null, List.of());
@@ -72,6 +74,20 @@ public class AgentConfig {
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
                        ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder,
                        List<HandoffSpec> handoffs, GuardrailChain guardrails) {
+        this(name, systemPrompt, modelClient, toolRegistry, maxSteps, contextBuilder,
+                handoffs, guardrails, null);
+    }
+
+    /**
+     * Full constructor with a per-config {@link ToolExecutor} (Decision 24 P3).
+     * {@code null} means the loop falls back to a plain executor over
+     * {@code toolRegistry}. Attach a governed executor here so a handoff
+     * target does not silently drop the host's audit / permission chain.
+     */
+    public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
+                       ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder,
+                       List<HandoffSpec> handoffs, GuardrailChain guardrails,
+                       ToolExecutor toolExecutor) {
         this.name = name;
         this.systemPrompt = systemPrompt;
         this.modelClient = modelClient;
@@ -80,8 +96,19 @@ public class AgentConfig {
         this.contextBuilder = contextBuilder;
         this.handoffs = handoffs == null ? List.of() : List.copyOf(handoffs);
         this.guardrails = guardrails == null ? GuardrailChain.none() : guardrails;
+        this.toolExecutor = toolExecutor;
         requireNoSelfHandoff();
         requireNoToolNameCollision();
+    }
+
+    /**
+     * Copy with a different executor. Assemble the executor onto the target
+     * <em>before</em> another config holds a handoff reference to it —
+     * this method returns a new instance.
+     */
+    public AgentConfig withToolExecutor(ToolExecutor toolExecutor) {
+        return new AgentConfig(name, systemPrompt, modelClient, toolRegistry, maxSteps,
+                contextBuilder, handoffs, guardrails, toolExecutor);
     }
 
     /** A handoff target must not be the declaring config itself. */
@@ -152,5 +179,13 @@ public class AgentConfig {
      */
     public GuardrailChain getGuardrails() {
         return guardrails;
+    }
+
+    /**
+     * Optional executor for this config's plain tools (P3).
+     * Null: the loop uses a plain {@code DefaultToolExecutor} over the registry.
+     */
+    public ToolExecutor getToolExecutor() {
+        return toolExecutor;
     }
 }

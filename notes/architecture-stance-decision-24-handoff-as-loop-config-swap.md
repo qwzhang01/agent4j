@@ -39,6 +39,15 @@ flowchart LR
 
 决策 23 把人格从历史中拉出、放入 config 请求级注入——这正是本次 handoff 能成立的前提。若人格还住在 `messages[0]`，切换 config 就得重写历史，整条路线回到对比替代①的死胡同。两个决策合起来构成完整主张：身份是配置，历史是事实；换身份不伪造事实。
 
+## P3 落定（2026-09-12）
+
+两处文档债做成机制：
+
+1. **续跑身份**：`AgentState.lastActiveAgentName`（名字，可序列化）。`runLoop` 开头经 `HandoffTargetResolver` 解析；默认 `GraphHandoffTargetResolver` 从入口 handoff 图 BFS。未知名字抛 `IllegalStateException`，不静默回入口人格。旧 checkpoint 无该字段 → 仍走入口（`ignoreUnknown`）。
+2. **治理链**：`AgentConfig.toolExecutor` 可选。入口仍走 loop 构造时注入的 executor；切换后的目标走 resolver.`executorFor`（优先目标自己的 executor，否则 plain `DefaultToolExecutor`）。loop 不重织宿主装饰——要治理就显式挂到目标 config。
+
+宿主正确姿势变为：一直从入口 `agent.run(input, state)` 续跑。`AgentEvent.Handoff` 降为观测信号。
+
 ## P2 落定（2026-09-12）
 
 `HandoffInputFilter` 已落地：挂在 `HandoffSpec.inputFilter`，`runLoop` 在换牌后把它记到循环局部变量，下一轮 `buildRequest` 在 ContextBuilder 之后、拼 system prompt 之前调用。`AgentState` 零改写。默认 `IDENTITY`（存量 7 个 handoff 用例行为不变）。`keepWithin(ContextWindowBudget)` 与 `ContextWindowEnforcer.trimToBudget` 共用成对裁剪；`lastTurn()` 从最后一条 USER 带到交接 tool pair。
@@ -46,9 +55,9 @@ flowchart LR
 ## 本次没有做的事
 
 - ~~没有实现 `HandoffInputFilter` / 历史预算裁剪（P2，接 Token Budgeting 四本账）。~~ 已落（见上节）。
-- 没有做 handoff 边界的 guardrail（链中 agent 的输入防护，P3）。
-- 没有做乒乓检测（A↔B 无限互转时只有全局步数兜底；显式往返计数是 P3）。
-- 没有把「续跑契约」做成机制：`AgentState` 仍不持久化活跃身份，`HandoffTargetResolver` + `lastActiveAgentName` 留 P3；本轮只把契约写进三处 javadoc 与本卡（2026-09-10）。
+- 没有做 handoff 边界的独立 guardrail（链中 agent 已有各自 `GuardrailChain`；交接本身没有额外一道门）。
+- 没有做乒乓检测（A↔B 无限互转时只有全局步数兜底）。
+- ~~没有把「续跑契约」做成机制。~~ 已落（见 P3 节）。
 - 没有把 `TurnTrace` 补上 handoff 字段，`AgentEvent.Handoff` 先行覆盖观测需求。
 - 没有做 YAML/product 层的 handoff 声明绑定（binder 侧留待需要时接）。
 

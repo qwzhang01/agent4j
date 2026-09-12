@@ -25,6 +25,8 @@
 
 **agent4j 对照**：`ReActAgentLoop` 的循环拥有权固定在 agent 入口。E1 实验本质：loop 拥有权能否作为一等公民传递。
 
+**P3 落定（2026-09-12）**：`AgentState.lastActiveAgentName` 只存名字；续跑经 `HandoffTargetResolver` 从入口图解析，未知名字 fail-closed。目标 agent 的工具走 `AgentConfig.toolExecutor`（显式挂治理链），loop 不重织宿主装饰。从入口 `run(input, state)` 即可续成 B，不必再订阅 `AgentEvent.Handoff` 换入口。
+
 **自测**：不看资料，说清 handoff 与 orchestrator 各自的死穴。
 
 ### KP2 · Token Budgeting：窗口是预算，不是容器
