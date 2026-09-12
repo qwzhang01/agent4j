@@ -138,6 +138,8 @@
 
 **KP8 地基盘点（2026-09-12）**：比旧自诊「完全空白」乐观——三层地基已在：①`FileCheckpointStore` 崩溃恢复经测试钉死（`EnterpriseTaskManagerTest.crashRecoveryFromCheckpointFiles`：新 RunManager + 同目录 + recover 后 prepare 恰好 1 次）；②三层幂等已写透（`stage-6-article-4-idempotency.md`：节点级/Run 级 cursor/副作用 idempotency key，框架管 Run 级、节点管副作用级）；③Webhook eventId 幂等占坑已在生产链路（Stage 13 D8 三件套）。真缺口两块：①间隙问题未落——「副作用已发生但 result 未写回 state」的窗口（`agent-platform-modules-map.md` §3 已识别，幂等键挂 ToolExecutor 层还是 Checkpoint 层答案不同）；②Temporal/Orleans 两条业界路线未对照（checkpoint 落盘 vs 事件溯源重放的语义差异）。补法：间隙问题做 E8 实验（杀进程于工具执行中，看恢复重放）；路线对照靠文献（不进实验）。
 
+**KP8 落定（2026-09-12）**：两块缺口都补上了。①E8 实验（`E8SideEffectGapExperimentTest` 六场景 7 断言）：游标保护、isResuming 守卫、幂等键三保护各管各的跨度被钉死；一手发现——**恢复粒度=上次暂停而非上个节点**（RunManager 只在 PAUSED 时写 checkpoint，B/C 类节点恢复后重放到第 2 次暂停点）；教科书幂等键公式被修正（`runId:nodeId:attempt` 在重试下铸新键导致一次逻辑访问交付两次 → `runId:nodeId:visitOrdinal`，ordinal 从持久化 trace 数本节点 SUCCESS 记录，跨崩溃跨重试稳定）。②Temporal/Orleans 对照落档（`experiment-kp8-durable-execution.md`）：durable execution 的本质变量是**持久化频率**而非介质——Temporal 每 step 落盘（事件溯源、重放即恢复）、Orleans 快照+尾巴重放、agent4j 只在 PAUSED 落盘（间隙=两个暂停点间的全部副作用窗口，靠三保护兜底）。诚实边界：模拟崩溃非真 kill -9、单 JVM、Temporal/Orleans 未实跑。详见 `experiment-kp8-durable-execution.md`。
+
 **自测**：说清"checkpoint 落盘"与"可恢复执行"差在哪；agent4j 的工具是否全部幂等。
 
 ---
@@ -154,6 +156,8 @@
 
 **KP9 落定（2026-09-12，commit 5d58580）**：`SandboxRiskLevel`/`SandboxTier`/`SandboxPolicy`/`SandboxEscalator` 四件落，乐观升级（blocked→Process，timeout 不升级），`-Xmx` 真实生效。dsh 三借鉴点落一：`SandboxTier` javadoc 的谱系表（startup/逃逸面/v1 状态三列）是文档级诚实报告的雏形。未落二：`enforcement: partial` 字段化诚实报告（执行结果里声明「我保证什么/不保证什么」）、方言失败正交（沙箱死法与代码死法分开报）。详见 `experiment-kp9-sandbox-spectrum.md`。
 
+**KP9 落定·续（2026-09-12）**：两个未落项全落。①enforcement 诚实报告 → `SandboxReport`：纯下游翻译器（tier × outcome → guarantees/notGuaranteed/escalationNote），与 HealthPipeline（KP7）同构——enforcement 做事、report 翻译成人类可审计的承诺；占位 tier 零保证大声声明。②方言失败正交 → `SandboxResult.FailureKind` 四桶（SANDBOX_FAILURE/BLOCKED_BY_POLICY/TIMEOUT/CODE_FAILURE），正交于 tier，deriveKind 按 timedOut+error 前缀全推导 + 6 参源兼容构造器（既有构造点零改动）。外加升级熔断预算（思考题 2 代码化）：`escalationBudget` 默认 3 次，防 chatty-blocked 源把乐观升级反向利用成 denial-of-wallet；烧完 BLOCKED 原样返回。agent-sandbox 63/63。详见 `experiment-kp9-sandbox-spectrum.md` 事实 4 与思考题 2/3。
+
 **自测**：说清决策 21 被推翻的具体触发条件。
 
 ### KP10 · 间接注入：最危险的输入不是用户输入
@@ -166,6 +170,8 @@
 - 业界共识是"降低概率 + 限制爆炸半径"，不是"杜绝"。
 
 **agent4j 对照**：`InjectionDefenseExample` 是雏形；缺"检索内容入上下文前净化"和"工具凭证 scoped identity"。
+
+**KP10 落定（2026-09-12）**：`SanitizingContextBuilder` 落 agent-security（实现 agent-core 的 `ContextBuilder`，装饰器形态，与 ContextWindowEnforcer/SanitizerGuardrail 同构）：①净化——TOOL 角色消息过 `ResultSanitizer`（Stage 9 模式库，提前到请求边界）；②spotlighting——非 SYSTEM 消息包 `[UNTRUSTED CONTENT BEGIN/END]` 定界符 + 头部固定 DATA_ONLY_NOTICE（transient SYSTEM、byte-stable 保 KV cache）。state 纪律：净化视图给模型、原始字节留台账（Decision 12）。防御纵深四层全齐：L1 spotlighting（新）/ L2 工具输出门（既有）/ L3 检索内容进请求前净化（新，对任意 delegate 生效）/ L4 scoped identity（`IdentityConstrainedPermissionChecker`，既有）。agent-security 59/59。详见 `experiment-kp10-indirect-injection.md`。
 
 **自测**：画出一条间接注入的完整攻击链，并标出每层防御的拦截点。
 

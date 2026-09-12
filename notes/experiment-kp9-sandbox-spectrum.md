@@ -1,6 +1,6 @@
 # 实验记录：KP9 沙箱谱系——隔离等级与逃逸面（2026-09-12）
 
-> 性质：KP9（沙箱谱系）的落地实验笔记，对应新增类 `SandboxRiskLevel` / `SandboxPolicy` / `SandboxTier` / `SandboxEscalator`，测试 `SandboxPolicyTest` / `SandboxEscapeTest` / `SandboxEscalatorTest`。  
+> 性质：KP9（沙箱谱系）的落地实验笔记，对应新增类 `SandboxRiskLevel` / `SandboxPolicy` / `SandboxTier` / `SandboxEscalator` / `SandboxResult.FailureKind` / `SandboxReport`，测试 `SandboxPolicyTest` / `SandboxEscapeTest` / `SandboxEscalatorTest` / `SandboxFailureKindTest` / `SandboxReportAndBudgetTest`。  
 > 关联：`learning-path-2026-09-knowledge-points.md` §KP9、`stage-4-sandbox.md`（Stage 4 原始实现）、Decision 21。
 
 ---
@@ -37,7 +37,7 @@ Decision 21 成立的两个前提：
 
 ---
 
-## 关键认知：三个一手工程事实
+## 关键认知：四个一手工程事实
 
 ### 事实 1：ClassLoader 不是安全边界——它是防抢跑屏障
 
@@ -78,7 +78,9 @@ Decision 21 成立的两个前提：
 ```
 第一次尝试：ClassLoaderSandbox
 ├── success → 返回（快，无 JVM 启动成本）
-├── blocked → isBlocked() 检测 "Blocked:" 前缀 → 升级到 ProcessSandbox
+├── blocked → isBlocked()（结构化 kind 优先，fallback "Blocked:" 前缀）
+│     ├── 预算内 → 升级到 ProcessSandbox
+│     └── 预算烧完 → BLOCKED 原样返回（不再启动第二个 JVM）
 └── timeout / error → 原样返回（超时重试无意义；编译错不用 Process 重试）
 ```
 
@@ -91,6 +93,23 @@ Decision 21 成立的两个前提：
 - 安全代码（大部分 LLM 输出）：走 ClassLoader，~0 ms
 - 危险代码（少数）：两次编译成本（ClassLoader 编译一次 + Process 编译一次）+子进程 JVM 启动 1~2 s
 - 直接用 UNTRUSTED：每次都是 Process，统一 1~2 s
+
+熔断补丁（2026-09-12）：这条成本曲线有尾部风险——「反复触发 block 的源」（对抗 prompt，或模型系统性偏爱危险 API）会让每次请求都烧 1~2 s JVM 启动，升级被反向利用成 denial-of-wallet。`escalationBudget`（默认 3，Escalator 生命周期计）烧完后 BLOCKED 原样返回，strong tier 不再启动。
+
+### 事实 4（2026-09-12 增补）：失败要分桶——「谁的锅」决定「下一步」
+
+`SandboxResult.FailureKind` 把失败正交分四桶，桶与 tier 无关：
+
+| 桶 | 谁的锅 | 下一步 |
+|----|--------|--------|
+| SANDBOX_FAILURE | 沙箱机器自身（编译基建崩、JVM 启动失败） | 查基建，别怪代码 |
+| BLOCKED_BY_POLICY | 策略拒绝（代码想摸危险类） | 这是**设计路径**不是事故——升级 tier 重跑 |
+| TIMEOUT | 时间预算烧完 | 任何 tier 重跑都一样超时，不升级 |
+| CODE_FAILURE | 代码自身（编译错/运行时异常/非零退出） | 把 stderr 喂回模型让它改 |
+
+正交的含义：同一 tier 可以产生四种死法，同一种死法可以来自所有 tier。`deriveKind` 按 timedOut + error 前缀自动推导，显式传入可 pin 覆盖。
+
+`SandboxReport` 是这四桶的纯下游翻译器：tier × outcome → 「保证什么 / 不保证什么 / 升级说明」。它与 HealthPipeline（KP7）同构——enforcement 负责做事，report 负责把「做成了什么」翻译成人类可审计的承诺。blocked 时它会告诉读者「代码从未运行，拒绝本身就是保证」；timeout 时承认「ClassLoader tier 无硬杀语义（中断是协作的）」。占位 tier（DOCKER/MICROVMM/WASM）一律「零保证大声声明」。
 
 ---
 
@@ -130,6 +149,9 @@ Docker/microVM 升级触发：
 - `ProcessSandbox` 已透传 `-Xmx`（2026-09-12）：`memoryLimitBytes` 写入子进程 `java` 启动参数（精确 MB 用 `-XmxNm`，否则裸字节）；`javac` 编译进程不加 cap。`ProcessSandboxTest.memoryLimitBytesBecomesXmxOnChildJvm` 用 `Runtime.maxMemory()` 钉死。`memoryLimitBytes <= 0` 表示不加 cap（走宿主 JVM 默认堆）
 - `ProcessSandbox` 无网络隔离（子进程可以访问外网）
 - `SandboxEscalator` 超时不升级（超时代码重跑于 Process 也会超时，浪费时间）
+- `SandboxResult.FailureKind`（2026-09-12）：四桶分类默认按 timedOut / error 前缀推导，**推导规则与字符串前缀耦合**（"Blocked:" / "Sandbox error:"）——tier 若换错误文案，桶跟着变；结构化 error 类型是后续债
+- `SandboxReport` 是纯翻译器：tier × outcome → 保证/不保证/升级说明；表中 DOCKER/MICROVMM/WASM 行是「零保证」占位声明，不代表实现存在
+- `SandboxEscalator` 升级预算默认 3 次（2026-09-12）：防 denial-of-wallet 的生命周期上限；按 Escalator 实例计而非按 runId 计——多 run 共享同一 Escalator 时预算被摊薄，生产应按 run 维度重建实例
 - `SandboxTier.DOCKER / MICROVMM / WASM` 是文档占位，无实现
 - 第三方互操作（在 Docker 里运行 agent4j）未实测
 
@@ -138,5 +160,16 @@ Docker/microVM 升级触发：
 ## 新思考题
 
 1. ~~`ProcessSandbox` 如何接 `-Xmx` 让 `memoryLimitBytes` 真正生效？~~ **已收口（2026-09-12）**：`javaCommand` 在 `java` 行加 `-Xmx`，不碰 `javac`。精确 MB 用 `m` 后缀，否则裸字节。验证：子进程 `maxMemory() <= limit` 且明显高于未设 cap 时的偶然小堆。
-2. ClassLoader 的「乐观升级」是否应该有重试次数限制（防止代码反复触发 block）？
-3. 多语言（Python/JS）LLM 生成代码的沙箱该走 WASM 还是 Docker？代价如何比较？
+2. ~~ClassLoader 的「乐观升级」是否应该有重试次数限制（防止代码反复触发 block）？~~ **已收口（2026-09-12，代码化）**：应该，且已落。升级无上限的风险不是安全而是成本——对抗性 prompt 每轮生成危险代码，每次 block 都烧一次 JVM 启动（1~2 s），升级机制被反向利用成 denial-of-wallet。落法：`SandboxEscalator` 加生命周期预算 `DEFAULT_ESCALATION_BUDGET = 3`，`AtomicInteger` 计数；烧完后 fast tier 的 BLOCKED 结果原样返回（block 本身就是安全答案——「代码从未运行」），strong tier 不再启动。`escalationBudget = 0` 是显式禁用升级的策略开关；`getEscalationsUsed()` 暴露给监控。验证：`SandboxReportAndBudgetTest` 的 budgetExhaustionReturnsBlockAsIs / zeroBudgetDisablesEscalation / escalationsUsedIsObservable。
+3. ~~多语言（Python/JS）LLM 生成代码的沙箱该走 WASM 还是 Docker？代价如何比较？~~ **已收口（2026-09-12）**：判据不是「哪个更强」，而是「代码进沙箱前的形态是否可控」：
+
+   | 维度 | WASM（Wasmtime/WasmEdge） | Docker（+cgroup/netns） |
+   |------|--------------------------|------------------------|
+   | 隔离机制 | 线性内存 + 类型系统，**安全由构造保证** | namespace + cgroup，安全由配置保证（配错即漏） |
+   | 系统调用面 | 宿主显式注入能力（WASI capabilities），默认零 | 容器内全量 syscall，靠 seccomp profile 收窄 |
+   | 冷启动 | 毫秒级 | 百毫秒~秒级 + 镜像分发 |
+   | 语言改造 | 必须先编译到 wasm：Python 走 Pyodide 系生态别扭、C 扩展需专门交叉编译；JS 需 toolchain | 零改造：任何解释器塞进镜像即跑 |
+   | 生态覆盖 | 长尾缺（常见科学计算包有，长尾 C 扩展基本无） | 完整 |
+   | 逃逸面 | 内存安全消灭整类内存逃逸；剩余风险在宿主注入的 API 本身 | 共享内核，container escape 历史上真实发生（runc CVE 系） |
+
+   结论：**LLM 生成的受限纯计算代码（无重依赖）→ WASM（快、密度高、安全由构造保证）；需要任意生态（pip/npm install）→ Docker；多租户公开服务 → Firecracker microVM（连共享内核都不接受）**。agent4j v1 不选边：`SandboxTier.DOCKER / MICROVMM / WASM` 是占位 tier，`SandboxReport` 对它们「零保证大声声明」——占位不冒充实现，正是谱系文档的诚实纪律。
