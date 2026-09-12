@@ -41,7 +41,7 @@
 
 **agent4j 对照**：A2（SUMMARY 独立槽位）+ A3（ExtraText 预算）是点状预算；缺管整个 messages 的全局预算管理器。
 
-**KP2 落定（2026-09-12）**：`ContextWindowBudget` 把四本账写成 record（`historyBudget()` = total − system − tools − output）；`ContextWindowEnforcer` 是 `ContextBuilder` 装饰器，超限丢最旧逻辑单元（assistant+tool 成对）。Decision 24 P2：`HandoffInputFilter` 挂在 `HandoffSpec` 上，只裁下一跳的 **请求**，不改 `AgentState`。三种携带：`IDENTITY`（全量，默认）/ `keepWithin(budget)`（复用同一套 trim）/ `lastTurn()`（从最后一条 USER 起）。摘要携带不是 filter，走目标 `ContextBuilder` 压缩。
+**KP2 落定（2026-09-12）**：`ContextWindowBudget` 把四本账写成 record（`historyBudget()` = total − system − tools − output）；`ContextWindowEnforcer` 是 `ContextBuilder` 装饰器，超限丢最旧逻辑单元（assistant+tool 成对）。Decision 24 P2：`HandoffInputFilter` 挂在 `HandoffSpec` 上，只裁下一跳的 **请求**，不改 `AgentState`。三种携带：`IDENTITY`（全量，默认）/ `keepWithin(budget)`（复用同一套 trim）/ `lastTurn()`（从最后一条 USER 起）。摘要携带不是 filter，走目标 `ContextBuilder` 压缩。详见 `experiment-kp2-context-window-budget.md`。
 
 **自测**：给 agent4j 设计全局预算器，说清四本账占比与超支截断顺序。
 
@@ -89,7 +89,7 @@
 
 **agent4j 对照**：中间层已达标（决策 7/12/13）。input 插入点：ContextBuilder 之后、ModelInvoker 之前；output 插入点：AgentEvent sink 之前。
 
-**KP5 落定（2026-09-12）**：`Guardrail` / `GuardrailChain` 挂在 `AgentConfig`。INPUT 在 `buildRequest` 之后、模型调用之前；OUTPUT 在写 assistant / 发 `Done` 之前。Block 拒答；Rewrite 只改请求（INPUT，账本不动）或改落库与 Done（OUTPUT）。每条规则必报 `FAIL_CLOSED` / `FAIL_OPEN`。`SanitizerGuardrail` 把 Stage 9 `ResultSanitizer` 接到这两道门。工具层仍是 `GovernedToolExecutor`。
+**KP5 落定（2026-09-12）**：`Guardrail` / `GuardrailChain` 挂在 `AgentConfig`。INPUT 在 `buildRequest` 之后、模型调用之前；OUTPUT 在写 assistant / 发 `Done` 之前。Block 拒答；Rewrite 只改请求（INPUT，账本不动）或改落库与 Done（OUTPUT）。每条规则必报 `FAIL_CLOSED` / `FAIL_OPEN`。`SanitizerGuardrail` 把 Stage 9 `ResultSanitizer` 接到这两道门。工具层仍是 `GovernedToolExecutor`。详见 `experiment-kp5-guardrails.md`。
 
 **自测**：在 agent4j 里指出 input / output 两层的插入点。
 
@@ -145,6 +145,8 @@
 **关键认知**：
 - 升级触发条件：跑不可信代码（Docker）/ 多租户不可信代码（microVM）/ 有生态约束的不可信代码（WASM）。
 - 决策 21 在"单租户 + 半可信工具"前提下成立；做多租户 coding agent 那天被推翻。
+
+**KP9 落定（2026-09-12，commit 5d58580）**：`SandboxRiskLevel`/`SandboxTier`/`SandboxPolicy`/`SandboxEscalator` 四件落，乐观升级（blocked→Process，timeout 不升级），`-Xmx` 真实生效。dsh 三借鉴点落一：`SandboxTier` javadoc 的谱系表（startup/逃逸面/v1 状态三列）是文档级诚实报告的雏形。未落二：`enforcement: partial` 字段化诚实报告（执行结果里声明「我保证什么/不保证什么」）、方言失败正交（沙箱死法与代码死法分开报）。详见 `experiment-kp9-sandbox-spectrum.md`。
 
 **自测**：说清决策 21 被推翻的具体触发条件。
 

@@ -1,6 +1,6 @@
-# 实验记录：KP6 A2A 双向落地——协议公民的工程事实（2026-09-11）
+# 实验记录：KP6 A2A 双向落地——协议公民的工程事实（2026-09-11，v2 增补 2026-09-12）
 
-> 性质：KP6（A2A 协议）的实验收口笔记，对应提交 `7faba88`（agent-mcp 76/76，全仓 22 模块 BUILD SUCCESS）。
+> 性质：KP6（A2A 协议）的实验收口笔记，对应提交 `7faba88`（agent-mcp 76/76，全仓 22 模块 BUILD SUCCESS）；v2 增补对应提交 `c66e342`（SSE / webhook push / input-required 续跑，agent-mcp 79/79）。
 > 前置：KP1 handoff 心智模型（决策 24 `currentConfig` 换胸牌）、A2A 四步规划（协议模型对齐 → HttpA2AClient → A2AServer → 安全硬化）。
 > 关联：`learning-path-2026-09-knowledge-points.md` §KP6、`CHANGELOG.md` 0.1.2「HTTP A2A, both directions」、代码 `agent-mcp/src/main/java/io/github/qwzhang01/agent/mcp/a2a/`。
 
@@ -115,6 +115,18 @@ v1 三处「大声拒绝」，每一处对应一个「悄悄撒谎」的诱惑�
 
 配套的诚实声明在 AgentCard 上：`capabilities.streaming=false`、`pushNotifications=false` 写进卡片，对端看得见。卡片 D7 信任注释原话：remote card is a self-report——它是 ROUTING input，永远不是 TRUST input。
 
+### 7. v2 增补（2026-09-12，commit c66e342）：三处 -32001 里的两处被兑现推翻
+
+v1 诚实边界里的「无 SSE、无 push、无续跑」被 v2 推翻——但推翻方式遵守了 loud refusal 的承诺：卡片广告从 `A2ACapabilities.none()` 翻成 `A2ACapabilities.v2()`（streaming=true、pushNotifications=true、stateTransitionHistory 仍 false，诚实剩余）。三个新能力：
+
+**① 续跑（`message.taskId`）——只续 input-required**。`beginTask` 的续跑分支：未知 id 仍 `-32001`；`completed/failed/rejected/canceled` 状态的任务被续跑 → `-32602` 拒绝（completed 的工作不能被静默重放——这是对 v1「拒绝续跑防静默重跑」原则的精化：不是「续跑一律拒」，是「终局任务不可复活，只有暂停任务可续」）。server 侧靠 `A2AInputRequiredException` 生成暂停：agent 抛出 → task 存 INPUT_REQUIRED + `AgentState` 保存在 store → client `continueTask(taskId, text)` 走 `message.taskId` 续跑同一 task/context。测试 `inputRequired_thenContinue_reusesState`：暂停→续跑复用同一 state（历史还在）。
+
+**② SSE（`message/stream`）——working → artifact → terminal 三段流**。`handleStream` 的协议形态：先发 `status(working)`，agent 跑完发 `artifact`（最终文本）再发 `status(terminal)`。JSON-RPC id 不在流上回放——事件本身就是结果。client 侧 `streamTask` 返回 `List<A2AStreamEvent>`（type + data），并同步记录 local→remote id 映射（流完 `getTaskStatus` 可用）。测试 `streamTask_emitsWorkingThenCompleted`。
+
+**③ 推送（`tasks/pushNotification/set`）——webhook 绑定**。client `setPushUrl(taskId, webhookUrl)`（必须先经本 client 发过任务，否则 IllegalArgumentException 大声拒绝）。server `handlePushSet` 把 url 存进 StoredTask，非 working 状态（terminal 或 input-required）POST 任务 JSON 到 webhook（5s 超时，失败仅 WARN 不影响任务）。已终局的任务再绑 webhook 会立刻补推一次（晚到的订阅者不丢结果）。测试 `pushNotification_firesOnCompleted`。
+
+**v2 没改的**（诚实边界里继续有效的）：任务仍 in-memory（重启即失）、仍绑 127.0.0.1、无 AgentCard 签名验证、无第三方互操作验证、`stateTransitionHistory` 仍 false（v2() 诚实声明）。
+
 ---
 
 ## agent4j 对照：改造前后
@@ -125,7 +137,7 @@ v1 三处「大声拒绝」，每一处对应一个「悄悄撒谎」的诱惑�
 | 任务模型 | 6 字段，无 contextId/status/artifacts | 9 字段（补 spec `contextId`/`status`/`artifacts`） | 6 参 legacy 构造器 |
 | 卡片 | 5 字段，无 url/capabilities | 7 字段（补 spec `url`/`A2ACapabilities`） | 5 参 legacy 构造器 |
 | 传输 | InProcessA2AClient（假传输） | + HttpA2AClient / HttpA2AServer（真 HTTP，JDK 内置零新依赖） | 接口不变，170 处存量构造点零改动 |
-| 测试 | 42（agent-mcp 既有） | 76（+17 新：RoundTrip 9 真回环 socket 零 mock + Protocol 9 raw JSON） | orchestrator 45/45 不变 |
+| 测试 | 42（agent-mcp 既有） | 76（+17 新：RoundTrip 9 真回环 socket 零 mock + Protocol 9 raw JSON）；v2 再 +3 至 79（stream/push/continue 三路径） | orchestrator 45/45 不变 |
 
 D6 决策（Stage 11：协议模型 100% 真实只假传输）的兑现验证：换 HttpA2AClient 调用方零改动——`ExternalAgentWorker` 消费的是 `A2AClient` 接口，接口契约在两个实现间逐条对齐（三层失败语义、output 约定、unknown → null）。
 
@@ -137,9 +149,9 @@ D6 决策（Stage 11：协议模型 100% 真实只假传输）的兑现验证：
 
 | 步骤 | 计划验收 | 实际 | 判定 |
 |------|----------|------|------|
-| ① 协议模型对齐 | 测试迁移全绿；InProcess 替身能模拟 input-required | 76/76 全绿；InProcess 无 input-required 路径（同步执行不产生） | 半 |
+| ① 协议模型对齐 | 测试迁移全绿；InProcess 替身能模拟 input-required | 76/76 全绿；InProcess 无 input-required 路径（同步执行不产生）；v2 后 server 侧经 `A2AInputRequiredException` 可生成 | 半 |
 | ② HttpA2AClient | 拉真实第三方 server（a2a-samples/Python sdk）跑通完整往返 | loopback 自家 server 完整往返（真 socket 零 mock） | 半 |
-| ③ A2AServer | Python sdk 客户端调 agent4j，长任务停 input-required 补信息续跑 | 端点三件全做；server 侧同步执行不产生 input-required，只有 client 侧能消费 | 半 |
+| ③ A2AServer | Python sdk 客户端调 agent4j，长任务停 input-required 补信息续跑 | v1 端点三件全做但同步执行不产生 input-required；v2 补齐：暂停→续跑复用 state 有测试钉死 | 半（自家闭环成，第三方未验） |
 | ④ 安全硬化 | 克隆卡片攻击被拒；artifact 藏注入被拦 | 入站 sanitizer + reject 有测试；AgentCard 签名验证未做 | 半 |
 
 「半」的诚实解读：v1 证明的是自家两端方言一致（loopback 双向），没证明和陌生人说话（第三方互操作）。按「先证伪后投入」的纪律，第三方互操作是下一个证伪点——`HttpA2AExample` 已给出 loopback 演示（discover → send → poll → reject → supervisor 路由），拿 Google a2a-samples 或 Python a2a-sdk 对接是现成的下一步实验。
@@ -159,26 +171,27 @@ D6 决策（Stage 11：协议模型 100% 真实只假传输）的兑现验证：
 
 ---
 
-## 诚实边界（v1 不做清单）
+## 诚实边界（v2 增补后剩余清单）
 
-- 同步执行 only：无 `message/stream`（SSE）、无 push notifications、无 webhook。
-- 无续跑：携带 `message.taskId` 的 message 被拒（`-32001`）。
-- server 侧不产生 input-required：agent 同步跑完，只有 COMPLETED/FAILED/REJECTED 三种终局；client 侧能消费对端的 input-required。
-- in-memory task store：server 重启即丢（配 partial index 的 PG 任务库是显然的 v2 方向，记忆主线路线同款思路）。
-- 绑定 `127.0.0.1` only：生产部署需反代 + host 参数（v2）。
-- 无 AgentCard 签名验证：卡片是 self-report，克隆卡片只改 URL 的 shadowing 攻击 v1 无防御（trust-on-first-use 的已知风险）。
-- agent 跑在 handler 线程（cachedThreadPool daemon）。
+~~同步执行 only：无 `message/stream`（SSE）、无 push notifications、无 webhook~~（v2 已落：SSE / webhook / 续跑，2026-09-12）。
+~~无续跑：携带 `message.taskId` 的 message 被拒（`-32001`）~~（v2 已落：只续 input-required，终局任务 `-32602` 拒绝复活）。
+~~server 侧不产生 input-required：agent 同步跑完，只有 COMPLETED/FAILED/REJECTED 三种终局~~（v2 已落：`A2AInputRequiredException` 暂停 + state 存 store 续跑复用）。
+- in-memory task store：server 重启即丢（配 partial index 的 PG 任务库是显然的 v3 方向，记忆主线路线同款思路）。
+- 绑定 `127.0.0.1` only：生产部署需反代 + host 参数。
+- 无 AgentCard 签名验证：卡片是 self-report，克隆卡片只改 URL 的 shadowing 攻击 v1/v2 无防御（trust-on-first-use 的已知风险）。
+- agent 跑在 handler 线程（cachedThreadPool daemon）；SSE 流同样在 handler 线程上逐段写出，无背压。
+- webhook 推送无重试、无签名（接收方无法验证推送来自谁——伪造 webhook 比伪造卡片还容易）。
 - 未对真实第三方 A2A 实现做过互操作验证。
 
 ---
 
 ## 三段式收口
 
-**做对了什么**：双向 HTTP 落地零新依赖（JDK HttpClient/HttpServer），方言 contract 三原则（SERVER 分配 id、metadata 逃生舱、跳过不拒绝）全部有测试钉死；三层失败语义 + REJECTED/FAILED 分离 + loud refusal 让协议层的新方言干净；入站防线与出站 D5 对偶成对；170 处存量构造点零改动验证了 D6「换传输不改调用方」的承诺。
+**做对了什么**：双向 HTTP 落地零新依赖（JDK HttpClient/HttpServer），方言 contract 三原则（SERVER 分配 id、metadata 逃生舱、跳过不拒绝）全部有测试钉死；三层失败语义 + REJECTED/FAILED 分离 + loud refusal 让协议层的新方言干净；入站防线与出站 D5 对偶成对；170 处存量构造点零改动验证了 D6「换传输不改调用方」的承诺。v2 用同款纪律补上三能力（SSE 三段流、webhook 推送、input-required 续跑复用 state），且卡片广告诚实地同步翻转（none→v2），「续跑只续暂停任务、终局任务不可复活」把 loud refusal 精化成协议级语义。
 
-**缺什么**：第三方互操作零验证（说自家话 ≠ 和陌生人说话）；server 侧 input-required 无生成路径（长任务暂停语义单腿）；AgentCard 无签名验证（路由输入无信任根）；任务 store 无持久化；sendTask 同步契约的句柄化进化未启动。
+**缺什么**：第三方互操作零验证（说自家话 ≠ 和陌生人说话）；AgentCard 无签名验证（路由输入无信任根）；任务 store 无持久化；webhook 无签名无重试（比卡片还容易伪造）；sendTask 同步契约的句柄化进化未启动。
 
-**怎么做**：下一个证伪实验拉真实第三方对端（Google a2a-samples / Python a2a-sdk）做互操作往返，暴露方言偏差；input-required 的 server 侧生成等续跑契约（contextId + message history 落库）机制化后一起做，落在 Runtime 层暂停/恢复的对接点上；签名验证（JWS + JCS）在出现第二个可信对端需求时再投入。
+**怎么做**：下一个证伪实验拉真实第三方对端（Google a2a-samples / Python a2a-sdk）做互操作往返，暴露方言偏差；签名验证（JWS + JCS）在出现第二个可信对端需求时再投入；webhook 签名（HMAC + 时间戳）随推送消费者出现一起做。
 
 ---
 
