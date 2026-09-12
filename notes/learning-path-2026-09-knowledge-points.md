@@ -76,6 +76,8 @@
 
 **agent4j 对照**：`agent-observability` 已有 `RoutingModelClient` 骨架。E2 的真问题：路由信号从哪拿。
 
+**KP4 落定（2026-09-12 补档）**：E2 三配置对照实验（14 任务 × 校准价格）落定三层结论——①预判路由最便宜的直觉被推翻：pre-route $0.001226 > cascade $0.000409，盲升级 4 个深线程全价 premium 比「cheap 先试 + 3 次有据升级」贵 3 倍；②级联零缺陷：3 个坏 JSON 全被质量门拦下升级，交付 0 缺陷，验证比预判便宜且安全（Anthropic 路由 / GPT-5 auto 同路线）；③决策 25 落定：pre-call 信号归 `ModelRouter`（Budget/Complexity 两策略），post-call 质量信号归 `CascadeModelClient` 装饰器（`RuleBasedQualityGate` 三信号全客观可判），合成组装 `Observing(Cascade(Routing(Fallback(...))))`。策略族补齐：Budget 经济 / Complexity 内容 / Cascade 质量。详见 `experiment-e2-model-routing.md`。
+
 **自测**：说清判错代价不对称，以及为什么级联比预判安全。
 
 ### KP5 · Guardrails 三层论：三个时机，三种失败语义
@@ -119,7 +121,9 @@
 **关键认知**：
 - 五个健康指标：task completion rate / cost per task / latency P50·P95 / safety violation 计数 / 输出分布漂移。
 - 决策 22（不做 LLM-as-judge）的替代路径：规则断言 + 采样人审 + 黄金集回归；代价是覆盖不了开放式任务。
-- TurnTrace（A5）+ 修复后的 promptTokens = 评估体系最贵的部分（数据管道）已就绪，Moonlit M7 黄金集是第一个消费者。这项资产容易被自己低估。
+**agent4j 对照**：TurnTrace（A5）+ 修复后的 promptTokens = 评估体系最贵的部分（数据管道）已就绪，Moonlit M7 黄金集是第一个消费者。这项资产容易被自己低估。
+
+**KP7 落定（2026-09-12）**：在线监控这条腿补上——新包 `observability.health`：`HealthPipeline` 双订阅（`MetricsSink.onRun` 吃数值投影、`Consumer<AgentEvent>` 吃 `Done.finalAnswer` 内容投影）算五指标，`HealthReport` 逐指标带覆盖层标注（过程完成率≠结果完成率、0 成本=未知非免费、漂移=绊线非统计）。一手工程事实三条：①五指标必须拆两投影（无单一出口喂得饱）；②评估是「一次运行三投影」之外的第四投影；③漂移最小可行形态=内容载体+滚动基线（snapshot 是对账点，非幂等是特性）。诚实边界：窗口在内存、漂移只吃 DONE 事件、±30% 是启发式带非分布检验。详见 `experiment-kp7-online-evaluation.md`。
 
 **自测**：列出 agent4j 已有资产里哪些直接是评估原料。
 
@@ -131,6 +135,8 @@
 - 最大的坑是外部副作用：已发的消息、已扣的配额不能重放 → 工具幂等是分布式执行的前置条件。
 - 业界两条路线：durable execution as a service（Temporal 派）/ actor + event sourcing（Orleans 派）。
 - 单 JVM 的真天花板不是吞吐，是进程重启 = 执行中工具调用状态丢失。
+
+**KP8 地基盘点（2026-09-12）**：比旧自诊「完全空白」乐观——三层地基已在：①`FileCheckpointStore` 崩溃恢复经测试钉死（`EnterpriseTaskManagerTest.crashRecoveryFromCheckpointFiles`：新 RunManager + 同目录 + recover 后 prepare 恰好 1 次）；②三层幂等已写透（`stage-6-article-4-idempotency.md`：节点级/Run 级 cursor/副作用 idempotency key，框架管 Run 级、节点管副作用级）；③Webhook eventId 幂等占坑已在生产链路（Stage 13 D8 三件套）。真缺口两块：①间隙问题未落——「副作用已发生但 result 未写回 state」的窗口（`agent-platform-modules-map.md` §3 已识别，幂等键挂 ToolExecutor 层还是 Checkpoint 层答案不同）；②Temporal/Orleans 两条业界路线未对照（checkpoint 落盘 vs 事件溯源重放的语义差异）。补法：间隙问题做 E8 实验（杀进程于工具执行中，看恢复重放）；路线对照靠文献（不进实验）。
 
 **自测**：说清"checkpoint 落盘"与"可恢复执行"差在哪；agent4j 的工具是否全部幂等。
 
