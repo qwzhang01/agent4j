@@ -9,6 +9,10 @@ The current Maven version is `0.1.3`.
 
 ## [未发布]
 
+### Fixed
+
+- **kill -9 test is launcher-proof.** `KillNineCrashRecoveryTest` derived the child JVM's classpath from `java.class.path`, which only holds real paths when CLI Maven launched the test JVM — IntelliJ IDEA abbreviates long classpaths with a pathing jar/argfile deleted after the parent starts, so the forked child inherited a dangling path and died with `ClassNotFoundException: KillNineCrashRecoveryTest$Child` (CLI verify stayed green, hiding the break). The child classpath is now derived from `CodeSource` anchors — one anchor class per artifact in the child's real dependency closure (workflow classes/test-classes, agent-core, jackson core/databind/annotations/jsr310, slf4j api/simple): directory codeSources pass through, jar codeSources expand their whole versioned artifact dir (sources/javadoc excluded), with `java.class.path` as the fallback when no anchors resolve. Committed after v0.1.3 tag: test-only, published artifacts unaffected.
+
 ## [0.1.3] - 2026-09-12
 
 ### Added
