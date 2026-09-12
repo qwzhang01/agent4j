@@ -96,7 +96,7 @@ public class ProcessSandbox implements Sandbox {
             return runResult;
 
         } catch (Exception e) {
-            return SandboxResult.error("Sandbox error: " + e.getMessage());
+            return SandboxResult.sandboxFailure("Sandbox error: " + e.getMessage());
         } finally {
             // 5. Cleanup
             if (sandboxDir != null) {
@@ -205,7 +205,7 @@ public class ProcessSandbox implements Sandbox {
             }
 
         } catch (Exception e) {
-            return SandboxResult.error(label + " failed: " + e.getMessage());
+            return SandboxResult.sandboxFailure(label + " failed: " + e.getMessage());
         }
     }
 

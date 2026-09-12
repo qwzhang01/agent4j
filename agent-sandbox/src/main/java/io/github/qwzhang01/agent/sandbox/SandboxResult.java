@@ -71,6 +71,15 @@ public record SandboxResult(
         this(success, stdout, stderr, exitCode, timedOut, error, null);
     }
 
+    /**
+     * Legacy derivation, kept ONLY as the backward-compatibility floor
+     * (debt paid 2026-09-12): every in-repo producer now pins the kind
+     * explicitly through the typed factories; this prefix heuristic
+     * remains for external/historical construction sites so they keep
+     * compiling and behave identically. A tier that rewrites its error
+     * text still re-buckets here - which is exactly why in-repo code
+     * must not rely on it.
+     */
     private static SandboxResult.FailureKind deriveKind(boolean success, boolean timedOut, String error) {
         if (success) {
             return null;
@@ -95,8 +104,36 @@ public record SandboxResult(
         return new SandboxResult(true, stdout, stderr, 0, false, null, null);
     }
 
+    /**
+     * Untyped failure (compatibility path): the kind is derived from the
+     * error prefix. New code must prefer the typed factory
+     * {@link #error(String, FailureKind)} so classification never rides
+     * on a string prefix.
+     */
     public static SandboxResult error(String error) {
         return new SandboxResult(false, "", "", -1, false, error, null);
+    }
+
+    /**
+     * Typed failure: the producer states WHO died at the failure site,
+     * where it knows the answer. This is the debt-1 fix - classification
+     * is data from the producer, not a guess from the consumer.
+     */
+    public static SandboxResult error(String error, FailureKind kind) {
+        if (kind == null) {
+            throw new IllegalArgumentException("kind must not be null - use error(String) "
+                    + "for the derived compatibility path");
+        }
+        return new SandboxResult(false, "", "", -1, false, error, kind);
+    }
+
+    /**
+     * Typed sandbox-infrastructure failure: the sandbox machinery itself
+     * died (JVM spawn failure, temp-dir failure, executor crash).
+     * Retrying is pointless; collect a report.
+     */
+    public static SandboxResult sandboxFailure(String error) {
+        return error(error, FailureKind.SANDBOX_FAILURE);
     }
 
     public static SandboxResult timeout(String partialOutput) {
@@ -104,7 +141,22 @@ public record SandboxResult(
         return new SandboxResult(false, partialOutput, "", -1, true, "Execution timed out", null);
     }
 
+    /**
+     * Policy refusal carrying the typed kind explicitly: the block event
+     * is a design path (the escalation trigger), classified at the only
+     * place that knows it - the producer.
+     */
     public static SandboxResult blocked(String blockedClass) {
+        return new SandboxResult(false, "", "", -1, false,
+                "Blocked: access to " + blockedClass + " is not allowed",
+                FailureKind.BLOCKED_BY_POLICY);
+    }
+
+    /**
+     * Compatibility block factory (pre-typed shape): error text only,
+     * kind derived. Prefer {@link #blocked(String)}.
+     */
+    public static SandboxResult blockedCompat(String blockedClass) {
         return new SandboxResult(false, "", "", -1, false,
                 "Blocked: access to " + blockedClass + " is not allowed", null);
     }

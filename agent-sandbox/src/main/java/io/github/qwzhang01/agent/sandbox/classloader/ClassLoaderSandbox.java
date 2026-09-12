@@ -127,7 +127,7 @@ public class ClassLoaderSandbox implements Sandbox {
             }
 
         } catch (Exception e) {
-            return SandboxResult.error("Sandbox error: " + e.getMessage());
+            return SandboxResult.sandboxFailure("Sandbox error: " + e.getMessage());
         } finally {
             executor.shutdownNow();
         }

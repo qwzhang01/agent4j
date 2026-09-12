@@ -25,6 +25,7 @@ public class SandboxSpec {
     private final long memoryLimitBytes;
     private final List<String> blockedPackages;
     private final List<String> blockedClasses;
+    private final String runId;
 
     private SandboxSpec(Builder builder) {
         this.timeout = builder.timeout;
@@ -33,6 +34,7 @@ public class SandboxSpec {
         this.memoryLimitBytes = builder.memoryLimitBytes;
         this.blockedPackages = builder.blockedPackages;
         this.blockedClasses = builder.blockedClasses;
+        this.runId = builder.runId;
     }
 
     /**
@@ -84,6 +86,15 @@ public class SandboxSpec {
         return blockedClasses;
     }
 
+    /**
+     * Attribution key for run-scoped accounting (the escalation budget's
+     * ledger unit, debt-2 fix 2026-09-12). Null means "no attribution" -
+     * callers without a run identity fall back to instance-level budget.
+     */
+    public String getRunId() {
+        return runId;
+    }
+
     public static class Builder {
         private Duration timeout = Duration.ofSeconds(10);
         private String workingDirectory;
@@ -91,6 +102,7 @@ public class SandboxSpec {
         private long memoryLimitBytes = 256 * 1024 * 1024; // 256MB default
         private List<String> blockedPackages = defaultBlockedPackages();
         private List<String> blockedClasses = List.of();
+        private String runId;
 
         public Builder timeout(Duration timeout) {
             this.timeout = timeout;
@@ -119,6 +131,15 @@ public class SandboxSpec {
 
         public Builder blockedClasses(List<String> classes) {
             this.blockedClasses = classes;
+            return this;
+        }
+
+        /**
+         * Attribution key for run-scoped accounting (escalation budget).
+         * Null (default) = no attribution, instance-level budget applies.
+         */
+        public Builder runId(String runId) {
+            this.runId = runId;
             return this;
         }
 

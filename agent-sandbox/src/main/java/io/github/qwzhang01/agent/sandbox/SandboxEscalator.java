@@ -25,15 +25,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  * model writes is benign arithmetic / string manipulation. Only the rare dangerous
  * snippet triggers escalation, paying the JVM startup cost only when necessary.
  *
- * <h3>Escalation budget (熔断, KP9 thinking-question 2)</h3>
+ * <h3>Escalation budget (熔断, KP9 thinking-question 2 — per-run ledger, debt-2 fix 2026-09-12)</h3>
  * The optimistic loop's cost model breaks when the SAME caller keeps submitting
  * block-triggering code: every escalation pays a double compile + JVM startup
  * (1–2 s), so a chatty adversarial-or-just-buggy source turns the fast path into
- * a denial-of-wallet. {@link #DEFAULT_ESCALATION_BUDGET} caps lifetime
- * escalations per escalator instance; once spent, subsequent BLOCKED results are
- * returned as-is (fail-closed to the cheap refusal) instead of escalating. The
- * budget is per-instance by design — it budgets ONE caller's trust, not the
- * process's total.
+ * a denial-of-wallet. {@link #DEFAULT_ESCALATION_BUDGET} caps escalations per
+ * <b>attribution key</b>: when the {@link SandboxSpec spec} carries a
+ * {@code runId}, the budget is accounted PER RUN (one buggy run burning its own
+ * budget cannot dilute another run's — the per-caller trust this budget was
+ * designed to meter); a spec without a {@code runId} falls back to the
+ * pre-fix instance-level ledger so unattributed callers keep the old behavior.
+ * Once a key's budget is spent, subsequent BLOCKED results under that key are
+ * returned as-is (fail-closed to the cheap refusal) instead of escalating.
  *
  * <h3>Direct (UNTRUSTED / ADVERSARIAL / multi-tenant)</h3>
  * Route straight to the tier mandated by {@link SandboxPolicy#tierFor}. For
@@ -54,7 +57,7 @@ public class SandboxEscalator implements Sandbox {
 
     private static final Logger log = LoggerFactory.getLogger(SandboxEscalator.class);
 
-    /** Default lifetime escalation budget per escalator instance. */
+    /** Default lifetime escalation budget per attribution key. */
     public static final int DEFAULT_ESCALATION_BUDGET = 3;
 
     private final Sandbox fastSandbox;
@@ -63,7 +66,18 @@ public class SandboxEscalator implements Sandbox {
     private final SandboxPolicy policy;
     private final boolean multiTenant;
     private final int escalationBudget;
-    private final AtomicInteger escalationsUsed = new AtomicInteger();
+
+    /**
+     * Per-runId ledger (debt-2 fix): one budget per attributed run. The
+     * map grows with the number of distinct runIds seen — bounded by
+     * caller behavior, same class of state as {@code activeRuns} in
+     * RunManager (long-lived service hosts both).
+     */
+    private final java.util.concurrent.ConcurrentHashMap<String, AtomicInteger> budgetByRunId =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Fallback ledger for unattributed specs (no runId): the pre-fix instance-level behavior. */
+    private final AtomicInteger unattributedEscalations = new AtomicInteger();
 
     // ============ Constructors ============
 
@@ -160,6 +174,10 @@ public class SandboxEscalator implements Sandbox {
      * <p>
      * Other failures (timeout, error, success) are returned as-is —
      * they are not escalation signals.
+     * <p>
+     * Budget accounting is keyed by {@code spec.getRunId()} (debt-2 fix):
+     * an attributed run burns only its own budget; an unattributed spec
+     * falls back to the shared instance-level counter.
      */
     private SandboxResult optimisticExecute(String className, String code, SandboxSpec spec) {
         SandboxResult fast = fastSandbox.execute(className, code, spec);
@@ -168,13 +186,17 @@ public class SandboxEscalator implements Sandbox {
             return fast;
         }
         if (isBlocked(fast)) {
-            if (escalationsUsed.incrementAndGet() > escalationBudget) {
-                log.warn("[SandboxEscalator] Escalation budget ({} for '{}') spent; returning the BLOCKED result as-is",
-                        escalationBudget, className);
+            String runId = spec != null ? spec.getRunId() : null;
+            boolean withinBudget = tryAcquireBudget(runId);
+            if (!withinBudget) {
+                log.warn("[SandboxEscalator] Escalation budget ({} for '{}', key={}) spent; "
+                                + "returning the BLOCKED result as-is",
+                        escalationBudget, className, runId != null ? runId : "<instance>");
                 return fast;
             }
-            log.warn("[SandboxEscalator] Fast tier blocked '{}' ({}); escalating (used {}/{})",
-                    className, fast.error(), escalationsUsed.get(), escalationBudget);
+            log.warn("[SandboxEscalator] Fast tier blocked '{}' ({}); escalating (used {}/{} for key={})",
+                    className, fast.error(), usedFor(runId), escalationBudget,
+                    runId != null ? runId : "<instance>");
             SandboxResult escalated = strongSandbox.execute(className, code, spec);
             log.debug("[SandboxEscalator] Strong tier result for '{}': success={}",
                     className, escalated.success());
@@ -182,6 +204,42 @@ public class SandboxEscalator implements Sandbox {
         }
         // Timeout or other error: return the fast-tier result as-is
         return fast;
+    }
+
+    // ============ Budget ledger ============
+
+    /**
+     * Reserve one escalation slot for the given attribution key.
+     * Runs {@code budget} or fewer escalations; beyond that, fail-closed.
+     * The counter only counts REAL escalations (a rejected attempt
+     * leaves it untouched) — the metric stays honest for monitoring.
+     */
+    private boolean tryAcquireBudget(String runId) {
+        if (runId == null || runId.isBlank()) {
+            return acquireSlot(unattributedEscalations);
+        }
+        AtomicInteger used = budgetByRunId.computeIfAbsent(runId, k -> new AtomicInteger());
+        return acquireSlot(used);
+    }
+
+    /** Bounded claim via CAS: every successful claim is a real escalation. */
+    private boolean acquireSlot(AtomicInteger counter) {
+        int current;
+        do {
+            current = counter.get();
+            if (current >= escalationBudget) {
+                return false;
+            }
+        } while (!counter.compareAndSet(current, current + 1));
+        return true;
+    }
+
+    /** Escalations consumed so far for the given attribution key. */
+    private int usedFor(String runId) {
+        if (runId == null || runId.isBlank()) {
+            return unattributedEscalations.get();
+        }
+        return budgetByRunId.getOrDefault(runId, new AtomicInteger()).get();
     }
 
     /**
@@ -233,13 +291,26 @@ public class SandboxEscalator implements Sandbox {
         return multiTenant;
     }
 
-    /** Escalations consumed so far against this instance's budget. */
+    /**
+     * Escalations consumed against the instance-level fallback ledger
+     * (unattributed specs). Compatibility view of the pre-fix counter —
+     * monitoring dashboards that read this keep working. For run-scoped
+     * observability use {@link #getEscalationsUsed(String)}.
+     */
     public int getEscalationsUsed() {
-        return escalationsUsed.get();
+        return unattributedEscalations.get();
     }
 
-    /** Lifetime escalation cap this instance was built with. */
-    public int getEscalationBudget() {
-        return escalationBudget;
+    /** Escalations consumed so far for the given runId (0 if never seen). */
+    public int getEscalationsUsed(String runId) {
+        if (runId == null || runId.isBlank()) {
+            return unattributedEscalations.get();
+        }
+        return budgetByRunId.getOrDefault(runId, new AtomicInteger()).get();
+    }
+
+    /** Distinct attributed runs this escalator has seen (ledger size). */
+    public int getTrackedRunCount() {
+        return budgetByRunId.size();
     }
 }

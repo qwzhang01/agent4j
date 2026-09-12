@@ -125,9 +125,11 @@ public final class CommandRunner {
                     "command exited with code " + exitCode);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return SandboxResult.error("command execution interrupted: " + e.getMessage());
+            return SandboxResult.error("command execution interrupted: " + e.getMessage(),
+                    SandboxResult.FailureKind.SANDBOX_FAILURE);
         } catch (IOException e) {
-            return SandboxResult.error("command failed to start: " + e.getMessage());
+            return SandboxResult.error("command failed to start: " + e.getMessage(),
+                    SandboxResult.FailureKind.SANDBOX_FAILURE);
         }
     }
 
