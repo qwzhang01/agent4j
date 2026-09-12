@@ -37,8 +37,8 @@ import java.util.Objects;
  * <p>
  * When the delegate is {@code null}, the enforcer operates on {@code state.getMessages()}
  * directly (same passthrough-then-enforce semantics).
- *
- * <h3>Usage</h3>
+ * <p>
+ * <b>Usage:</b>
  * <pre>{@code
  * ContextWindowBudget budget = ContextWindowBudget.window128k();
  * ContextBuilder base = new MyMemoryContextBuilder();
