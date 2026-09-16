@@ -9,5 +9,6 @@
 | `architecture-stage-*.md` | 各阶段设计蓝图 |
 | `stage-*-article-*.md` | 学习文章（企业 / 酒馆 / 编码 / 运营） |
 | `discussion-*.md` / `experiment-*.md` | 讨论沉淀与实验记录 |
+| `todo-standard-harness-roadmap.md` | 标准 Harness 分阶段生产化 ToDo（当前主线） |
 
 新朋友请先读仓库根目录 [README.md](../README.md) 和 [docs/getting-started.md](../docs/getting-started.md)。
