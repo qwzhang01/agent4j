@@ -120,6 +120,21 @@ public class OpenAiModelClient implements ModelClient {
     public OpenAiModelClient(String baseUrl, String apiKey, String defaultModel, Duration timeout,
                              Flavor flavor, ReasoningConfig defaultReasoning,
                              Map<String, Object> extraBody) {
+        this(baseUrl, apiKey, defaultModel, timeout, flavor, defaultReasoning, extraBody,
+                HttpClient.newBuilder()
+                        .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
+                        .build());
+    }
+
+    /**
+     * Stage 6.1 contract-test seam: injectable HttpClient. Package-private —
+     * production code must not touch this; it exists so
+     * {@code ModelClientContract} implementations can pin the client's
+     * mapping logic against a canned HTTP layer without a live vendor.
+     */
+    OpenAiModelClient(String baseUrl, String apiKey, String defaultModel, Duration timeout,
+                      Flavor flavor, ReasoningConfig defaultReasoning,
+                      Map<String, Object> extraBody, HttpClient httpClient) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.apiKey = apiKey;
         this.defaultModel = defaultModel;
@@ -129,9 +144,7 @@ public class OpenAiModelClient implements ModelClient {
         this.extraBody = extraBody == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new java.util.LinkedHashMap<>(extraBody));
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
-                .build();
+        this.httpClient = httpClient;
         log.debug("OpenAiModelClient initialized: baseUrl={}, flavor={}, model={}",
                 this.baseUrl, this.flavor, defaultModel);
     }

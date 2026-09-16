@@ -12,6 +12,17 @@ package io.github.qwzhang01.agent.plugin;
  * - Loading is isolated: if onLoad throws, other plugins are unaffected.
  * - Plugins are self-managing: they know what to register and unregister.
  * <p>
+ * Security boundary (Stage 6.4, stated honestly — no implied isolation):
+ * an SPI plugin runs IN-PROCESS with full JVM permissions. The framework
+ * isolates registration surfaces (per-plugin tool namespaces, manifest
+ * permission gates) and rolls back registrations on failure — it does NOT
+ * sandbox code execution, file access, network access, or thread
+ * creation. Only install plugins whose CODE you trust as much as your
+ * own. External jars get classloader isolation via
+ * {@link PluginJarLoader} (dependency hygiene, still not confinement).
+ * Real confinement needs a module layer / process boundary — a
+ * deliberately later-stage item.
+ * <p>
  * Use {@link ToolPlugin} for plugins that register tools.
  */
 public interface Plugin {

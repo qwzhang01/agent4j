@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.UnaryOperator;
@@ -58,9 +57,16 @@ import java.util.function.UnaryOperator;
  * <p>
  * v2: {@code message/stream} (SSE), {@code tasks/pushNotification/set}
  * (webhook on terminal / input-required), and {@code message.taskId}
- * continues an {@code input-required} task. Still in-memory, 127.0.0.1,
- * text parts only. The advertised card always reports
+ * continues an {@code input-required} task. Text parts only, 127.0.0.1
+ * binding. The advertised card always reports
  * {@link A2ACapabilities#v2()}.
+ * <p>
+ * Stage 6.3: tasks live in a pluggable {@link A2ATaskStore} (default
+ * in-memory; plug Redis/Postgres behind the same surface to survive
+ * restarts — {@code beginTask} resumes from the stored serialized
+ * {@link AgentState}). Optional bearer auth gates every route except the
+ * public agent card; push webhooks are HMAC-signed when a shared secret is
+ * configured (see {@link A2ASecurity}).
  */
 public class HttpA2AServer implements AutoCloseable {
 
@@ -72,7 +78,9 @@ public class HttpA2AServer implements AutoCloseable {
     private final Agent agent;
     private final UnaryOperator<String> inboundSanitizer;  // nullable = raw passthrough
     private final int requestedPort;
-    private final Map<String, StoredTask> tasks = new ConcurrentHashMap<>();
+    private final A2ATaskStore taskStore;
+    private final String bearerToken;           // null = auth off (dev/tests only)
+    private final String pushSharedSecret;      // null = unsigned pushes (legacy)
 
     private HttpServer server;
     private ExecutorService executor;
@@ -95,10 +103,30 @@ public class HttpA2AServer implements AutoCloseable {
      */
     public HttpA2AServer(AgentCard card, Agent agent, int port,
                          UnaryOperator<String> inboundSanitizer) {
+        this(card, agent, port, inboundSanitizer,
+                new InMemoryA2ATaskStore(), null, null);
+    }
+
+    /**
+     * Stage 6.3 full form: pluggable task store + bearer auth + signed pushes.
+     *
+     * @param taskStore       where tasks live (plug Redis/Postgres here)
+     * @param bearerToken     required Authorization token; null disables auth
+     * @param pushSharedSecret HMAC secret for push notifications; null sends
+     *                        legacy unsigned pushes
+     */
+    public HttpA2AServer(AgentCard card, Agent agent, int port,
+                         UnaryOperator<String> inboundSanitizer,
+                         A2ATaskStore taskStore,
+                         String bearerToken,
+                         String pushSharedSecret) {
         this.card = Objects.requireNonNull(card, "card must not be null");
         this.agent = Objects.requireNonNull(agent, "agent must not be null");
         this.requestedPort = port;
         this.inboundSanitizer = inboundSanitizer;
+        this.taskStore = taskStore != null ? taskStore : new InMemoryA2ATaskStore();
+        this.bearerToken = bearerToken;
+        this.pushSharedSecret = pushSharedSecret;
     }
 
     // ============ Lifecycle ============
@@ -147,6 +175,18 @@ public class HttpA2AServer implements AutoCloseable {
 
     private void handle(HttpExchange exchange) throws IOException {
         try {
+            // Stage 6.3: bearer gate before anything else (agent.json stays
+            // public — it is the discovery surface, carrying no task data).
+            if (bearerToken != null) {
+                String path0 = exchange.getRequestURI().getPath();
+                if (!WELL_KNOWN_PATH.equals(path0)) {
+                    String presented = exchange.getRequestHeaders().getFirst("Authorization");
+                    if (!A2ASecurity.bearerMatches(presented, bearerToken)) {
+                        respond(exchange, 401, plainError("unauthorized"));
+                        return;
+                    }
+                }
+            }
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod().toUpperCase();
             if (WELL_KNOWN_PATH.equals(path)) {
@@ -223,7 +263,7 @@ public class HttpA2AServer implements AutoCloseable {
     // ============ message/send ============
 
     private ObjectNode handleSend(JsonNode params) {
-        StoredTask stored = acceptAndRun(params, null);
+        A2ATaskStore.StoredA2ATask stored = acceptAndRun(params, null);
         return toTaskJson(stored);
     }
 
@@ -233,7 +273,7 @@ public class HttpA2AServer implements AutoCloseable {
      * JSON-RPC id is not replayed on the stream — the events ARE the result.
      */
     private void handleStream(HttpExchange exchange, JsonNode id, JsonNode params) throws IOException {
-        StoredTask working;
+        A2ATaskStore.StoredA2ATask working;
         try {
             working = beginTask(params);
         } catch (ProtocolError e) {
@@ -251,7 +291,7 @@ public class HttpA2AServer implements AutoCloseable {
             }
             writeSse(out, "status", A2AJson.taskJson(working.taskId(), working.contextId(),
                     A2ATaskStatus.WORKING, null, List.of()));
-            StoredTask done = finishTask(working, working.pendingText());
+            A2ATaskStore.StoredA2ATask done = finishTask(working, working.pendingText());
             writeSse(out, "artifact", toTaskJson(done));
             writeSse(out, "status", toTaskJson(done));
             out.flush();
@@ -267,12 +307,12 @@ public class HttpA2AServer implements AutoCloseable {
         if (url.isBlank()) {
             throw new ProtocolError(-32602, "params.pushNotificationConfig.url is required");
         }
-        StoredTask existing = tasks.get(idNode.asText());
+        A2ATaskStore.StoredA2ATask existing = taskStore.find(idNode.asText()).orElse(null);
         if (existing == null) {
             return null;
         }
-        StoredTask updated = existing.withPushUrl(url);
-        tasks.put(updated.taskId(), updated);
+        A2ATaskStore.StoredA2ATask updated = existing.withPushUrl(url);
+        taskStore.save(updated);
         notifyPush(updated);
         ObjectNode ok = A2AJson.mapper().createObjectNode();
         ok.put("id", updated.taskId());
@@ -284,7 +324,7 @@ public class HttpA2AServer implements AutoCloseable {
      * Parse / sanitize / allocate (or resume) without running the agent yet.
      * Used by SSE so we can emit {@code working} before {@code agent.run}.
      */
-    private StoredTask beginTask(JsonNode params) {
+    private A2ATaskStore.StoredA2ATask beginTask(JsonNode params) {
         JsonNode message = params.path("message");
         if (!message.isObject()) {
             throw new ProtocolError(-32602, "params.message is required");
@@ -301,7 +341,7 @@ public class HttpA2AServer implements AutoCloseable {
         AgentState state;
         String pushUrl;
         if (continuationId != null && !continuationId.isNull()) {
-            StoredTask existing = tasks.get(continuationId.asText());
+            A2ATaskStore.StoredA2ATask existing = taskStore.find(continuationId.asText()).orElse(null);
             if (existing == null) {
                 throw new ProtocolError(-32001, "task not found: " + continuationId.asText());
             }
@@ -312,7 +352,7 @@ public class HttpA2AServer implements AutoCloseable {
             }
             taskId = existing.taskId();
             contextId = existing.contextId();
-            state = existing.state() == null ? new AgentState() : existing.state();
+            state = deserializeState(existing.serializedState());
             pushUrl = existing.pushUrl();
         } else {
             taskId = UUID.randomUUID().toString();
@@ -329,31 +369,34 @@ public class HttpA2AServer implements AutoCloseable {
         } catch (RuntimeException e) {
             log.warn("[A2A] inbound sanitizer rejected task {} on agent '{}': {}",
                     taskId, card.name(), e.getMessage());
-            StoredTask rejected = new StoredTask(taskId, contextId, A2ATaskStatus.REJECTED,
-                    "rejected by inbound policy: " + e.getMessage(), List.of(), state, pushUrl, null);
-            tasks.put(taskId, rejected);
+            A2ATaskStore.StoredA2ATask rejected = new A2ATaskStore.StoredA2ATask(taskId,
+                    contextId, A2ATaskStatus.REJECTED,
+                    "rejected by inbound policy: " + e.getMessage(), List.of(),
+                    serializeState(state), pushUrl, null, null, null);
+            taskStore.save(rejected);
             notifyPush(rejected);
             return rejected.withPendingText(null);
         }
-        StoredTask skeleton = new StoredTask(taskId, contextId, A2ATaskStatus.WORKING,
-                null, List.of(), state, pushUrl, text);
-        tasks.put(taskId, skeleton);
+        A2ATaskStore.StoredA2ATask skeleton = new A2ATaskStore.StoredA2ATask(taskId,
+                contextId, A2ATaskStatus.WORKING, null, List.of(),
+                serializeState(state), pushUrl, text, null, null);
+        taskStore.save(skeleton);
         return skeleton;
     }
 
-    private StoredTask acceptAndRun(JsonNode params, OutputStream ignored) {
-        StoredTask begun = beginTask(params);
+    private A2ATaskStore.StoredA2ATask acceptAndRun(JsonNode params, OutputStream ignored) {
+        A2ATaskStore.StoredA2ATask begun = beginTask(params);
         if (begun.status() == A2ATaskStatus.REJECTED) {
             return begun;
         }
         return finishTask(begun, begun.pendingText());
     }
 
-    private StoredTask finishTask(StoredTask begun, String text) {
+    private A2ATaskStore.StoredA2ATask finishTask(A2ATaskStore.StoredA2ATask begun, String text) {
         if (begun.status() == A2ATaskStatus.REJECTED) {
             return begun;
         }
-        AgentState state = begun.state() == null ? new AgentState() : begun.state();
+        AgentState state = deserializeState(begun.serializedState());
         try {
             // Stage 1.2 (harness roadmap): every A2A task runs inside a
             // RunContext so trace/run correlation survives the protocol hop.
@@ -392,21 +435,30 @@ public class HttpA2AServer implements AutoCloseable {
         }
     }
 
-    private StoredTask store(StoredTask begun, A2ATaskStatus status, String message,
-                             List<A2AArtifact> artifacts, AgentState state) {
-        StoredTask stored = new StoredTask(begun.taskId(), begun.contextId(), status,
-                message, artifacts, state, begun.pushUrl(), null);
-        tasks.put(stored.taskId(), stored);
+    private A2ATaskStore.StoredA2ATask store(A2ATaskStore.StoredA2ATask begun,
+                                             A2ATaskStatus status, String message,
+                                             List<A2AArtifact> artifacts, AgentState state) {
+        A2ATaskStore.StoredA2ATask stored = new A2ATaskStore.StoredA2ATask(begun.taskId(),
+                begun.contextId(), status, message, artifacts, serializeState(state),
+                begun.pushUrl(), null, begun.createdAt(), null);
+        taskStore.save(stored);
         notifyPush(stored);
         return stored;
     }
 
-    private ObjectNode toTaskJson(StoredTask task) {
+    private ObjectNode toTaskJson(A2ATaskStore.StoredA2ATask task) {
         return A2AJson.taskJson(task.taskId(), task.contextId(), task.status(),
                 task.statusMessage(), task.artifacts());
     }
 
-    private void notifyPush(StoredTask task) {
+    /**
+     * Fire the push webhook on terminal / input-required states. When a
+     * pushSharedSecret is configured the push is SIGNED ({@code X-Signature}
+     * / {@code X-Timestamp} / {@code X-Nonce}) so receivers can reject
+     * forgeries and replays with {@link A2ASecurity#verifyPushSignature};
+     * without it we send the legacy unsigned body (tests / trusted nets).
+     */
+    private void notifyPush(A2ATaskStore.StoredA2ATask task) {
         if (task.pushUrl() == null || task.pushUrl().isBlank()) {
             return;
         }
@@ -414,12 +466,20 @@ public class HttpA2AServer implements AutoCloseable {
             return;
         }
         try {
-            java.net.http.HttpClient.newHttpClient().send(
+            String body = toTaskJson(task).toString();
+            java.net.http.HttpRequest.Builder request =
                     java.net.http.HttpRequest.newBuilder(java.net.URI.create(task.pushUrl()))
                             .timeout(java.time.Duration.ofSeconds(5))
                             .header("Content-Type", "application/json")
-                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(toTaskJson(task).toString()))
-                            .build(),
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body));
+            if (pushSharedSecret != null) {
+                A2ASecurity.PushEnvelope signed =
+                        A2ASecurity.signPush(task.taskId(), body, pushSharedSecret);
+                request.header("X-Signature", signed.signature())
+                        .header("X-Timestamp", signed.timestamp())
+                        .header("X-Nonce", signed.nonce());
+            }
+            java.net.http.HttpClient.newHttpClient().send(request.build(),
                     java.net.http.HttpResponse.BodyHandlers.discarding());
         } catch (Exception e) {
             log.warn("[A2A] push to {} failed for task {}: {}", task.pushUrl(), task.taskId(), e.toString());
@@ -444,7 +504,7 @@ public class HttpA2AServer implements AutoCloseable {
         if (idNode == null || idNode.isNull()) {
             throw new ProtocolError(-32602, "params.id is required");
         }
-        StoredTask task = tasks.get(idNode.asText());
+        A2ATaskStore.StoredA2ATask task = taskStore.find(idNode.asText()).orElse(null);
         if (task == null) {
             return null;  // mapped to -32001 by the caller
         }
@@ -453,6 +513,30 @@ public class HttpA2AServer implements AutoCloseable {
     }
 
     // ============ Internal ============
+
+    /**
+     * AgentState is a plain Jackson POJO (no static toJson/fromJson) — the
+     * store holds it as a JSON string so a remote store (Redis/Postgres)
+     * needs no framework classes on its side.
+     */
+    private static String serializeState(AgentState state) {
+        try {
+            return state == null ? null : A2AJson.mapper().writeValueAsString(state);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("agent state not serializable", e);
+        }
+    }
+
+    private static AgentState deserializeState(String serialized) {
+        if (serialized == null || serialized.isBlank()) {
+            return new AgentState();
+        }
+        try {
+            return A2AJson.mapper().readValue(serialized, AgentState.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("stored agent state not parseable", e);
+        }
+    }
 
     /** Server fills the card url with its bound address unless the card carries a real one. */
     private String wellKnownUrlOverride() {
@@ -494,18 +578,6 @@ public class HttpA2AServer implements AutoCloseable {
 
         int code() {
             return code;
-        }
-    }
-
-    private record StoredTask(String taskId, String contextId, A2ATaskStatus status,
-                              String statusMessage, List<A2AArtifact> artifacts,
-                              AgentState state, String pushUrl, String pendingText) {
-        StoredTask withPushUrl(String url) {
-            return new StoredTask(taskId, contextId, status, statusMessage, artifacts, state, url, pendingText);
-        }
-
-        StoredTask withPendingText(String text) {
-            return new StoredTask(taskId, contextId, status, statusMessage, artifacts, state, pushUrl, text);
         }
     }
 }

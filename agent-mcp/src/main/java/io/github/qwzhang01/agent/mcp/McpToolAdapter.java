@@ -72,6 +72,10 @@ public class McpToolAdapter implements Tool {
     public String execute(JsonNode arguments) throws ToolException {
         log.debug("Calling MCP tool '{}' on server '{}'",
                 schema.name(), client.getDescriptor().name());
+        // Stage 6.2: validate arguments against the server-declared schema
+        // BEFORE the wire — malformed args must fail here, not at the remote
+        // server (correctness + injection surface).
+        McpSchemaValidator.validateOrThrow(schema.inputSchema(), arguments);
         try {
             return client.callTool(schema.name(), arguments);
         } catch (IOException e) {

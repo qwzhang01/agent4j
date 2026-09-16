@@ -18,10 +18,10 @@
 
 | 能力 | v1 实际有什么 |
 |------|----------------|
-| JAR 插件 ClassLoader / 多版本共存 | Java SPI 加载 / 卸载 / 重载，同一 classpath |
+| 插件多版本共存 / module layer 禁闭 | SPI 插件加载 / 卸载 / 重载；外部 JAR 加载（`PluginJarLoader`：SHA-256 checksum 门 + 每 jar 独立 URLClassLoader framework-first + SPI 注册域隔离 + `PluginManifest` 宿主侧权限声明，仅 tools 权限有可执行注册面）；SPI 插件进程内全 JVM 权限（框架只隔离注册面，不是代码执行沙箱） |
 | Docker / WASM 沙箱 | `ClassLoaderSandbox` + `ProcessSandbox` |
-| MCP SSE | MCP **stdio** 客户端；可连官方 filesystem server |
-| A2A 卡片 / webhook 签名、持久化任务存储、第三方对端互操作 | A2A **HTTP** 双向：`HttpA2AClient`（`message/send` / `tasks/get` / 卡片发现 / `message/stream` SSE / webhook 推送 / input-required 续跑）+ `HttpA2AServer`（把 Agent 包成端点，含入站净化防线）；任务存储在内存，互操作仅自家两端回环验证 |
+| MCP Streamable-HTTP、完整 OAuth 客户端流、resources/prompts 能力 | MCP 客户端：stdio + HTTP/SSE transport（2024-11-05 SSE 方言）；server 信任三级（TRUSTED/RESTRICTED/UNTRUSTED，缺席即拒）+ allowlist + 宿主认证适配器（bearer/staticToken/refreshable）+ 入口 schema 结构校验；可连官方 filesystem server |
+| A2A 卡片签名、外部第三方对端互操作 | A2A **HTTP** 双向：`HttpA2AClient`（`message/send` / `tasks/get` / 卡片发现 / `message/stream` SSE / webhook 推送 / input-required 续跑）+ `HttpA2AServer`（Agent 包成端点：入站净化 + 可选 bearer 门（恒时比对）+ HMAC-SHA256 签名 webhook 推送 + 5 分钟时间窗 + nonce 重放缓存）；任务存储走可插拔 `A2ATaskStore` 接口（默认内存实现，可换持久化 store），共享 store 跨 server 重启任务存活已测，lease 语义支撑跨实例认领；互操作验证 = 自家两端回环 + JDK HttpServer 模拟第三方言，无外部实现 |
 | 真 Git | `agent-coding` 是工作区 + 补丁 + 命令白名单 + 有界修复环，不封装 Git |
 | OpenTelemetry SDK | `agent-observability` 自管指标 / 预算 / 路由 / 评估 / 版本三元组 |
 | Mini VERL 训练 | `agent-trace-export` 导出轨迹 JSONL 与 DPO 偏好，训练环不在库内 |

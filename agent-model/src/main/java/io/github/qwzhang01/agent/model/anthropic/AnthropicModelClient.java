@@ -113,6 +113,22 @@ public class AnthropicModelClient implements ModelClient {
     public AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
                                 String defaultModel, int defaultMaxTokens, Duration timeout,
                                 ReasoningConfig defaultReasoning, Map<String, Object> extraBody) {
+        this(baseUrl, apiKey, apiVersion, defaultModel, defaultMaxTokens, timeout,
+                defaultReasoning, extraBody, HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .build());
+    }
+
+    /**
+     * Stage 6.1 contract-test seam: injectable HttpClient. Package-private —
+     * production code must not touch this; it exists so
+     * {@code ModelClientContract} implementations can pin the client's
+     * mapping logic against a canned HTTP layer without a live vendor.
+     */
+    AnthropicModelClient(String baseUrl, String apiKey, String apiVersion,
+                         String defaultModel, int defaultMaxTokens, Duration timeout,
+                         ReasoningConfig defaultReasoning, Map<String, Object> extraBody,
+                         HttpClient httpClient) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.apiKey = apiKey;
         this.apiVersion = apiVersion;
@@ -122,9 +138,12 @@ public class AnthropicModelClient implements ModelClient {
         this.extraBody = extraBody == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(extraBody));
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        this.httpClient = httpClient;
+        // Key hygiene (roadmap 6.1): log the endpoint identity, never the
+        // key. "Configured for <url>" is the audit line; the key itself must
+        // not appear in any ordinary log statement.
+        log.debug("AnthropicModelClient initialized: baseUrl={}, model={}, version={}",
+                this.baseUrl, this.defaultModel, this.apiVersion);
     }
 
     /**
@@ -473,6 +492,13 @@ public class AnthropicModelClient implements ModelClient {
         // for the E3 billing shape (fullPrompt, cachedTokens).
         java.util.concurrent.atomic.AtomicReference<ModelResponse.TokenUsage> promptUsage =
                 new java.util.concurrent.atomic.AtomicReference<>();
+        // Streaming tool-use accumulation (Stage 6.1 review finding): Anthropic
+        // streams a tool call as content_block_start(tool_use, id+name) ->
+        // N x content_block_delta(input_json_delta.partial_json) ->
+        // content_block_stop. Without per-index accumulation the fragments
+        // were dropped and Done carried NO tool calls — the whole chain was
+        // dead. Blocks are keyed by the SSE "index" field.
+        Map<Integer, ToolBlockAcc> activeToolBlocks = new java.util.concurrent.ConcurrentHashMap<>();
 
         // Parse the SSE: pairs of "event: xxx" / "data: {...}" lines
         return lines
@@ -516,7 +542,11 @@ public class AnthropicModelClient implements ModelClient {
                                     yield null;
                                 } else if ("input_json_delta".equals(deltaType)) {
                                     // Accumulate partial JSON for tool input
-                                    // (handled in content_block_stop)
+                                    // (assembled in content_block_stop)
+                                    ToolBlockAcc acc = activeToolBlocks.get(event.path("index").asInt(-1));
+                                    if (acc != null) {
+                                        acc.json().append(delta.path("partial_json").asText(""));
+                                    }
                                     yield null;
                                 }
                                 // signature_delta and future block kinds: ignore
@@ -527,14 +557,33 @@ public class AnthropicModelClient implements ModelClient {
                                 JsonNode block = event.path("content_block");
                                 String blockType = block.path("type").asText("");
                                 if ("tool_use".equals(blockType)) {
-                                    // Tool call started - will be completed in content_block_stop
-                                    yield null;
+                                    // Register the block: id + name arrive here,
+                                    // the input JSON arrives as deltas next.
+                                    activeToolBlocks.put(event.path("index").asInt(-1),
+                                            new ToolBlockAcc(block.path("id").asText(),
+                                                    block.path("name").asText(),
+                                                    new StringBuilder()));
                                 }
                                 yield null;
                             }
 
                             case "content_block_stop" -> {
-                                // Block complete - no action needed for text blocks
+                                // Block complete: assemble the accumulated tool
+                                // call (id + name + concatenated partial JSON).
+                                ToolBlockAcc acc = activeToolBlocks.remove(event.path("index").asInt(-1));
+                                if (acc != null) {
+                                    JsonNode args;
+                                    try {
+                                        args = acc.json().length() > 0
+                                                ? mapper.readTree(acc.json().toString())
+                                                : mapper.createObjectNode();
+                                    } catch (Exception parseEx) {
+                                        log.warn("Malformed accumulated tool input for {}: {}",
+                                                acc.name(), parseEx.getMessage());
+                                        args = mapper.createObjectNode();
+                                    }
+                                    toolCallsBuilder.add(ToolCall.of(acc.id(), acc.name(), args));
+                                }
                                 yield null;
                             }
 
@@ -630,5 +679,11 @@ public class AnthropicModelClient implements ModelClient {
             case "max_tokens" -> "length";
             default -> "stop";
         };
+    }
+
+    // ============ Stage 6.1 streaming tool-use accumulation ============
+
+    /** Per-block accumulator for streaming tool calls, keyed by SSE index. */
+    private record ToolBlockAcc(String id, String name, StringBuilder json) {
     }
 }

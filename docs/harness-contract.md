@@ -118,7 +118,8 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 ### 2.4 Model 边界
 
 - `ModelClient` 端口 + 装饰器族（Retry/Timeout/Fallback/StructuredOutput/Routing/Cascade）。
-- **gap**：ModelClient 无 RunContext 视角（谁在调、什么预算）；provider 错误无统一分类（认证/限流/参数/服务端/网络/解析/取消）。Stage 6.1。
+- Provider 错误统一分类已落地（Stage 6.1，2026-09-16）：`ProviderCallException` 九类 taxonomy（AUTH_ERROR/RATE_LIMITED/INVALID_REQUEST/MODEL_ERROR/NETWORK_ERROR/PARSE_ERROR/CANCELED/TIMEOUT/UNKNOWN），`fromLegacy`/`toLegacy` 双向兼容；`ModelClientContract` 契约测试基类每 Provider 8 契约（同步/Tool Call/流式/流式 Tool Call 累积 + 4 错误映射，双 Provider 16/16）；`ResilientModelClient` 装饰器三合一（Retry-After 退避 + 熔断器 + CredentialRotation SPI，caller 侧错误不进熔断）；`ProviderCapabilities` 按 Flavor 声明厂商差异。**修复真 bug**：Anthropic 流式 tool use 从不累积（content_block/delta 解析了但 toolCalls 被丢弃）。
+- **gap**：ModelClient 无 RunContext 视角（谁在调、什么预算）——预算自动接线属 Stage 7.2。
 
 ### 2.5 Memory 边界
 
@@ -134,6 +135,14 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 - `SandboxPolicy`（risk -> tier 映射）+ 升级预算（per-runId）+ `TierLimits`（tier x risk -> 十字段限制表，Stage 4.2）。
 - PROCESS 层边界已硬化（Stage 4.1，2026-09-16）：className 白名单、canonicalize containment、env allowlist（默认不含 HOME）、每流 1MB 输出截断、超时进程树击杀、guard 源码注入（guest 内 SecurityManager 双阶段安装，host 类空间永不加载 guard）。
 - **gap**：OS 级隔离（DOCKER adapter、UID/GID、seccomp、cgroup、网络 namespace）未做，macOS 本地开发无 Docker daemon 是 v1 既定边界；ADVERSARIAL `requiresApproval` 已入 TierLimits 表但审批接线留 Stage 8。
+
+### 2.7 Plugin 边界
+
+- 安全边界诚实声明（Stage 6.4，2026-09-16，`Plugin` javadoc）：SPI 插件进程内运行、持全 JVM 权限，框架隔离的是**注册面**（per-plugin 工具命名空间、manifest 门控、失败回滚），不是代码执行沙箱；外部 JAR 的 classloader 隔离是依赖卫生（插件依赖不可遮蔽框架类），不是禁闭——真正的禁闭需 module layer 或进程边界（后续 Stage）。
+- `PluginManifest`（宿主侧 declare-to-grant）：tools/model/memory/security 四权限 + sha256 + source，由宿主声明、**绝不从插件工件自身解析**（恶意 jar 会撒谎）；缺省即拒绝。
+- `PluginJarLoader`：SHA-256 checksum 门在 classloader 构建之前（篡改 jar 零类加载）；per-jar URLClassLoader framework-first；SPI 注册文件域隔离（loader 的 getResources 只见 jar 自己的 META-INF/services，宿主 classpath 插件不泄漏进 provider 列表）；manifest 名与 descriptor 名一致性校验。
+- `PluginRegistry`（Stage 6.4 重写）：per-plugin 锁 + ConcurrentHashMap（不同插件并行、同插件串行）；load 失败回滚（onLoad 抛出前注册的 tool 全清）；manifest tools=false 在注册边界拒绝；命名空间隔离（插件 unregister 只能删自己注册过的名字，敌意插件删不掉宿主工具）；unload 后旧 tool 不可调用（测试锚定）。
+- **gap**：model/memory/security 权限已声明但无可执行注册面（对应 registry 面不存在，属 Stage 8+）；插件自有线程/连接框架无法回收（javadoc 声明）；checksum 是摘要不是 GPG 签名。
 
 ---
 
@@ -151,8 +160,12 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4，2026-09-16：approval 包五态协议 + PersistentApprovalService + WAITING_APPROVAL 状态 + 重启扫描恢复候选；agent-security Tool 侧接线留 Stage 4/8） |
 | Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [x] done（Stage 4.1/4.2/4.4，2026-09-16：className 白名单 + containment + env allowlist + CappedBuffer + 进程树击杀 + guard 注入 + TierLimits 限制表；红队 11 例全绿，八条攻击全 BLOCKED） |
 | Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [x] done（Stage 5.2，2026-09-16：MemoryGovernance 门面——RunContext 派生 scope 白名单不可伪造 + purpose 强制 + MemoryAccessAuditRecord 审计 + RedactionPolicy 默认 rawPlusMasked 脱敏 + purgeForUser/Tenant 删除传播 DeletionPropagation 可验证；MemoryAdmin 字段保真修复，updateContent/setTtl 不再丢 lifecycle/embedding/双时间轴，两测试锚定） |
-| 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor）；Model/Memory/Approval/Sandbox 侧映射 Stage 5 |
+| 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor），Provider 边界已映射九类 taxonomy（Stage 6.1，ProviderCallException，fromLegacy/toLegacy 双向兼容）；Memory/Approval/Sandbox 侧映射 Stage 7 |
 | 统一生命周期事件 | agent-core | 事件含 runId/step/attempt | — | — | [x] done（Stage 1.3，2026-09-16：RunEvent sealed 族 8 事件 + SCHEMA_VERSION=1；发射接线延后到 Stage 5 遥测统一） |
+| Provider Contract | agent-model | 契约测试双 Provider 全绿 | 4 类错误映射到九类 taxonomy | — | [x] done（Stage 6.1，2026-09-16：ModelClientContract 基类 8 契约/Provider 16/16，含流式 tool call 累积；Anthropic 流式 tool use 真 bug 修复——content_block 链解析但 toolCalls 从不累积；ResilientModelClient 三合一 + ProviderCapabilities；Key 卫生 16 处日志核查干净） |
+| MCP 生产边界 | agent-mcp | SSE transport 连通 | 未信任 server 拒绝 | — | [x] done（Stage 6.2，2026-09-16：SseTransport 2024-11-05 方言 5/5 含 JDK HttpServer 第三方言互操作；McpServerTrust/McpAllowlist 三级缺席即拒 7/7；McpAuthConfig 宿主认证适配器；McpSchemaValidator 接入 McpToolAdapter 8/8；gap：Streamable-HTTP、完整 OAuth 流、resources/prompts 能力声明） |
+| A2A 认证与持久化 | agent-mcp | bearer 200 / 签名 push 可验证 | 错 bearer 401 / 篡改签名拒 | 共享 store 跨重启任务存活 | [x] done（Stage 6.3，2026-09-16：A2ATaskStore + StoredA2ATask + InMemoryA2ATaskStore（renewLease 过期租约真 bug 修复）+ A2ASecurity（恒时 bearer + HMAC-SHA256 + 时间窗 + 重放缓存）+ HttpA2AServer 7 参构造器接线；测试 21/21，agent-mcp 120/120；gap：无 PKI 卡签名、互操作为回环+模拟方言） |
+| Plugin 生产边界 | agent-plugin | manifest 授权后加载注册 | 未授权/篡改/错名拒绝 | — | [x] done（Stage 6.4，2026-09-16：PluginManifest 宿主侧 declare-to-grant + PluginJarLoader（checksum 门先于 classloader + per-jar classloader + SPI 域隔离）+ PluginRegistry（并发 per-plugin 锁 + 失败回滚 + 命名空间隔离）；PluginJarLoaderTest 5（真实 javac+jar）+ PluginRegistryHardeningTest 8；agent-plugin 42/42；gap：仅 tools 权限有注册面，checksum 非 GPG） |
 
 ### 3.2 模块依赖与禁止依赖矩阵
 
@@ -204,7 +217,7 @@ agent-spring-boot-starter -> core, model
 | 工具越权 | GovernedToolExecutor + Permission | agent-security 测试 9 文件 |
 | 重复副作用 | 幂等键 visitOrdinal + cursor protection | E8（7 断言）+ KillNineCrashRecoveryTest |
 | 敏感数据泄露 | SanitizerGuardrail 出口净化 | SanitizerGuardrailTest（3）+ RedTeamHarness |
-| MCP/A2A 入站 | A2A 入站净化器（throwing -> rejected，任务先拒再跑） | HttpA2AServerProtocolTest |
+| MCP/A2A 入站 | A2A 入站净化器（throwing -> rejected，任务先拒再跑）；A2A bearer 门（恒时比对）+ HMAC-SHA256 签名 push + 重放窗（Stage 6.3）；MCP server 信任三级缺席即拒（Stage 6.2） | HttpA2AServerProtocolTest + HttpA2AServerSecurityTest（4：401/200、公开卡、签名可验证、重启存活）+ A2ASecurityTest（8）+ McpServerTrust/McpAllowlist 7/7 |
 | LLM 红队 | RedTeamHarness（Mock 攻击者） | demo 已跑通；真实 LLM 红队留给 Moonlit 黄金集 |
 | 沙箱资源洪泛/逃逸矩阵 | guest guard（FilePermission/SocketPermission 白名单 + 输出截断 + 进程树击杀） | [x] ProcessSandboxRedTeamTest（11）：八条攻击全 BLOCKED + UNRESTRICTED 诚实 NOT-BLOCKED 记录；DOCKER 层留 Stage 4.3 |
 
@@ -214,8 +227,8 @@ agent-spring-boot-starter -> core, model
 |------|------|------|
 | PostgreSQL | `AGENT4J_PG_TEST=true` 21/21（PgMemoryStore 契约测试） | [-] 已有；checkpoint RunStore 复用同一模式 |
 | 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例），TierLimits 已落 DOCKER/MICROVMM 结构性限制表 | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
-| MCP | stdio 官方 filesystem server 已验 | [-] 第三方 server 互操作 Stage 6.2 |
-| A2A | 自家两端回环（零 mock 真实 socket） | [-] 第三方对端 Stage 6.3 |
+| MCP | stdio 官方 filesystem server 已验；SSE 方言 + JDK HttpServer 模拟对端 5/5 | [-] Stage 6.2 完成；官方参考实现互操作待补 |
+| A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；认证/签名/store 已落 | [-] Stage 6.3 完成；外部第三方 A2A 实现互操作待补 |
 | OpenTelemetry | 无 SDK | [ ] Stage 7.1 Span Adapter |
 | GPG/Central 发布 | 流程已定（RELEASING.md） | [x] 已有 |
 
@@ -234,7 +247,7 @@ agent-spring-boot-starter -> core, model
 | agent-core | RunContext / 统一事件 | [x] | Stage 1（2026-09-16）：run 包 10 文件 + RunContextTest 7 / RunEventTest 2 / ContextAwareLoopTest 5 / ParallelCancelTest 1；发射接线见 Stage 5 |
 | agent-core | ToolDefinition / ToolResult / FailureTaxonomy | [x] | Stage 2（2026-09-16）：contract 包 + 统一校验链 + ToolResult 信封；outputSchema 校验与 Model 侧失败映射留 Stage 5 |
 | agent-model | 装饰器族 Retry/Timeout/Fallback/Structured/Routing/Cascade | [x] | E2/E3 实验验证 |
-| agent-model | Provider 错误统一分类 | [ ] | Stage 6.1 |
+| agent-model | Provider 错误统一分类 | [x] | Stage 6.1（2026-09-16）：ProviderCallException 九类 taxonomy + ModelClientContract 16/16 + ResilientModelClient（Retry-After/熔断/凭证轮换）+ ProviderCapabilities；Anthropic 流式 tool use 累积真 bug 修复 |
 | agent-workflow | 图运行时 + 7 节点 + Checkpoint | [x] | workflow 9 测试文件 + E8 |
 | agent-workflow | kill-9 跨进程恢复 | [x] | KillNineCrashRecoveryTest 真 fork 子进程 |
 | agent-workflow | RunStore / 幂等账本 / 持久化 Approval | [x] | Stage 3（2026-09-16）：durable 包 + approval 包 + DurableRunManager/PersistentApprovalService + DurableExecutionTest 14 / SchedulerDurabilityTest 3；账本接 GraphRuntime 与 Tool 侧接线留 Stage 8 |
@@ -247,13 +260,13 @@ agent-spring-boot-starter -> core, model
 | agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | Stage 4（2026-09-16）：12 测试文件 91/91（红队 11 + TierLimits 7 新增） |
 | agent-sandbox | DOCKER/MICROVM/WASM | [ ] | 占位，诚实报告零保证；TierLimits 已落结构性限制表（STRUCTURAL_TIERS），实现待 Linux CI |
 | agent-mcp | MCP stdio 客户端 | [x] | 可连官方 filesystem server |
-| agent-mcp | A2A HTTP 双向 + v2 SSE/推送/续跑 | [-] | 79/79，但无第三方对端验证 |
-| agent-mcp | MCP HTTP/SSE Transport | [ ] | Stage 6.2 |
+| agent-mcp | A2A HTTP 双向 + v2 SSE/推送/续跑 | [x] | 120/120（Stage 6.3，2026-09-16：bearer 门 + HMAC-SHA256 签名 push + 重放窗 + A2ATaskStore 可插拔存储 + lease 跨实例语义 + 共享 store 重启存活；互操作为回环 + JDK HttpServer 模拟方言，外部第三方对端仍缺——记 [-] 于 §3.5） |
+| agent-mcp | MCP HTTP/SSE Transport | [-] | Stage 6.2（2026-09-16）：SseTransport 2024-11-05 SSE 方言 + server 信任三级 + 宿主认证适配器 + schema 校验接入；Streamable-HTTP 方言未实现（诚实 gap） |
 | agent-chat | 房间引擎（选人/拼上下文/流式） | [x] | 16 测试文件，Moonlit 166/166 消费验证 |
 | agent-observability | 五指标 HealthPipeline | [x] | E7 19/19 |
 | agent-observability | OTel Span / Micrometer | [ ] | Stage 7 |
 | agent-spring-boot-starter | 自动配置 | [-] | Profile（secure/test/unsafe）Stage 8.2 |
-| agent-plugin | SPI 加载/卸载/重载 | [x] | 无 JAR ClassLoader 隔离（v1 边界） |
+| agent-plugin | SPI 加载/卸载/重载 | [x] | Stage 6.4（2026-09-16）：PluginJarLoader（checksum 门 + per-jar classloader + SPI 域隔离）+ PluginManifest 宿主权限声明 + registry 并发/回滚/命名空间隔离，42/42（PluginJarLoaderTest 5 真实 javac+jar + HardeningTest 8）；多版本共存与 module layer 禁闭未做（v1 边界） |
 
 > 四态矩阵的可追溯纪律：每个 `[-]` 或 `[ ]` 条目都必须能指到 roadmap 的具体 Stage 条目；每个 `[x]` 都必须能指到具体测试类。本表与 roadmap 互为索引：roadmap 管"什么时候做"，矩阵管"现在是什么"。
 

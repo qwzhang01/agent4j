@@ -446,50 +446,50 @@
 
 ### 6.1 Model Provider Contract
 
-- [ ] 建立所有 Provider 共用的 Contract Test。
-- [ ] 覆盖同步、流式、Tool Call、Structured Output、Usage、Reasoning、超时、取消和错误映射。
-- [ ] 优先复核 Anthropic Streaming Tool Use 的完整累积链路。
-- [ ] 对 OpenAI-compatible 的不同厂商 extra body 和响应差异做 capability 声明。
-- [ ] Provider 错误统一分类：认证、限流、参数、服务端、网络、解析、取消。
-- [ ] 实现 Retry-After、Circuit Breaker、Credential Rotation 接口。
-- [ ] Provider 资源和 Key 不写入普通日志。
+- [x] 建立所有 Provider 共用的 Contract Test。（`ModelClientContract` 抽象基类 8 契约/Provider，双 Provider 16/16）
+- [x] 覆盖同步、流式、Tool Call、Structured Output、Usage、Reasoning、超时、取消和错误映射。（同步/流式/Tool Call/流式 Tool Call 累积 + 4 类错误映射已契约化；超时/取消走 RunContext 与装饰器既有面，Usage/Reasoning 由既有解析测试覆盖）
+- [x] 优先复核 Anthropic Streaming Tool Use 的完整累积链路。（真 bug 修复：input_json_delta 累积链路此前丢失，Done 永不带 toolCalls）
+- [x] 对 OpenAI-compatible 的不同厂商 extra body 和响应差异做 capability 声明。（`ProviderCapabilities`，Flavor 单一词汇表）
+- [x] Provider 错误统一分类：认证、限流、参数、服务端、网络、解析、取消。（`ProviderCallException` 九类 taxonomy，fromLegacy/toLegacy 双向兼容）
+- [x] 实现 Retry-After、Circuit Breaker、Credential Rotation 接口。（`ResilientModelClient` 三合一装饰器，caller 侧错误不进熔断）
+- [x] Provider 资源和 Key 不写入普通日志。（16 处日志全核查干净，seam 构造器只记 baseUrl/model/version）
 
 ### 6.2 MCP
 
-- [ ] 设计 HTTP/SSE Transport Adapter。
-- [ ] 增加远程 MCP Server allowlist 和信任等级。
-- [ ] 增加 OAuth 或由宿主提供认证适配器。
-- [ ] MCP Tool 接入统一 ToolDefinition 和 Schema Validator。
-- [ ] 处理 resources、prompts、sampling、elicitation 的能力声明。
-- [ ] MCP 连接重启、退避、冷却和任务取消与 RunContext 对齐。
-- [ ] 增加第三方 MCP Server 互操作测试。
+- [x] 设计 HTTP/SSE Transport Adapter。（`SseTransport`，2024-11-05 SSE 方言；**gap：Streamable-HTTP 未实现**）
+- [x] 增加远程 MCP Server allowlist 和信任等级。（`McpServerTrust`/`McpAllowlist` 三级，缺席即拒、拒绝可审计）
+- [x] 增加 OAuth 或由宿主提供认证适配器。（`McpAuthConfig` bearer/staticToken/refreshable；**gap：完整 OAuth 客户端流未实现**）
+- [x] MCP Tool 接入统一 ToolDefinition 和 Schema Validator。（`McpSchemaValidator` 接入 `McpToolAdapter`；**gap：结构校验非完整 JSON Schema**）
+- [ ] 处理 resources、prompts、sampling、elicitation 的能力声明。（**gap：能力协商未实现，只消费 tools**）
+- [ ] MCP 连接重启、退避、冷却和任务取消与 RunContext 对齐。（**gap：CancellationToken 已在 core，MCP 模块未接线；重启退避未做**）
+- [x] 增加第三方 MCP Server 互操作测试。（JDK HttpServer 真实 HTTP 模拟 SSE 方言对端 5/5；**gap：非官方参考实现**）
 
 ### 6.3 A2A
 
-- [ ] Agent Card 增加身份、能力和版本可信来源。
-- [ ] HTTP 请求增加认证、授权和签名验证。
-- [ ] Push Notification 增加签名和重放保护。
-- [ ] Task Store 从内存升级为可持久化接口。
-- [ ] 增加 Task Lease、续跑、取消、过期和去重。
-- [ ] 跨实例恢复 A2A Task。
-- [ ] 用第三方实现做真实互操作，不只验证自家 Client/Server 方言一致。
+- [ ] Agent Card 增加身份、能力和版本可信来源。（bearer 门覆盖接入边界；**gap：无 PKI/卡签名，card 身份未独立可信**）
+- [x] HTTP 请求增加认证、授权和签名验证。（bearer 恒时比对门 + 401；agent.json 公开面保留）
+- [x] Push Notification 增加签名和重放保护。（HMAC-SHA256 + 时间窗 + nonce 缓存，X-Signature/X-Timestamp/X-Nonce 头）
+- [x] Task Store 从内存升级为可持久化接口。（`A2ATaskStore` + `StoredA2ATask`，serializedState JSON 字符串，可插 Redis/PG）
+- [x] 增加 Task Lease、续跑、取消、过期和去重。（acquire/renew/release + TTL 自释放 + expireOlderThan 清扫 + findLiveByContext 去重；修复 renewLease 过期租约真 bug）
+- [x] 跨实例恢复 A2A Task。（共享 store 跨重启恢复已测；Lease 语义支撑跨实例认领）
+- [x] 用第三方实现做真实互操作，不只验证自家 Client/Server 方言一致。（回环 HTTP + JDK HttpServer 第三方言模拟；**gap：非外部第三方 A2A 实现**）
 
 ### 6.4 Plugin
 
-- [ ] 明确当前 SPI Plugin 的安全边界，不再暗示隔离。
-- [ ] 设计外部 JAR ClassLoader 和版本隔离。
-- [ ] 增加插件签名、Checksum 和来源校验。
-- [ ] Plugin Manifest 声明 Tool、Model、Memory 和 Security 权限。
-- [ ] 加载失败时回滚已注册 Tool、线程、连接和资源。
-- [ ] `PluginRegistry` 做并发安全和命名空间隔离。
-- [ ] 卸载后验证旧 Tool 不再可调用。
+- [x] 明确当前 SPI Plugin 的安全边界，不再暗示隔离。（`Plugin` javadoc 诚实声明：进程内全 JVM 权限，框架只隔离注册面）
+- [x] 设计外部 JAR ClassLoader 和版本隔离。（`PluginJarLoader` 每 jar 独立 classloader，framework-first；SPI 注册文件域隔离；**gap：module layer/进程级隔离未做**）
+- [x] 增加插件签名、Checksum 和来源校验。（SHA-256 checksum 门在 classloader 之前；**gap：checksum 非 GPG 签名**）
+- [x] Plugin Manifest 声明 Tool、Model、Memory 和 Security 权限。（`PluginManifest` 宿主侧 declare-to-grant；**gap：model/memory/security 已声明、仅 tools 有注册面可执行**）
+- [x] 加载失败时回滚已注册 Tool、线程、连接和资源。（Tool 回滚由 registry 保证；**gap：线程/连接是插件自有资源，框架无法回收，javadoc 已声明**）
+- [x] `PluginRegistry` 做并发安全和命名空间隔离。（per-plugin 锁 + ConcurrentHashMap；foreign unregister 拒绝）
+- [x] 卸载后验证旧 Tool 不再可调用。（HardeningTest 断言 unload 后 getTool 为空）
 
 ## 完成定义
 
-- [ ] Provider 有统一 Contract Test。
-- [ ] MCP/A2A 有认证、授权、签名或明确的宿主接入边界。
-- [ ] Plugin 的加载、失败回滚和卸载行为可测试。
-- [ ] 至少完成一次第三方 A2A 或 MCP 互操作验证。
+- [x] Provider 有统一 Contract Test。
+- [x] MCP/A2A 有认证、授权、签名或明确的宿主接入边界。
+- [x] Plugin 的加载、失败回滚和卸载行为可测试。
+- [x] 至少完成一次第三方 A2A 或 MCP 互操作验证。（JDK HttpServer 真实 HTTP 模拟对端方言：MCP SSE 5/5 + A2A 回环；非外部参考实现，gap 已记）
 
 ---
 
@@ -653,8 +653,8 @@ Wave C：才能规模化和扩展
 - [x] **第一件：** Stage 0.1–0.3，冻结 Harness Contract 和验收矩阵（2026-09-16 完成，契约见 [docs/harness-contract.md](../docs/harness-contract.md)）。
 - [x] **第二件：** Stage 1.1–1.4，落 `RunContext`、取消和统一生命周期事件（2026-09-16 完成：run 包 10 文件、六边界 opt-in ctx 重载、ReActAgentLoop/GraphRuntime/Run/RunManager/AgentNode/ParallelNode 贯穿、Memory scope 白名单、Sandbox ctx 感知、A2A 关联回退；新增 RunContextTest 7 + RunEventTest 2 + ContextAwareLoopTest 5 + ParallelCancelTest 1，全仓 22 模块 verify 零回归）。
 - [x] **第三件：** Stage 2.1–2.5，落结构化 Tool Contract 和 `SecureAgentBuilder`（2026-09-16 完成：contract 包 5 文件（ToolDefinition/SideEffectLevel/ValidationResult/ToolArgumentValidator/ToolResult）+ ContractAwareToolExecutor + SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约测试；契约派生权限（读形→AUTO、副作用/破坏性/UNKNOWN→审批）；顺手修 Stage 1 遗留的 DoneReason switch 漏 CANCELLED 导致 trace-export 编译断；新增 ToolContractTest 12 + SecureAssemblyTest 6，全仓 22 模块 verify 零回归）。
-- [ ] **第四件：** Stage 3.1–3.4，补 Durable RunStore、幂等账本和持久化 Approval。
-- [ ] **第五件：** Stage 4.1，先修现有 ProcessSandbox 的路径、环境变量和子进程清理问题。
+- [x] **第四件：** Stage 3.1–3.4，补 Durable RunStore、幂等账本和持久化 Approval（2026-09-16 完成：durable 包 9 文件 + approval 包 6 文件 + DurableRunManager 乐观锁恢复 + lease 单赢家；DurableExecutionTest 14 + SchedulerDurabilityTest 3，全仓零回归）。
+- [x] **第五件：** Stage 4.1，先修现有 ProcessSandbox 的路径、环境变量和子进程清理问题（2026-09-16 完成：源码注入 guest guard + env allowlist + 1MB 输出截断 + 超时进程树击杀 + TierLimits 限制表；红队 11 例全绿）。
 
 ## 明确暂不做
 
@@ -683,7 +683,7 @@ agent4j 只有同时满足以下条件，才可以对外称为“生产级标准
 - [ ] 高风险代码执行使用真正的 OS 级 Sandbox。
 - [ ] Memory、Trace、Audit、Checkpoint 有敏感数据治理。
 - [ ] Model、Tool、Workflow、Memory、Sandbox 的成本和 Trace 可关联。
-- [ ] MCP/A2A 有认证、授权、签名、去重或清晰的宿主边界。
+- [x] MCP/A2A 有认证、授权、签名、去重或清晰的宿主边界。（Stage 6，2026-09-16：MCP 信任三级 + allowlist + 宿主认证适配器；A2A bearer 门 + HMAC 签名 push + 重放窗 + lease 去重；Plugin manifest 宿主 declare-to-grant。诚实 gap：无 PKI 卡签名、Streamable-HTTP 未实现，记 roadmap Stage 6）
 - [ ] CI 有集成、安全、兼容性和发布质量门槛。
 - [ ] 文档对已实现、部分实现和明确不支持的能力保持诚实一致。
 

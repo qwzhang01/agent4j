@@ -11,13 +11,13 @@
 |------------|------|------------|
 | `agent-core` | 接口与数据：`ChatMessage`、`ModelClient`、`Tool`、`Agent`、`AgentLoop` | 几乎所有模块 |
 | `agent-model` | `MockModelClient`；OpenAI-compatible / Anthropic 客户端；Retry / Timeout / Fallback / StructuredOutput 装饰器 | 需要真实或 Mock 模型的模块与示例 |
-| `agent-plugin` | Java SPI 插件加载 / 卸载 / 重载（**无** JAR ClassLoader 多版本） | 自进化 Tool、`PluginExample` |
+| `agent-plugin` | SPI 插件加载 / 卸载 / 重载 + 外部 JAR 加载（checksum 门、每 jar 独立 classloader、manifest 权限声明、注册回滚、命名空间隔离）；**无**多版本共存 / module layer 禁闭 | 自进化 Tool、`PluginExample` |
 | `agent-sandbox` | ClassLoader 沙箱 + Process 沙箱（**无** Docker / WASM） | `agent-coding`、沙箱示例 |
 | `agent-workflow` | 图运行时、7 种节点、Checkpoint | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列 | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
-| `agent-mcp` | MCP stdio 客户端 + A2A 双向：进程内客户端、`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get` / `message/stream` SSE / webhook 推送 / input-required 续跑）、`HttpA2AServer`（Agent 包装成端点，入站净化）。任务存储在内存，无卡片 / webhook 签名，无第三方对端验证 | `agent-orchestrator`、MCP / A2A 示例 |
+| `agent-mcp` | MCP 客户端（stdio + HTTP/SSE transport，server 信任等级 / allowlist / 宿主认证适配器 / schema 校验）+ A2A 双向：`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get` / `message/stream` SSE / webhook 推送 / input-required 续跑）、`HttpA2AServer`（Agent 包装成端点：入站净化 + 可选 bearer 门 + HMAC 签名推送 + 重放窗 + 可插拔 `A2ATaskStore`）。无 PKI 卡签名；互操作验证为回环 + JDK HttpServer 模拟方言 | `agent-orchestrator`、MCP / A2A 示例 |
 | `agent-orchestrator` | Supervisor / Worker / 并行派发 | 多 Agent 示例 |
 | `agent-channel` | 身份、共享会话、任务接力、Ambient | `agent-product`、频道示例 |
 | `agent-product` | YAML Agent 定义、模板、Prompt 版本、Webhook、DAG | 声明式 / Webhook 示例 |
