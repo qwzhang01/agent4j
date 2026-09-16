@@ -28,12 +28,14 @@
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
 | `agent-observability` | 指标（Prometheus 文本 / JSONL sink）、五维预算、路由、评估（黄金集 + 在线五指标 / 采样 / 版本对照 / 漂移告警 / 统一报告）、版本三元组、ops 事件总线 | 可观测示例 |
 | `agent-otel-export` | RunEvent → OTel span 薄壳（`agent.run`/`agent.step`/`agent.model`/`agent.tool`）；SDK 仅测试域，不进核心 | OTel 示例 |
-| `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
+| `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + profile 感知 `AgentFactory`（Stage 8.2：`agent4j.profile` 默认 secure——治理装配自动接；test 同栈自动放行；unsafe 显式裸奔）+ 启动高风险配置检查（SECURE 矛盾即炸启动）+ 六面健康检查 + 优雅停机协调器 + 配置版本。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
 | `examples` | 可运行示例（见 `examples/README.md`） | 无（消费以上模块） |
 
 企业 / 酒馆 / 编码是**同一 Runtime 上的三个领域 Profile**，不是三套框架。
 
 最小接入：`agent-core` + `agent-model`。图、治理、记忆按需加。Spring Boot 应用可再加 `agent-spring-boot-starter`（core / model 仍无 Spring）。
+
+**JDBC 存储驱动约定**：`JdbcRunStore` / `JdbcRunLeases` / `JdbcSideEffectLedger` / `JdbcCheckpointStore` / `JdbcTaskQueue` / `JdbcApprovalStore` 只面向 `java.sql` 接口编程，框架不绑定任何数据库——生产部署自带相应 JDBC 驱动（如 PostgreSQL）并装配连接工厂即可，换库不改代码。`com.h2database:h2` 仅以 `test` scope 存在于仓库内三个模块的测试 JVM，用于分布式存储契约测试，不会进入任何使用方的传递依赖。
 
 ## 角色引擎接线（Moonlit / SillyTavern 一类）
 

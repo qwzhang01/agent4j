@@ -267,7 +267,7 @@ agent-spring-boot-starter -> core, model
 | agent-chat | 房间引擎（选人/拼上下文/流式） | [x] | 16 测试文件，Moonlit 166/166 消费验证 |
 | agent-observability | 五指标 HealthPipeline | [x] | E7 19/19 |
 | agent-observability | OTel Span / Prometheus 出口 | [x] | Stage 7（2026-09-16）：agent-otel-export span adapter（SDK 仅 test scope，D9）+ PrometheusTextSink 零依赖 0.0.4 + JsonlMetricsSink + PersistentRunRegistry + BudgetedModelClient/ToolExecutor 预算自动接线 + online 包（OnlineMetrics/OnlineSampler/VersionComparator/DriftDetector/UnifiedEvalReport）+ ops 包（OpsEventBus/OpsEventFactories/AnomalyLocalizer），模块 271/271；gap：Micrometer adapter、Memory/Sandbox/MCP/A2A span 未做 |
-| agent-spring-boot-starter | 自动配置 | [-] | Profile（secure/test/unsafe）Stage 8.2 |
+| agent-spring-boot-starter | 自动配置 + 生产 Profile | [x] | Stage 8.2（2026-09-16）：`agent4j.profile` 三档（secure 默认/test/unsafe）+ AgentFactory 三档装配（SECURE/TEST 走 SecureAgentBuilder，UNSAFE 裸装配点名）+ HighRiskConfigCheck 启动分级检查（SECURE+auto-approve=HIGH 阻断启动）+ AgentHealthIndicator 六面（absent≠unhealthy）+ GracefulShutdownCoordinator（gate→有界 drain→straggler cancel）+ config-version；29/29；gap：budget/trace 自动装配 bean、非 model 五面 starter 侧指示器未做（8.3 候选） |
 | agent-plugin | SPI 加载/卸载/重载 | [x] | Stage 6.4（2026-09-16）：PluginJarLoader（checksum 门 + per-jar classloader + SPI 域隔离）+ PluginManifest 宿主权限声明 + registry 并发/回滚/命名空间隔离，42/42（PluginJarLoaderTest 5 真实 javac+jar + HardeningTest 8）；多版本共存与 module layer 禁闭未做（v1 边界） |
 
 > 四态矩阵的可追溯纪律：每个 `[-]` 或 `[ ]` 条目都必须能指到 roadmap 的具体 Stage 条目；每个 `[x]` 都必须能指到具体测试类。本表与 roadmap 互为索引：roadmap 管"什么时候做"，矩阵管"现在是什么"。

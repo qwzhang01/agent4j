@@ -13,6 +13,7 @@ import java.util.Map;
  * <pre>
  * agent4j:
  *   enabled: true
+ *   profile: secure      # secure | test | unsafe (default secure)
  *   model:
  *     provider: openai   # openai | mock
  *     api-key:
@@ -31,6 +32,12 @@ import java.util.Map;
  *   call-timeout:
  *     enabled: false
  *     duration: 30s
+ *   approval:
+ *     auto-approve: false  # true = test-grade; HIGH finding under secure
+ *   shutdown:
+ *     drain-timeout: 30s
+ *   config-version:
+ *     value: ""            # app-declared, lands in health/ops output
  * </pre>
  * Core runtime modules stay Spring-free. This starter only wires a
  * {@link io.github.qwzhang01.agent.core.client.ModelClient} and an
@@ -43,6 +50,13 @@ public class AgentProperties {
      * Whether auto-configuration is enabled. Defaults to {@code true}.
      */
     private boolean enabled = true;
+
+    /**
+     * Runtime profile (Stage 8.2): {@code secure} | {@code test} |
+     * {@code unsafe}. Defaults to {@code secure} — governance is the
+     * default; raw is opt-in by name.
+     */
+    private AgentProfile profile = AgentProfile.SECURE;
 
     /**
      * Model client settings (provider, endpoint, default model).
@@ -59,12 +73,35 @@ public class AgentProperties {
      */
     private final CallTimeout callTimeout = new CallTimeout();
 
+    /**
+     * Approval wiring for the secure profile (Stage 8.2).
+     */
+    private final Approval approval = new Approval();
+
+    /**
+     * Graceful shutdown settings (Stage 8.2).
+     */
+    private final Shutdown shutdown = new Shutdown();
+
+    /**
+     * Runtime config version declaration (Stage 8.2).
+     */
+    private final ConfigVersion configVersion = new ConfigVersion();
+
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public AgentProfile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(AgentProfile profile) {
+        this.profile = profile == null ? AgentProfile.SECURE : profile;
     }
 
     public Model getModel() {
@@ -77,6 +114,18 @@ public class AgentProperties {
 
     public CallTimeout getCallTimeout() {
         return callTimeout;
+    }
+
+    public Approval getApproval() {
+        return approval;
+    }
+
+    public Shutdown getShutdown() {
+        return shutdown;
+    }
+
+    public ConfigVersion getConfigVersion() {
+        return configVersion;
     }
 
     /**
@@ -300,6 +349,72 @@ public class AgentProperties {
 
         public void setDuration(Duration duration) {
             this.duration = duration;
+        }
+    }
+
+    /**
+     * Approval wiring (Stage 8.2 secure profile). Default is deny-on-
+     * absence: without an explicit approval service, side-effect tools
+     * are denied — the secure stance. {@code auto-approve=true} flips to
+     * the test-grade stance and is a HIGH finding under SECURE.
+     */
+    public static class Approval {
+
+        /**
+         * Auto-approve side-effect tools (test-grade). Default false.
+         */
+        private boolean autoApprove = false;
+
+        public boolean isAutoApprove() {
+            return autoApprove;
+        }
+
+        public void setAutoApprove(boolean autoApprove) {
+            this.autoApprove = autoApprove;
+        }
+    }
+
+    /**
+     * Graceful shutdown (Stage 8.2): gate + bounded drain + straggler
+     * cancel.
+     */
+    public static class Shutdown {
+
+        /**
+         * Drain timeout for in-flight runs during graceful shutdown.
+         */
+        private Duration drainTimeout = Duration.ofSeconds(30);
+
+        public Duration getDrainTimeout() {
+            return drainTimeout;
+        }
+
+        public void setDrainTimeout(Duration drainTimeout) {
+            this.drainTimeout = drainTimeout;
+        }
+    }
+
+    /**
+     * Runtime config version (Stage 8.2 "提供运行时配置版本和热更新边
+     * 界"): an app-declared version string for the agent configuration.
+     * Hot updates are explicitly OUT of scope — the boundary is: config
+     * changes require a restart; this string lands in health/ops output
+     * so operators can see which version a running instance serves.
+     */
+    public static class ConfigVersion {
+
+        /**
+         * App-declared config version, e.g. "2026.09.16-1". Blank means
+         * unversioned (reported as such, honestly).
+         */
+        private String value = "";
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value == null ? "" : value;
         }
     }
 }

@@ -6,27 +6,63 @@ import io.github.qwzhang01.agent.core.agent.SimpleAgent;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
+import io.github.qwzhang01.agent.security.ToolApprovalService;
+import io.github.qwzhang01.agent.security.SecureAgentBuilder;
 
 import java.util.Objects;
 
 /**
  * Creates {@link Agent} instances from the shared {@link ModelClient} bean.
  * <p>
- * Intentionally not a singleton {@code Agent} bean: applications such as Moonlit
- * have per-character system prompts and should call {@link #create(String, String)}
- * (or the tools overload) for each character.
- * <p>
- * Streaming: call {@code Agent.stream(userInput, listener)} on the returned
- * agent. This factory does not wrap streaming.
+ * Stage 8.2: the factory is now profile-aware.
+ * <ul>
+ *   <li><b>SECURE</b> — every agent goes through {@link SecureAgentBuilder}:
+ *       governed tool executor, contract-derived permissions (read-shaped
+ *       auto / side-effect approval), validation-first chain, unknown tools
+ *       refused. Side-effect tools without an approval service are
+ *       <em>denied</em> (deny-on-absence), not auto-approved.</li>
+ *   <li><b>TEST</b> — same governed stack, but auto-approval is on:
+ *       non-interactive test runs don't hang waiting for a human.</li>
+ *   <li><b>UNSAFE</b> — the legacy raw path ({@code SimpleAgent} directly),
+ *       chosen by name. Logs its profile loudly at assembly.</li>
+ * </ul>
+ * Intentionally not a singleton {@code Agent} bean: applications such as
+ * Moonlit have per-character system prompts and should call
+ * {@link #create(String, String)} for each character.
  */
 public class AgentFactory {
 
     static final int DEFAULT_MAX_STEPS = 10;
 
     private final ModelClient modelClient;
+    private final AgentProfile profile;
+    private final ToolApprovalService approvalService;
 
+    /** Legacy 1-arg constructor: profile SECURE, deny-on-absence approval. */
     public AgentFactory(ModelClient modelClient) {
+        this(modelClient, AgentProfile.SECURE, null);
+    }
+
+    /**
+     * Profile-aware constructor. A {@code null} approvalService under
+     * SECURE means side-effect tools are denied; under TEST it means
+     * auto-approve.
+     */
+    public AgentFactory(ModelClient modelClient, AgentProfile profile,
+                        ToolApprovalService approvalService) {
         this.modelClient = Objects.requireNonNull(modelClient, "modelClient");
+        this.profile = profile == null ? AgentProfile.SECURE : profile;
+        this.approvalService = approvalService;
+    }
+
+    /** The profile this factory assembles under (for checks/reporting). */
+    public AgentProfile profile() {
+        return profile;
+    }
+
+    /** The approval service in effect (null = profile default applies). */
+    public ToolApprovalService approvalService() {
+        return approvalService;
     }
 
     /**
@@ -49,6 +85,39 @@ public class AgentFactory {
      */
     public Agent create(String name, String systemPrompt, ToolRegistry tools, int maxSteps) {
         ToolRegistry registry = tools != null ? tools : new InMemoryToolRegistry();
+        return switch (profile) {
+            case SECURE, TEST -> createGoverned(name, systemPrompt, registry, maxSteps);
+            case UNSAFE -> createRaw(name, systemPrompt, registry, maxSteps);
+        };
+    }
+
+    private Agent createGoverned(String name, String systemPrompt,
+                                 ToolRegistry registry, int maxSteps) {
+        SecureAgentBuilder builder = SecureAgentBuilder.secure(name, modelClient, registry)
+                .maxSteps(maxSteps)
+                .systemPrompt(systemPrompt);
+        // Approval: explicit service wins; otherwise the profile default —
+        // SECURE denies on absence (null approval service = side-effect
+        // tools denied per SecureAgentBuilder's null contract), TEST
+        // auto-approves (non-interactive).
+        ToolApprovalService approval = approvalService;
+        if (approval == null && profile == AgentProfile.TEST) {
+            approval = io.github.qwzhang01.agent.security.ConsoleApprovalService.autoApprove();
+        }
+        if (approval == null && profile == AgentProfile.SECURE) {
+            // deny-on-absence: SecureAgentBuilder treats a null service as
+            // "side-effect tools denied" — exactly the secure default; pass
+            // an explicit rejecting service so the intent is greppable.
+            approval = io.github.qwzhang01.agent.security.ConsoleApprovalService.autoReject();
+        }
+        return builder.approvalService(approval).build();
+    }
+
+    private Agent createRaw(String name, String systemPrompt,
+                            ToolRegistry registry, int maxSteps) {
+        org.slf4j.LoggerFactory.getLogger(AgentFactory.class)
+                .warn("[RuntimeProfile] UNSAFE agent '{}' assembled: NO governance, NO approval, "
+                        + "NO validation chain - raw executor, chosen by profile=unsafe", name);
         AgentConfig config = new AgentConfig(name, systemPrompt, modelClient, registry, maxSteps);
         return new SimpleAgent(config);
     }

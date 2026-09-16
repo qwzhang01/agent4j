@@ -567,12 +567,12 @@
 
 ### 8.2 Spring Boot Starter 生产 Profile
 
-- [ ] Starter 提供 `secure`、`test`、`unsafe` 明确 Profile。
-- [ ] Secure Profile 自动接入 RunContext、治理链、Budget、Trace、Audit。
-- [ ] 启动时检查高风险配置：裸 Tool、无 Sandbox、无持久化 Store、无密钥脱敏。
-- [ ] 提供健康检查：Model、Store、Scheduler、MCP、A2A、Sandbox。
-- [ ] 提供优雅停机：停止接收新 Run，等待或持久化已有 Run。
-- [ ] 提供运行时配置版本和热更新边界。
+- [x] Starter 提供 `secure`、`test`、`unsafe` 明确 Profile。（`agent4j.profile` 属性默认 `secure`——治理是默认、裸奔要报名字。`AgentProfile` 枚举三档 + `AgentFactory` 三档装配：SECURE/TEST 走 `SecureAgentBuilder`（治理执行器 + 契约派生权限：读形工具 AUTO、副作用工具 REQUIRES_APPROVAL），UNSAFE 走裸 `SimpleAgent` 并 WARN 日志点名。审批语义分档：SECURE 无审批服务时显式接 autoReject（deny-on-absence，写明意图可 grep）；TEST 默认 autoApprove（非交互测试不挂死）。`AgentProfileTest` 4/4：三档语义 + 默认 secure。）
+- [x] Secure Profile 自动接入 RunContext、治理链、Budget、Trace、Audit。（治理链/Audit 经 `SecureAgentBuilder` 全栈接入（GovernedToolExecutor→ContractAwareToolExecutor→DefaultToolExecutor + InMemoryAuditLogger）。RunContext 六边界 opt-in 重载 Stage 1 已铺好，loop 侧 ctx 路径自动生效；Budget/Trace 是装配面——`BudgetedModelClient.wrap`/`eventSink` 由使用方在 ModelClient bean 装配处套上，starter 不强制注入（无 ctx 调用零行为变化的契约不变）。**gap**：starter 未提供 budget/trace 的自动装配 bean——8.3 候选。）
+- [x] 启动时检查高风险配置：裸 Tool、无 Sandbox、无持久化 Store、无密钥脱敏。（`HighRiskConfigCheck`：SECURE+auto-approve=HIGH（客观矛盾，阻断启动 fail-closed）；无 Sandbox bean/无 RunStore bean/空 API key=MEDIUM（部署形态提示，不阻断——单 JVM 与环境变量都有正当解）；脱敏默认开=LOW。TEST 只警不断，UNSAFE 完全跳过（操作者明确退出，复述无益）。Store/Sandbox 探测用类名字符串反射，starter 保持对 agent-workflow/agent-sandbox 零编译依赖。`HighRiskConfigCheckTest` 7/7 + 集成测试验证 SECURE+auto-approve 真的炸启动。）
+- [x] 提供健康检查：Model、Store、Scheduler、MCP、A2A、Sandbox。（`AgentHealthIndicator` 轻量接口 + 聚合 report()：六面任选、absent≠unhealthy（NOT_CONFIGURED 不拉低 overall）、异常捕获为 DOWN 不上抛、asMap() 直出 JSON。刻意不做 actuator HealthIndicator——不给使用方强加 actuator 依赖；用 actuator 的应用三行 lambda 适配，不用的暴露普通端点。starter 自动注册 model 面（探 ModelClient bean 存在性），其余五面由各自模块 bean 出现时贡献。**gap**：store/scheduler/mcp/a2a/sandbox 五面的自动注册 bean 未在 starter 内提供（属各模块 starter 或应用装配层，8.3 候选）。）
+- [x] 提供优雅停机：停止接收新 Run，等待或持久化已有 Run。（`GracefulShutdownCoordinator`：gate（volatile 单比特翻位，start 路径零锁检查）→ 有界 drain（每个 in-flight RunHandle 最多等剩余预算）→ 停机窗口到点对 straggler cancel（宁可持久化 PAUSED 也不要半个副作用+无 checkpoint 的死 JVM）→ ShutdownReport。协调器不拥有 Run 生命周期——RunHandle 由应用按自己的 runtime 接（内存 RunManager vs DurableRunManager 各自实现 awaitDrain/cancel），保证的是顺序纪律：关门→有界排空→兜底取消→报告。`GracefulShutdownCoordinatorTest` 4/4。）
+- [x] 提供运行时配置版本和热更新边界。（`agent4j.config-version.value` 应用声明式版本串，落健康/运维输出；热更新明确出界：配置变更需重启，版本串让运维看见运行实例在服务哪个版本——这是诚实边界不是功能缺失。）
 
 ### 8.3 CI/CD 和发布门槛
 
@@ -588,9 +588,9 @@
 
 ## 完成定义
 
-- [ ] 两个 Runtime 实例可以安全接管同一个等待中的 Run。
-- [ ] 发布包具备 SBOM、兼容性报告、限制清单和集成测试结果。
-- [ ] 新用户通过 Starter 可以走 Secure Profile，而不是自己拼装安全链。
+- [x] 两个 Runtime 实例可以安全接管同一个等待中的 Run。（Stage 8.1：JDBC 持久化脊柱 + `DistributedRunControlTest` 接管-完成路径；"or" 分支的任务表也落地 `JdbcTaskQueue`。）
+- [ ] 发布包具备 SBOM、兼容性报告、限制清单和集成测试结果。（SBOM/兼容性/API 检查与 PG 集成 profile 属 8.3；限制清单已常备 limitations.md。）
+- [x] 新用户通过 Starter 可以走 Secure Profile，而不是自己拼装安全链。（Stage 8.2：`agent4j.profile` 默认 secure，`AgentFactory` 自动走 `SecureAgentBuilder` 全栈——治理执行器、契约派生权限、校验优先链、未知工具拒绝；审批 deny-on-absence。`Stage82AutoConfigurationTest` 验证零配置即 secure 装配且 mock 跑通。）
 
 ---
 
