@@ -6,7 +6,7 @@
 
     <groupId>io.github.qwzhang01</groupId>
     <artifactId>seven-agent</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Java Agent Framework</name>
     <description>A persistent, observable, governable, hot-pluggable Java Agent Runtime</description>
@@ -78,7 +78,7 @@
         <!-- false: `mvn deploy` uploads. Set true only for a local-only dry run. -->
         <skip.central.publish>false</skip.central.publish>
         <central.serverId>avinzhang-opensource</central.serverId>
-        <agent4j.version>0.1.3</agent4j.version>
+        <agent4j.version>0.1.4-SNAPSHOT</agent4j.version>
     </properties>
 
     <dependencyManagement>
