@@ -195,10 +195,21 @@ public class ProcessSandbox implements Sandbox {
      * guest's {@code main} reflectively (Stage 4.1).
      * Suffix-less {@code -Xmx} is bytes (HotSpot). Prefer {@code m} when the
      * limit is an exact megabyte so the flag stays readable in process lists.
+     * <p>
+     * Stage 8.3: {@code -Djava.security.manager=allow} re-permits
+     * {@code System.setSecurityManager} on JDK 18-23 (JEP 411 moved it to
+     * disallow-by-default; JDK 21 throws UnsupportedOperationException without
+     * the flag). Harmless on JDK 17 (a warning). On JDK 24+ (JEP 486 removed
+     * SecurityManager entirely) the flag itself aborts VM init - the guard's
+     * degraded-mode fallback is the honest answer there, and
+     * {@link #javaCommand} keeps the flag off when the RUNNING JDK is 24+.
      */
     static List<String> javaCommand(Path sandboxDir, String className, SandboxSpec spec) {
         List<String> command = new ArrayList<>();
         command.add(javaBinary());
+        if (securityManagerInstallable()) {
+            command.add("-Djava.security.manager=allow");
+        }
         long limit = spec.getMemoryLimitBytes();
         if (limit > 0) {
             command.add(xmxFlag(limit));
@@ -208,6 +219,25 @@ public class ProcessSandbox implements Sandbox {
         command.add(GUARD_PACKAGE + ".SandboxGuestLauncher");
         command.add(className);
         return command;
+    }
+
+    /**
+     * Whether the RUNNING JDK still supports installing a SecurityManager at
+     * all. JDK 24 (JEP 486) removed it: {@code -Djava.security.manager=allow}
+     * aborts VM init with "Enabling a Security Manager is not supported", so
+     * the flag must not be passed there. Detected from
+     * {@code java.specification.version} (17, 21, 24...).
+     */
+    static boolean securityManagerInstallable() {
+        try {
+            int feature = Integer.parseInt(System.getProperty("java.specification.version")
+                    .strip());
+            return feature < 24;
+        } catch (NumberFormatException | NullPointerException e) {
+            // Unparseable version string: assume a JDK that still has it
+            // (fail toward the stricter guard, not the weaker).
+            return true;
+        }
     }
 
     static String xmxFlag(long bytes) {

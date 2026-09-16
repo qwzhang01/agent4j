@@ -42,5 +42,37 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Stage 8.3: real-PostgreSQL dialect proof for the task queue.
+             Test scope only: the framework binds no database driver. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Postgres ITs are opt-in: -Dgroups=postgres with a
+                         reachable DB; skipped by assumption otherwise.
+                         Parametrized so CI can clear the exclusion:
+                         -Dagent4j.surefire.excludedGroups= -Dgroups=postgres -->
+                    <excludedGroups>${agent4j.surefire.excludedGroups}</excludedGroups>
+                    <!-- Surefire's default scan patterns (*Test/*Tests/...) do
+                         not cover *IT classes; adopt them explicitly so the
+                         postgres profile can select them by tag. -->
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

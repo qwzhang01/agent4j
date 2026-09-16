@@ -36,13 +36,13 @@ import java.util.Optional;
  */
 public final class JdbcCheckpointStore implements CheckpointStore {
 
-    /** ANSI DDL accepted by both H2 and PostgreSQL. */
+    /** ANSI DDL accepted by both H2 and PostgreSQL (TEXT, not CLOB - PostgreSQL has no CLOB type). */
     static final String DDL = """
             CREATE TABLE IF NOT EXISTS agent4j_checkpoints (
                 run_id       VARCHAR(128) PRIMARY KEY,
                 checkpoint_id VARCHAR(128) NOT NULL,
                 schema_version INT         NOT NULL,
-                payload      CLOB          NOT NULL
+                payload      TEXT          NOT NULL
             )
             """;
 

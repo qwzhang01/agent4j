@@ -23,6 +23,9 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <maven.source.skip>true</maven.source.skip>
         <gpg.skip>true</gpg.skip>
+        <!-- Stage 8.3: never deployed (see comment above), so no published
+             baseline exists for the japicmp api-compat gate to compare against. -->
+        <japicmp.skip>true</japicmp.skip>
     </properties>
 
     <dependencies>

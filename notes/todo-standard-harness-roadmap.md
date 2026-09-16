@@ -576,20 +576,20 @@
 
 ### 8.3 CI/CD 和发布门槛
 
-- [ ] JDK 17/21 全量测试保持绿色。
-- [ ] 增加覆盖率阈值，但不以覆盖率替代契约测试。
-- [ ] 增加依赖漏洞扫描、SBOM、License 检查。
-- [ ] 增加 API 兼容性检查。
-- [ ] 增加 PostgreSQL、MCP、A2A、容器 Sandbox Integration Profile。
-- [ ] 增加协议 malformed input fuzz/property tests。
-- [ ] 增加 Sandbox escape regression suite。
-- [ ] 发布前生成模块能力矩阵和限制清单。
-- [ ] 文档、CHANGELOG、版本号、示例和实际代码做发布前一致性检查。
+- [x] JDK 17/21 全量测试保持绿色。（CI `build` job 双 JDK 矩阵跑默认套件 verify；本机 JDK 17 全仓 verify 全绿为本地证据。）
+- [x] 增加覆盖率阈值，但不以覆盖率替代契约测试。（jacoco `coverage-floor`：BUNDLE LINE≥0.60 / BRANCH≥0.40 反回归地板（实测最低线 63%/枝 49%，地板低于现实故构造性全绿），模块 pom 可覆盖；契约测试独立于覆盖率存在，地板不替代任何契约。）
+- [x] 增加依赖漏洞扫描、SBOM、License 检查。（cyclonedx `makeAggregateBom` 每次构建产 CycloneDX 1.5 SBOM（53 组件全带 license；`skipNotDeployed=false` 解耦部署意图——反编译实证判定链）；license `aggregate-add-third-party` 产 THIRD-PARTY.txt（104 依赖全家族可辨识）；grype 扫描接 CI `vulnerability-scan` job（anchore/scan-action，severity-cutoff high，报告上传）。本机无 grype，扫描以 CI 为准。）
+- [x] 增加 API 兼容性检查。（japicmp 0.24.2 `-Papi-compat` 对 0.1.3 基线断言（实证 0.24.2 无 skipMissingOldVersion/skipPomModules 参数）；抓到 8.2 两处真实破坏并修复：Checkpoint 恢复 @Deprecated 8 参兼容构造器（legacy 身份语义，空 hash 永不触发 DEFINITION_VERSION_MISMATCH）+ starter 恢复非 @Bean 的 agentFactory(ModelClient) shim（Spring 拒绝同类重载同名 @Bean，shim 只服务旧二进制，复刻 0.1.3 SECURE + deny-on-absence）；agent-otel-export/examples 无 0.1.3 基线显式 `japicmp.skip=true` 带移除注记。超出报告层：0.1.3 编译的探针字节码链接 0.1.4-SNAPSHOT jar 真机运行验证一致。）
+- [x] 增加 PostgreSQL、MCP、A2A、容器 Sandbox Integration Profile。（四 tag 全落：`postgres`=PostgresIT（AGENT4J_IT_PG_* 环境探测）+ CI PG16 service；`mcp-it`=McpStdioIT 3/3（真实 Python 子进程 server 全链路：握手/发现/调用/destroyForcibly 物理崩溃自愈重启重试/未知工具协议错误不误重启；python3 缺席走可审计 skip）；`a2a-it`=真实 HTTP 传输三套件 26 例（RoundTrip 13 + Protocol 9 + Security 4）；`sandbox-escape`=逃逸回归 24 + DockerDaemonProbeIT（daemon 探测可记录 + DOCKER placeholder loud-fail 契约：daemon 在场仍零保证）。默认排除走 `agent4j.surefire.excludedGroups=postgres,mcp-it,a2a-it`，CI 打开。surefire includes 补 `**/*IT.java`——默认 `*Test` 模式静默忽略 IT 后缀类，`-Dgroups=mcp-it` 跑 0 个测试时抓到。）
+- [x] 增加协议 malformed input fuzz/property tests。（ProtocolFuzzTest 4 + A2AWireFuzzTest 6 全绿。）
+- [x] 增加 Sandbox escape regression suite。（@Tag("sandbox-escape")：SandboxEscapeTest + ProcessSandboxRedTeamTest 红队全阻断 + UNRESTRICTED 诚实 NOT-BLOCKED 记录；DockerDaemonProbeIT 并入。）
+- [x] 发布前生成模块能力矩阵和限制清单。（四态能力矩阵常备 harness-contract.md §4 + modules.md 模块一览；本轮补 modules.md 集成 profile 矩阵表、limitations.md DOCKER 层 loud-fail 契约固化与 PG profile 状态刷新。）
+- [x] 文档、CHANGELOG、版本号、示例和实际代码做发布前一致性检查。（全仓 verify 绿为代码侧证据；docs 中 "Central 最新 0.1.3" 引用按既定纪律保持不动（0.1.4 发版时统一刷新，harness-contract §0.1.1）；CHANGELOG 未发布段落齐 8.1/8.2/8.3 条目；版本号 23 处 pom 已对齐 0.1.4-SNAPSHOT；examples 不进 bundle 与 modules.md 声明一致。）
 
 ## 完成定义
 
 - [x] 两个 Runtime 实例可以安全接管同一个等待中的 Run。（Stage 8.1：JDBC 持久化脊柱 + `DistributedRunControlTest` 接管-完成路径；"or" 分支的任务表也落地 `JdbcTaskQueue`。）
-- [ ] 发布包具备 SBOM、兼容性报告、限制清单和集成测试结果。（SBOM/兼容性/API 检查与 PG 集成 profile 属 8.3；限制清单已常备 limitations.md。）
+- [x] 发布包具备 SBOM、兼容性报告、限制清单和集成测试结果。（8.3 落定：SBOM=CycloneDX 1.5 每次构建生成；兼容性报告=japicmp `-Papi-compat` 对 0.1.3 基线；限制清单=limitations.md 常备并本轮刷新；集成测试结果=四 tag profile + CI 六 job 矩阵。）
 - [x] 新用户通过 Starter 可以走 Secure Profile，而不是自己拼装安全链。（Stage 8.2：`agent4j.profile` 默认 secure，`AgentFactory` 自动走 `SecureAgentBuilder` 全栈——治理执行器、契约派生权限、校验优先链、未知工具拒绝；审批 deny-on-absence。`Stage82AutoConfigurationTest` 验证零配置即 secure 装配且 mock 跑通。）
 
 ---

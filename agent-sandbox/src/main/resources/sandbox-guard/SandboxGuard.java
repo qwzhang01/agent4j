@@ -46,14 +46,39 @@ public class SandboxGuard {
     static final java.util.concurrent.atomic.AtomicBoolean installed =
             new java.util.concurrent.atomic.AtomicBoolean(false);
 
+    /**
+     * Whether this guest JVM enforced a SecurityManager. {@code false} means
+     * degraded mode: the running JDK removed SecurityManager (JEP 486) or
+     * disallowed installing it; enforcement falls back to the host-side
+     * constraints (env allowlist, output caps, timeout tree-kill, workspace
+     * containment). The guest should print this once so the degradation is
+     * observable, never silent.
+     */
+    static final java.util.concurrent.atomic.AtomicBoolean smEnforced =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
     private SandboxGuard() {
     }
 
     /** Install the guard policy for this guest JVM run. */
     public static void install() {
         SecurityManager guard = new GuardManager();
-        System.setSecurityManager(guard);
-        installed.set(true);
+        try {
+            System.setSecurityManager(guard);
+            installed.set(true);
+            smEnforced.set(true);
+        } catch (UnsupportedOperationException e) {
+            // JDK 18-23 without -Djava.security.manager=allow, or JDK 24+
+            // (JEP 486, removed entirely): the SM path is unavailable.
+            // Degrade honestly - run under host-side constraints only -
+            // instead of killing the guest before main starts.
+            System.err.println(POLICY_DENIAL_PREFIX
+                    + " [DEGRADED] SecurityManager unavailable on this JDK ("
+                    + System.getProperty("java.version", "?")
+                    + "); in-guest policy enforcement is OFF, "
+                    + "host-side constraints (env allowlist / output caps / "
+                    + "timeout kill) still apply");
+        }
     }
 
     static final class GuardManager extends SecurityManager {

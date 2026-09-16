@@ -15,6 +15,13 @@
         dependency here (never in agent-observability): code compiled against the
         API works with any SDK at runtime, and deployments that never wire an SDK
         keep zero OTel classes on their classpath (Stage 7.1, blueprint D9).</description>
+    <properties>
+        <!-- Stage 8.3: this module is new in 0.1.4, so no 0.1.3 baseline exists
+             on Maven Central for the japicmp api-compat gate to compare against
+             (japicmp 0.24.2 has no skipMissingOldVersion parameter). Remove this
+             skip once this module has a released baseline. -->
+        <japicmp.skip>true</japicmp.skip>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.github.qwzhang01</groupId>

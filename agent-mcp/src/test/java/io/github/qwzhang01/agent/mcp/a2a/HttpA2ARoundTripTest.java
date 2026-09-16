@@ -5,6 +5,7 @@ import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,7 +18,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Agent, HttpA2AClient talks the spec dialect to it. This is the test the
  * whole HTTP A2A work exists for -- zero mocks between the two sides, real
  * sockets, real JSON on the wire.
+ *
+ * <p>Stage 8.3 A2A Integration Profile: tagged {@code a2a-it} so CI can run
+ * the transport-level suite as an opt-in profile
+ * ({@code -Dagent4j.surefire.excludedGroups= -Dgroups=a2a-it}).</p>
  */
+@Tag("a2a-it")
 class HttpA2ARoundTripTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

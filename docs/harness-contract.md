@@ -227,10 +227,12 @@ agent-spring-boot-starter -> core, model
 
 | 依赖 | 现状 | 计划 |
 |------|------|------|
-| PostgreSQL | `AGENT4J_PG_TEST=true` 21/21（PgMemoryStore 契约测试） | [-] 已有；checkpoint RunStore 复用同一模式 |
-| 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例），TierLimits 已落 DOCKER/MICROVMM 结构性限制表 | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
-| MCP | stdio 官方 filesystem server 已验；SSE 方言 + JDK HttpServer 模拟对端 5/5 | [-] Stage 6.2 完成；官方参考实现互操作待补 |
-| A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；认证/签名/store 已落 | [-] Stage 6.3 完成；外部第三方 A2A 实现互操作待补 |
+| PostgreSQL | `postgres` tag IT（`PostgresIT`，`AGENT4J_IT_PG_*` 环境变量探测）+ CI PG16 service（8.3） | [-] 已有；外部队列互操作不在 v1 |
+| 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例）；`DockerDaemonProbeIT`（8.3）：daemon 探测可审计 + DOCKER placeholder loud-fail 契约固化（daemon 在场仍宣称零保证） | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
+| MCP | stdio 官方 filesystem server 已验；SSE 方言 + JDK HttpServer 模拟对端 5/5；`mcp-it` tag（8.3）：真实 Python 子进程 server 全链路 `McpStdioIT` 3/3（握手/发现/调用/崩溃自愈重启重试/协议错误不误重启） | [-] 已有；官方参考实现互操作矩阵待补 |
+| A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；`a2a-it` tag（8.3）：RoundTrip 13 + Protocol 9 + Security 4 = 26 例挂 CI 矩阵 | [-] 已有；外部第三方 A2A 实现互操作待补 |
+| SBOM / License | CycloneDX 聚合 SBOM（每模块 `target/bom.json`）+ `THIRD-PARTY.txt` 随构建生成（8.3） | [ ] grype 漏洞扫描接 CI（`vulnerability-scan` job，anchore/scan-action） |
+| API 兼容 | japicmp `-Papi-compat` 对 0.1.3 基线断言（8.3 闭环：Checkpoint 兼容构造器 + starter shim + 无基线模块显式 skip + 0.1.3 字节码真机链接验证） | [-] 已有；CI `api-compat` job |
 | OpenTelemetry | `agent-otel-export` 薄壳模块（Stage 7.1，2026-09-16）：RunEvent→span 四层（run/step/model/tool）+ 真实 SDK InMemorySpanExporter 测试 7/7；SDK 仅 test scope，核心零新依赖（D9） | [x] 已有；Workflow/Memory/Sandbox/MCP/A2A span 未做（诚实 gap，记 roadmap 7.1） |
 | GPG/Central 发布 | 流程已定（RELEASING.md） | [x] 已有 |
 

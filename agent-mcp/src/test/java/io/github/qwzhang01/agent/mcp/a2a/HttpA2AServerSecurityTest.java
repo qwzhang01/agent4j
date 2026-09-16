@@ -4,6 +4,7 @@ import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentConfig;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -23,7 +24,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * notifications (X-Signature / X-Timestamp / X-Nonce headers), and task
  * persistence through the pluggable store (a shared store survives a
  * server restart — the cross-instance recovery story).
+ *
+ * <p>Stage 8.3 A2A Integration Profile: tagged {@code a2a-it} (see
+ * {@link HttpA2ARoundTripTest} for the profile entry point).</p>
  */
+@Tag("a2a-it")
 class HttpA2AServerSecurityTest {
 
     private static final String TOKEN = "test-bearer-token";

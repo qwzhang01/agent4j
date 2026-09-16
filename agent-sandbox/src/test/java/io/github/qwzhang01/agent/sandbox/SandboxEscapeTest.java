@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.sandbox;
 import io.github.qwzhang01.agent.sandbox.classloader.ClassLoaderSandbox;
 import io.github.qwzhang01.agent.sandbox.process.ProcessSandbox;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>Reliable kill via {@code destroyForcibly()} on timeout.</li>
  * </ul>
  */
+@Tag("sandbox-escape")
 class SandboxEscapeTest {
 
     private final ClassLoaderSandbox classLoader = new ClassLoaderSandbox();

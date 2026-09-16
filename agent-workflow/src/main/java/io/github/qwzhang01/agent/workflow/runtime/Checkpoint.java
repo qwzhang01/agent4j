@@ -79,6 +79,44 @@ public record Checkpoint(
     }
 
     /**
+     * Backwards-compatible constructor preserved from 0.1.3 (caught by the
+     * japicmp api-compat gate: CONSTRUCTOR_REMOVED is a binary break for
+     * already-compiled 0.1.3 users, and 0.1.4 is a patch release).
+     * <p>
+     * Mapping semantics: workflow identity (name/version/hash) is left
+     * empty, which {@link FileCheckpointStore} and the durable stores treat
+     * as legacy identity — an empty hash never trips
+     * {@code DEFINITION_VERSION_MISMATCH} on resume. {@code lastEventSeq}
+     * defaults to 0 (no event anchoring) and {@code trace} to empty.
+     *
+     * @param checkpointId  unique id of this snapshot
+     * @param runId         the Run this checkpoint belongs to
+     * @param status        RunState at checkpoint time
+     * @param cursor        next node to execute on resume (null = from START)
+     * @param state         the complete blackboard snapshot
+     * @param timestamp     when this checkpoint was created
+     * @param stepsExecuted total steps so far
+     * @param pendingInput  input for the paused node on resume
+     * @deprecated use the canonical record constructor (or {@link #of(Run)}),
+     *             which carries schema version and workflow identity
+     * @since 0.1.4
+     */
+    @Deprecated
+    public Checkpoint(
+            String checkpointId,
+            String runId,
+            RunState status,
+            String cursor,
+            WorkflowState state,
+            long timestamp,
+            int stepsExecuted,
+            Object pendingInput
+    ) {
+        this(SCHEMA_VERSION, checkpointId, runId, "", "", "", status, cursor,
+                state, timestamp, stepsExecuted, pendingInput, 0L, List.of());
+    }
+
+    /**
      * Capture a snapshot of a Run. Workflow identity is taken from the
      * run's live definition (D1: the definition is not serialized, only
      * its identity hash).

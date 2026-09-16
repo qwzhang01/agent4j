@@ -4,6 +4,7 @@ import io.github.qwzhang01.agent.sandbox.SandboxResult;
 import io.github.qwzhang01.agent.sandbox.SandboxSpec;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Skipped when the running JDK has no javac (pure JRE).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("sandbox-escape")
 class ProcessSandboxRedTeamTest {
 
     private static Path base;
@@ -318,6 +320,54 @@ class ProcessSandboxRedTeamTest {
         // With UNRESTRICTED the guard is NOT injected: user.home readable.
         assertTrue(r.success(), "UNRESTRICTED mode runs without the guard");
         assertTrue(r.stdout().contains("user.home="));
+    }
+
+    // ============ Attack 9: System.exit hijack (exit-code forgery) ============
+
+    @Test
+    @DisplayName("RED-9 System.exit forgery: exit is sandbox-owned, guest exit(0) is BLOCKED")
+    void systemExitForgeryIsNeutralized() {
+        // The guest tries to forge a benign exit code (laundry a bad run as
+        // success). Observed semantics (probe, JDK 17): the guard DENIES
+        // runtime permission exitVM — the process lifecycle belongs to the
+        // SANDBOX (timeout kill, tree kill), never to the guest. So a
+        // guest-initiated exit is a policy denial, and output emitted before
+        // the attempt is still captured (no lost flush).
+        String code = """
+                public class Generated {
+                    public static void main(String[] args) throws Exception {
+                        System.out.println("BEFORE_EXIT");
+                        System.exit(0);
+                    }
+                }
+                """;
+        SandboxResult r = run(code);
+        assertFalse(r.success(), "guest-initiated exit must not succeed");
+        assertTrue(deniedByPolicy(r), "exit must be a POLICY denial (exitVM), got: "
+                + r.stderr());
+        assertTrue(r.stdout().contains("BEFORE_EXIT"),
+                "output before the exit attempt must be captured");
+    }
+
+    // ============ Attack 10: degraded-guard mode still host-constrained ============
+
+    @Test
+    @DisplayName("RED-10 guard-degraded JDK: host-side constraints still bind")
+    void hostConstraintsBindWhenGuardDegrades() {
+        // JDK 24+ removed SecurityManager: the guest guard prints a
+        // DEGRADED notice and in-guest policy enforcement is OFF. The
+        // escape suite must prove the HOST side still binds: env allowlist
+        // drops host secrets, output cap truncates, timeout kills. This
+        // test pins the env-allowlist half of that contract (the pieces
+        // that need no javac-in-guest cooperation).
+        ProcessBuilder pb = new ProcessBuilder();
+        pb.environment().put("SANDBOX_REDTEAM_SECRET", "super-secret");
+        SandboxSpec spec = SandboxSpec.builder()
+                .envAllowlist(List.of("PATH"))
+                .build();
+        Map<String, String> guest = ProcessSandbox.guestEnvironment(pb, spec);
+        assertFalse(guest.containsKey("SANDBOX_REDTEAM_SECRET"),
+                "degraded or not: host env allowlist must drop secrets");
     }
 
     private static boolean hasJavac() {

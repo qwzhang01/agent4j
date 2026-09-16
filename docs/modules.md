@@ -37,6 +37,19 @@
 
 **JDBC 存储驱动约定**：`JdbcRunStore` / `JdbcRunLeases` / `JdbcSideEffectLedger` / `JdbcCheckpointStore` / `JdbcTaskQueue` / `JdbcApprovalStore` 只面向 `java.sql` 接口编程，框架不绑定任何数据库——生产部署自带相应 JDBC 驱动（如 PostgreSQL）并装配连接工厂即可，换库不改代码。`com.h2database:h2` 仅以 `test` scope 存在于仓库内三个模块的测试 JVM，用于分布式存储契约测试，不会进入任何使用方的传递依赖。
 
+## 集成测试 Profile（Stage 8.3）
+
+默认 `./mvnw verify` 跑单 JVM 全套（无外部服务假定）。传输级 / 数据库级 IT 走 JUnit 5 tag opt-in，CI 用 `-Dagent4j.surefire.excludedGroups= -Dgroups=<tag>` 打开：
+
+| tag | 覆盖 | 前提 | 本机快速跑 |
+|-----|------|------|-----------|
+| `postgres` | `PostgresIT`（workflow durable 全链路真库验证） | 本地 PG，`AGENT4J_IT_PG_URL` 等环境变量启用探测 | `-Dgroups=postgres` + 导出 `AGENT4J_IT_PG_*` |
+| `mcp-it` | `McpStdioIT`（真实 Python 子进程 MCP server 全链路：握手 / 工具发现 / 调用 / 崩溃自愈重启重试 / 协议错误不误重启） | `python3` 在 PATH（无则显式 skip 可审计） | `-Dgroups=mcp-it` |
+| `a2a-it` | `HttpA2ARoundTripTest` / `HttpA2AServerProtocolTest` / `HttpA2AServerSecurityTest`（真实 loopback HTTP 全链路：往返 / 线协议 / 认证 / 签名推送 / 跨重启任务存活） | 无（本机 socket） | `-Dgroups=a2a-it` |
+| `sandbox-escape` | `SandboxEscapeTest` + `ProcessSandboxRedTeamTest` + `DockerDaemonProbeIT`（逃逸回归 24 + 容器 daemon 探测 + DOCKER placeholder loud-fail 契约） | 无外部必需（无 docker 时 daemon 测试走可审计 skip） | 默认就跑 |
+
+发布门槛另有两道：`-Papi-compat`（japicmp 对 0.1.3 基线做二进制兼容断言，无基线模块在自己 pom 显式 `japicmp.skip`）；SBOM / License（`target/bom.json` CycloneDX 1.5 + `THIRD-PARTY.txt`）随每次 `package`/`verify` 生成。CI 在 `main`/PR 上跑全部门槛（见 `.github/workflows/ci.yml`）。
+
 ## 角色引擎接线（Moonlit / SillyTavern 一类）
 
 | 模块 | 职责 |

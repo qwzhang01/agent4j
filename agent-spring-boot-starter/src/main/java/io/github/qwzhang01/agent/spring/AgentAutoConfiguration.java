@@ -77,6 +77,26 @@ public class AgentAutoConfiguration {
     }
 
     /**
+     * Binary-compatibility shim for 0.1.3 (caught by the japicmp
+     * api-compat gate: METHOD_REMOVED breaks already-compiled direct
+     * callers, and 0.1.4 is a patch release).
+     * <p>
+     * NOT a {@code @Bean} method: Spring rejects overloaded same-named
+     * {@code @Bean} methods in one configuration class, and the canonical
+     * bean is the profile-aware two-argument method above. This shim only
+     * serves legacy binary callers and replicates 0.1.3 semantics via the
+     * single-argument {@link AgentFactory} constructor.
+     *
+     * @deprecated inject {@link AgentProperties} and use the two-argument
+     *             bean method (profile-aware since Stage 8.2)
+     * @since 0.1.4
+     */
+    @Deprecated
+    public AgentFactory agentFactory(ModelClient modelClient) {
+        return new AgentFactory(modelClient);
+    }
+
+    /**
      * Six-face health indicator (Stage 8.2): model face probes the
      * client's presence; store/scheduler/mcp/a2a/sandbox faces are
      * contributed by their owning modules' beans when present (via
