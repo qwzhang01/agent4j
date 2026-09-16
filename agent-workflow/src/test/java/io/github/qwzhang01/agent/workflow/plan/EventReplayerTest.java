@@ -154,6 +154,132 @@ class EventReplayerTest {
         assertEquals("final", EventReplayer.finalAnswerOf(state));
     }
 
+    // ============ Prefix replay: interactive time travel (Gap 4) ============
+
+    @Test
+    @DisplayName("empty prefix: empty world, IDLE, no anomalies")
+    void emptyPrefixIsEmptyWorld() {
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 1, 1));
+        events.add(new AgentEvent.ContentDelta("hello"));
+        events.add(new AgentEvent.Done("hello", doneState(1)));
+
+        EventReplayer.PrefixReplay prefix = new EventReplayer().replayPrefix(events, 10, 0);
+
+        assertEquals(AgentState.Status.IDLE, prefix.state().getStatus());
+        assertTrue(prefix.state().getMessages().isEmpty());
+        assertFalse(prefix.doneWithinPrefix());
+        assertTrue(prefix.anomalies().isEmpty());
+    }
+
+    @Test
+    @DisplayName("cut before Done: mid-run world, partial history kept, no partial-replay anomaly")
+    void cutBeforeDoneYieldsMidRunWorld() {
+        ToolCall call = ToolCall.of("c1", "search", "{}");
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 1, 1));
+        events.add(new AgentEvent.ToolStarted(call));
+        events.add(new AgentEvent.ToolFinished("c1", "search", "recorded: 42 hits"));
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 3, 2));
+        events.add(new AgentEvent.ContentDelta("42 hits"));
+        events.add(new AgentEvent.Done("42 hits", doneState(2)));
+
+        // cut right before the Done event: the world at "answer half-streamed"
+        EventReplayer.PrefixReplay prefix = new EventReplayer().replayPrefix(events, 10, 5);
+
+        assertEquals(AgentState.Status.IDLE, prefix.state().getStatus());
+        assertFalse(prefix.doneWithinPrefix());
+        assertTrue(prefix.anomalies().isEmpty(), "a deliberate cut is not a broken recording");
+        // partial history reconstructed: recorded tool result + streamed text so far
+        List<ChatMessage> history = prefix.state().getMessages();
+        assertEquals(2, history.size());
+        assertEquals(ChatRole.TOOL, history.get(0).role());
+        assertEquals("recorded: 42 hits", history.get(0).content());
+        assertEquals(ChatRole.ASSISTANT, history.get(1).role());
+        assertEquals("42 hits", history.get(1).content());
+
+        // one step later the recording closes: full window equals full replay
+        EventReplayer.PrefixReplay closed = new EventReplayer().replayPrefix(events, 10, 6);
+        assertEquals(AgentState.Status.DONE, closed.state().getStatus());
+        assertTrue(closed.doneWithinPrefix());
+        assertTrue(closed.anomalies().isEmpty());
+    }
+
+    @Test
+    @DisplayName("prefix containing Done: terminal world, doneWithinPrefix=true")
+    void prefixContainingDoneIsTerminal() {
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 1, 1));
+        events.add(new AgentEvent.ContentDelta("hello"));
+        events.add(new AgentEvent.Done("hello", doneState(1)));
+        events.add(new AgentEvent.ContentDelta("late")); // after-Done fact
+
+        // include the Done: the world where the run is closed
+        EventReplayer.PrefixReplay prefix = new EventReplayer().replayPrefix(events, 10, 3);
+
+        assertEquals(AgentState.Status.DONE, prefix.state().getStatus());
+        assertTrue(prefix.doneWithinPrefix());
+        assertTrue(prefix.anomalies().isEmpty());
+        assertEquals("hello", EventReplayer.finalAnswerOf(prefix.state()));
+
+        // one step further: the after-Done delta is now INSIDE the window and flagged
+        EventReplayer.PrefixReplay wider = new EventReplayer().replayPrefix(events, 10, 4);
+        assertTrue(wider.doneWithinPrefix());
+        assertEquals(1, wider.anomalies().size());
+        assertTrue(wider.anomalies().get(0).contains("after Done"));
+    }
+
+    @Test
+    @DisplayName("error event inside prefix: anomaly kept, only the cut anomaly is dropped")
+    void errorInsidePrefixIsCounted() {
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 1, 1));
+        events.add(new AgentEvent.ContentDelta("bad draft"));
+        events.add(new AgentEvent.Error("model provider 500", null));
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 2, 2));
+        events.add(new AgentEvent.ContentDelta("fallback answer"));
+        events.add(new AgentEvent.Done("fallback answer", doneState(2)));
+
+        // cut before the retry: the failed attempt IS inside the window
+        EventReplayer.PrefixReplay prefix = new EventReplayer().replayPrefix(events, 10, 3);
+
+        assertEquals(AgentState.Status.IDLE, prefix.state().getStatus());
+        assertFalse(prefix.doneWithinPrefix());
+        assertEquals(1, prefix.anomalies().size());
+        assertTrue(prefix.anomalies().get(0).contains("error event"));
+        // the failed draft's partial text still folds into history
+        assertEquals("bad draft", EventReplayer.finalAnswerOf(prefix.state()));
+    }
+
+    @Test
+    @DisplayName("full-length prefix of a Done-less recording: partial-replay anomaly KEPT")
+    void fullLengthCutOfBrokenRecordingKeepsAnomaly() {
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.ModelCallStarted("a", "m", 1, 1));
+        events.add(new AgentEvent.ContentDelta("partial"));
+
+        // uptoIndex == size is NOT a cut: the whole recording lacks Done, that IS broken
+        EventReplayer.PrefixReplay prefix = new EventReplayer().replayPrefix(events, 10, 2);
+
+        assertEquals(AgentState.Status.IDLE, prefix.state().getStatus());
+        assertFalse(prefix.doneWithinPrefix());
+        assertEquals(1, prefix.anomalies().size());
+        assertTrue(prefix.anomalies().get(0).contains("without Done"));
+    }
+
+    @Test
+    @DisplayName("stepping past the recording: fail-loud IndexOutOfBoundsException")
+    void steppingPastRecordingFailsLoud() {
+        List<AgentEvent> events = new ArrayList<>();
+        events.add(new AgentEvent.Done("done", doneState(1)));
+
+        EventReplayer replayer = new EventReplayer();
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> replayer.replayPrefix(events, 10, 2));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> replayer.replayPrefix(events, 10, -1));
+    }
+
     // ============ helpers ============
 
     private static AgentState doneState(int step) {

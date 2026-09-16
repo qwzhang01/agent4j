@@ -18,7 +18,7 @@ package io.github.qwzhang01.agent.sandbox;
  *       environment where users are expected to probe sandbox boundaries.</li>
  * </ol>
  *
- * <h3>When does Decision 21 break?</h3>
+ * <h2>When does Decision 21 break?</h2>
  * Decision 21 ("ClassLoader is enough for single-tenant half-trusted tool code") holds
  * under two conditions:
  * <ul>

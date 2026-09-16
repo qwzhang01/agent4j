@@ -5,11 +5,17 @@ import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -136,6 +142,53 @@ class PluginJarLoaderTest {
 
     // ============ Helpers ============
 
+    /** Marker resources that locate the roots the fixture must compile against. */
+    private static final String[] CLASSPATH_MARKERS = {
+            "io/github/qwzhang01/agent/plugin/ToolPlugin.class",   // this module
+            "io/github/qwzhang01/agent/core/tool/Tool.class",      // agent-core
+            "com/fasterxml/jackson/databind/JsonNode.class"        // jackson-databind
+    };
+
+    /**
+     * Resolve the real compile classpath for the fixture. Under surefire's
+     * forked JVM {@code java.class.path} is a manifest-only bootstrap jar
+     * whose relative Class-Path entries an external javac cannot resolve,
+     * so entries come from the context classloader instead:
+     * {@link URLClassLoader#getURLs()} when available, else marker-resource
+     * lookup. Falls back to {@code java.class.path} (plain IDE runs where
+     * it already holds real paths).
+     */
+    private static String resolveClasspath() throws IOException {
+        LinkedHashSet<String> entries = new LinkedHashSet<>();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl instanceof URLClassLoader urlLoader) {
+            for (URL url : urlLoader.getURLs()) {
+                entries.add(URLDecoder.decode(url.getFile(), StandardCharsets.UTF_8));
+            }
+        } else {
+            for (String marker : CLASSPATH_MARKERS) {
+                for (URL url : Collections.list(cl.getResources(marker))) {
+                    String spec = url.toString();
+                    if (spec.startsWith("jar:")) {
+                        // jar:file:/path.jar!/entry -> /path.jar
+                        entries.add(URLDecoder.decode(
+                                spec.substring("jar:file:".length(), spec.indexOf("!/")),
+                                StandardCharsets.UTF_8));
+                    } else if (spec.startsWith("file:")) {
+                        // file:/dir/marker -> /dir
+                        entries.add(URLDecoder.decode(
+                                spec.substring("file:".length(), spec.length() - marker.length()),
+                                StandardCharsets.UTF_8));
+                    }
+                }
+            }
+        }
+        if (entries.isEmpty()) {
+            return System.getProperty("java.class.path");
+        }
+        return String.join(File.pathSeparator, entries);
+    }
+
     /** Compile the fixture source and pack a jar with its SPI registration. */
     private static Path buildPluginJar() throws IOException {
         Path work = Files.createTempDirectory("plugin-jar-test");
@@ -146,10 +199,9 @@ class PluginJarLoaderTest {
         Path classes = work.resolve("classes");
         Files.createDirectories(classes);
 
-        String classpath = System.getProperty("java.class.path");
         Process compile = new ProcessBuilder(
                 System.getProperty("java.home") + "/bin/javac",
-                "-cp", classpath,
+                "-cp", resolveClasspath(),
                 "-d", classes.toString(),
                 src.toString())
                 .inheritIO()

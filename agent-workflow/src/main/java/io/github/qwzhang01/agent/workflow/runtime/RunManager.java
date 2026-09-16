@@ -151,12 +151,31 @@ public class RunManager {
     public ExecutionResult resume(String runId, Workflow workflow) {
         return withSingleFlight(runId, () -> {
             Run run = activeRuns.get(runId);
+            Checkpoint loaded = null;
             if (run == null) {
                 Optional<Checkpoint> cp = store.load(runId);
                 if (cp.isEmpty()) {
                     throw new WorkflowException("No checkpoint found for run: '" + runId + "'");
                 }
-                run = Run.fromCheckpoint(cp.get(), workflow);
+                loaded = cp.get();
+                // Definition drift guard (the Checkpoint record always
+                // carried workflowVersion; the resume path never compared
+                // it — the durable manager did, this one silently ran the
+                // NEW definition against the OLD blackboard). A non-legacy
+                // version that differs from the provided workflow is a
+                // DEFINITION_VERSION_MISMATCH failure, never a silent
+                // resume. Legacy checkpoints ("" version) never trip this.
+                String cpVersion = loaded.workflowVersion();
+                if (!cpVersion.isEmpty() && !cpVersion.equals(workflow.version())) {
+                    String msg = "[DEFINITION_VERSION_MISMATCH] Run '" + runId + "' started under '"
+                            + loaded.workflowName() + "@" + cpVersion
+                            + "' but resume was given '" + workflow.name() + "@"
+                            + workflow.version() + "' - refusing to run a drifted definition";
+                    log.warn(msg);
+                    WorkflowState frozen = loaded.state();
+                    return ExecutionResult.failed(msg, frozen);
+                }
+                run = Run.fromCheckpoint(loaded, workflow);
                 activeRuns.put(runId, run);
                 log.info("[{}] Restored from checkpoint, cursor='{}'", runId, run.getCursor());
             } else {

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * Two execution modes, controlled by {@link SandboxPolicy#useOptimisticEscalation}:
  *
- * <h3>Optimistic (SEMI_TRUSTED + single-tenant)</h3>
+ * <h2>Optimistic (SEMI_TRUSTED + single-tenant)</h2>
  * <ol>
  *   <li>Try {@link ClassLoaderSandbox} first — fast, no JVM startup cost.</li>
  *   <li>If the result is BLOCKED (ClassLoader refused a dangerous class access):
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * model writes is benign arithmetic / string manipulation. Only the rare dangerous
  * snippet triggers escalation, paying the JVM startup cost only when necessary.
  *
- * <h3>Escalation budget (熔断, KP9 thinking-question 2 — per-run ledger, debt-2 fix 2026-09-12)</h3>
+ * <h2>Escalation budget (熔断, KP9 thinking-question 2 — per-run ledger, debt-2 fix 2026-09-12)</h2>
  * The optimistic loop's cost model breaks when the SAME caller keeps submitting
  * block-triggering code: every escalation pays a double compile + JVM startup
  * (1–2 s), so a chatty adversarial-or-just-buggy source turns the fast path into
@@ -38,12 +38,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Once a key's budget is spent, subsequent BLOCKED results under that key are
  * returned as-is (fail-closed to the cheap refusal) instead of escalating.
  *
- * <h3>Direct (UNTRUSTED / ADVERSARIAL / multi-tenant)</h3>
+ * <h2>Direct (UNTRUSTED / ADVERSARIAL / multi-tenant)</h2>
  * Route straight to the tier mandated by {@link SandboxPolicy#tierFor}. For
  * UNTRUSTED/ADVERSARIAL the ClassLoader attempt would be wasted: we already know
  * the code should be treated as dangerous.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * // Default: optimistic for SEMI_TRUSTED single-tenant
  * Sandbox sandbox = SandboxEscalator.forRisk(SandboxRiskLevel.SEMI_TRUSTED);

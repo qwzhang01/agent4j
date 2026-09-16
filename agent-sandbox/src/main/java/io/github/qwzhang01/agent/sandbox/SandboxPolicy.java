@@ -31,7 +31,7 @@ package io.github.qwzhang01.agent.sandbox;
  *                                 this level should add Docker / Firecracker / seccomp.
  * </pre>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * SandboxPolicy policy = SandboxPolicy.defaultPolicy();
  * SandboxTier tier = policy.tierFor(SandboxRiskLevel.SEMI_TRUSTED, false);

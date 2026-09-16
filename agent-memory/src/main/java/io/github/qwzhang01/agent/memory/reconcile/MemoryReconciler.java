@@ -20,7 +20,7 @@ import java.util.Objects;
  * "home-city") never matches the old entry and supersede never triggers. The
  * reconciler recalls up to {@link #RECALL_LIMIT} entries relevant to the last
  * user message and hands the "subject: content" list to the extractor via the
- * {@link MemoryExtractor#extract(List, String, MemoryEntry…)} prompt.
+ * {@link MemoryExtractor#extract(List, String, MemoryEntry...)} prompt.
  * <p>
  * No new store surface: recall goes through the store's existing query path
  * ({@link MemoryRetriever#recallForContext(List, int, String)}), ranking

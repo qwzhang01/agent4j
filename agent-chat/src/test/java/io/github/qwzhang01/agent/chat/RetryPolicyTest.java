@@ -45,11 +45,14 @@ class RetryPolicyTest {
         List<AgentEvent> events = new ArrayList<>();
         room.stream("hi", events::add);
 
-        // Sequence: ContentDelta → TurnTrace → Done (same as before A7)
-        assertEquals(3, events.size());
-        assertInstanceOf(AgentEvent.ContentDelta.class, events.get(0));
-        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(1));
-        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(2));
+        // Sequence: ModelCallStarted → ContentDelta → ModelCallFinished → TurnTrace → Done
+        // (same as before A7, plus the Stage 9 model-boundary pair)
+        assertEquals(5, events.size());
+        assertInstanceOf(AgentEvent.ModelCallStarted.class, events.get(0));
+        assertInstanceOf(AgentEvent.ContentDelta.class, events.get(1));
+        assertInstanceOf(AgentEvent.ModelCallFinished.class, events.get(2));
+        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(3));
+        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(4));
         assertEquals("normal reply", done.finalAnswer());
     }
 

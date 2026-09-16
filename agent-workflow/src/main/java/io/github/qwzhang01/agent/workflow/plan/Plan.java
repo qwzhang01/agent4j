@@ -50,8 +50,13 @@ public final class Plan {
     private int planVersion = 1;
 
     private Plan(String planId, List<Step> steps) {
+        this(planId, steps, 1);
+    }
+
+    private Plan(String planId, List<Step> steps, int planVersion) {
         this.planId = planId;
         this.steps = steps;
+        this.planVersion = planVersion;
         validate(steps);
     }
 
@@ -60,7 +65,7 @@ public final class Plan {
      * a valid topological order — validated).
      */
     public static Plan of(String planId, List<Step> steps) {
-        return new Plan(planId, new ArrayList<>(steps));
+        return new Plan(planId, new ArrayList<>(steps), 1);
     }
 
     public String planId() {
@@ -73,6 +78,18 @@ public final class Plan {
 
     public List<Step> steps() {
         return List.copyOf(steps);
+    }
+
+    /**
+     * Structural mutation: rebuild this plan with new steps. The returned
+     * plan carries {@code planVersion + 1} — versioning that actually
+     * increments (the class javadoc promised this; before this method the
+     * version was always 1, so drift was undetectable). A resumed
+     * executor compares {@code planVersion()} against its checkpoint and
+     * refuses to run a drifted plan.
+     */
+    public Plan rebuildWith(List<Step> newSteps) {
+        return new Plan(this.planId, new ArrayList<>(newSteps), this.planVersion + 1);
     }
 
     /**

@@ -670,12 +670,21 @@ public class ReActAgentLoop implements AgentLoop {
     /**
      * Stage 9: a tool result that is a governance refusal (not a tool
      * output) gets an explicit {@code ToolValidationRejected} event — the
-     * observability twin of the model-visible error string. Currently the
-     * wired refusals are the validation boundaries of
-     * {@code ContractAwareToolExecutor} ({@code [UNKNOWN_TOOL]} /
-     * {@code [INVALID_TOOL_ARGUMENTS]}); permission/approval boundaries
-     * are roadmap classes that will emit the same event with their stage
-     * names when they land.
+     * observability twin of the model-visible error string. The wired
+     * refusal prefixes, by governance stage:
+     * <ul>
+     *   <li>{@code [UNKNOWN_TOOL]} / {@code [INVALID_TOOL_ARGUMENTS]} —
+     *       validation boundary ({@code ContractAwareToolExecutor})</li>
+     *   <li>{@code [DENIED]} — permission OR approval boundary
+     *       ({@code GovernedToolExecutor}: DENY policy, approval rejection,
+     *       missing approval service). The two are indistinguishable from
+     *       the result string alone — both are a human/policy "no" before
+     *       execution — so both map to {@code stage="approval"}: the stage
+     *       a host audits when asking "who turned this call down".</li>
+     *   <li>{@code [RATE_LIMITED]} — the governed executor's rate gate;
+     *       a resource throttle, reported under {@code stage="permission"}
+     *       as the closest governance boundary.</li>
+     * </ul>
      */
     private static AgentEvent.ToolValidationRejected governanceRejectionOf(
             ToolCall toolCall, String result) {
@@ -686,6 +695,14 @@ public class ReActAgentLoop implements AgentLoop {
                 || result.startsWith("[INVALID_TOOL_ARGUMENTS]")) {
             return new AgentEvent.ToolValidationRejected(
                     toolCall.id(), toolCall.name(), "validation", result);
+        }
+        if (result.startsWith("[DENIED]")) {
+            return new AgentEvent.ToolValidationRejected(
+                    toolCall.id(), toolCall.name(), "approval", result);
+        }
+        if (result.startsWith("[RATE_LIMITED]")) {
+            return new AgentEvent.ToolValidationRejected(
+                    toolCall.id(), toolCall.name(), "permission", result);
         }
         return null;
     }

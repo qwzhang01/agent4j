@@ -18,7 +18,7 @@ package io.github.qwzhang01.agent.sandbox;
  *   WASM          ~10 ms      WASM runtime bugs             ❌ out of v1 scope
  * </pre>
  *
- * <h3>Upgrade triggers</h3>
+ * <h2>Upgrade triggers</h2>
  * <ul>
  *   <li>CLASSLOADER → PROCESS: untrusted users, multi-tenant, or adversarial prompts
  *       that instruct the LLM to escape (Decision 21 boundary).</li>

@@ -27,10 +27,13 @@ class ChatRoomTest {
         List<AgentEvent> events = new ArrayList<>();
         room.stream("hi", events::add);
 
-        assertEquals(3, events.size());
-        assertEquals(new AgentEvent.ContentDelta("hey"), events.get(0));
-        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(1));
-        assertInstanceOf(AgentEvent.Done.class, events.get(2));
+        // Extended contract: ModelCallStarted → ContentDelta → ModelCallFinished → TurnTrace → Done
+        assertEquals(5, events.size());
+        assertInstanceOf(AgentEvent.ModelCallStarted.class, events.get(0));
+        assertEquals(new AgentEvent.ContentDelta("hey"), events.get(1));
+        assertInstanceOf(AgentEvent.ModelCallFinished.class, events.get(2));
+        assertInstanceOf(AgentEvent.TurnTrace.class, events.get(3));
+        assertInstanceOf(AgentEvent.Done.class, events.get(4));
         assertEquals("again-hey", room.say("again"));
     }
 

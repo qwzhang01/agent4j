@@ -9,11 +9,11 @@
 
 | artifactId | 职责 | 典型依赖方 |
 |------------|------|------------|
-| `agent-core` | 接口与数据：`ChatMessage`、`ModelClient`、`Tool`、`Agent`、`AgentLoop`；表达层（Stage 9）：`ReflectiveAgent` 有界反思（PASS/REVISE/GIVE_UP 协议词裁决、critique 不入用户可见输出）、`ParallelToolExecutor` 声明序并行工具 + `ReActAgentLoop.withParallelTools` 装配、`AgentEvent` 五新事件（ModelCall/ToolValidationRejected/Reflection） | 几乎所有模块 |
+| `agent-core` | 接口与数据：`ChatMessage`、`ModelClient`、`Tool`、`Agent`、`AgentLoop`；表达层（Stage 9）：`ReflectiveAgent` 有界反思（PASS/REVISE/GIVE_UP 协议词裁决、critique 不入用户可见输出）、`ParallelToolExecutor` 声明序并行工具 + `ReActAgentLoop.withParallelTools` 装配、`AgentEvent` 五新事件（ModelCall/ToolValidationRejected/Reflection）；治理拒绝事件（gap-closure）：`[DENIED]`→approval、`[RATE_LIMITED]`→permission 接线，恢复事件留白（`[DENIED]` 三来源串不可区分统一归 approval） | 几乎所有模块 |
 | `agent-model` | `MockModelClient`；OpenAI-compatible / Anthropic 客户端；Retry / Timeout / Fallback / StructuredOutput 装饰器 | 需要真实或 Mock 模型的模块与示例 |
 | `agent-plugin` | SPI 插件加载 / 卸载 / 重载 + 外部 JAR 加载（checksum 门、每 jar 独立 classloader、manifest 权限声明、注册回滚、命名空间隔离）；**无**多版本共存 / module layer 禁闭 | 自进化 Tool、`PluginExample` |
 | `agent-sandbox` | ClassLoader 沙箱 + Process 沙箱（**无** Docker / WASM） | `agent-coding`、沙箱示例 |
-| `agent-workflow` | 图运行时、7 种节点、Checkpoint；durable 执行：RunStore/Lease/Ledger/CheckpointStore（内存 + JDBC 后端，纯 ANSI SQL）、`DurableRunManager`（心跳续租 + 行监视）、`DistributedRunControl` 跨实例 Cancel/Resume 守卫/Approval Callback；计划层（Stage 9 `plan` 包）：`Plan`（DAG 校验：未知/前向/自环/重复依赖全拒 + `planVersion` + `readySteps` 前沿）、`PlanExecutor`（编译为拓扑序线性链复用 GraphRuntime——单游标 runtime 不允许扇出无条件边）、`MultiAgentPlanner`（子任务状态隔离 + `deriveChild` 预算/Trace 传播 + 同输出去重）、`EventReplayer`（事件历史只读重放，工具不重复执行） | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
+| `agent-workflow` | 图运行时、7 种节点、Checkpoint；durable 执行：RunStore/Lease/Ledger/CheckpointStore（内存 + JDBC 后端，纯 ANSI SQL）、`DurableRunManager`（心跳续租 + 行监视）、`DistributedRunControl` 跨实例 Cancel/Resume 守卫/Approval Callback；计划层（Stage 9 `plan` 包）：`Plan`（DAG 校验：未知/前向/自环/重复依赖全拒 + `planVersion` + `readySteps` 前沿）、`PlanExecutor`（编译为拓扑序线性链复用 GraphRuntime——单游标 runtime 不允许扇出无条件边）、`MultiAgentPlanner`（子任务状态隔离 + `deriveChild` 预算/Trace 传播 + 同输出去重）、`EventReplayer`（事件历史只读重放，工具不重复执行；gap-closure：`replayPrefix` 前缀折叠——交互式 time-travel，mid-run 世界保留部分历史、Done 窗内判定 doneWithinPrefix、破碎录制 anomaly 保留、越界 fail-loud）；plan 级恢复（gap-closure）：`StepExecutor` 异常直达 + `Plan.rebuildWith` 版本演进 + `RunManager` `DEFINITION_VERSION_MISMATCH` 守卫，恢复粒度 last pause 非 last node | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列（内存 + `JdbcTaskQueue` 持久化任务表，孤儿回查 `requeueOrphaned`） | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
@@ -26,7 +26,7 @@
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
 | `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。可选 `MemorySource` / `LoreSource` / `RelationSource`；可选 `ConsistencyGuard`（默认 no-op）；群聊 `RoundRobinSpeaker`；`PersonaRenderer` 挂钩。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
-| `agent-observability` | 指标（Prometheus 文本 / JSONL sink）、五维预算、路由、评估（黄金集 + 在线五指标 / 采样 / 版本对照 / 漂移告警 / 统一报告）、版本三元组、ops 事件总线 | 可观测示例 |
+| `agent-observability` | 指标（Prometheus 文本 / JSONL sink）、五维预算、路由（`RiskAwareRouter` gap-closure：`SideEffectLevel` 风险信号——DESTRUCTIVE/SIDE_EFFECT/UNKNOWN 暴露即升 premium，NONE/READ_ONLY 走 cheap，装配未分类 = 无信号跳过不伪造风险；pre-call 代理信号方向性安全）、评估（黄金集 + 在线五指标 / 采样 / 版本对照 / 漂移告警 / 统一报告）、版本三元组、ops 事件总线 | 可观测示例 |
 | `agent-otel-export` | RunEvent → OTel span 薄壳（`agent.run`/`agent.step`/`agent.model`/`agent.tool`）；SDK 仅测试域，不进核心 | OTel 示例 |
 | `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + profile 感知 `AgentFactory`（Stage 8.2：`agent4j.profile` 默认 secure——治理装配自动接；test 同栈自动放行；unsafe 显式裸奔）+ 启动高风险配置检查（SECURE 矛盾即炸启动）+ 六面健康检查 + 优雅停机协调器 + 配置版本。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
 | `examples` | 可运行示例（见 `examples/README.md`） | 无（消费以上模块） |

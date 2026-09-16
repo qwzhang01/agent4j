@@ -107,6 +107,59 @@ public final class EventReplayer {
         return new Replay(state, anomalies);
     }
 
+    /**
+     * Interactive time travel (Stage 9 gap closure): fold only the FIRST
+     * {@code uptoIndex} events (exclusive bound: index {@code uptoIndex}
+     * itself is NOT folded) and return the world at that boundary — the
+     * reconstructed state, whether the original run had already reached
+     * {@code Done} within the prefix, and the anomalies seen so far.
+     * <p>
+     * Semantics a stepping host needs:
+     * <ul>
+     *   <li>stepping BEFORE the Done lands yields a mid-run world: state
+     *       IDLE, partial history, no "partial replay" anomaly (the cut
+     *       is the host's choice, not a broken recording)</li>
+     *   <li>stepping PAST the end is a host bug, not a partial world:
+     *       {@code IndexOutOfBoundsException}, fail-loud</li>
+     *   <li>{@code doneWithinPrefix} tells the host whether the original
+     *       run's terminal fact is inside the window — a host may step
+     *       back from after-Done to before-Done and get a world where the
+     *       run is still open</li>
+     * </ul>
+     * The fold logic is exactly {@link #replay(List, int)}'s — the same
+     * recording is re-read at any depth without re-executing anything.
+     *
+     * @param events   the recorded stream (in emission order)
+     * @param maxSteps the step ceiling stamped on the rebuilt state
+     * @param uptoIndex exclusive bound on how many events to fold
+     *                  (0 = empty world, events.size() = full replay)
+     */
+    public PrefixReplay replayPrefix(List<AgentEvent> events, int maxSteps, int uptoIndex) {
+        if (uptoIndex < 0 || uptoIndex > events.size()) {
+            throw new IndexOutOfBoundsException(
+                    "prefix bound " + uptoIndex + " outside history of "
+                            + events.size() + " events - time travel cannot step past the recording");
+        }
+        Replay replayed = replay(events.subList(0, uptoIndex), maxSteps);
+        // replay() only stamps DONE when a Done event was actually folded,
+        // so the state's status IS the done-within-prefix answer; the
+        // subList cut cannot hide a Done that was already inside.
+        boolean doneWithinPrefix = replayed.state().getStatus() == AgentState.Status.DONE;
+        List<String> anomalies = new ArrayList<>(replayed.anomalies());
+        if (uptoIndex < events.size() && !anomalies.isEmpty()) {
+            // A prefix cut before Done always yields replay()'s "history
+            // ended without Done" anomaly — correct for a broken
+            // recording, wrong for a deliberate prefix. Drop it.
+            anomalies.removeIf(a -> a.startsWith("history ended without Done"));
+        }
+        return new PrefixReplay(replayed.state(), doneWithinPrefix, anomalies);
+    }
+
+    /** The world at a time-travel boundary. */
+    public record PrefixReplay(AgentState state, boolean doneWithinPrefix,
+                               List<String> anomalies) {
+    }
+
     /** Write accumulated assistant text as one history message (if any). */
     private static void flushAssistant(AgentState state, String text) {
         if (text != null && !text.isBlank()) {

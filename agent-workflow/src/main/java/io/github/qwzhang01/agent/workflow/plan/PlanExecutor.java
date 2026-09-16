@@ -44,7 +44,12 @@ public final class PlanExecutor {
     /** What one plan step does: read the objective, return an output. */
     @FunctionalInterface
     public interface StepExecutor {
-        String execute(Plan.Step step, Plan plan);
+        /**
+         * Execute one step. May throw {@code PauseException} to park the
+         * plan at this step (durable resume), or any other exception to
+         * fail it — the runtime's node semantics apply unchanged.
+         */
+        String execute(Plan.Step step, Plan plan) throws Exception;
     }
 
     /**
