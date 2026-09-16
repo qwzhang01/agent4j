@@ -33,11 +33,50 @@ public final class CostMeter {
 
     /** Cost of one call described by prompt/completion token counts, in microUSD. */
     public long costMicros(String model, long promptTokens, long completionTokens) {
-        if (promptTokens < 0 || completionTokens < 0) {
+        return costMicros(model, promptTokens, completionTokens, 0, 0);
+    }
+
+    /**
+     * Stage 5.1: cache-aware cost of one call, in microUSD.
+     * <p>
+     * The prompt splits into three disjoint parts (same semantics as
+     * {@code routing.CachePricing.promptCostMicros}, E3 / decision 26):
+     * <pre>
+     *   prompt = cached + written + base
+     *   cost   = cached * cacheRead + written * cacheWrite + base * input
+     * </pre>
+     * When the price row carries no cache fields (legacy two-field tables),
+     * this method must be called with cached/written = 0 and degenerates to
+     * the two-argument form byte-for-byte. Calling it with cached &gt; 0 on a
+     * row priced without cache accounting throws: that would silently bill
+     * cache reads at full price - a config bug, fail loud.
+     *
+     * @param cachedTokens  portion of the prompt served from cache (⊆ promptTokens)
+     * @param writtenTokens portion written INTO the cache this call
+     */
+    public long costMicros(String model, long promptTokens, long completionTokens,
+                           long cachedTokens, long writtenTokens) {
+        if (promptTokens < 0 || completionTokens < 0 || cachedTokens < 0 || writtenTokens < 0) {
             throw new IllegalArgumentException("token counts must not be negative");
         }
+        if (cachedTokens > promptTokens) {
+            throw new IllegalArgumentException("cachedTokens (" + cachedTokens
+                    + ") must not exceed promptTokens (" + promptTokens + ")");
+        }
+        if (writtenTokens > promptTokens - cachedTokens) {
+            throw new IllegalArgumentException("writtenTokens (" + writtenTokens
+                    + ") must not exceed the uncached portion (" + (promptTokens - cachedTokens) + ")");
+        }
         PricingTable.Price price = table.priceOf(model);
-        return scaled(promptTokens, price.inputMicrosPerMillion())
+        if ((cachedTokens > 0 || writtenTokens > 0)
+                && price.cacheReadMicrosPerMillion() == 0 && price.cacheWriteMicrosPerMillion() == 0) {
+            throw new IllegalArgumentException(
+                    "cache tokens reported for model '" + model + "' but its price row has no cache fields");
+        }
+        long base = promptTokens - cachedTokens - writtenTokens;
+        return scaled(base, price.inputMicrosPerMillion())
+                + scaled(cachedTokens, price.cacheReadMicrosPerMillion())
+                + scaled(writtenTokens, price.cacheWriteMicrosPerMillion())
                 + scaled(completionTokens, price.outputMicrosPerMillion());
     }
 

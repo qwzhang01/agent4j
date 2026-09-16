@@ -144,6 +144,64 @@ class MemoryAdminTest {
         assertEquals("admin2", edited.provenance().actor());
     }
 
+    // ============ Stage 5.2: field fidelity on updates ============
+
+    @Test
+    void updateContent_preservesAllGovernanceFields() {
+        Instant from = Instant.parse("2026-01-10T00:00:00Z");
+        Instant validAt = Instant.parse("2026-06-01T00:00:00Z");
+        Instant invalidAt = Instant.parse("2026-06-02T00:00:00Z");
+        MemoryEntry full = store.write(new MemoryEntry(
+                null, "user:u1", MemoryType.FACT, "diet", "peanut allergy", 0.9,
+                MemoryProvenance.userSaid("u1", "r1", Instant.now()),
+                MemoryStatus.ACTIVE, Instant.now(), null, null,
+                MemoryLifecycle.EVOLVE, new float[]{1f, 2f, 3f},
+                from, validAt, invalidAt));
+
+        MemoryEntry edited = admin.updateContent(full.id(), "peanut and shellfish allergy", "admin1");
+
+        assertEquals("peanut and shellfish allergy", edited.content());
+        assertEquals(MemoryLifecycle.EVOLVE, edited.lifecycle(), "lifecycle must survive an admin edit");
+        assertEquals("user:u1", edited.scope());
+        assertEquals(MemoryType.FACT, edited.type());
+        assertEquals("diet", edited.subject());
+        assertEquals(0.9, edited.importance());
+        assertEquals(MemoryStatus.ACTIVE, edited.status());
+        assertEquals(from, edited.validFrom(), "business-axis start must survive an admin edit");
+        assertEquals(validAt, edited.validAt(), "business-axis end must survive an admin edit");
+        assertEquals(invalidAt, edited.invalidAt(), "system-axis close must survive an admin edit");
+        assertTrue(edited.provenance().sourceType() == MemoryProvenance.SourceType.ADMIN_EDIT);
+        // embedding intentionally nulled (content changed, old vector stale) — documented behaviour
+        assertNull(edited.embedding(), "embedding intentionally reset on content change");
+    }
+
+    @Test
+    void setTtl_preservesAllGovernanceFields() {
+        Instant from = Instant.parse("2026-01-10T00:00:00Z");
+        Instant validAt = Instant.parse("2026-06-01T00:00:00Z");
+        Instant invalidAt = Instant.parse("2026-06-02T00:00:00Z");
+        float[] vector = new float[]{4f, 5f};
+        MemoryEntry full = store.write(new MemoryEntry(
+                null, "user:u1", MemoryType.FACT, "diet", "peanut allergy", 0.9,
+                MemoryProvenance.userSaid("u1", "r1", Instant.now()),
+                MemoryStatus.ACTIVE, Instant.now(), null, null,
+                MemoryLifecycle.EVOLVE, vector,
+                from, validAt, invalidAt));
+
+        Instant newTtl = Instant.now().plus(2, ChronoUnit.HOURS);
+        MemoryEntry withTtl = admin.setTtl(full.id(), newTtl);
+
+        assertEquals(newTtl, withTtl.expireAt());
+        assertEquals(MemoryLifecycle.EVOLVE, withTtl.lifecycle(), "lifecycle must survive a TTL change");
+        assertArrayEquals(vector, withTtl.embedding(), "embedding must survive a TTL change (content unchanged)");
+        assertEquals(from, withTtl.validFrom());
+        assertEquals(validAt, withTtl.validAt());
+        assertEquals(invalidAt, withTtl.invalidAt());
+        assertEquals("peanut allergy", withTtl.content());
+        assertEquals(MemoryProvenance.SourceType.USER_SAID, withTtl.provenance().sourceType(),
+                "TTL change keeps original provenance");
+    }
+
     // ============ TTL ============
 
     @Test

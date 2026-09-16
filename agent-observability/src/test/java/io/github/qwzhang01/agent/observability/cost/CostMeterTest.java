@@ -73,4 +73,46 @@ class CostMeterTest {
         CostMeter meter = new CostMeter(table());
         assertThrows(IllegalArgumentException.class, () -> meter.costMicros("premium", -1, 0));
     }
+
+    // ============ Stage 5.1: cache-aware pricing ============
+
+    @Test
+    @DisplayName("cache-aware split: cached 0.1x / written 1.25x / base 1x (Anthropic-style)")
+    void cacheAwareSplit() {
+        PricingTable cached = PricingTable.builder()
+                .price("claude", 3_000_000L, 15_000_000L, 300_000L, 3_750_000L)
+                .build();
+        CostMeter meter = new CostMeter(cached);
+        // prompt=1000: 600 cached + 200 written + 200 base; completion=100
+        // 600*300_000/1M=180; 200*3_750_000/1M=750; 200*3_000_000/1M=600; 100*15_000_000/1M=1500
+        assertEquals(180L + 750L + 600L + 1500L,
+                meter.costMicros("claude", 1000, 100, 600, 200));
+    }
+
+    @Test
+    @DisplayName("legacy two-field row: cache-aware call with 0 cache tokens = old cost byte-for-byte")
+    void legacyRowDegenerates() {
+        CostMeter meter = new CostMeter(table());
+        assertEquals(4000L, meter.costMicros("premium", 800, 200, 0, 0));
+    }
+
+    @Test
+    @DisplayName("cache tokens on a row without cache fields: fail loud, never silently full-price them")
+    void cacheTokensOnLegacyRowFailLoud() {
+        CostMeter meter = new CostMeter(table());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> meter.costMicros("premium", 800, 200, 400, 0));
+        assertTrue(ex.getMessage().contains("cache"));
+    }
+
+    @Test
+    @DisplayName("guard rails: cached>prompt and written>uncached rejected")
+    void cacheAwareValidation() {
+        PricingTable cached = PricingTable.builder()
+                .price("m", 1_000_000L, 1_000_000L, 100_000L, 1_250_000L)
+                .build();
+        CostMeter meter = new CostMeter(cached);
+        assertThrows(IllegalArgumentException.class, () -> meter.costMicros("m", 100, 10, 200, 0));
+        assertThrows(IllegalArgumentException.class, () -> meter.costMicros("m", 100, 10, 50, 60));
+    }
 }

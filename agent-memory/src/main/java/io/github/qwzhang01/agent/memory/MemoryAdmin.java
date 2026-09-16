@@ -96,6 +96,12 @@ public class MemoryAdmin {
 
     /**
      * Edit the content of an entry (provenance tracked as ADMIN_EDIT).
+     * <p>
+     * Stage 5.2 field fidelity: rebuilds via the FULL constructor so
+     * lifecycle / embedding / validFrom / validAt / invalidAt survive the
+     * edit. The embedding intentionally becomes null — content changed, the
+     * old vector no longer matches; the embedding store re-computes on write.
+     * Only provenance is replaced (ADMIN_EDIT audit trail).
      */
     public MemoryEntry updateContent(String entryId, String newContent, String adminId) {
         MemoryEntry entry = requireEntry(entryId);
@@ -103,7 +109,9 @@ public class MemoryAdmin {
                 entry.id(), entry.scope(), entry.type(), entry.subject(), newContent,
                 entry.importance(),
                 MemoryProvenance.adminEdit(adminId, Instant.now()),
-                entry.status(), entry.createdAt(), entry.expireAt(), entry.dueAt()
+                entry.status(), entry.createdAt(), entry.expireAt(), entry.dueAt(),
+                entry.lifecycle(), null,
+                entry.validFrom(), entry.validAt(), entry.invalidAt()
         );
         store.update(updated);
         log.info("Admin {} edited entry {}", adminId, entryId);
@@ -146,13 +154,19 @@ public class MemoryAdmin {
 
     /**
      * Set a TTL on an entry (expire at the given instant).
+     * <p>
+     * Stage 5.2 field fidelity: full constructor, ONLY expireAt replaced,
+     * every other field (including embedding and all three time-axis fields)
+     * preserved verbatim.
      */
     public MemoryEntry setTtl(String entryId, Instant expireAt) {
         MemoryEntry entry = requireEntry(entryId);
         MemoryEntry withTtl = new MemoryEntry(
                 entry.id(), entry.scope(), entry.type(), entry.subject(), entry.content(),
                 entry.importance(), entry.provenance(), entry.status(),
-                entry.createdAt(), expireAt, entry.dueAt()
+                entry.createdAt(), expireAt, entry.dueAt(),
+                entry.lifecycle(), entry.embedding(),
+                entry.validFrom(), entry.validAt(), entry.invalidAt()
         );
         store.update(withTtl);
         return withTtl;

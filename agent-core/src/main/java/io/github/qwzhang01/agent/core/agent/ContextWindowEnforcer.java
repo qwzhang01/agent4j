@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * {@link ContextBuilder} decorator that enforces a {@link ContextWindowBudget} (KP2).
@@ -53,14 +54,32 @@ public class ContextWindowEnforcer implements ContextBuilder {
 
     private final ContextBuilder delegate;
     private final ContextWindowBudget budget;
+    private final Consumer<ContextTrimRecord> trimListener;
 
     /**
      * @param delegate the underlying context builder; {@code null} means use raw state messages
      * @param budget   the four-account window budget to enforce
      */
     public ContextWindowEnforcer(ContextBuilder delegate, ContextWindowBudget budget) {
+        this(delegate, budget, null);
+    }
+
+    /**
+     * Stage 5.1: full constructor with a trim listener. Every truncation the
+     * enforcer performs emits one {@link ContextTrimRecord} to the listener
+     * (who / when / before-after counts), making the "who got cut" decision
+     * queryable telemetry instead of a warn log only. {@code null} listener
+     * = legacy behaviour exactly (warn log, no record).
+     *
+     * @param delegate     underlying context builder; {@code null} = raw state passthrough
+     * @param budget       the four-account window budget to enforce
+     * @param trimListener optional consumer of trim records; may be null
+     */
+    public ContextWindowEnforcer(ContextBuilder delegate, ContextWindowBudget budget,
+                                 java.util.function.Consumer<ContextTrimRecord> trimListener) {
         this.delegate = delegate;
         this.budget = Objects.requireNonNull(budget, "budget");
+        this.trimListener = trimListener;
     }
 
     /** Convenience constructor: no delegate (raw state passthrough + enforcement). */
@@ -80,6 +99,15 @@ public class ContextWindowEnforcer implements ContextBuilder {
                             "est. tokens {} → {} (budget={})",
                     history.size(), trimmed.size(),
                     estimateTokens(history), estimateTokens(trimmed), budget.historyBudget());
+            if (trimListener != null) {
+                String agentName = config != null ? config.getName() : null;
+                trimListener.accept(ContextTrimRecord.of(
+                        agentName,
+                        ContextTrimRecord.TrimSource.ENFORCER,
+                        history.size(), trimmed.size(),
+                        estimateTokens(history), estimateTokens(trimmed),
+                        budget.historyBudget()));
+            }
         }
         return trimmed;
     }
@@ -212,5 +240,10 @@ public class ContextWindowEnforcer implements ContextBuilder {
     /** Returns the delegate builder (may be null for passthrough mode). */
     public ContextBuilder getDelegate() {
         return delegate;
+    }
+
+    /** Returns the trim listener (may be null = legacy warn-log-only behaviour). */
+    public java.util.function.Consumer<ContextTrimRecord> getTrimListener() {
+        return trimListener;
     }
 }

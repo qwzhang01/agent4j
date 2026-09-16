@@ -124,7 +124,8 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 - `MemoryScope`（agent/user/session/task/channel/tenant 六 kind）按关系隔离，store 面：`InMemoryMemoryStore` / `PgMemoryStore`。
 - 读进 prompt 走 `MemorySource` / `MemoryContextBuilder`（分层注入：core 常驻头部 / archival 跟 query 坐尾部）。
-- **gap**：读写无 tenant/identity/purpose 治理（读写不落审计），高敏感字段无脱敏。Stage 5.2/5.3。
+- Memory 治理门面（Stage 5.2，2026-09-16）：`MemoryGovernance`——RunContext 派生 scope 白名单（tool 不可伪造）+ purpose 强制 + `MemoryAccessAuditRecord` 读写审计 + `RedactionPolicy` 内容脱敏（默认 rawPlusMasked：账本留原文、消费者拿脱敏副本）+ `purgeForUser/purgeForTenant` 删除传播（`DeletionPropagation` 记录被扫 scope 与 entry id 清单，可验证）。`MemoryAdmin.updateContent/setTtl` 字段保真已修复（16 参完整构造器，lifecycle/embedding/双时间轴不再丢失，两测试锚定）。
+- **gap**：MemoryProvenance 无独立模型版本字段（经 actor 字符串承载）；删除传播仅覆盖 Memory store，Trace/Trajectory 导出物的删除传播待 Stage 8；retention 匿名化（删除改匿名）未做，现仅 hard delete + TTL。
 
 ### 2.6 Sandbox 边界
 
@@ -149,7 +150,7 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [x] done（Stage 3.1/3.2/3.3，2026-09-16：RunStore 乐观锁 + Checkpoint schemaVersion=2 + 定义指纹 mismatch 拒绝 + SideEffectLedger 命中重放 + RunLease 单赢家 + RecoverySnapshot 诊断；kill-9 用同 store 新实例模拟，DurableExecutionTest 14 覆盖） |
 | 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4，2026-09-16：approval 包五态协议 + PersistentApprovalService + WAITING_APPROVAL 状态 + 重启扫描恢复候选；agent-security Tool 侧接线留 Stage 4/8） |
 | Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [x] done（Stage 4.1/4.2/4.4，2026-09-16：className 白名单 + containment + env allowlist + CappedBuffer + 进程树击杀 + guard 注入 + TierLimits 限制表；红队 11 例全绿，八条攻击全 BLOCKED） |
-| Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [-] scope 隔离已有，审计/脱敏缺 |
+| Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [x] done（Stage 5.2，2026-09-16：MemoryGovernance 门面——RunContext 派生 scope 白名单不可伪造 + purpose 强制 + MemoryAccessAuditRecord 审计 + RedactionPolicy 默认 rawPlusMasked 脱敏 + purgeForUser/Tenant 删除传播 DeletionPropagation 可验证；MemoryAdmin 字段保真修复，updateContent/setTtl 不再丢 lifecycle/embedding/双时间轴，两测试锚定） |
 | 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor）；Model/Memory/Approval/Sandbox 侧映射 Stage 5 |
 | 统一生命周期事件 | agent-core | 事件含 runId/step/attempt | — | — | [x] done（Stage 1.3，2026-09-16：RunEvent sealed 族 8 事件 + SCHEMA_VERSION=1；发射接线延后到 Stage 5 遥测统一） |
 
@@ -228,7 +229,7 @@ agent-spring-boot-starter -> core, model
 |------|------|------|------|
 | agent-core | ReAct loop / streaming / maxSteps | [x] | ReActAgentLoop + 14 测试文件 |
 | agent-core | Guardrail 双门（输入/输出） | [x] | GuardrailLoopTest 5 例 |
-| agent-core | ContextWindowBudget 四本账 | [-] | 已实现 opt-in，未默认接线 |
+| agent-core | ContextWindowBudget 四本账 | [x] | Stage 2 实现 + Stage 5.1（2026-09-16）TrimRecord 遥测（ContextTrimRecordTest 6）+ CostMeter cache-aware 计价（CostMeterTest 4 新增）；装配仍为 opt-in，默认接线随 Stage 8 Profile |
 | agent-core | Handoff 三件套 + 续跑身份 | [x] | HandoffLoopTest + core 92/92 |
 | agent-core | RunContext / 统一事件 | [x] | Stage 1（2026-09-16）：run 包 10 文件 + RunContextTest 7 / RunEventTest 2 / ContextAwareLoopTest 5 / ParallelCancelTest 1；发射接线见 Stage 5 |
 | agent-core | ToolDefinition / ToolResult / FailureTaxonomy | [x] | Stage 2（2026-09-16）：contract 包 + 统一校验链 + ToolResult 信封；outputSchema 校验与 Model 侧失败映射留 Stage 5 |
@@ -239,7 +240,8 @@ agent-spring-boot-starter -> core, model
 | agent-workflow | RunStore / 幂等账本 / 持久化 Approval | [x] | Stage 3（2026-09-16）：durable 包 + approval 包 + DurableRunManager/PersistentApprovalService + DurableExecutionTest 14 / SchedulerDurabilityTest 3；账本接 GraphRuntime 与 Tool 侧接线留 Stage 8 |
 | agent-memory | Scope 隔离 / 生命周期 / 对账环 / 双时间轴 / 分层注入 | [x] | 15 测试文件 + 174/174 |
 | agent-memory | PG 持久化 | [-] | 真库线 21/21，但裸 JDBC 无池 |
-| agent-memory | tenant 审计 / 字段脱敏 | [ ] | Stage 5 |
+| agent-memory | tenant 审计 / 字段脱敏 | [x] | Stage 5.2（2026-09-16）：MemoryGovernance + MemoryAccessAuditRecord + RedactionPolicy + DeletionPropagation，MemoryGovernanceTest 11 例 + 字段保真 2 例 |
+| agent-trace-export | v1 导出契约 + 导出面脱敏 | [x] | Stage 5.3（2026-09-16）：TrajectoryCodec 可配 SecretMasker（默认 null=旧行为逐字节不变），masked 构造器下 message/action/observation 三文本面全走 mask，TrajectoryCodecTest 新增 2 例锚定 |
 | agent-security | Permission/Approval/Audit/Sanitizer/Guardrail 桥 | [x] | 9 测试文件 + Stage 2：SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约（SecureAssemblyTest 6） |
 | agent-security | InjectionNormalizer + 三态 Judge 槽位 | [-] | Judge v2 语义槽空着，regex 墙为主 |
 | agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | Stage 4（2026-09-16）：12 测试文件 91/91（红队 11 + TierLimits 7 新增） |

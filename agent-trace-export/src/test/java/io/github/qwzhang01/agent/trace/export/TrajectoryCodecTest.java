@@ -95,6 +95,47 @@ class TrajectoryCodecTest {
         assertEquals("[ERROR] boom", observation);
     }
 
+    // ============ Stage 5.3: export redaction ============
+
+    @Test
+    void maskedConstructor_redactsAllTextSurfaces() {
+        io.github.qwzhang01.agent.core.redact.SecretMasker masker =
+                io.github.qwzhang01.agent.core.redact.SecretMasker.withDefaults();
+        TrajectoryCodec maskedCodec = new TrajectoryCodec(masker);
+
+        io.github.qwzhang01.agent.core.model.ChatMessage secretMsg =
+                io.github.qwzhang01.agent.core.model.ChatMessage.user(
+                        "my api key is sk-abcdefghijklmnopqrst ok?");
+        Trajectory t = TrajectoryFixture.successful("run-secret");
+        List<io.github.qwzhang01.agent.core.model.ChatMessage> messagesWithSecret =
+                new java.util.ArrayList<>(t.messages());
+        messagesWithSecret.add(secretMsg);
+        Trajectory withSecret = new Trajectory(t.trajectoryId(), t.runId(), t.metadata(),
+                t.status(), t.steps(), messagesWithSecret, t.reward(), t.rewardSource());
+
+        JsonNode node = maskedCodec.toJson(withSecret);
+        String serialized = node.toString();
+        assertFalse(serialized.contains("sk-abcdefghijklmnopqrst"),
+                "exported trajectory must not contain the raw secret");
+        assertTrue(serialized.contains("[REDACTED:api-key]"),
+                "masked placeholder must appear instead");
+    }
+
+    @Test
+    void legacyConstructor_byteIdenticalToPreStage5() {
+        // messagesToJson is public: masker=null must keep legacy passthrough
+        List<io.github.qwzhang01.agent.core.model.ChatMessage> msgs = List.of(
+                io.github.qwzhang01.agent.core.model.ChatMessage.user(
+                        "token sk-abcdefghijklmnopqrst inside"));
+        String legacy = new TrajectoryCodec().messagesToJson(msgs).toString();
+        String masked = new TrajectoryCodec(
+                io.github.qwzhang01.agent.core.redact.SecretMasker.withDefaults())
+                .messagesToJson(msgs).toString();
+        assertNotEquals(legacy, masked);
+        assertTrue(legacy.contains("sk-abcdefghijklmnopqrst"));
+        assertFalse(masked.contains("sk-abcdefghijklmnopqrst"));
+    }
+
     @Test
     void unsupportedVersionRejected() {
         var node = codec.toJsonNode("{\"api_version\":\"v9\",\"kind\":\"Trajectory\"}");

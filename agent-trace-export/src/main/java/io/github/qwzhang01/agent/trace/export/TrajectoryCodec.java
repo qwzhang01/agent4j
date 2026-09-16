@@ -49,6 +49,35 @@ public final class TrajectoryCodec {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Stage 5.3: optional secret masker applied to every content-bearing
+     * field on export (message content, action content, observation
+     * content). {@code null} = passthrough, byte-for-byte legacy behaviour
+     * for single-tenant local runs. Export surfaces (DPO / replay / share)
+     * should construct with {@link SecretMasker#withDefaults()} or a
+     * tenant-configured masker: once a trajectory leaves the host boundary,
+     * embedded secrets must already be gone.
+     * <p>
+     * {@code metadata.last_error} is NOT masked in v1 — error strings are
+     * structural (exception class + message) and masking them breaks triage;
+     * documented as a known gap in limitations.md.
+     */
+    private final io.github.qwzhang01.agent.core.redact.SecretMasker masker;
+
+    /** Legacy constructor: no masking, byte-for-byte pre-Stage-5 behaviour. */
+    public TrajectoryCodec() {
+        this(null);
+    }
+
+    /** Stage 5.3 constructor: exports carry masked content for all text surfaces. */
+    public TrajectoryCodec(io.github.qwzhang01.agent.core.redact.SecretMasker masker) {
+        this.masker = masker;
+    }
+
+    private String mask(String text) {
+        return masker == null || text == null ? text : masker.mask(text);
+    }
+
     public ObjectNode toJson(Trajectory trajectory) {
         ObjectNode node = mapper.createObjectNode();
         node.put("api_version", API_VERSION);
@@ -197,7 +226,7 @@ public final class TrajectoryCodec {
 
     private ObjectNode actionToJson(StepAction action) {
         ObjectNode node = mapper.createObjectNode();
-        setIfNotBlank(node, "content", action.content());
+        setIfNotBlank(node, "content", mask(action.content()));
         if (action.hasToolCalls()) {
             ArrayNode calls = node.putArray("tool_calls");
             action.toolCalls().forEach(c -> calls.add(toolCallToJson(c)));
@@ -225,7 +254,7 @@ public final class TrajectoryCodec {
         ObjectNode node = mapper.createObjectNode();
         node.put("tool_call_id", observation.toolCallId());
         setIfNotBlank(node, "name", observation.name());
-        setIfNotBlank(node, "content", observation.content());
+        setIfNotBlank(node, "content", mask(observation.content()));
         node.put("success", observation.success());
         node.put("duration_ms", observation.durationMs());
         return node;
@@ -281,7 +310,7 @@ public final class TrajectoryCodec {
     private ObjectNode messageToJson(ChatMessage message) {
         ObjectNode node = mapper.createObjectNode();
         node.put("role", message.role().name());
-        setIfNotBlank(node, "content", message.content());
+        setIfNotBlank(node, "content", mask(message.content()));
         if (message.toolCalls() != null && !message.toolCalls().isEmpty()) {
             ArrayNode calls = node.putArray("tool_calls");
             message.toolCalls().forEach(c -> calls.add(toolCallToJson(c)));

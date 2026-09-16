@@ -41,8 +41,25 @@ public final class PricingTable {
         return price;
     }
 
-    /** One model's price row, integer microUSD per million tokens. */
-    public record Price(long inputMicrosPerMillion, long outputMicrosPerMillion) {
+    /**
+     * One model's price row, integer microUSD per million tokens.
+     * <p>
+     * Stage 5.1: the two cache fields default to 0 = no cache accounting,
+     * preserving the pre-Stage-5 two-field behaviour for every existing
+     * table. Non-zero values engage the cache-aware prompt split in
+     * {@link CostMeter#costMicros(String, long, long, long, long)}:
+     * cached tokens billed at {@code cacheReadMicrosPerMillion}, cache-write
+     * tokens at {@code cacheWriteMicrosPerMillion}, the uncached remainder
+     * at {@code inputMicrosPerMillion} - the same disjoint-split semantics
+     * as {@code routing.CachePricing.promptCostMicros} (E3 / decision 26).
+     */
+    public record Price(long inputMicrosPerMillion, long outputMicrosPerMillion,
+                        long cacheReadMicrosPerMillion, long cacheWriteMicrosPerMillion) {
+
+        /** Legacy two-field constructor: no cache accounting (Stage 5.1 compat). */
+        public Price(long inputMicrosPerMillion, long outputMicrosPerMillion) {
+            this(inputMicrosPerMillion, outputMicrosPerMillion, 0, 0);
+        }
     }
 
     public static final class Builder {
@@ -62,6 +79,31 @@ public final class PricingTable {
                         "prices must be positive microUSD per million tokens: " + model);
             }
             prices.put(model, new Price(inputMicrosPerMillion, outputMicrosPerMillion));
+            return this;
+        }
+
+        /**
+         * Stage 5.1: price row with cache accounting. Cache fields follow the
+         * {@code routing.CachePricing} semantics - read discount, write premium.
+         */
+        public Builder price(String model, long inputMicrosPerMillion, long outputMicrosPerMillion,
+                             long cacheReadMicrosPerMillion, long cacheWriteMicrosPerMillion) {
+            if (model == null || model.isBlank()) {
+                throw new IllegalArgumentException("model must not be null or blank");
+            }
+            if (inputMicrosPerMillion <= 0 || outputMicrosPerMillion <= 0) {
+                throw new IllegalArgumentException(
+                        "prices must be positive microUSD per million tokens: " + model);
+            }
+            if (cacheReadMicrosPerMillion < 0 || cacheWriteMicrosPerMillion < 0) {
+                throw new IllegalArgumentException("cache prices must be >= 0: " + model);
+            }
+            if (cacheReadMicrosPerMillion > inputMicrosPerMillion) {
+                throw new IllegalArgumentException(
+                        "cache read must not cost more than uncached input: " + model);
+            }
+            prices.put(model, new Price(inputMicrosPerMillion, outputMicrosPerMillion,
+                    cacheReadMicrosPerMillion, cacheWriteMicrosPerMillion));
             return this;
         }
 

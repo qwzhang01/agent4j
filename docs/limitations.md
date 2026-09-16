@@ -54,6 +54,26 @@ v1 最高只实现到 PROCESS 层。不要把 `ProcessSandbox` 当作对抗恶�
 
 macOS 本地开发：guard 层 guest 强制即全部边界，进程以你的 OS 用户运行，无 UID/GID 隔离；Linux 生产：PROCESS 层同样只有 guard 边界，结构隔离（namespace/cgroup/UID）要等 DOCKER adapter，高风险生产路径在 adapter 落地前**不要**跑 ADVERSARIAL 代码。`TierLimits.forRisk(risk, multiTenant)` 查每档风险的实际限制表；`requiresApproval=true`（ADVERSARIAL）表示此路径需要人工审批或更强 sandbox。
 
+## 数据保护边界（Stage 5）
+
+敏感数据治理是**opt-in 而非默认**：治理能力（脱敏/审计/身份绑定）已全部就位，但默认装配路径不强制启用。宿主接入生产数据前必须显式接线。
+
+### 已就位的治理件
+
+- `SecretMasker`：regex 规则引擎（api-key/AWS key/JWT/bearer/邮箱/手机号/银行卡 7 条默认预设 + 租户自定义规则），占位符 `[REDACTED:<规则名>]`，`mask` 永不抛异常
+- `RedactionPolicy`：四旗标（RAW/SUMMARY/HASH/MASKED）+ 四姿态工厂（rawOnly=旧行为 / maskedOnly=导出禁原文 / rawPlusMasked=Memory 账本姿态 / hashOnly=日志姿态）
+- `MemoryGovernance`：RunContext 派生 scope 白名单（不可伪造）+ purpose 强制 + 读写审计（MemoryAccessAuditRecord）+ 删除传播可验证（DeletionPropagation）
+- `TrajectoryCodec(masker)`：导出面脱敏参数化，默认 null=逐字节旧行为
+
+### 诚实的边界
+
+- 默认不脱敏：`SecretMasker`/`MemoryGovernance`/masked `TrajectoryCodec` 都是显式 opt-in；不接线就是旧行为（原文直通）。这是单租户本地运行的兼容选择，生产多租户必须接线
+- 加密靠宿主：v1 无内置加密存储适配器，静态加密由宿主在 PG/磁盘层提供；框架保证的是离宿主边界的导出面无原文
+- `metadata.last_error` 导出不脱敏：异常文本是结构性信息（类名+消息），脱敏会破坏排障，v1 记录为已知 gap
+- retention 只有 hard delete + TTL（expireAt），无匿名化路径
+- MemoryProvenance 无独立模型版本字段（经 actor 字符串承载）
+- Trace/Trajectory 导出物的删除传播（Memory 之外）留 Stage 8
+
 ## 其他诚实边界
 
 - **模型覆盖窄**：Mock、OpenAI-compatible、Anthropic。没有厂商全家桶 connector。

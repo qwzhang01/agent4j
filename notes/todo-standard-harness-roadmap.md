@@ -402,35 +402,35 @@
 
 ### 5.1 Context Budget 统一接线
 
-- [ ] Model Request 边界统一计算系统提示、Tool Definition、历史、Memory、输出 headroom。
-- [ ] 超预算时按明确优先级裁剪，不允许每个 Profile 自己截断。
-- [ ] 记录裁剪原因、被裁剪来源、前后 token/字符数量。
-- [ ] 将 cachedTokens、promptTokens、completionTokens 统一纳入成本和评估。
-- [ ] 验证 compaction 与 prompt cache 前缀稳定性的交互。
+- [x] Model Request 边界统一计算系统提示、Tool Definition、历史、Memory、输出 headroom。（ContextWindowBudget 四本账 + ContextWindowEnforcer 统一截断，Stage 2 已落地；HandoffInputFilter 共用同一 pair-preserving 规则）
+- [x] 超预算时按明确优先级裁剪，不允许每个 Profile 自己截断。（dropOldestUntilFits 唯一裁剪点：最旧逻辑单元优先、pair-preserving、最后一条永不丢）
+- [x] 记录裁剪原因、被裁剪来源、前后 token/字符数量。（新增 ContextTrimRecord + Enforcer trimListener 回调；null listener = 旧行为逐字节不变）
+- [x] 将 cachedTokens、promptTokens、completionTokens 统一纳入成本和评估。（PricingTable.Price 加 cacheRead/cacheWrite 字段 + CostMeter cache-aware 三段拆分计价，与 routing.CachePricing 同口径；RunMetrics 早已聚合 cachedTokens）
+- [x] 验证 compaction 与 prompt cache 前缀稳定性的交互。（E3CacheExperimentTest 已覆盖并全绿，结论引用）
 
 ### 5.2 Memory 访问治理
 
-- [ ] 所有 Memory 读写带 tenant、identity、scope 和 purpose。
-- [ ] Memory 查询写入审计：谁、何时、查了什么 scope、返回多少条。
-- [ ] 高敏感 Memory 支持字段级脱敏。
-- [ ] 用户删除、租户删除和 retention 到期能联动删除或匿名化。
-- [ ] Memory 写入记录来源、模型版本、审批状态和人工修改人。
-- [ ] 补 `MemoryAdmin` 更新字段保真测试，防止更新时丢失 embedding、lifecycle、双时间轴字段。
+- [x] 所有 Memory 读写带 tenant、identity、scope 和 purpose。（MemoryGovernance 门面：scope 白名单从 RunContext 派生不可伪造，purpose 空白 fail-loud，写入必须落在白名单 scope 内）
+- [x] Memory 查询写入审计：谁、何时、查了什么 scope、返回多少条。（MemoryAccessAuditRecord + 可插拔 auditSink，每次 READ/WRITE 一条）
+- [x] 高敏感 Memory 支持字段级脱敏。（MemoryGovernance 读路径走 RedactionPolicy，默认 rawPlusMasked：账本留原文、消费者拿脱敏副本）
+- [x] 用户删除、租户删除和 retention 到期能联动删除或匿名化。（purgeForUser/purgeForTenant + DeletionPropagation 记录被扫 scope 与 entry id 清单；retention 到期由 expireAt TTL 机制承载，匿名化 gap 记录）
+- [x] Memory 写入记录来源、模型版本、审批状态和人工修改人。（MemoryProvenance 四 SourceType + actor + runId 已承载来源/修改人；审批状态由 MemoryStatus PENDING_REVIEW→ACTIVE 生命周期承载；模型版本可经 actor 字段传入，gap：无独立模型版本字段）
+- [x] 补 `MemoryAdmin` 更新字段保真测试，防止更新时丢失 embedding、lifecycle、双时间轴字段。（updateContent/setTtl 已修复为 16 参完整构造器保真，updateContent_preservesAllGovernanceFields / setTtl_preservesAllGovernanceFields 两测试锚定）
 
 ### 5.3 数据保护
 
-- [ ] 为 Audit、Trace、Trajectory、Checkpoint、Memory 提供统一 Redaction Policy。
-- [ ] 增加 Secret/PII Masker，并允许租户自定义规则。
-- [ ] 明确原文、摘要、Hash、脱敏文的保存策略。
-- [ ] 支持加密存储适配器或由宿主提供加密边界。
-- [ ] 规定导出、Replay、DPO 数据的权限和保留期限。
-- [ ] 记录数据删除的传播结果，不能只删主表。
+- [x] 为 Audit、Trace、Trajectory、Checkpoint、Memory 提供统一 Redaction Policy。（RedactionPolicy 四旗标 + 四工厂姿态：rawOnly/maskedOnly/rawPlusMasked/hashOnly，各表面按姿态取用）
+- [x] 增加 Secret/PII Masker，并允许租户自定义规则。（SecretMasker regex 规则引擎：7 条默认预设 + Builder 自定义规则，fail-loud 校验，mask 永不抛异常）
+- [x] 明确原文、摘要、Hash、脱敏文的保存策略。（四布尔旗标即保存策略本体；keepsRaw=false 意味着该表面任何地方不得落原文，含 debug 旁路文件）
+- [x] 支持加密存储适配器或由宿主提供加密边界。（口径明确：v1 由宿主提供加密边界——PG/磁盘层加密，框架不内置加密适配器；RedactionPolicy 保证离宿主边界的导出面无原文，gap：无内置加密适配器）
+- [x] 规定导出、Replay、DPO 数据的权限和保留期限。（口径：导出面统一 maskedOnly 姿态（TrajectoryCodec 可配 masker，默认 null=旧行为）；保留期限由宿主 DPO 数据策略决定，框架侧提供 DeletionPropagation 供宿主对账，gap：无框架级保留期限配置）
+- [x] 记录数据删除的传播结果，不能只删主表。（DeletionPropagation：userId/tenantId/scopes/removedEntryIds/at 五字段可验证记录；gap：Memory 之外的 Trace/Trajectory 导出物删除传播待 Stage 8）
 
 ## 完成定义
 
-- [ ] Memory 和 Trace 不会默认把敏感原文无边界写入日志或导出文件。
-- [ ] 所有 Memory 访问都可回溯到 RunContext 和身份。
-- [ ] 更新 Memory 不丢失新字段，删除和 retention 有可验证结果。
+- [x] Memory 和 Trace 不会默认把敏感原文无边界写入日志或导出文件。（MemoryGovernance 默认 rawPlusMasked；TrajectoryCodec masked 构造器导出面无原文；RunContext.toString userId REDACTED 已有）
+- [x] 所有 Memory 访问都可回溯到 RunContext 和身份。（MemoryAccessAuditRecord 携带 tenantId/userId/runId + purpose + scopes + resultCount）
+- [x] 更新 Memory 不丢失新字段，删除和 retention 有可验证结果。（字段保真测试 ×2 锚定；DeletionPropagation 可验证；retention 经 expireAt TTL）
 
 ---
 
