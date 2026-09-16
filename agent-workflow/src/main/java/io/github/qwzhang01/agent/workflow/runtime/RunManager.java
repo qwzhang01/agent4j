@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.workflow.runtime;
 
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.workflow.ExecutionResult;
 import io.github.qwzhang01.agent.workflow.GraphRuntime;
 import io.github.qwzhang01.agent.workflow.Workflow;
@@ -95,6 +96,21 @@ public class RunManager {
         run.setTimeoutPolicy(timeout);
         activeRuns.put(runId, run);
         log.info("[{}] Run started, workflow='{}'", runId, workflow.name());
+        return withSingleFlight(runId, () -> executeAndPersist(run));
+    }
+
+    /**
+     * Stage 1 (harness roadmap): start a run bound to a unified
+     * {@link RunContext}. The context's cancellation token backs
+     * {@link #cancel(String)}; the context rides NodeContext into every
+     * node. The context's own runId (when non-null) becomes the run id.
+     */
+    public ExecutionResult start(Workflow workflow, Object input, RunContext ctx) {
+        String runId = ctx != null && ctx.runId() != null
+                ? ctx.runId() : UUID.randomUUID().toString();
+        Run run = new Run(runId, workflow, WorkflowState.of(input), ctx);
+        activeRuns.put(runId, run);
+        log.info("[{}] Run started (ctx bound), workflow='{}'", runId, workflow.name());
         return withSingleFlight(runId, () -> executeAndPersist(run));
     }
 

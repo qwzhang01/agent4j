@@ -147,7 +147,8 @@ public class AgentState {
 
     @JsonIgnore
     public boolean isTerminal() {
-        return status == Status.DONE || status == Status.ERROR || status == Status.MAX_STEPS_EXCEEDED;
+        return status == Status.DONE || status == Status.ERROR
+                || status == Status.MAX_STEPS_EXCEEDED || status == Status.CANCELLED;
     }
 
     /**
@@ -190,6 +191,12 @@ public class AgentState {
         /**
          * Agent encountered an error
          */
-        ERROR
+        ERROR,
+        /**
+         * Stage 1.4: the run was cancelled via RunContext before reaching a
+         * terminal state. Control-flow outcome, not a business failure -
+         * distinct from ERROR so cancellation is never recorded as failure.
+         */
+        CANCELLED
     }
 }

@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.run.RunContext;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -109,4 +110,36 @@ public interface Agent {
      * Get the agent's configuration.
      */
     AgentConfig getConfig();
+
+    // ============ Stage 1.2: RunContext-aware overloads ============
+
+    /**
+     * Run with an explicit {@link RunContext} (Stage 1.2 of the harness
+     * roadmap): identity, tenant, deadline, cancellation and budget ride
+     * one immutable context instead of scattered parameters. Legacy
+     * {@code run} methods keep working unchanged (context-free path).
+     *
+     * @param userMessage user's question or instruction
+     * @param state       existing conversation state (will be mutated)
+     * @param ctx         the run context (null falls back to the legacy path)
+     * @return agent's final response text
+     */
+    default String run(ChatMessage userMessage, AgentState state, RunContext ctx) {
+        throw new UnsupportedOperationException("This agent does not support RunContext");
+    }
+
+    /**
+     * String-input convenience for the ctx-aware run.
+     */
+    default String run(String userInput, AgentState state, RunContext ctx) {
+        return run(ChatMessage.user(userInput), state, ctx);
+    }
+
+    /**
+     * Stream with an explicit {@link RunContext}. See {@link #run(ChatMessage, AgentState, RunContext)}.
+     */
+    default void stream(ChatMessage userMessage, AgentState state,
+                        Consumer<AgentEvent> listener, RunContext ctx) {
+        throw new UnsupportedOperationException("This agent does not support RunContext");
+    }
 }

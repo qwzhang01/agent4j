@@ -123,6 +123,59 @@ public class MemoryContextBuilder implements ContextBuilder {
 
     @Override
     public List<ChatMessage> build(AgentConfig config, AgentState state) {
+        return build(config, state, null);
+    }
+
+    /**
+     * Stage 1.2 (harness roadmap): ctx-aware recall. When the run context
+     * carries tenant/user identity, the recall scopes are intersected with
+     * the context-derived scope whitelist: only scopes the run's identity
+     * may see are actually queried. Without a context (legacy path) the
+     * configured scopes list is used as-is - bit-for-bit unchanged.
+     * <p>
+     * This is the read-side hook for Stage 5's full tenant governance
+     * (write-side audit + field redaction land there); today it guarantees
+     * a context-bound run cannot widen its memory view by configuration.
+     */
+    @Override
+    public List<ChatMessage> build(AgentConfig config, AgentState state,
+                                   io.github.qwzhang01.agent.core.run.RunContext ctx) {
+        List<String> effectiveScopes = scopes;
+        if (ctx != null) {
+            List<String> allowed = contextAllowedScopes(ctx);
+            effectiveScopes = scopes.stream()
+                    .filter(allowed::contains)
+                    .toList();
+            if (effectiveScopes.isEmpty()) {
+                // No configured scope is visible to this identity: inject
+                // no memories rather than silently widening the view.
+                log.debug("All configured scopes filtered out by run context (tenant={}); "
+                        + "injecting no memories", ctx.tenantId());
+                return new ArrayList<>(state.getMessages());
+            }
+        }
+        return doBuild(config, state, effectiveScopes);
+    }
+
+    /**
+     * Scope whitelist derived from the run context: the tenant scope plus
+     * the calling user's scope. The identity may only read its own tenant
+     * and user scopes - everything else (other tenants, other users) is
+     * filtered out before recall.
+     */
+    private static List<String> contextAllowedScopes(
+            io.github.qwzhang01.agent.core.run.RunContext ctx) {
+        List<String> allowed = new ArrayList<>();
+        if (ctx.tenantId() != null) {
+            allowed.add("tenant:" + ctx.tenantId());
+        }
+        if (ctx.userId() != null) {
+            allowed.add("user:" + ctx.userId());
+        }
+        return allowed;
+    }
+
+    private List<ChatMessage> doBuild(AgentConfig config, AgentState state, List<String> scopes) {
         List<ChatMessage> messages = state.getMessages();
 
         // 1. Compaction (rewrites state in place if triggered)
@@ -142,8 +195,7 @@ public class MemoryContextBuilder implements ContextBuilder {
             memories = recallLimit > 0
                     ? retriever.recallForContext(scopes, recallLimit)
                     : retriever.recall(scopes);
-        } catch (RuntimeException e) {
-            log.warn("Memory recall failed; injecting no memories this turn: {}", e.getMessage());
+        } catch (RuntimeException e) {            log.warn("Memory recall failed; injecting no memories this turn: {}", e.getMessage());
             return new ArrayList<>(messages);
         }
 

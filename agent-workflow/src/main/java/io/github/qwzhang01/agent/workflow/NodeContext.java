@@ -1,5 +1,7 @@
 package io.github.qwzhang01.agent.workflow;
 
+import io.github.qwzhang01.agent.core.run.RunContext;
+
 /**
  * Execution context handed to a node.
  * <p>
@@ -12,6 +14,10 @@ package io.github.qwzhang01.agent.workflow;
  * - {@link #runId()}: the Run identifier (null when called without RunManager)
  * - {@link #isResuming()}: true only for the first node on resume
  *   (lets nodes like HumanApprovalNode take a different code path on resume)
+ * <p>
+ * Stage 1.2 (harness roadmap): {@link #runContext()} exposes the unified
+ * run context when the run was started with one. Nodes read tenant/user
+ * identity, deadline and cancellation from it instead of free strings.
  */
 public interface NodeContext {
 
@@ -56,6 +62,16 @@ public interface NodeContext {
     }
 
     /**
+     * Stage 1.2 (harness roadmap): the unified run context, when the run
+     * was started with one. Null on the legacy path (no context bound).
+     * Nodes read identity/tenant/deadline/cancellation from here; the
+     * free-string {@link #runId()} stays for old consumers.
+     */
+    default RunContext runContext() {
+        return null;
+    }
+
+    /**
      * Typed view of {@link #input()}. Casts when possible, converts
      * via Jackson otherwise (e.g. Map -> POJO, record -> Map).
      */
@@ -74,17 +90,23 @@ public interface NodeContext {
 
     /** Stage 5 compat: no runId, not resuming. */
     static NodeContext of(WorkflowState state, Object input) {
-        return new Impl(state, input, null, false, null);
+        return new Impl(state, input, null, false, null, null);
     }
 
     /** Stage 6: with runId and resume flag. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming) {
-        return new Impl(state, input, runId, isResuming, null);
+        return new Impl(state, input, runId, isResuming, null, null);
     }
 
     /** Stage 7: with runId, resume flag, and scheduler. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming, Object scheduler) {
-        return new Impl(state, input, runId, isResuming, scheduler);
+        return new Impl(state, input, runId, isResuming, scheduler, null);
+    }
+
+    /** Stage 1.2 (harness roadmap): with runId, resume flag, scheduler and run context. */
+    static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming,
+                          Object scheduler, RunContext runContext) {
+        return new Impl(state, input, runId, isResuming, scheduler, runContext);
     }
 
     /**
@@ -96,13 +118,16 @@ public interface NodeContext {
         private final String runId;
         private final boolean resuming;
         private final Object scheduler;
+        private final RunContext runContext;
 
-        Impl(WorkflowState state, Object input, String runId, boolean isResuming, Object scheduler) {
+        Impl(WorkflowState state, Object input, String runId, boolean isResuming,
+             Object scheduler, RunContext runContext) {
             this.state = state;
             this.input = input;
             this.runId = runId;
             this.resuming = isResuming;
             this.scheduler = scheduler;
+            this.runContext = runContext;
         }
 
         @Override public WorkflowState state() { return state; }
@@ -110,5 +135,6 @@ public interface NodeContext {
         @Override public String runId() { return runId; }
         @Override public boolean isResuming() { return resuming; }
         @Override public Object scheduler() { return scheduler; }
+        @Override public RunContext runContext() { return runContext; }
     }
 }

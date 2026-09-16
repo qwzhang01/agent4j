@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
@@ -58,11 +59,28 @@ public class SimpleAgent implements Agent {
         return extractFinalAnswer(state);
     }
 
+    /** Stage 1.2: run with a RunContext (cancellation/deadline/identity ride along). */
+    @Override
+    public String run(ChatMessage userMessage, AgentState state, RunContext ctx) {
+        prepare(userMessage, state);
+        loop.execute(config, state, ctx);
+        return extractFinalAnswer(state);
+    }
+
     @Override
     public void stream(ChatMessage userMessage, AgentState state, Consumer<AgentEvent> listener) {
         Objects.requireNonNull(listener, "listener");
         prepare(userMessage, state);
         loop.stream(config, state, listener);
+    }
+
+    /** Stage 1.2: stream with a RunContext. */
+    @Override
+    public void stream(ChatMessage userMessage, AgentState state,
+                       Consumer<AgentEvent> listener, RunContext ctx) {
+        Objects.requireNonNull(listener, "listener");
+        prepare(userMessage, state);
+        loop.stream(config, state, listener, ctx);
     }
 
     private static ToolExecutor executorOf(AgentConfig config) {
@@ -97,6 +115,7 @@ public class SimpleAgent implements Agent {
         return switch (state.getStatus()) {
             case MAX_STEPS_EXCEEDED -> MAX_STEPS_PLACEHOLDER;
             case ERROR -> "[Agent error: " + state.getLastError() + "]";
+            case CANCELLED -> "[Agent run cancelled]";
             default -> "[Agent did not produce a final answer]";
         };
     }

@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.qwzhang01.agent.core.run.RunContext;
 
 /**
  * Interface for a tool that an Agent can call.
@@ -52,4 +53,21 @@ public interface Tool {
      * @throws ToolException if execution fails
      */
     String execute(JsonNode arguments) throws ToolException;
+
+    /**
+     * Execute with the run context (Stage 1.2 of the harness roadmap).
+     * <p>
+     * Default: legacy path. Context-aware tools read identity (tenant/user),
+     * deadline and cancellation from {@code ctx} instead of free strings;
+     * the context is read-only and must never be re-created downstream.
+     * A tool that needs neither keeps the single-arg method only.
+     *
+     * @param arguments parsed JSON arguments from the model (may be null)
+     * @param ctx       the run context (null on the legacy path)
+     * @return result as text
+     * @throws ToolException if execution fails
+     */
+    default String execute(JsonNode arguments, RunContext ctx) throws ToolException {
+        return execute(arguments);
+    }
 }

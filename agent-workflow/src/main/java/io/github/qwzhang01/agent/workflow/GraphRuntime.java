@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.workflow;
 
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.workflow.runtime.PauseException;
 import io.github.qwzhang01.agent.workflow.runtime.ResumeToken;
 import io.github.qwzhang01.agent.workflow.runtime.Run;
@@ -117,6 +118,10 @@ public class GraphRuntime {
         log.info("[{}] {} workflow '{}'", run.getRunId(),
                 resuming ? "Resuming" : "Starting", workflow.name());
 
+        // Stage 1.4 (harness roadmap): unified deadline from the run context
+        // (structured TIMEOUT, in addition to TimeoutPolicy's string path).
+        RunContext runCtx = run.getRunContext();
+
         while (!Workflow.END.equals(cursor)) {
             // --------------------------------------------
             // [Stage 6] Cancel check (cooperative)
@@ -126,6 +131,19 @@ public class GraphRuntime {
                 run.setStatus(RunState.CANCELLED);
                 log.info("[{}] Cancelled at node '{}'", run.getRunId(), cursor);
                 return ExecutionResult.cancelled(state);
+            }
+
+            // Stage 1.4: unified deadline (structured TIMEOUT classification;
+            // the message carries the marker "[TIMEOUT]" so consumers can
+            // classify without parsing free text - full FailureKind mapping
+            // lands with Stage 2.2's ExecutionResult extension).
+            if (runCtx != null && runCtx.isDeadlineExceeded()) {
+                String msg = "[TIMEOUT] Run deadline exceeded at node '" + cursor + "'";
+                run.setStatus(RunState.FAILED);
+                run.setErrorMessage(msg);
+                state.record(StepRecord.failed(cursor, 0, 0, msg));
+                log.info("[{}] {}", run.getRunId(), msg);
+                return ExecutionResult.failed(msg, state);
             }
 
             ExecutionResult timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);
@@ -155,7 +173,8 @@ public class GraphRuntime {
             // --------------------------------------------
             // Execute node (with retry, catch pause)
             // --------------------------------------------
-            NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming, scheduler);
+            NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming,
+                    scheduler, run.getRunContext());
             resuming = false;  // only the first node (resume target) gets isResuming=true
 
             ExecOutcome outcome;

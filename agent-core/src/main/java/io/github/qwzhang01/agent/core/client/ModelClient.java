@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.core.client;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
+import io.github.qwzhang01.agent.core.run.RunContext;
 
 import java.util.stream.Stream;
 
@@ -41,4 +42,30 @@ public interface ModelClient {
      * @return stream of events, ending with Done or Error
      */
     Stream<StreamEvent> stream(ModelRequest request);
+
+    // ============ Stage 1.2: RunContext-aware overloads ============
+
+    /**
+     * Synchronous chat completion with the run context (Stage 1.2).
+     * <p>
+     * Default: delegate to the legacy method. Implementations that need
+     * run-scoped billing, budget consumption or trace correlation override
+     * this (e.g. Stage 7's metered client). The context is read-only for
+     * the client; it must never be re-created or mutated downstream.
+     *
+     * @param request model request
+     * @param ctx     the run context (may be null on the legacy path)
+     * @return model response
+     */
+    default ModelResponse chat(ModelRequest request, RunContext ctx) {
+        return chat(request);
+    }
+
+    /**
+     * Streaming chat completion with the run context. See
+     * {@link #chat(ModelRequest, RunContext)} for semantics.
+     */
+    default Stream<StreamEvent> stream(ModelRequest request, RunContext ctx) {
+        return stream(request);
+    }
 }

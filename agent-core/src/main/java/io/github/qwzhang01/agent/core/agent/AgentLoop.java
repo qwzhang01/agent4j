@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.run.RunContext;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,6 +42,28 @@ public interface AgentLoop {
      * @return the final state
      */
     AgentState execute(AgentConfig config, AgentState state);
+
+    /**
+     * Execute with a {@link io.github.qwzhang01.agent.core.run.RunContext}
+     * (Stage 1.2). Default: fall back to the context-free path so existing
+     * implementations (including host-written loops) keep compiling and
+     * behaving unchanged. {@link ReActAgentLoop} overrides this to check
+     * cancellation at every step boundary and propagate the context to
+     * model and tool boundaries.
+     */
+    default AgentState execute(AgentConfig config, AgentState state,
+                               io.github.qwzhang01.agent.core.run.RunContext ctx) {
+        return execute(config, state);
+    }
+
+    /**
+     * Stream with a {@link io.github.qwzhang01.agent.core.run.RunContext}.
+     * Same fallback semantics as the ctx-aware {@link #execute}.
+     */
+    default void stream(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
+                        io.github.qwzhang01.agent.core.run.RunContext ctx) {
+        stream(config, state, sink);
+    }
 
     /**
      * Stream the same loop as {@link #execute}, pushing {@link AgentEvent}s to {@code sink}.

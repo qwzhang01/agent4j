@@ -88,13 +88,18 @@ public final class ParallelNode implements WorkflowNode {
     /**
      * Run one branch sequentially. First node receives the ParallelNode's
      * own input; each subsequent node receives its predecessor's output.
+     * <p>
+     * Stage 1.2 (harness roadmap): the branch context keeps the parent's
+     * runId / resume flag / scheduler / RunContext, so cancellation and
+     * deadline signals reach every parallel branch.
      */
     private Object runBranch(String branchName, List<WorkflowNode> branchNodes, NodeContext ctx) {
         Object output = ctx.input();
         for (WorkflowNode node : branchNodes) {
             long start = System.currentTimeMillis();
             try {
-                NodeContext branchCtx = NodeContext.of(ctx.state(), output);
+                NodeContext branchCtx = NodeContext.of(ctx.state(), output,
+                        ctx.runId(), ctx.isResuming(), ctx.scheduler(), ctx.runContext());
                 output = node.execute(branchCtx).output();
                 ctx.state().put(node.id(), output);
                 ctx.state().record(StepRecord.success(node.id(),

@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.tool;
 
 import io.github.qwzhang01.agent.core.model.ToolCall;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,17 @@ public class DefaultToolExecutor implements ToolExecutor {
 
     @Override
     public String execute(ToolCall toolCall) {
+        return execute(toolCall, null);
+    }
+
+    /**
+     * Context-aware execution (Stage 1.2): forwards the run context to the
+     * tool boundary so tools can see tenant / user / budget / cancellation.
+     * Tools that do not override the ctx overload fall back to the legacy
+     * method via the {@link Tool} default implementation.
+     */
+    @Override
+    public String execute(ToolCall toolCall, RunContext ctx) {
         var toolOpt = registry.getTool(toolCall.name());
         if (toolOpt.isEmpty()) {
             String msg = "Tool not found: " + toolCall.name();
@@ -40,7 +52,7 @@ public class DefaultToolExecutor implements ToolExecutor {
         Tool tool = toolOpt.get();
         try {
             log.debug("Executing tool: {} with args: {}", toolCall.name(), toolCall.arguments());
-            String result = tool.execute(toolCall.arguments());
+            String result = tool.execute(toolCall.arguments(), ctx);
             log.debug("Tool {} returned: {}", toolCall.name(),
                     result != null && result.length() > 200 ? result.substring(0, 200) + "..." : result);
             return result;

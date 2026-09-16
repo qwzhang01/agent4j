@@ -7,6 +7,9 @@ import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.core.model.ToolCall;
+import io.github.qwzhang01.agent.core.run.RunCancelledException;
+import io.github.qwzhang01.agent.core.run.RunContext;
+import io.github.qwzhang01.agent.core.run.RunDeadlineException;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
@@ -69,6 +72,32 @@ public class ReActAgentLoop implements AgentLoop {
         runLoop(config, state, sink, ReActAgentLoop::invokeStream);
     }
 
+    // ============ Stage 1.2: ctx-aware execution ============
+
+    /**
+     * Execute with a {@link RunContext}: cancellation and deadline are
+     * checked at every step boundary; the context is propagated to the
+     * model boundary (via the ctx-aware ModelClient overload) and to the
+     * tool boundary (via the ctx-aware ToolExecutor overload). Without a
+     * context the loop behaves exactly as before.
+     */
+    @Override
+    public AgentState execute(AgentConfig config, AgentState state, RunContext ctx) {
+        runLoop(config, state, e -> { }, ctx,
+                (client, request, s, sink, c) -> client.chat(request, c));
+        return state;
+    }
+
+    /**
+     * Stream with a {@link RunContext}. Same propagation as the ctx-aware
+     * {@link #execute(AgentConfig, AgentState, RunContext)}.
+     */
+    @Override
+    public void stream(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
+                       RunContext ctx) {
+        runLoop(config, state, sink, ctx, ReActAgentLoop::invokeStreamCtx);
+    }
+
     /**
      * The single ReAct loop. Streaming is not a second algorithm: it is the
      * same state transition projected through a different event sink.
@@ -85,19 +114,49 @@ public class ReActAgentLoop implements AgentLoop {
      */
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          ModelInvoker invoker) {
+        runLoop(config, state, sink, null, adapt(invoker));
+    }
+
+    /** Legacy invoker adapted to the ctx-aware signature (ctx = null). */
+    private static CtxModelInvoker adapt(ModelInvoker invoker) {
+        return (client, request, s, sink, ctx) -> invoker.invoke(client, request, s, sink);
+    }
+
+    /**
+     * The ctx-aware loop (Stage 1.2). Null ctx = legacy behaviour, bit-for-bit.
+     * With a context: every step boundary checks cancellation (structured
+     * RunCancelledException) and deadline (RunDeadlineException); the model
+     * call and every tool call receive the context via their ctx-aware
+     * overloads.
+     */
+    private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
+                         RunContext ctx, CtxModelInvoker invoker) {
         AgentConfig currentConfig = resolver.resolve(config, state.getLastActiveAgentName());
         AgentConfig handoffFrom = null;
         HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;
         state.setStatus(AgentState.Status.RUNNING);
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
+            // Stage 1.4: cooperative cancellation + deadline check at the
+            // step boundary. Structured signals, never free-text errors.
+            if (ctx != null) {
+                try {
+                    ctx.checkAlive();
+                } catch (RunCancelledException | RunDeadlineException signal) {
+                    state.setStatus(AgentState.Status.CANCELLED);
+                    state.setLastError(signal.getMessage());
+                    sink.accept(new AgentEvent.Error(signal.getClass().getSimpleName()
+                            + ": " + signal.getMessage(), signal));
+                    return;
+                }
+            }
             state.incrementStep();
             log.debug("[{}] Step {}", currentConfig.getName(), state.getCurrentStep());
 
             // --------------------------------------------
             // 1. Build model request from current state
             // --------------------------------------------
-            ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter);
+            ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter, ctx);
             request = applyInputGuardrails(currentConfig, state, request, sink);
             if (state.getStatus() == AgentState.Status.ERROR) {
                 return;
@@ -108,7 +167,7 @@ public class ReActAgentLoop implements AgentLoop {
             // --------------------------------------------
             ModelResponse response;
             try {
-                response = invoker.invoke(currentConfig.getModelClient(), request, state, sink);
+                response = invoker.invoke(currentConfig.getModelClient(), request, state, sink, ctx);
             } catch (Exception e) {
                 log.error("[{}] Model call failed at step {}: {}",
                         currentConfig.getName(), state.getCurrentStep(), e.getMessage());
@@ -162,7 +221,7 @@ public class ReActAgentLoop implements AgentLoop {
                     }
                     log.info("[{}] Executing tool: {}", currentConfig.getName(), toolCall.name());
                     sink.accept(new AgentEvent.ToolStarted(toolCall));
-                    String result = executePlainTool(config, currentConfig, toolCall);
+                    String result = executePlainTool(config, currentConfig, toolCall, ctx);
                     // Add tool result to conversation
                     state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
                     sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
@@ -235,12 +294,21 @@ public class ReActAgentLoop implements AgentLoop {
      * {@link HandoffTargetResolver#executorFor} — typically the target's
      * own {@link AgentConfig#getToolExecutor()}, else a plain
      * {@link DefaultToolExecutor}. The loop never re-weaves host decorations.
+     * <p>
+     * Stage 1.2: the ctx-aware overload carries the run context through to
+     * the tool boundary (governance decorators read identity/budget from it).
      */
-    private String executePlainTool(AgentConfig entryConfig, AgentConfig currentConfig, ToolCall toolCall) {
+    private String executePlainTool(AgentConfig entryConfig, AgentConfig currentConfig,
+                                    ToolCall toolCall, RunContext ctx) {
         if (currentConfig == entryConfig) {
-            return toolExecutor.execute(toolCall);
+            return ctx != null
+                    ? toolExecutor.execute(toolCall, ctx)
+                    : toolExecutor.execute(toolCall);
         }
-        return executorFor(currentConfig).execute(toolCall);
+        ToolExecutor target = executorFor(currentConfig);
+        return ctx != null
+                ? target.execute(toolCall, ctx)
+                : target.execute(toolCall);
     }
 
     /**
@@ -265,9 +333,30 @@ public class ReActAgentLoop implements AgentLoop {
                              AgentState state, Consumer<AgentEvent> sink) throws Exception;
     }
 
+    /**
+     * Stage 1.2: ctx-aware model invoker. Null ctx = legacy invocation.
+     */
+    @FunctionalInterface
+    private interface CtxModelInvoker {
+        ModelResponse invoke(ModelClient modelClient, ModelRequest request,
+                             AgentState state, Consumer<AgentEvent> sink, RunContext ctx)
+                throws Exception;
+    }
+
     private static ModelResponse invokeStream(ModelClient modelClient, ModelRequest request,
                                               AgentState state, Consumer<AgentEvent> sink) throws Exception {
         try (Stream<StreamEvent> events = modelClient.stream(request)) {
+            return consumeStream(events, state, sink);
+        }
+    }
+
+    /** Stage 1.2: stream via the ctx-aware ModelClient overload. */
+    private static ModelResponse invokeStreamCtx(ModelClient modelClient, ModelRequest request,
+                                                 AgentState state, Consumer<AgentEvent> sink,
+                                                 RunContext ctx) throws Exception {
+        try (Stream<StreamEvent> events = ctx != null
+                ? modelClient.stream(request, ctx)
+                : modelClient.stream(request)) {
             return consumeStream(events, state, sink);
         }
     }
@@ -308,11 +397,14 @@ public class ReActAgentLoop implements AgentLoop {
     // ============ Private Helpers ============
 
     private ModelRequest buildRequest(AgentConfig config, AgentState state,
-                                      AgentConfig handoffFrom, HandoffInputFilter inputFilter) {
+                                      AgentConfig handoffFrom, HandoffInputFilter inputFilter,
+                                      RunContext ctx) {
         // Reject legacy personas before a builder can trim/compact them away.
         requireHistoryOnly(state.getMessages());
         List<ChatMessage> context = config.getContextBuilder() != null
-                ? config.getContextBuilder().build(config, state)
+                ? (ctx != null
+                        ? config.getContextBuilder().build(config, state, ctx)
+                        : config.getContextBuilder().build(config, state))
                 : state.getMessages();
         requireHistoryOnly(state.getMessages());
         if (handoffFrom != null && inputFilter != null) {

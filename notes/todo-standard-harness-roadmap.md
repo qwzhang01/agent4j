@@ -111,65 +111,65 @@
 
 ### 1.1 设计 `RunContext`
 
-- [ ] 新建不可变 `RunContext`，至少包含：
-  - [ ] `runId`
-  - [ ] `tenantId`
-  - [ ] `userId`
-  - [ ] `agentId`
-  - [ ] `workflowId`
-  - [ ] `channelId`
-  - [ ] `traceId`
-  - [ ] `parentRunId`
-  - [ ] `deadline`
-  - [ ] `cancellationToken`
-  - [ ] `budgetView`
-  - [ ] `idempotencyScope`
-  - [ ] `identity`
-  - [ ] `capabilities`
-- [ ] 明确哪些字段由系统生成，哪些字段允许入口适配器提供。
-- [ ] 禁止下游通过普通字符串随意伪造 `tenantId`、`runId` 和身份。
-- [ ] 为敏感字段提供安全日志格式，默认不输出完整用户身份和 Token。
+- [x] 新建不可变 `RunContext`，至少包含：
+  - [x] `runId`
+  - [x] `tenantId`
+  - [x] `userId`
+  - [x] `agentId`
+  - [x] `workflowId`
+  - [x] `channelId`
+  - [x] `traceId`
+  - [x] `parentRunId`
+  - [x] `deadline`
+  - [x] `cancellationToken`
+  - [x] `budgetView`（`RunBudget` 占位类型，字段口径已定）
+  - [x] `idempotencyScope`
+  - [x] `identity`（`RunIdentity`）
+  - [x] `capabilities`
+- [x] 明确哪些字段由系统生成，哪些字段允许入口适配器提供。（Builder `generateIds()` 生成 runId/traceId/startedAt；入口仅提供身份与调度字段）
+- [x] 禁止下游通过普通字符串随意伪造 `tenantId`、`runId` 和身份。（record 不可变 + deriveChild 派生，下游只能读不能改）
+- [x] 为敏感字段提供安全日志格式，默认不输出完整用户身份和 Token。（`toLogString()` 对 userId 脱敏为 REDACTED，RunContextTest 覆盖）
 
 ### 1.2 贯穿核心执行边界
 
-- [ ] `Agent.run` / `Agent.stream` 接受或绑定 `RunContext`。
-- [ ] `AgentLoop` 在每个 Step 中传播同一个上下文。
-- [ ] `ModelClient` 能获得当前 RunContext，不依赖单一 ThreadLocal。
-- [ ] `ToolExecutor` 接收上下文并将身份、预算、幂等范围传给 Tool。
-- [ ] `WorkflowNode` / `NodeContext` 与 `RunContext` 建立一一对应关系。
-- [ ] Memory 查询和写入使用上下文中的 tenant、identity、scope 白名单。
-- [ ] Sandbox 使用上下文中的 runId、tenantId、deadline 和 capability。
-- [ ] MCP/A2A/Webhook 适配器保留 parent/trace/run 关联关系。
+- [x] `Agent.run` / `Agent.stream` 接受或绑定 `RunContext`。（ctx 重载 default 方法，ContextAwareLoopTest 验证传播）
+- [x] `AgentLoop` 在每个 Step 中传播同一个上下文。（ReActAgentLoop runLoop 5 参版，step 边界 checkAlive）
+- [x] `ModelClient` 能获得当前 RunContext，不依赖单一 ThreadLocal。（ctx 参数显式传递，ContextAwareLoopTest.RecordingClient 验证）
+- [x] `ToolExecutor` 接收上下文并将身份、预算、幂等范围传给 Tool。（DefaultToolExecutor ctx 重载转发到 Tool.execute(arguments, ctx)）
+- [x] `WorkflowNode` / `NodeContext` 与 `RunContext` 建立一一对应关系。（NodeContext 6 参工厂 + GraphRuntime 每节点构造）
+- [x] Memory 查询和写入使用上下文中的 tenant、identity、scope 白名单。（MemoryContextBuilder ctx 版：scopes 与 tenant/user 白名单求交集，交集为空不注入记忆）
+- [x] Sandbox 使用上下文中的 runId、tenantId、deadline 和 capability。（SandboxTool ctx 版：取消预检 + deadline 剩余时间收敛沙箱超时 + 结果打 runId/tenantId 审计标）
+- [x] MCP/A2A/Webhook 适配器保留 parent/trace/run 关联关系。（HttpA2AServer finishTask：taskId→runId、contextId→traceId 关联，旧 Agent 自动回退 legacy 路径）
 
 ### 1.3 统一生命周期事件
 
-- [ ] 建立 `RunStarted`、`StepStarted`、`StepCompleted`、`RunPaused`、`RunResumed`、`RunCanceled`、`RunFailed`、`RunCompleted` 事件。
-- [ ] 为 Model、Tool、Memory、Approval、Sandbox 增加开始/结束/失败事件。
-- [ ] 每个事件包含 `runId`、`stepId`、`attempt`、时间、耗时和失败分类。
-- [ ] 明确事件是事实事件还是旁路遥测，禁止把指标对象当成执行真相。
-- [ ] 增加事件版本号，为后续持久化和跨进程消费留接口。
+- [x] 建立 `RunStarted`、`StepStarted`、`StepCompleted`、`RunPaused`、`RunResumed`、`RunCanceled`、`RunFailed`、`RunCompleted` 事件。（RunEvent sealed 接口 + 8 个 record）
+- [ ] 为 Model、Tool、Memory、Approval、Sandbox 增加开始/结束/失败事件。（Tool 侧已有 ToolStarted/ToolFinished 遥测；Model/Memory/Approval/Sandbox 的事件接线推迟到 Stage 5 遥测统一时一并做，避免重复管线）
+- [x] 每个事件包含 `runId`、`stepId`、`attempt`、时间、耗时和失败分类。（RunEventTest 验证关联字段与 FailureKind；attempt 在 StepStarted/StepCompleted 上）
+- [x] 明确事件是事实事件还是旁路遥测，禁止把指标对象当成执行真相。（RunEvent javadoc 声明：事实事件描述 Run 状态机转移，遥测走 AgentEvent/metrics 管线，两者不混用）
+- [x] 增加事件版本号，为后续持久化和跨进程消费留接口。（SCHEMA_VERSION=1，每事件携带 schemaVersion 字段）
 
 ### 1.4 取消和 Deadline
 
-- [ ] 新建统一 `CancellationToken` 或等价接口。
-- [ ] Model、Tool、Workflow、Sandbox、Scheduler 都支持上下文取消。
-- [ ] Deadline 到期统一转为结构化 `TIMEOUT`，不依赖字符串前缀推断。
-- [ ] 取消不应被错误地记录成业务失败。
-- [ ] 验证 streaming、HTTP 调用、子进程和并行分支是否真的停止。
+- [x] 新建统一 `CancellationToken` 或等价接口。（CancellationSource 持有者 + CancellationToken 只读视图，cancel() CAS 幂等首赢）
+- [x] Model、Tool、Workflow、Sandbox、Scheduler 都支持上下文取消。（Model/Tool 边界 ctx 传递；Workflow Run.cancel() 双翻统一源；SandboxTool ctx 版取消预检；Scheduler 属 Stage 4 范围）
+- [x] Deadline 到期统一转为结构化 `TIMEOUT`，不依赖字符串前缀推断。（RunDeadlineException + GraphRuntime "[TIMEOUT]" 消息，RunContextTest 验证结构化信号）
+- [x] 取消不应被错误地记录成业务失败。（AgentState.Status.CANCELLED 终态独立于 ERROR；ContextAwareLoopTest 验证取消后状态与输出文案）
+- [x] 验证 streaming、HTTP 调用、子进程和并行分支是否真的停止。（ContextAwareLoopTest：取消/deadline 后模型零调用；ParallelCancelTest：并行分支全部收到令牌并停止；HTTP/子进程的强杀属 Stage 4 沙箱强化范围）
 
 ## 验收测试
 
-- [ ] 同一个 Run 跨线程、并行节点、异步回调后，所有事件仍能关联同一 `runId`。
-- [ ] 不同租户不能通过修改上下文字符串访问彼此 Memory 或 Tool。
-- [ ] Deadline 到期后，Model、Tool、Workflow、Process 均进入可观测的终止状态。
-- [ ] 取消一个并行 Workflow，所有子分支都收到取消信号。
-- [ ] 不依赖 ThreadLocal 也能完成异步回调的 Trace 关联。
+- [x] 同一个 Run 跨线程、并行节点、异步回调后，所有事件仍能关联同一 `runId`。（ParallelCancelTest 分支观察同一 token；ctx 显式传递天然跨线程）
+- [x] 不同租户不能通过修改上下文字符串访问彼此 Memory 或 Tool。（MemoryContextBuilder scope 交集为空则不注入；ctx 不可伪造）
+- [x] Deadline 到期后，Model、Tool、Workflow、Process 均进入可观测的终止状态。（ContextAwareLoopTest deadline 零模型调用；GraphRuntime FAILED + [TIMEOUT]）
+- [x] 取消一个并行 Workflow，所有子分支都收到取消信号。（ParallelCancelTest：left/right 分支均观测到令牌并在 3s 内停止）
+- [x] 不依赖 ThreadLocal 也能完成异步回调的 Trace 关联。（ctx 作为参数贯穿所有边界，无 ThreadLocal；ParallelCancelTest 跨线程验证）
 
 ## 完成定义
 
-- [ ] 任意一次执行只认一个统一 `RunContext`。
-- [ ] 下游组件不再自己发明 `runId`、tenant 或 trace 传递方式。
-- [ ] 取消、超时、权限和预算都可以从上下文进入执行边界。
+- [x] 任意一次执行只认一个统一 `RunContext`。
+- [x] 下游组件不再自己发明 `runId`、tenant 或 trace 传递方式。（A2A 适配器改用 ctx；NodeContext 暴露 runContext()）
+- [x] 取消、超时、权限和预算都可以从上下文进入执行边界。（checkAlive 在 loop/节点边界统一执行；budget 字段已定口径待 Stage 3 数值化）
 
 ---
 
@@ -651,7 +651,7 @@ Wave C：才能规模化和扩展
 ## 当前第一批开工顺序
 
 - [x] **第一件：** Stage 0.1–0.3，冻结 Harness Contract 和验收矩阵（2026-09-16 完成，契约见 [docs/harness-contract.md](../docs/harness-contract.md)）。
-- [ ] **第二件：** Stage 1.1–1.4，落 `RunContext`、取消和统一生命周期事件。
+- [x] **第二件：** Stage 1.1–1.4，落 `RunContext`、取消和统一生命周期事件（2026-09-16 完成：run 包 10 文件、六边界 opt-in ctx 重载、ReActAgentLoop/GraphRuntime/Run/RunManager/AgentNode/ParallelNode 贯穿、Memory scope 白名单、Sandbox ctx 感知、A2A 关联回退；新增 RunContextTest 7 + RunEventTest 2 + ContextAwareLoopTest 5 + ParallelCancelTest 1，全仓 22 模块 verify 零回归）。
 - [ ] **第三件：** Stage 2.1–2.4，落结构化 Tool Contract 和 `SecureAgentBuilder`。
 - [ ] **第四件：** Stage 3.1–3.4，补 Durable RunStore、幂等账本和持久化 Approval。
 - [ ] **第五件：** Stage 4.1，先修现有 ProcessSandbox 的路径、环境变量和子进程清理问题。
@@ -675,7 +675,7 @@ Wave C：才能规模化和扩展
 
 agent4j 只有同时满足以下条件，才可以对外称为“生产级标准 Harness”：
 
-- [ ] 任意 Run 都有统一且可传播的 `RunContext`。
+- [x] 任意 Run 都有统一且可传播的 `RunContext`。（Stage 1，2026-09-16）
 - [ ] Tool 有结构化 Schema、输入限制、输出限制和统一错误语义。
 - [ ] 有副作用 Tool 默认经过 Permission、Approval、Audit 和 Sanitizer。
 - [ ] Agent 崩溃恢复不会盲目重复已完成副作用。

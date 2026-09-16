@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.sandbox.tools;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.sandbox.Sandbox;
 import io.github.qwzhang01.agent.sandbox.SandboxResult;
@@ -66,10 +67,30 @@ public class SandboxTool implements Tool {
 
     @Override
     public String execute(JsonNode arguments) {
+        return execute(arguments, null);
+    }
+
+    /**
+     * Stage 1.2 (harness roadmap): sandbox execution is context aware.
+     * <ul>
+     *   <li>Refuses to start when the run is already cancelled.</li>
+     *   <li>Clamps the sandbox timeout to the run's remaining deadline,
+     *       so a subprocess cannot outlive its run.</li>
+     *   <li>Tags the result with runId / tenantId for audit correlation.</li>
+     * </ul>
+     */
+    @Override
+    public String execute(JsonNode arguments, RunContext ctx) {
         String className = arguments.path("class_name").asText("");
         String code = arguments.path("code").asText("");
 
         ObjectNode result = mapper.createObjectNode();
+
+        if (ctx != null && ctx.cancellationToken() != null && ctx.cancellationToken().isCancelled()) {
+            result.put("success", false);
+            result.put("error", "run cancelled before sandbox execution");
+            return result.toString();
+        }
 
         if (className.isBlank() || code.isBlank()) {
             result.put("success", false);
@@ -77,9 +98,38 @@ public class SandboxTool implements Tool {
             return result.toString();
         }
 
-        SandboxResult sandboxResult = sandbox.execute(className, code);
+        long timeoutMillis = -1; // sandbox default
+        if (ctx != null && ctx.deadline() != null) {
+            long remaining = java.time.Duration.between(java.time.Instant.now(),
+                    ctx.deadline()).toMillis();
+            if (remaining <= 0) {
+                result.put("success", false);
+                result.put("error", "[TIMEOUT] run deadline exceeded before sandbox execution");
+                return result.toString();
+            }
+            timeoutMillis = remaining;
+        }
+
+        SandboxResult sandboxResult;
+        if (timeoutMillis > 0) {
+            io.github.qwzhang01.agent.sandbox.SandboxSpec spec =
+                    io.github.qwzhang01.agent.sandbox.SandboxSpec.builder()
+                            .timeout(java.time.Duration.ofMillis(timeoutMillis))
+                            .build();
+            sandboxResult = sandbox.execute(className, code, spec);
+        } else {
+            sandboxResult = sandbox.execute(className, code);
+        }
 
         result.put("success", sandboxResult.success());
+        if (ctx != null) {
+            if (ctx.runId() != null) {
+                result.put("runId", ctx.runId());
+            }
+            if (ctx.tenantId() != null) {
+                result.put("tenantId", ctx.tenantId());
+            }
+        }
         if (sandboxResult.stdout() != null && !sandboxResult.stdout().isBlank()) {
             result.put("stdout", sandboxResult.stdout());
         }

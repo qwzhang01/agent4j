@@ -147,6 +147,13 @@ class KillNineCrashRecoveryTest {
                         entries.add(jar.getAbsolutePath());
             }
                 }
+            } else {
+                // Jar inside a module's target/ (full-reactor verify: deps
+                // resolve to the freshly packaged sibling jar, not ~/.m2).
+                // The parent dir is "target", not a versioned repo dir — add
+                // the jar itself or the anchor silently drops it (Stage 1:
+                // Run's CancellationSource reference exposed exactly this).
+                entries.add(location.getAbsolutePath());
             }
         }
         if (entries.isEmpty()) {

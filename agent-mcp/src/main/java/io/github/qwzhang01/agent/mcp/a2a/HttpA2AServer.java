@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentState;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -354,12 +355,32 @@ public class HttpA2AServer implements AutoCloseable {
         }
         AgentState state = begun.state() == null ? new AgentState() : begun.state();
         try {
-            String output = agent.run(text == null ? "" : text, state);
+            // Stage 1.2 (harness roadmap): every A2A task runs inside a
+            // RunContext so trace/run correlation survives the protocol hop.
+            // taskId becomes runId, contextId becomes traceId — an A2A task
+            // continuation (same contextId) stays on the same trace.
+            // Opt-in fallback: agents that only implement the legacy
+            // overloads (mock / custom Agents) still run unchanged.
+            RunContext ctx = RunContext.builder()
+                    .runId(begun.taskId())
+                    .traceId(begun.contextId())
+                    .agentId(card.name())
+                    .build();
+            String output;
+            try {
+                output = agent.run(text == null ? "" : text, state, ctx);
+            } catch (UnsupportedOperationException legacyAgent) {
+                output = agent.run(text == null ? "" : text, state);
+            }
             if (state.getStatus() == AgentState.Status.ERROR
                     || state.getStatus() == AgentState.Status.MAX_STEPS_EXCEEDED) {
                 String reason = state.getLastError() == null
                         ? state.getStatus().toString() : state.getLastError();
                 return store(begun, A2ATaskStatus.FAILED, reason, List.of(), state);
+            }
+            if (state.getStatus() == AgentState.Status.CANCELLED) {
+                return store(begun, A2ATaskStatus.FAILED,
+                        "cancelled", List.of(), state);
             }
             A2AArtifact artifact = A2AArtifact.text("artifact-1", output == null ? "" : output);
             return store(begun, A2ATaskStatus.COMPLETED, null, List.of(artifact), state);

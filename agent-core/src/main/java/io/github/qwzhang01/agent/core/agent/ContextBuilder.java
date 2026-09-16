@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.run.RunContext;
 
 import java.util.List;
 
@@ -52,4 +53,19 @@ public interface ContextBuilder {
      * @return history/transient context without persona; may be immutable or state-backed
      */
     List<ChatMessage> build(AgentConfig config, AgentState state);
+
+    /**
+     * Build with the run context (Stage 1.2). Default: legacy path.
+     * Memory-side implementations override this to read tenant/user
+     * identity from the context for scope filtering (Stage 5 governance
+     * hook; today the scopes list is fixed at construction time).
+     *
+     * @param config agent configuration
+     * @param state  current agent state (mutable)
+     * @param ctx    the run context (may be null on the legacy path)
+     * @return history/transient context without persona
+     */
+    default List<ChatMessage> build(AgentConfig config, AgentState state, RunContext ctx) {
+        return build(config, state);
+    }
 }

@@ -1,5 +1,7 @@
 package io.github.qwzhang01.agent.workflow.runtime;
 
+import io.github.qwzhang01.agent.core.run.CancellationSource;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.workflow.Workflow;
 import io.github.qwzhang01.agent.workflow.WorkflowState;
 
@@ -38,6 +40,12 @@ public class Run {
     private final long startTime;
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.none();
 
+    // ============ Stage 1 (harness roadmap) ============
+    /** Unified run context; null = legacy path (no context bound). */
+    private RunContext runContext;
+    /** Backs the context's token so RunManager.cancel flips both. */
+    private final CancellationSource cancellationSource = new CancellationSource();
+
     // ============ Constructors ============
 
     /** Fresh start. */
@@ -48,6 +56,27 @@ public class Run {
         this.status = RunState.RUNNING;
         this.cursor = null;
         this.startTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Stage 1 (harness roadmap): fresh start bound to a unified
+     * {@link RunContext}. The context's runId wins when present; a
+     * {@link CancellationSource}-backed token in the context is honored by
+     * {@link #cancel()} (single cancel path).
+     */
+    public Run(String runId, Workflow workflow, WorkflowState state, RunContext runContext) {
+        this(runId, workflow, state);
+        bindContext(runContext);
+    }
+
+    /** Bind (or rebind) the unified context. No-op on null. */
+    public void bindContext(RunContext runContext) {
+        this.runContext = runContext;
+    }
+
+    /** The bound unified context, null on the legacy path. */
+    public RunContext getRunContext() {
+        return runContext;
     }
 
     /** Restore from checkpoint (for crash recovery). */
@@ -88,13 +117,21 @@ public class Run {
 
     // ============ Cancellation ============
 
-    /** Request cancellation. The run will stop at the next node boundary. */
+    /**
+     * Request cancellation. The run will stop at the next node boundary.
+     * Stage 1: also flips the unified {@link CancellationSource} so every
+     * component holding the RunContext token observes the same cancel.
+     */
     public void cancel() {
         this.cancelled = true;
+        this.cancellationSource.cancel();
     }
 
+    /** Whether cancellation was requested (flag or unified token). */
     public boolean isCancelled() {
-        return cancelled;
+        return cancelled || cancellationSource.isCancelled()
+                || (runContext != null && runContext.cancellationToken() != null
+                        && runContext.cancellationToken().isCancelled());
     }
 
     // ============ Checkpoint ============

@@ -84,7 +84,16 @@ public final class AgentNode implements WorkflowNode {
                 agentState = new AgentState();
             }
         }
-        String output = agent.run(input, agentState);
+        // Stage 1.2: when the workflow run carries a unified RunContext,
+        // derive a child context for the inner agent (parent/trace/tenant
+        // preserved, own runId) and run through the ctx-aware overload.
+        // Legacy path (no run context) is bit-for-bit unchanged.
+        String output;
+        if (ctx.runContext() != null) {
+            output = agent.run(input, agentState, ctx.runContext().deriveChild(id));
+        } else {
+            output = agent.run(input, agentState);
+        }
         ctx.state().put(stateKey(id), agentState.snapshot());
         return NodeResult.of(output);
     }

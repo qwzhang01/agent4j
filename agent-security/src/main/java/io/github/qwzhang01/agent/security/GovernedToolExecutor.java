@@ -48,13 +48,32 @@ public class GovernedToolExecutor implements ToolExecutor {
 
     @Override
     public String execute(ToolCall toolCall) {
+        return execute(toolCall, null);
+    }
+
+    /**
+     * Stage 1.2: ctx-aware execution. The context's runId/tenantId/identity
+     * override the builder-time static runId when present (context is the
+     * truth; the static value was the v0.1.3 stopgap). Governance decisions
+     * (permission/approval/rate-limit) stay identical - only attribution
+     * becomes context-derived.
+     */
+    @Override
+    public String execute(ToolCall toolCall, io.github.qwzhang01.agent.core.run.RunContext ctx) {
+        String effectiveRunId = ctx != null && ctx.runId() != null ? ctx.runId() : runId;
+        return doExecute(toolCall, ctx, effectiveRunId);
+    }
+
+    private String doExecute(ToolCall toolCall,
+                             io.github.qwzhang01.agent.core.run.RunContext ctx,
+                             String effectiveRunId) {
         // ---- 1. Permission check ----
         if (permissionChecker != null) {
             ToolPermission perm = permissionChecker.check(toolCall.name());
             if (perm == ToolPermission.DENY) {
                 String reason = "Tool '" + toolCall.name() + "' is denied by policy";
                 log.warn("[Security] {}", reason);
-                audit(AuditEvent.denied(runId, toolCall, reason));
+                audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
                 return "[DENIED] " + reason;
             }
             if (perm == ToolPermission.REQUIRES_APPROVAL) {
@@ -62,17 +81,17 @@ public class GovernedToolExecutor implements ToolExecutor {
                 if (approvalService == null) {
                     String reason = "Tool '" + toolCall.name() + "' requires approval but no approval service configured";
                     log.warn("[Security] {}", reason);
-                    audit(AuditEvent.denied(runId, toolCall, reason));
+                    audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
                     return "[DENIED] " + reason;
                 }
-                boolean approved = approvalService.request(toolCall, runId);
+                boolean approved = approvalService.request(toolCall, effectiveRunId);
                 if (!approved) {
                     String reason = "Approval rejected for tool '" + toolCall.name() + "'";
                     log.info("[Security] {}", reason);
-                    audit(AuditEvent.denied(runId, toolCall, reason));
+                    audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
                     return "[DENIED] " + reason;
                 }
-                audit(AuditEvent.approved(runId, toolCall));
+                audit(AuditEvent.approved(effectiveRunId, toolCall));
             }
         }
 
@@ -80,7 +99,7 @@ public class GovernedToolExecutor implements ToolExecutor {
         if (rateLimiter != null && !rateLimiter.tryAcquire(toolCall.name())) {
             String reason = "Rate limit exceeded for tool '" + toolCall.name() + "'";
             log.warn("[Security] {}", reason);
-            audit(AuditEvent.denied(runId, toolCall, reason));
+            audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
             return "[RATE_LIMITED] " + reason;
         }
 
@@ -88,12 +107,12 @@ public class GovernedToolExecutor implements ToolExecutor {
         long start = System.currentTimeMillis();
         String result;
         try {
-            result = delegate.execute(toolCall);
+            result = ctx != null ? delegate.execute(toolCall, ctx) : delegate.execute(toolCall);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
             String error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("[Security] Tool '{}' failed: {}", toolCall.name(), error);
-            audit(AuditEvent.failed(runId, toolCall, error, duration));
+            audit(AuditEvent.failed(effectiveRunId, toolCall, error, duration));
             throw e;
         }
         long duration = System.currentTimeMillis() - start;
@@ -103,13 +122,13 @@ public class GovernedToolExecutor implements ToolExecutor {
             SanitizeResult sr = resultSanitizer.sanitize(result);
             if (sr.modified()) {
                 log.info("[Security] Result sanitized for tool '{}': {}", toolCall.name(), sr.reason());
-                audit(AuditEvent.sanitized(runId, toolCall, sr.sanitized(), sr.reason(), duration));
+                audit(AuditEvent.sanitized(effectiveRunId, toolCall, sr.sanitized(), sr.reason(), duration));
                 return sr.sanitized();
             }
         }
 
         // ---- 6. Audit ----
-        audit(AuditEvent.executed(runId, toolCall, result, duration));
+        audit(AuditEvent.executed(effectiveRunId, toolCall, result, duration));
         return result;
     }
 
