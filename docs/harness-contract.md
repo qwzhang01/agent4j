@@ -130,8 +130,9 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 - 四层防御已完成（L1 spotlighting / L2 Stage 9 sanitizer / L3 pre-request sanitization / L4 scoped identity）。
 - `SandboxTier` 五档（CLASS_LOADER/PROCESS/DOCKER/MICROVM/WASM），后三档是占位，SandboxReport 对占位档诚实报告零保证。
-- `SandboxPolicy`（risk -> tier 映射）+ 升级预算（per-runId）。
-- **gap**：ProcessSandbox 边界硬化（路径 canonicalize、环境变量 allowlist、子进程树清理）未做。Stage 4.1。
+- `SandboxPolicy`（risk -> tier 映射）+ 升级预算（per-runId）+ `TierLimits`（tier x risk -> 十字段限制表，Stage 4.2）。
+- PROCESS 层边界已硬化（Stage 4.1，2026-09-16）：className 白名单、canonicalize containment、env allowlist（默认不含 HOME）、每流 1MB 输出截断、超时进程树击杀、guard 源码注入（guest 内 SecurityManager 双阶段安装，host 类空间永不加载 guard）。
+- **gap**：OS 级隔离（DOCKER adapter、UID/GID、seccomp、cgroup、网络 namespace）未做，macOS 本地开发无 Docker daemon 是 v1 既定边界；ADVERSARIAL `requiresApproval` 已入 TierLimits 表但审批接线留 Stage 8。
 
 ---
 
@@ -147,7 +148,7 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [x] done（Stage 2.4，2026-09-16：SecureAgentBuilder 默认治理栈 + UnsafeAgentBuilder 显式危险路径 + [RuntimeProfile] 日志；审批的非阻塞 WAITING 语义留 Stage 3） |
 | Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [x] done（Stage 3.1/3.2/3.3，2026-09-16：RunStore 乐观锁 + Checkpoint schemaVersion=2 + 定义指纹 mismatch 拒绝 + SideEffectLedger 命中重放 + RunLease 单赢家 + RecoverySnapshot 诊断；kill-9 用同 store 新实例模拟，DurableExecutionTest 14 覆盖） |
 | 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4，2026-09-16：approval 包五态协议 + PersistentApprovalService + WAITING_APPROVAL 状态 + 重启扫描恢复候选；agent-security Tool 侧接线留 Stage 4/8） |
-| Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [-] FailureKind/预算已有，Process 硬化缺 |
+| Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [x] done（Stage 4.1/4.2/4.4，2026-09-16：className 白名单 + containment + env allowlist + CappedBuffer + 进程树击杀 + guard 注入 + TierLimits 限制表；红队 11 例全绿，八条攻击全 BLOCKED） |
 | Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [-] scope 隔离已有，审计/脱敏缺 |
 | 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor）；Model/Memory/Approval/Sandbox 侧映射 Stage 5 |
 | 统一生命周期事件 | agent-core | 事件含 runId/step/attempt | — | — | [x] done（Stage 1.3，2026-09-16：RunEvent sealed 族 8 事件 + SCHEMA_VERSION=1；发射接线延后到 Stage 5 遥测统一） |
@@ -204,14 +205,14 @@ agent-spring-boot-starter -> core, model
 | 敏感数据泄露 | SanitizerGuardrail 出口净化 | SanitizerGuardrailTest（3）+ RedTeamHarness |
 | MCP/A2A 入站 | A2A 入站净化器（throwing -> rejected，任务先拒再跑） | HttpA2AServerProtocolTest |
 | LLM 红队 | RedTeamHarness（Mock 攻击者） | demo 已跑通；真实 LLM 红队留给 Moonlit 黄金集 |
-| 沙箱资源洪泛/逃逸矩阵 | — | [ ] Stage 4.4 |
+| 沙箱资源洪泛/逃逸矩阵 | guest guard（FilePermission/SocketPermission 白名单 + 输出截断 + 进程树击杀） | [x] ProcessSandboxRedTeamTest（11）：八条攻击全 BLOCKED + UNRESTRICTED 诚实 NOT-BLOCKED 记录；DOCKER 层留 Stage 4.3 |
 
 ### 3.5 真实基础设施测试清单
 
 | 依赖 | 现状 | 计划 |
 |------|------|------|
 | PostgreSQL | `AGENT4J_PG_TEST=true` 21/21（PgMemoryStore 契约测试） | [-] 已有；checkpoint RunStore 复用同一模式 |
-| 容器 Sandbox | 无 | [ ] Stage 4.3 Docker Adapter（Linux CI） |
+| 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例），TierLimits 已落 DOCKER/MICROVMM 结构性限制表 | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
 | MCP | stdio 官方 filesystem server 已验 | [-] 第三方 server 互操作 Stage 6.2 |
 | A2A | 自家两端回环（零 mock 真实 socket） | [-] 第三方对端 Stage 6.3 |
 | OpenTelemetry | 无 SDK | [ ] Stage 7.1 Span Adapter |
@@ -241,8 +242,8 @@ agent-spring-boot-starter -> core, model
 | agent-memory | tenant 审计 / 字段脱敏 | [ ] | Stage 5 |
 | agent-security | Permission/Approval/Audit/Sanitizer/Guardrail 桥 | [x] | 9 测试文件 + Stage 2：SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约（SecureAssemblyTest 6） |
 | agent-security | InjectionNormalizer + 三态 Judge 槽位 | [-] | Judge v2 语义槽空着，regex 墙为主 |
-| agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | sandbox 9 测试文件 73/73 |
-| agent-sandbox | DOCKER/MICROVM/WASM | [ ] | 占位，诚实报告零保证 |
+| agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | Stage 4（2026-09-16）：12 测试文件 91/91（红队 11 + TierLimits 7 新增） |
+| agent-sandbox | DOCKER/MICROVM/WASM | [ ] | 占位，诚实报告零保证；TierLimits 已落结构性限制表（STRUCTURAL_TIERS），实现待 Linux CI |
 | agent-mcp | MCP stdio 客户端 | [x] | 可连官方 filesystem server |
 | agent-mcp | A2A HTTP 双向 + v2 SSE/推送/续跑 | [-] | 79/79，但无第三方对端验证 |
 | agent-mcp | MCP HTTP/SSE Transport | [ ] | Stage 6.2 |

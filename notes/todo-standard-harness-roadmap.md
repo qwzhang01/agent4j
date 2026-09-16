@@ -340,53 +340,53 @@
 
 ### 4.1 修复当前 ProcessSandbox 边界
 
-- [ ] `className` 只允许合法 Java 标识符，禁止路径片段和分隔符。
-- [ ] 所有 workspace 路径 canonicalize 后做 root containment 校验。
-- [ ] 临时目录使用随机不可预测 ID，并限制权限。
-- [ ] 环境变量采用 allowlist，不继承完整宿主环境。
-- [ ] 明确 stdin、stdout、stderr 最大缓冲区和截断策略。
-- [ ] 超时后递归清理整个 child process tree。
-- [ ] 明确子进程的工作目录、用户、权限和文件可见性。
-- [ ] 将 ProcessSandbox 的限制写进公开 `limitations.md`。
+- [x] `className` 只允许合法 Java 标识符，禁止路径片段和分隔符。（`CLASS_NAME_PATTERN` 正则白名单，`../../etc/evil`、`a/b/Evil`、`Evil;rm` 全拒，`[INVALID_CLASS_NAME]` + BLOCKED_BY_POLICY）
+- [x] 所有 workspace 路径 canonicalize 后做 root containment 校验。（base canonicalize + `toRealPath().startsWith(base)`，`[INVALID_WORKSPACE]`）
+- [x] 临时目录使用随机不可预测 ID，并限制权限。（`createTempDirectory` 随机 ID；gap：POSIX 权限未收紧到 700，记 4.3 Linux 侧）
+- [x] 环境变量采用 allowlist，不继承完整宿主环境。（`DEFAULT_ENV_ALLOWLIST` = PATH/TMPDIR/LANG/TZ/LC_ALL/LC_CTYPE，刻意不含 HOME；`ENV_INHERIT_ALL=["*"]` 显式 opt-in 恢复旧行为）
+- [x] 明确 stdin、stdout、stderr 最大缓冲区和截断策略。（`CappedBuffer` 每流 `outputLimitBytes` 默认 1MB，超限停写 + `truncated by sandbox` 标记）
+- [x] 超时后递归清理整个 child process tree。（`process.descendants().forEach(ProcessHandle::destroyForcibly)` 先杀后代再 `destroyForcibly`，fork 炸弹形态随树死；红队 RED-7 验证）
+- [x] 明确子进程的工作目录、用户、权限和文件可见性。（工作目录 = 随机 sandboxDir，文件可见性由 guest guard WORKSPACE_ONLY 强制；gap：进程以宿主 OS 用户运行，UID/GID 收敛记 4.3）
+- [x] 将 ProcessSandbox 的限制写进公开 `limitations.md`。（docs/limitations.md 新增「ProcessSandbox 安全边界」章节）
 
 ### 4.2 Sandbox Policy
 
-- [ ] 将风险等级映射为可执行策略，而不是只记录枚举。
-- [ ] 定义每个 Tier 的文件、网络、进程、CPU、内存、时间和输出限制。
-- [ ] 默认禁止网络。
-- [ ] 默认只读根文件系统，workspace 单独挂载可写目录。
-- [ ] 高风险执行必须经过人工审批或升级到更强 Sandbox。
-- [ ] 升级预算与租户、RunContext、成本预算关联。
-- [ ] Sandbox 报告明确区分“被策略拦截”和“执行失败”。
+- [x] 将风险等级映射为可执行策略，而不是只记录枚举。（`TierLimits.limitsFor/forRisk/fullTable`：Limits record 十字段含 requiresApproval，风险→限制表可查询可断言，TierLimitsTest 7 项锚定）
+- [x] 定义每个 Tier 的文件、网络、进程、CPU、内存、时间和输出限制。（`STRUCTURAL_TIERS = DOCKER/MICROVMM`；PROCESS 以下 guard 强制 + timeout/memory/output 顶格；DOCKER+ 记 cgroup 描述）
+- [x] 默认禁止网络。（SandboxSpec `networkBlocked=true` 默认 + guard SocketPermission/NetPermission 全拒，红队 RED-4 验证）
+- [x] 默认只读根文件系统，workspace 单独挂载可写目录。（PROCESS 层语义已满足：guard 拒 workspace 外读写，`/etc/passwd` 不可读，红队 RED-3 验证；容器 read-only rootfs 属 4.3 DOCKER 范围）
+- [x] 高风险执行必须经过人工审批或升级到更强 Sandbox。（语义已入表：`limitsFor(tier, ADVERSARIAL).requiresApproval=true`；gap：与 SandboxEscalator/审批服务接线留 Stage 8 运维层）
+- [ ] 升级预算与租户、RunContext、成本预算关联。（`SandboxSpec.runId` 归因 + `SandboxEscalationBudgetByRunTest` run 级预算已在 debt-2 落地；gap：tenantId 与成本预算接线留 Stage 5/8）
+- [x] Sandbox 报告明确区分“被策略拦截”和“执行失败”。（`SandboxResult.FailureKind` 四分类：SANDBOX_FAILURE/BLOCKED_BY_POLICY/TIMEOUT/CODE_FAILURE，SandboxFailureKindTest 锚定）
 
 ### 4.3 OS 级实现
 
-- [ ] 新建 Docker Sandbox Adapter，先覆盖 Linux CI。
-- [ ] 评估 gVisor / Firecracker 作为高风险生产 Tier。
-- [ ] 配置非特权 UID/GID。
-- [ ] 配置 seccomp、capability drop、cgroup CPU/内存/IO。
-- [ ] 配置网络 namespace 和域名 allowlist。
-- [ ] 配置 read-only rootfs 和 workspace mount。
-- [ ] 记录镜像 Digest、Sandbox Policy 版本和运行结果。
-- [ ] 明确 macOS 本地开发与 Linux 生产执行的差异。
+- [ ] 新建 Docker Sandbox Adapter，先覆盖 Linux CI。（诚实 gap：v1 无 Docker daemon 依赖是既定边界，SandboxTier javadoc 已声明；DockerSandboxAdapter 留待 Linux CI 环境）
+- [ ] 评估 gVisor / Firecracker 作为高风险生产 Tier。（评估结论已落 TierLimits：MICROVMM 在 STRUCTURAL_TIERS，生产高风险路径的推荐 tier；实现未落地）
+- [ ] 配置非特权 UID/GID。（诚实 gap：PROCESS 层 guest 以宿主 OS 用户运行，记 4.3 Linux 侧待做）
+- [ ] 配置 seccomp、capability drop、cgroup CPU/内存/IO。（诚实 gap：DOCKER 层机制，TierLimits 已记 cgroup 描述字段，实现待 Docker adapter）
+- [ ] 配置网络 namespace 和域名 allowlist。（诚实 gap：同上，DOCKER 层机制）
+- [ ] 配置 read-only rootfs 和 workspace mount。（诚实 gap：同上）
+- [ ] 记录镜像 Digest、Sandbox Policy 版本和运行结果。（诚实 gap：镜像 Digest 待 Docker adapter；Sandbox Policy 版本与运行结果已有 SandboxReport 覆盖）
+- [x] 明确 macOS 本地开发与 Linux 生产执行的差异。（docs/limitations.md「macOS 本地 vs Linux 生产」章节 + PROCESS 层 guard 强制 vs DOCKER 层结构隔离的差异说明）
 
 ### 4.4 红队和逃逸测试
 
-- [ ] 路径穿越写文件。
-- [ ] 读取宿主环境变量。
-- [ ] 读取 workspace 外文件。
-- [ ] 访问网络和 metadata endpoint。
-- [ ] 启动子进程和 fork 炸弹。
-- [ ] CPU、内存、磁盘、stdout 洪泛。
-- [ ] kill-9、超时、OOM、容器退出和残留清理。
-- [ ] 所有攻击都必须有“阻断/未阻断/不适用”的诚实报告。
+- [x] 路径穿越写文件。（RED-1 绝对路径 `/tmp/sandbox-escape-target.txt` 写入被拒 + 副作用断言文件不存在）
+- [x] 读取宿主环境变量。（RED-2 surefire 注入 secret，guest 读出 `SECRET=NULL`）
+- [x] 读取 workspace 外文件。（RED-3 读 `/etc/passwd` 被拒）
+- [x] 访问网络和 metadata endpoint。（RED-4 连本机 ServerSocket 端口探测被拒；169.254.169.254 形态同 SocketPermission 全拒）
+- [x] 启动子进程和 fork 炸弹。（RED-5 `Runtime.exec("ls")` 被拒；RED-7 fork 炸弹形态由进程树击杀覆盖）
+- [x] CPU、内存、磁盘、stdout 洪泛。（RED-6 stdout 洪泛 64KB cap + truncated 标记；CPU/内存由 timeout + `-Xmx` memoryLimitBytes 顶格；gap：磁盘洪泛依赖 4.3 配额，guard 无法感知磁盘配额）
+- [x] kill-9、超时、OOM、容器退出和残留清理。（RED-7 超时树杀 + `finally cleanupSandboxDir` 无残留；kill-9/OOM/容器退出属 DOCKER 层待 4.3）
+- [x] 所有攻击都必须有“阻断/未阻断/不适用”的诚实报告。（11 测试：八条攻击全 BLOCKED 断言 `[SANDBOX_POLICY]`；UNRESTRICTED 模式诚实记录 NOT-BLOCKED；className 穿越记 BLOCKED_BY_POLICY kind）
 
 ## 完成定义
 
-- [ ] 文档明确区分 ClassLoader、Process、Container、gVisor/microVM 的安全等级。
-- [ ] 生产高风险路径默认使用 OS 级 Sandbox。
-- [ ] Sandbox 不能访问 allowlist 外的文件和网络。
-- [ ] 所有进程、容器、临时目录都能在超时和取消后清理。
+- [x] 文档明确区分 ClassLoader、Process、Container、gVisor/microVM 的安全等级。（docs/limitations.md 安全等级表 + escape surface 说明）
+- [ ] 生产高风险路径默认使用 OS 级 Sandbox。（诚实 gap：v1 PROCESS 是最高已实现 tier，OS 级待 4.3 Docker adapter / Linux CI）
+- [x] Sandbox 不能访问 allowlist 外的文件和网络。（guard FilePermission workspace+java.home 读写边界 + SocketPermission 全拒，红队 RED-1/3/4 验证）
+- [x] 所有进程、容器、临时目录都能在超时和取消后清理。（进程树击杀 + sandboxDir finally 清理，ProcessSandboxRedTeamTest 验证；容器清理属 DOCKER 层待 4.3）
 
 ---
 

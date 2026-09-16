@@ -14,6 +14,22 @@
     <name>Agent Sandbox</name>
     <description>Sandbox for isolated execution of LLM-generated code</description>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <!-- Red-team fixture (ProcessSandboxRedTeamTest.RED-2):
+                             a host-side secret the guest must NOT inherit. -->
+                        <SANDBOX_REDTEAM_SECRET>host-secret-value</SANDBOX_REDTEAM_SECRET>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>io.github.qwzhang01</groupId>

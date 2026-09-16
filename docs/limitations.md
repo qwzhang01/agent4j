@@ -1,6 +1,6 @@
 # v1 边界与已知限制
 
-版本：`0.1.3`（Central 最新）。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
+版本：`0.1.4-SNAPSHOT`（开发中）。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
 
 ## Maven Central
 
@@ -28,6 +28,31 @@
 | LLM-as-judge | 评估走规则 / 失败样本回归集，不用模型当裁判 |
 
 这些不是「下一阶段漏做」，是 v1 非目标。
+
+## Sandbox 安全边界（Stage 4）
+
+v1 最高只实现到 PROCESS 层。不要把 `ProcessSandbox` 当作对抗恶意代码的安全沙箱：它防的是**意外与低强度攻击**，红队八条攻击全阻断，但边界是 guest 内 SecurityManager，理论上可被 JDK 内部机制绕过。
+
+### 各层安全等级（从弱到强）
+
+| Tier | 实现状态 | 防什么 | 防不了什么 |
+|------|---------|--------|-----------|
+| CLASSLOADER | ✅ `ClassLoaderSandbox` | 意外调用危险 API | 反射、`Unsafe`、JNI 逃逸 |
+| PROCESS | ✅ `ProcessSandbox`（guest guard） | 上行全部 + guest 侧文件/网络/进程/输出截断 | guard 本身被 JDK 内部机制绕过；宿主 OS 用户身份未隔离 |
+| DOCKER | ❌ 待 Linux CI | 上述全部 + namespace/cgroup 结构隔离 | 内核漏洞 |
+| gVisor / MICROVMM | ❌ 未实现 | 上述全部 + 内核攻击面收敛 | 侧信道 |
+| WASM | ❌ 未实现 | 上述全部 + 无系统调用 | WASM runtime bug |
+
+### PROCESS 层强制了什么
+
+- guest 内 `SandboxGuard`（SecurityManager 双阶段安装，guest 源码零感知）：workspace 外读写/删除全拒、`java.home` 只读、进程执行全拒、Socket/Net 权限全拒、exitVM/装第二个 SecurityManager 等按白名单放行
+- 环境变量 allowlist：默认只继承 `PATH/TMPDIR/LANG/TZ/LC_ALL/LC_CTYPE`（不含 `HOME`），`ENV_INHERIT_ALL=["*"]` 显式 opt-in 恢复
+- 输出每流默认 1MB 截断（`truncated by sandbox` 标记）；超时进程树整体击杀；临时目录 finally 清理
+- `UNRESTRICTED` 模式不注入 guard，仅限 TRUSTED 调试，测试诚实记录 NOT-BLOCKED
+
+### macOS 本地 vs Linux 生产
+
+macOS 本地开发：guard 层 guest 强制即全部边界，进程以你的 OS 用户运行，无 UID/GID 隔离；Linux 生产：PROCESS 层同样只有 guard 边界，结构隔离（namespace/cgroup/UID）要等 DOCKER adapter，高风险生产路径在 adapter 落地前**不要**跑 ADVERSARIAL 代码。`TierLimits.forRisk(risk, multiTenant)` 查每档风险的实际限制表；`requiresApproval=true`（ADVERSARIAL）表示此路径需要人工审批或更强 sandbox。
 
 ## 其他诚实边界
 
