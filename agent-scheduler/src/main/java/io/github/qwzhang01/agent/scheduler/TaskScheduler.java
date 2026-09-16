@@ -279,6 +279,33 @@ public class TaskScheduler {
         return n;
     }
 
+    /**
+     * Stage 3.5 (harness roadmap): restart sweep backed by the durable
+     * RunStore instead of JVM memory. Scans RUNNING / PAUSED /
+     * WAITING_APPROVAL recovery candidates from the store (skipping runs
+     * still actively tracked in this process), schedules each for a
+     * leased resume. The JVM active map is a cache, not the truth.
+     *
+     * @param durable durable manager whose RunStore is the source of truth
+     * @param delay   delay before the first resume attempt of each run
+     * @return number of runs scheduled for recovery
+     */
+    public int restoreDurableRuns(
+            io.github.qwzhang01.agent.workflow.runtime.DurableRunManager durable, Duration delay) {
+        int n = 0;
+        for (var row : durable.listRecoveryCandidates()) {
+            String runId = row.runId();
+            if (runManager.getRun(runId) != null) {
+                continue; // actively tracked here: memory wins for this process
+            }
+            log.info("[scheduler] Recovery candidate from RunStore: '{}' status={} cursor={}",
+                    runId, row.status(), row.cursor());
+            scheduleResume(runId, delay);
+            n++;
+        }
+        return n;
+    }
+
     // ============ Async Task Queue ============
 
     /** Enqueue an async task produced by an Agent. */

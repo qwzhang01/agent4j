@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 public final class WorkflowBuilder {
 
     private final String name;
+    private String version = "";
     private final Map<String, WorkflowNode> nodes = new LinkedHashMap<>();
     private final List<Edge> edges = new ArrayList<>();
     private final List<Edge> errorEdges = new ArrayList<>();
@@ -38,6 +39,18 @@ public final class WorkflowBuilder {
 
     WorkflowBuilder(String name) {
         this.name = name;
+    }
+
+    // ============ Definition identity (Stage 3.1) ============
+
+    /**
+     * Stage 3.1 (harness roadmap): version this definition (free-form,
+     * e.g. "1.2.0"). Stored in checkpoints; a resume against a different
+     * version of the same name is refused with DEFINITION_VERSION_MISMATCH.
+     */
+    public WorkflowBuilder version(String version) {
+        this.version = version == null ? "" : version;
+        return this;
     }
 
     // ============ Nodes ============
@@ -100,7 +113,7 @@ public final class WorkflowBuilder {
         for (Edge e : errorEdges) {
             errors.computeIfAbsent(e.from(), k -> new ArrayList<>()).add(e);
         }
-        return new Workflow(name, nodes, outgoing, errors, retryPolicies);
+        return new Workflow(name, version, nodes, outgoing, errors, retryPolicies);
     }
 
     // ============ Validation ============

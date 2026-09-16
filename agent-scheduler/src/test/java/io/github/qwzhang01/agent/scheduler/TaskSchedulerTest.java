@@ -301,8 +301,10 @@ class TaskSchedulerTest {
     @Test
     void restorePausedRunsDiscoversStoreWhenMemoryEmpty() {
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
-        store.save(new Checkpoint("cp-disk", "disk-run", RunState.PAUSED, "wait",
-                WorkflowState.of("x"), System.currentTimeMillis(), 1, null));
+        store.save(new Checkpoint(Checkpoint.SCHEMA_VERSION, "cp-disk", "disk-run", "wf-legacy",
+                "1.0", "", RunState.PAUSED, "wait",
+                WorkflowState.of("x"), System.currentTimeMillis(), 1, null,
+                0L, List.of()));
 
         RunManager emptyMemory = new RunManager(store);
         assertTrue(emptyMemory.listRuns().isEmpty(), "memory activeRuns must be empty");

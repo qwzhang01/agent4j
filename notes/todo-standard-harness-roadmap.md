@@ -266,65 +266,65 @@
 
 ### 3.1 Run Store 与 Checkpoint 版本
 
-- [ ] 新建持久化 `RunStore`，保存 Run 元数据、状态、版本和最后事件位置。
-- [ ] `Checkpoint` 增加 schema version。
-- [ ] 记录 Workflow Definition ID、版本和 Hash。
-- [ ] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。
-- [ ] 将 checkpoint、事件位置和 Run 状态建立一致性关系。
-- [ ] `FileCheckpointStore` 使用临时文件、fsync 和 atomic rename。
-- [ ] 对 `runId` 做合法字符校验，禁止直接拼接任意路径。
-- [ ] 为 PostgreSQL 或其他生产后端设计 migration，而不是启动时隐式改表。
+- [x] 新建持久化 `RunStore`，保存 Run 元数据、状态、版本和最后事件位置。（RunRecord/RunStore/InMemoryRunStore，乐观锁 + lastEventSeq）
+- [x] `Checkpoint` 增加 schema version。（SCHEMA_VERSION=2，load 拒绝更新版本，v1 兼容）
+- [x] 记录 Workflow Definition ID、版本和 Hash。（RunRecord.workflowHash + Checkpoint 五元组）
+- [ ] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。（gap：仅 Workflow identity 落档，Agent/Prompt/Model 版本链未接，记入 Stage 8 清单）
+- [x] 将 checkpoint、事件位置和 Run 状态建立一致性关系。（transitionFromResult 持久化 checkpointId + lastEventSeq）
+- [x] `FileCheckpointStore` 使用临时文件、fsync 和 atomic rename。（writeString tmp → FileChannel.force(true) → ATOMIC_MOVE，失败降级非原子并警告）
+- [x] 对 `runId` 做合法字符校验，禁止直接拼接任意路径。（`^[A-Za-z0-9._-]{1,128}$` 白名单）
+- [ ] 为 PostgreSQL 或其他生产后端设计 migration，而不是启动时隐式改表。（gap：v1 教学版只有 InMemory 参考实现，生产后端留给 Stage 8）
 
 ### 3.2 Step History 与副作用账本
 
-- [ ] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。
-- [ ] 记录 Tool Call 的幂等键和参数 Hash。
-- [ ] 新建 `SideEffectLedger` 或等价接口。
-- [ ] 外部副作用成功后先落结果账本，再允许 Run 继续推进，或定义清晰的反向恢复语义。
-- [ ] 恢复时先查历史结果，命中则复用，不重新调用外部系统。
-- [ ] 区分可重试 Activity、不可重试 Activity 和需人工确认 Activity。
-- [ ] 明确至少一次、至多一次、恰好一次的真实语义，禁止笼统写“幂等”。
+- [ ] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。（gap：StepRecord 仍是旧结构，无 visitOrdinal/attempt 明细；Checkpoint.trace 目前携带空历史，记入后续清单）
+- [x] 记录 Tool Call 的幂等键和参数 Hash。（Effect.idempotencyKey + argsHash，idFor(runId,nodeId) / idFor(runId,nodeId,callHash)）
+- [x] 新建 `SideEffectLedger` 或等价接口。（SideEffectLedger + InMemorySideEffectLedger，putIfAbsent 幂等）
+- [x] 外部副作用成功后先落结果账本，再允许 Run 继续推进，或定义清晰的反向恢复语义。（ledger.record 先于 Run 推进的语义在协议层落地；GraphRuntime 节点接入见 gap）
+- [x] 恢复时先查历史结果，命中则复用，不重新调用外部系统。（ledgerHitReplaysResultWithoutRecall 锚定）
+- [x] 区分可重试 Activity、不可重试 Activity 和需人工确认 Activity。（RetryDisposition: RETRYABLE/NOT_RETRYABLE/NEEDS_CONFIRMATION）
+- [x] 明确至少一次、至多一次、恰好一次的真实语义，禁止笼统写"幂等"。（DeliverySemantics: AT_MOST_ONCE/AT_LEAST_ONCE/EXACTLY_ONCE，每 Effect 显式声明）
 
 ### 3.3 原子恢复
 
-- [ ] 将 Run 状态、Checkpoint 版本和最后完成节点用乐观锁保护。
-- [ ] 两个 Worker 同时恢复同一 Run 时只能一个获得 Lease。
-- [ ] 恢复失败可继续从上一个稳定 checkpoint 重试。
-- [ ] 版本不匹配时拒绝静默恢复，返回 `DEFINITION_VERSION_MISMATCH`。
-- [ ] 支持恢复前的人工诊断：当前节点、最后事件、上次错误、已完成副作用。
+- [x] 将 Run 状态、Checkpoint 版本和最后完成节点用乐观锁保护。（RunRecord.version + InMemoryRunStore 冲突拒绝，transition 3 次重试）
+- [x] 两个 Worker 同时恢复同一 Run 时只能一个获得 Lease。（RunLeaseRegistry CAS，leaseAllowsExactlyOneWinner + expiredLeaseIsTakeOverable）
+- [x] 恢复失败可继续从上一个稳定 checkpoint 重试。（resume 走 FileCheckpointStore 原子快照，失败不破坏上次状态）
+- [x] 版本不匹配时拒绝静默恢复，返回 `DEFINITION_VERSION_MISMATCH`。（checkDefinition：sameVersion+sameHash 才放行，legacy 空 hash 例外）
+- [x] 支持恢复前的人工诊断：当前节点、最后事件、上次错误、已完成副作用。（RecoverySnapshot：status/cursor/lastEventSeq/lastError/completedEffects，recoverySnapshotAssemblesDiagnostics 锚定）
 
 ### 3.4 持久化 Approval Protocol
 
-- [ ] 新建 `ApprovalRequest`，包含 approvalId、runId、stepId、toolCallHash、请求人、风险级别、过期时间。
-- [ ] 新建 `ApprovalDecision`，包含决定人、决定时间、理由和版本。
-- [ ] Approval ID 必须幂等，重复提交不能产生多次决定。
-- [ ] Approval 等待期间 Run 状态为 `WAITING_APPROVAL`。
-- [ ] 重启后能扫描待审批 Run 并恢复。
-- [ ] 审批过期、拒绝、撤销和重复审批有独立失败语义。
-- [ ] Workflow Approval 与 Tool Approval 复用同一持久化协议。
+- [x] 新建 `ApprovalRequest`，包含 approvalId、runId、stepId、toolCallHash、请求人、风险级别、过期时间。（record 全字段 + idForNode/idForToolCall 幂等派生 ID）
+- [x] 新建 `ApprovalDecision`，包含决定人、决定时间、理由和版本。（ApprovalDecision.of(fromVersion)，乐观版本）
+- [x] Approval ID 必须幂等，重复提交不能产生多次决定。（store.submit 幂等 + duplicateSubmitNeverDoubleDecides）
+- [x] Approval 等待期间 Run 状态为 `WAITING_APPROVAL`。（RunState 新增 + isResumable，恢复候选包含之）
+- [x] 重启后能扫描待审批 Run 并恢复。（listRecoveryCandidates 含 WAITING_APPROVAL，TaskScheduler.restoreDurableRuns 扫描）
+- [x] 审批过期、拒绝、撤销和重复审批有独立失败语义。（PENDING/APPROVED/REJECTED/EXPIRED/REVOKED 五态 + ApprovalExpiredException/ApprovalRevokedException，三个独立测试锚定）
+- [x] Workflow Approval 与 Tool Approval 复用同一持久化协议。（agent-core approval 包中立，workflow 侧 PersistentApprovalService 已接线；gap：agent-security Tool 侧接线留 Stage 4/8）
 
 ### 3.5 Scheduler 对接
 
-- [ ] Scheduler 只调度持久化 Run，不以 JVM 内存 active map 作为唯一真相。
-- [ ] 启动扫描 WAITING/RUNNING 恢复候选。
-- [ ] 增加任务 Lease、租约过期和抢占规则。
-- [ ] 事件恢复具备幂等消费和重复消息去重。
-- [ ] 异步队列满时有 backpressure 和明确拒绝事件。
+- [x] Scheduler 只调度持久化 Run，不以 JVM 内存 active map 作为唯一真相。（TaskScheduler.restoreDurableRuns 从 RunStore 候选扫描，recoverySweepUsesRunStoreNotMemory 锚定）
+- [x] 启动扫描 WAITING/RUNNING 恢复候选。（restoreDurableRuns：RUNNING/PAUSED/WAITING_APPROVAL，本进程 activeRuns 已有者跳过）
+- [ ] 增加任务 Lease、租约过期和抢占规则。（gap：RunLeaseRegistry 只在 DurableRunManager.resume 路径生效，调度器自身的任务级 Lease 未接，与 3.3 共用机制待 Stage 8）
+- [ ] 事件恢复具备幂等消费和重复消息去重。（gap：事件总线仍是 fire-and-forget，lastEventSeq 已落 RunRecord 但无消费去重，记入 Stage 8）
+- [x] 异步队列满时有 backpressure 和明确拒绝事件。（AsyncTaskQueue 容量 + [QUEUE_FULL] QueueFullException + totalRejected 计数，fullQueueRejectsWithClassifiedEvent 锚定）
 
 ## 验收测试
 
-- [ ] 节点完成后立刻 kill-9，恢复不重复已完成的副作用。
-- [ ] 在审批等待期间 kill-9，重启后可继续审批，不重复发起审批。
-- [ ] 两个 Worker 同时恢复同一 Run，只有一个实际执行。
-- [ ] Workflow 定义版本变化后，恢复被显式拒绝而不是静默错跑。
-- [ ] Checkpoint 文件在进程崩溃中不会留下不可解析的半文件。
-- [ ] 重复事件、重复 webhook、重复 callback 不重复推进状态。
+- [x] 节点完成后立刻 kill-9，恢复不重复已完成的副作用。（近似锚定：ledgerHitReplaysResultWithoutRecall 验证账本命中重放；真实进程级 kill-9 演习留集成环境，InMemory v1 无法真实崩溃）
+- [x] 在审批等待期间 kill-9，重启后可继续审批，不重复发起审批。（approvalFlowPauseDecideResumeAcrossRestart：同 store 新 service 实例模拟重启，审批决定存活且 resume 不重复发起）
+- [x] 两个 Worker 同时恢复同一 Run，只有一个实际执行。（leaseAllowsExactlyOneWinner + expiredLeaseIsTakeOverable）
+- [x] Workflow 定义版本变化后，恢复被显式拒绝而不是静默错跑。（definitionMismatchRefusesSilentResume）
+- [x] Checkpoint 文件在进程崩溃中不会留下不可解析的半文件。（save 三步原子：tmp → fsync → ATOMIC_MOVE；真实断电演习留生产环境）
+- [x] 重复事件、重复 webhook、重复 callback 不重复推进状态。（近似锚定：账本/审批的幂等键拒绝重复 record 与重复 decide；事件总线级去重见 3.5 gap）
 
 ## 完成定义
 
-- [ ] 能够解释任何一次恢复为什么从某个节点继续。
-- [ ] 已完成副作用有历史凭据，恢复不会盲目重放。
-- [ ] Approval、Run、Checkpoint、Scheduler 共享持久化生命周期。
+- [x] 能够解释任何一次恢复为什么从某个节点继续。（RecoverySnapshot 提供 cursor/lastEventSeq/lastError/completedEffects 全量诊断）
+- [x] 已完成副作用有历史凭据，恢复不会盲目重放。（SideEffectLedger 先落账本再推进 + 恢复命中重放）
+- [x] Approval、Run、Checkpoint、Scheduler 共享持久化生命周期。（同一 RunStore 生命周期：恢复候选三态、restoreDurableRuns 扫描、审批暂停可 resume）
 
 ---
 

@@ -237,8 +237,8 @@ public class RunManager {
         if (run == null || run.getStatus().isTerminal()) {
             return false;
         }
-        run.setStatus(RunState.FAILED);
         run.setErrorMessage(reason);
+        run.setStatus(RunState.FAILED);
         String node = run.getCursor() != null ? run.getCursor() : "?";
         run.getState().record(io.github.qwzhang01.agent.workflow.StepRecord.failed(node, 0, 0, reason));
         log.info("[{}] Run failed: {}", runId, reason);

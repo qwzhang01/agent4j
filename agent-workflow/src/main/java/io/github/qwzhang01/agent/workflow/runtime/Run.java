@@ -29,11 +29,17 @@ public class Run {
 
     // ============ Mutable State ============
     private WorkflowState state;
-    private RunState status;
+    // Stage 3 hardening: status/errorMessage are read cross-thread by
+    // observers (scheduler timers, recovery sweeps, tests). volatile +
+    // "write errorMessage before status" makes FAILED a publication point:
+    // anyone who sees FAILED is guaranteed to see the failure reason.
+    private volatile RunState status;
     private String cursor;           // null = fresh start, non-null = resume from here
     private Object pendingInput;     // input for the paused node on resume
     private int stepsExecuted;
-    private String errorMessage;
+    private volatile String errorMessage;
+    /** Stage 3.1: event/checkpoint sequence anchor for resume consistency. */
+    private long lastEventSeq;
 
     // ============ Control ============
     private volatile boolean cancelled = false;
@@ -86,6 +92,7 @@ public class Run {
         run.cursor = cp.cursor();
         run.pendingInput = cp.pendingInput();
         run.stepsExecuted = cp.stepsExecuted();
+        run.lastEventSeq = cp.lastEventSeq();
         return run;
     }
 
@@ -101,6 +108,10 @@ public class Run {
     public String getErrorMessage() { return errorMessage; }
     public long getStartTime() { return startTime; }
     public TimeoutPolicy getTimeoutPolicy() { return timeoutPolicy; }
+    /** Stage 3.1: event position anchor carried across pause/resume. */
+    public long getLastEventSeq() { return lastEventSeq; }
+    /** Stage 3.1: bump the event position (called on checkpoint persist). */
+    public void setLastEventSeq(long seq) { this.lastEventSeq = seq; }
 
     public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
         this.timeoutPolicy = timeoutPolicy == null ? TimeoutPolicy.none() : timeoutPolicy;

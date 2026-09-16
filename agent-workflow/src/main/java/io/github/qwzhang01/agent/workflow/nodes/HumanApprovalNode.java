@@ -6,6 +6,7 @@ import io.github.qwzhang01.agent.workflow.NodeResult;
 import io.github.qwzhang01.agent.workflow.WorkflowException;
 import io.github.qwzhang01.agent.workflow.WorkflowNode;
 import io.github.qwzhang01.agent.workflow.runtime.PauseException;
+import io.github.qwzhang01.agent.workflow.runtime.PersistentApprovalService;
 
 /**
  * Human-in-the-loop checkpoint: asks an {@link ApprovalService} for a
@@ -73,7 +74,19 @@ public final class HumanApprovalNode implements WorkflowNode {
     private NodeResult executeAsync(NodeContext ctx) throws PauseException {
         if (ctx.isResuming()) {
             // Resume path: check the decision
-            Boolean decision = approvalService.checkDecision(ctx.runId(), id);
+            Boolean decision;
+            try {
+                decision = approvalService.checkDecision(ctx.runId(), id);
+            } catch (PersistentApprovalService.ApprovalExpiredException e) {
+                // Expiry is timeout-shaped, not a business rejection: fail
+                // the run with the distinct semantic (Stage 3.4).
+                throw new WorkflowException(
+                        "Approval expired at node '" + id + "': " + e.getMessage());
+            } catch (PersistentApprovalService.ApprovalRevokedException e) {
+                // Revocation halts the run despite an earlier green light.
+                throw new WorkflowException(
+                        "Approval revoked at node '" + id + "': " + e.getMessage());
+            }
             if (decision == null) {
                 // Still pending -> pause again
                 throw new PauseException(id, "Approval still pending: " + summary);

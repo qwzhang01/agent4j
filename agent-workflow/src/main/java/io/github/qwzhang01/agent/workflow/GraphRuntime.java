@@ -93,8 +93,10 @@ public class GraphRuntime {
             return doExecute(run);
         } catch (Exception e) {
             log.error("[{}] Runtime error: {}", run.getRunId(), e.getMessage(), e);
-            run.setStatus(RunState.FAILED);
+            // Stage 3 hardening: message first, status second - FAILED is
+            // the publication point for cross-thread observers.
             run.setErrorMessage(e.getMessage());
+            run.setStatus(RunState.FAILED);
             return ExecutionResult.failed("Runtime error: " + e.getMessage(), run.getState());
         }
     }
@@ -139,8 +141,8 @@ public class GraphRuntime {
             // lands with Stage 2.2's ExecutionResult extension).
             if (runCtx != null && runCtx.isDeadlineExceeded()) {
                 String msg = "[TIMEOUT] Run deadline exceeded at node '" + cursor + "'";
-                run.setStatus(RunState.FAILED);
                 run.setErrorMessage(msg);
+                run.setStatus(RunState.FAILED);
                 state.record(StepRecord.failed(cursor, 0, 0, msg));
                 log.info("[{}] {}", run.getRunId(), msg);
                 return ExecutionResult.failed(msg, state);
@@ -157,16 +159,16 @@ public class GraphRuntime {
             if (++steps > maxSteps) {
                 String msg = "Max steps (" + maxSteps + ") exceeded at node '" + cursor
                         + "' - possible cycle in the graph";
-                run.setStatus(RunState.FAILED);
                 run.setErrorMessage(msg);
+                run.setStatus(RunState.FAILED);
                 return ExecutionResult.failed(msg, state);
             }
 
             WorkflowNode node = workflow.node(cursor);
             if (node == null) {
                 String msg = "Unknown node: '" + cursor + "'";
-                run.setStatus(RunState.FAILED);
                 run.setErrorMessage(msg);
+                run.setStatus(RunState.FAILED);
                 return ExecutionResult.failed(msg, state);
             }
 
@@ -191,8 +193,8 @@ public class GraphRuntime {
                 return ExecutionResult.paused(
                         new ResumeToken(run.getRunId(), null, cursor), state);
             } catch (NodeTimeoutException te) {
-                run.setStatus(RunState.FAILED);
                 run.setErrorMessage(te.getMessage());
+                run.setStatus(RunState.FAILED);
                 state.record(StepRecord.failed(cursor, 0, 0, te.getMessage()));
                 log.info("[{}] {}", run.getRunId(), te.getMessage());
                 return ExecutionResult.failed(te.getMessage(), state);
@@ -216,10 +218,10 @@ public class GraphRuntime {
                     cursor = err.to();
                     continue;
                 }
-                run.setStatus(RunState.FAILED);
                 String msg = "Node '" + node.id() + "' failed after "
                         + outcome.attempts() + " attempt(s): " + outcome.failure().getMessage();
                 run.setErrorMessage(msg);
+                run.setStatus(RunState.FAILED);
                 return ExecutionResult.failed(msg, state);
             }
 
@@ -320,8 +322,8 @@ public class GraphRuntime {
             return null;
         }
         String msg = "Run timed out after " + timeout.runTimeoutMs() + "ms at node '" + cursor + "'";
-        run.setStatus(RunState.FAILED);
         run.setErrorMessage(msg);
+        run.setStatus(RunState.FAILED);
         state.record(StepRecord.failed(cursor, 0, 0, msg));
         log.info("[{}] {}", run.getRunId(), msg);
         return ExecutionResult.failed(msg, state);

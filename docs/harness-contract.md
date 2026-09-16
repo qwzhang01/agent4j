@@ -55,8 +55,8 @@ IDLE -> RUNNING -> EXECUTING_TOOL -> DONE / MAX_STEPS_EXCEEDED / ERROR
 
 Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> SUCCEEDED / FAILED / CANCELED`。**本契约如实记录 gap**：
 
-- `WAITING`（审批等待）目前走 `PAUSED` 语义（`PauseException` + `ResumeToken`），无独立 `WAITING` 状态。Stage 3.4 持久化 Approval 引入 `WAITING_APPROVAL` 时再收敛。
-- `CREATED` 前置态目前不存在：Run 创建即进入 RUNNING（内存态），持久化 RunStore 是 Stage 3.1 的活。
+- `WAITING`（审批等待）：Stage 3.4 已引入 `WAITING_APPROVAL` 独立态（持久化审批协议消费），但 GraphRuntime 暂停路径仍统一落 `PAUSED`——WAITING_APPROVAL 目前由 RunStore 行状态与恢复候选消费，主循环内联接线是 Stage 8 gap。
+- `CREATED` 前置态目前不存在：Run 创建即进入 RUNNING。Stage 3.1 RunStore 已落地（行先建再执行，崩溃首节点也留恢复候选），但内存 Run 对象仍无 CREATED 前置态。
 - 取消语义各自成立（workflow CANCELLED / agent 侧 CANCELED），但跨层事件模型未统一——Stage 1.3 统一生命周期事件时对齐。
 - **契约承诺**：Stage 1 RunContext 落地前，`RunState` 五态机保持稳定，不新增第六态；WorkflowState 黑板读写保持现有语义。
 
@@ -108,7 +108,7 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 - Workflow = 图运行时（7 种节点），黑板 `WorkflowState`，Checkpoint 于 pause 点，`RunState` 五态机。
 - Workflow 不嵌套 Agent loop 语义：需要 Agent 的节点显式挂 AgentNode（或宿主包装），两者通过黑板交换数据。
-- **gap**：Run 元数据无持久化 RunStore（恢复依赖 checkpoint 文件目录扫描）。Stage 3.1。
+- **gap**：RunStore 已落地（Stage 3.1：乐观锁行 + 恢复候选来自 store 而非 JVM 内存），但 StepRecord 仍无 visitOrdinal/attempt 明细、账本未接入 GraphRuntime 节点执行链——真实节点执行不查账本，恢复重放保护依赖既有三保护。Stage 8。
 
 ### 2.3 Tool 边界
 
@@ -145,8 +145,8 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | 取消 & Deadline | agent-core | 所有子分支收到取消 | Deadline 到期统一 TIMEOUT | — | [x] done（Stage 1.4，2026-09-16：CancellationSource/CancellationToken + RunDeadlineException + CANCELLED 终态，ParallelCancelTest 验证全分支停止） |
 | Tool Contract 结构化定义 | agent-core | schema 校验通过执行 | INVALID_TOOL_ARGUMENTS 拒绝 | — | [x] done（Stage 2.1/2.2，2026-09-16：contract 包 5 文件 + ContractAwareToolExecutor 统一校验链，ToolContractTest 12 覆盖） |
 | Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [x] done（Stage 2.4，2026-09-16：SecureAgentBuilder 默认治理栈 + UnsafeAgentBuilder 显式危险路径 + [RuntimeProfile] 日志；审批的非阻塞 WAITING 语义留 Stage 3） |
-| Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [-] kill-9 已真实验证，RunStore/幂等账本缺 |
-| 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [ ] planned（Stage 3.4） |
+| Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [x] done（Stage 3.1/3.2/3.3，2026-09-16：RunStore 乐观锁 + Checkpoint schemaVersion=2 + 定义指纹 mismatch 拒绝 + SideEffectLedger 命中重放 + RunLease 单赢家 + RecoverySnapshot 诊断；kill-9 用同 store 新实例模拟，DurableExecutionTest 14 覆盖） |
+| 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4，2026-09-16：approval 包五态协议 + PersistentApprovalService + WAITING_APPROVAL 状态 + 重启扫描恢复候选；agent-security Tool 侧接线留 Stage 4/8） |
 | Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [-] FailureKind/预算已有，Process 硬化缺 |
 | Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [-] scope 隔离已有，审计/脱敏缺 |
 | 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor）；Model/Memory/Approval/Sandbox 侧映射 Stage 5 |
@@ -235,7 +235,7 @@ agent-spring-boot-starter -> core, model
 | agent-model | Provider 错误统一分类 | [ ] | Stage 6.1 |
 | agent-workflow | 图运行时 + 7 节点 + Checkpoint | [x] | workflow 9 测试文件 + E8 |
 | agent-workflow | kill-9 跨进程恢复 | [x] | KillNineCrashRecoveryTest 真 fork 子进程 |
-| agent-workflow | RunStore / 幂等账本 / 持久化 Approval | [ ] | Stage 3 |
+| agent-workflow | RunStore / 幂等账本 / 持久化 Approval | [x] | Stage 3（2026-09-16）：durable 包 + approval 包 + DurableRunManager/PersistentApprovalService + DurableExecutionTest 14 / SchedulerDurabilityTest 3；账本接 GraphRuntime 与 Tool 侧接线留 Stage 8 |
 | agent-memory | Scope 隔离 / 生命周期 / 对账环 / 双时间轴 / 分层注入 | [x] | 15 测试文件 + 174/174 |
 | agent-memory | PG 持久化 | [-] | 真库线 21/21，但裸 JDBC 无池 |
 | agent-memory | tenant 审计 / 字段脱敏 | [ ] | Stage 5 |
