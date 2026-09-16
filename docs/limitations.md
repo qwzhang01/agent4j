@@ -21,7 +21,7 @@
 | JAR 插件 ClassLoader / 多版本共存 | Java SPI 加载 / 卸载 / 重载，同一 classpath |
 | Docker / WASM 沙箱 | `ClassLoaderSandbox` + `ProcessSandbox` |
 | MCP SSE | MCP **stdio** 客户端；可连官方 filesystem server |
-| A2A `message/stream`（SSE）/ 推送通知 / 任务续跑 | A2A **HTTP** 双向：`HttpA2AClient`（`message/send` / `tasks/get` / 卡片发现）+ `HttpA2AServer`（把 Agent 包成端点，含入站净化防线）；任务同步执行，任务存储在内存 |
+| A2A 卡片 / webhook 签名、持久化任务存储、第三方对端互操作 | A2A **HTTP** 双向：`HttpA2AClient`（`message/send` / `tasks/get` / 卡片发现 / `message/stream` SSE / webhook 推送 / input-required 续跑）+ `HttpA2AServer`（把 Agent 包成端点，含入站净化防线）；任务存储在内存，互操作仅自家两端回环验证 |
 | 真 Git | `agent-coding` 是工作区 + 补丁 + 命令白名单 + 有界修复环，不封装 Git |
 | OpenTelemetry SDK | `agent-observability` 自管指标 / 预算 / 路由 / 评估 / 版本三元组 |
 | Mini VERL 训练 | `agent-trace-export` 导出轨迹 JSONL 与 DPO 偏好，训练环不在库内 |

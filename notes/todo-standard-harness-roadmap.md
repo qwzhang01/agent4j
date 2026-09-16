@@ -1,6 +1,6 @@
 # ToDo：agent4j 标准 Harness 演进路线
 
-> 状态：📋 规划中（2026-09-15）  
+> 状态：🚧 施工中（Stage 0 已完成，2026-09-16；契约冻结于 [docs/harness-contract.md](../docs/harness-contract.md)）
 > 目标：把 agent4j 从“架构覆盖面较完整的 Agent Runtime”推进为“默认安全、可恢复、可观测、可部署的标准 Harness”。  
 > 范围：只记录通用框架能力；Moonlit、Enterprise、Tavern、Coding 等产品判断不进入本清单。  
 > 现状基线：`v0.1.3` 已本地发版，Stage 1–18 主线、Memory 四步路线、Handoff、Guardrail/Sanitizing、模型路由、成本预算、Trace/Eval、红队与跨进程 kill-9 恢复实验已有实现或实验记录。  
@@ -68,34 +68,34 @@
 
 ### 0.1 冻结版本和范围
 
-- [ ] 确认本路线对应的开发版本：`0.1.4-SNAPSHOT` 或新的主版本。
-- [ ] 明确本轮只建设通用 Runtime，不把 Moonlit 的情绪、关系、角色规则塞入框架。
-- [ ] 为每个 P0 能力指定唯一责任模块，禁止同一能力在多个模块各自实现。
+- [x] 确认本路线对应的开发版本：`0.1.4-SNAPSHOT`（2026-09-16，23 处 pom 已对齐，含 0.1.3 发版时欠的 SNAPSHOT 回灌）。
+- [x] 明确本轮只建设通用 Runtime，不把 Moonlit 的情绪、关系、角色规则塞入框架（契约 §0.1.2 范围边界）。
+- [x] 为每个 P0 能力指定唯一责任模块，禁止同一能力在多个模块各自实现（契约 §5 责任模块唯一性表）。
 - [x] 原生产升级 ToDo（A1–A8 + code-review 修复，2026-09-07/08）已全部完成并核验（代码与测试俱在），文件已删除；其成果按模块并入下方能力矩阵，不重复开发。
-- [ ] 建立 `implemented / partial / planned / intentionally-not-supported` 四态能力矩阵。
+- [x] 建立 `implemented / partial / planned / intentionally-not-supported` 四态能力矩阵（契约 §4，与 roadmap 互为索引）。
 
 ### 0.2 定义 Harness 最小契约
 
-- [ ] 定义一次 Run 的生命周期：`CREATED → RUNNING → WAITING → SUCCEEDED / FAILED / CANCELED`。
-- [ ] 定义 Agent、Workflow、Tool、Model、Memory、Sandbox 的边界。
-- [ ] 定义所有失败分类：输入失败、权限拒绝、审批等待、模型失败、Tool 失败、超时、取消、资源耗尽、协议失败、恢复失败。
-- [ ] 定义默认安全策略：未知 Tool 拒绝、有副作用 Tool 必须经过治理、预算未配置时的行为、Sandbox 未配置时的行为。
-- [ ] 定义“可恢复”的含义：哪些节点可重试、哪些副作用必须幂等、哪些状态必须持久化。
-- [ ] 定义最小生产 NFR：最大延迟、最大 Tool 次数、最大上下文、最大输出、最大成本、最大并发。
+- [x] 定义一次 Run 的生命周期（契约 §1.2：如实记录与草案 CREATED/WAITING 的 gap——审批等待目前走 PAUSED 语义，RunState 五态机在 Stage 1 前保持稳定）。
+- [x] 定义 Agent、Workflow、Tool、Model、Memory、Sandbox 的边界（契约 §2 六边界，每条含现状与 gap）。
+- [x] 定义所有失败分类（契约 §1.3：现状仅沙箱有 FailureKind，目标统一 FailureTaxonomy 十类，Stage 2.2 落地）。
+- [x] 定义默认安全策略（契约 §1.4：诚实记录当前默认是 unsafe——未知 Tool 不拒绝、治理 opt-in；Stage 2.4 SecureAgentBuilder 改为默认）。
+- [x] 定义“可恢复”的含义（契约 §1.5：pause 点快照 + 三保护语义冻结，幂等键 `runId:nodeId:visitOrdinal` 为契约级不变量）。
+- [x] 定义最小生产 NFR（契约 §1.6 六维表：延迟/Tool 次数/上下文/输出/成本/并发）。
 
 ### 0.3 建立验收矩阵
 
-- [ ] 为每项 P0 建立至少一个 happy path、一个失败 path、一个重启 path。
-- [ ] 建立模块依赖和禁止依赖矩阵。
-- [ ] 建立 API 兼容性检查清单。
-- [ ] 建立安全测试清单：路径穿越、间接注入、工具越权、重复副作用、敏感数据泄露。
-- [ ] 建立真实基础设施测试清单：PostgreSQL、容器 Sandbox、MCP、A2A、OpenTelemetry。
+- [x] 为每项 P0 建立至少一个 happy path、一个失败 path、一个重启 path（契约 §3.1 十行验收矩阵）。
+- [x] 建立模块依赖和禁止依赖矩阵（契约 §3.2：19 模块 pom 实证依赖图 + 六条禁止依赖规则）。
+- [x] 建立 API 兼容性检查清单（契约 §3.3：旧构造器冻结 / 新能力 opt-in 策略，Moonlit 166 测试为第二验证面）。
+- [x] 建立安全测试清单：路径穿越、间接注入、工具越权、重复副作用、敏感数据泄露（契约 §3.4 八攻击面 × 已有防线 × 已有测试）。
+- [x] 建立真实基础设施测试清单：PostgreSQL、容器 Sandbox、MCP、A2A、OpenTelemetry（契约 §3.5 六项现状与计划）。
 
 ## 完成定义
 
-- [ ] 有一份可评审的 Harness Contract。
-- [ ] 每个 P0 缺口都有责任模块、依赖、验收测试和明确的“不做范围”。
-- [ ] 后续新增功能不能绕过该矩阵直接进入主线。
+- [x] 有一份可评审的 Harness Contract（docs/harness-contract.md，2026-09-16）。
+- [x] 每个 P0 缺口都有责任模块、依赖、验收测试和明确的“不做范围”（契约 §3.1 + §5 + §0.1.2）。
+- [x] 后续新增功能不能绕过该矩阵直接进入主线（契约 §6 后续阶段纪律）。
 
 ---
 
@@ -650,7 +650,7 @@ Wave C：才能规模化和扩展
 
 ## 当前第一批开工顺序
 
-- [ ] **第一件：** Stage 0.1–0.3，冻结 Harness Contract 和验收矩阵。
+- [x] **第一件：** Stage 0.1–0.3，冻结 Harness Contract 和验收矩阵（2026-09-16 完成，契约见 [docs/harness-contract.md](../docs/harness-contract.md)）。
 - [ ] **第二件：** Stage 1.1–1.4，落 `RunContext`、取消和统一生命周期事件。
 - [ ] **第三件：** Stage 2.1–2.4，落结构化 Tool Contract 和 `SecureAgentBuilder`。
 - [ ] **第四件：** Stage 3.1–3.4，补 Durable RunStore、幂等账本和持久化 Approval。

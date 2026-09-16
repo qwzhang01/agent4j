@@ -17,7 +17,7 @@
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列 | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
-| `agent-mcp` | MCP stdio 客户端 + A2A 双向：进程内客户端、`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get`）、`HttpA2AServer`（Agent 包装成端点，入站净化）。SSE / 推送 / 任务续跑未做 | `agent-orchestrator`、MCP / A2A 示例 |
+| `agent-mcp` | MCP stdio 客户端 + A2A 双向：进程内客户端、`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get` / `message/stream` SSE / webhook 推送 / input-required 续跑）、`HttpA2AServer`（Agent 包装成端点，入站净化）。任务存储在内存，无卡片 / webhook 签名，无第三方对端验证 | `agent-orchestrator`、MCP / A2A 示例 |
 | `agent-orchestrator` | Supervisor / Worker / 并行派发 | 多 Agent 示例 |
 | `agent-channel` | 身份、共享会话、任务接力、Ambient | `agent-product`、频道示例 |
 | `agent-product` | YAML Agent 定义、模板、Prompt 版本、Webhook、DAG | 声明式 / Webhook 示例 |

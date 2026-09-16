@@ -1,6 +1,6 @@
 # Releasing
 
-Maintainer notes for cutting a version of agent4j. The current Maven version is `0.1.0`.
+Maintainer notes for cutting a version of agent4j. The current Maven version is `0.1.4-SNAPSHOT` (Central latest release: `0.1.3`).
 
 ## Prerequisites
 

@@ -5,9 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.3`.
+The current Maven version is `0.1.4-SNAPSHOT`.
 
 ## [未发布]
+
+### Added
+
+- **Harness Contract frozen (Stage 0 of the standard-harness roadmap).** New [docs/harness-contract.md](docs/harness-contract.md): the "standard harness" goals are now an auditable contract instead of slogans. It freezes the 0.1.4 scope (generic runtime only — Moonlit/enterprise/tavern/coding product judgments stay out), defines the Run lifecycle contract **as the code is today** (the roadmap draft's `CREATED`/`WAITING` states are recorded honestly as gaps: approval-waiting currently rides `PAUSED` semantics, and the `RunState` five-state machine is frozen until Stage 1), the six module boundaries (Agent/Workflow/Tool/Model/Memory/Sandbox, each with current facts and named gaps), the failure-taxonomy target (today only the sandbox has a typed `FailureKind`; a unified ten-class taxonomy lands in agent-core at Stage 2), the honest default-security statement (**the current default assembly is unsafe** — unknown tools return a string to the model instead of being refused, governance is opt-in; `SecureAgentBuilder` flips the default at Stage 2.4), and the recovery invariant (the idempotency-key formula `runId:nodeId:visitOrdinal` is a contract-level invariant, proven by E8). It also ships the acceptance matrix (P0 capability × happy/failure/restart paths), the pom-verified module dependency matrix plus six forbidden-dependency rules, the API-compatibility checklist (old constructors frozen, new capabilities opt-in — Moonlit's 166 tests are the second verification face), the security test inventory (8 attack surfaces mapped to existing defenses and test classes), the real-infrastructure test checklist (PostgreSQL/MCP/A2A verified today; container sandbox and OTel planned), and the four-state capability matrix (implemented/partial/planned/intentionally-not-supported) cross-indexed with the roadmap. See [roadmap](notes/todo-standard-harness-roadmap.md) Stage 0.
+
+### Changed
+
+- **Version bumped to `0.1.4-SNAPSHOT`** across all 23 pom references (root pom ×2, BOM, 20 modules, examples) — this also repays the SNAPSHOT-backfill debt left open after the 0.1.3 release. Docs keep pointing at Central's latest `0.1.3` until 0.1.4 actually ships.
+- **A2A capability wording corrected in docs** ([modules.md](docs/modules.md), [limitations.md](docs/limitations.md)): the "SSE / push / task-resume not done" line was stale — A2A v2 shipped all three in 0.1.3. The honest boundary is now stated as: no card/webhook signing, in-memory task store, no third-party peer interop verification.
+- **RELEASING.md version header refreshed** (`0.1.0` → `0.1.4-SNAPSHOT`, Central latest `0.1.3`).
 
 ### Fixed
 
