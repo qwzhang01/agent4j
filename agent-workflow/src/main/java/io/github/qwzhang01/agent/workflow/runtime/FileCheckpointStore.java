@@ -145,8 +145,10 @@ public final class FileCheckpointStore implements CheckpointStore {
     /**
      * Reject runIds that could escape the store directory: traversal
      * sequences, separators, wildcards, or absurd lengths.
+     * Widened for {@code JdbcCheckpointStore} (Stage 8.1): the same
+     * whitelist guards SQL-bound runIds.
      */
-    static void validateRunId(String runId) {
+    public static void validateRunId(String runId) {
         if (runId == null || !SAFE_RUN_ID.matcher(runId).matches()) {
             throw new IllegalArgumentException(
                     "Illegal runId (must match [A-Za-z0-9._-]{1,128}): " + runId);
@@ -179,7 +181,8 @@ public final class FileCheckpointStore implements CheckpointStore {
         public Object pendingInput;
         public long lastEventSeq;
 
-        static Snapshot from(Checkpoint cp) {
+        /** Widened for {@code JdbcCheckpointStore} (Stage 8.1): one codec, two transports (file / JDBC). */
+        public static Snapshot from(Checkpoint cp) {
             Snapshot s = new Snapshot();
             s.schemaVersion = cp.schemaVersion();
             s.checkpointId = cp.checkpointId();
@@ -199,7 +202,8 @@ public final class FileCheckpointStore implements CheckpointStore {
             return s;
         }
 
-        Checkpoint toCheckpoint() {
+        /** Widened for {@code JdbcCheckpointStore} (Stage 8.1): decode shared with the JDBC transport. */
+        public Checkpoint toCheckpoint() {
             if (schemaVersion > Checkpoint.SCHEMA_VERSION) {
                 throw new IllegalStateException("Checkpoint schema version " + schemaVersion
                         + " is newer than this runtime understands ("

@@ -13,8 +13,8 @@
 | `agent-model` | `MockModelClient`；OpenAI-compatible / Anthropic 客户端；Retry / Timeout / Fallback / StructuredOutput 装饰器 | 需要真实或 Mock 模型的模块与示例 |
 | `agent-plugin` | SPI 插件加载 / 卸载 / 重载 + 外部 JAR 加载（checksum 门、每 jar 独立 classloader、manifest 权限声明、注册回滚、命名空间隔离）；**无**多版本共存 / module layer 禁闭 | 自进化 Tool、`PluginExample` |
 | `agent-sandbox` | ClassLoader 沙箱 + Process 沙箱（**无** Docker / WASM） | `agent-coding`、沙箱示例 |
-| `agent-workflow` | 图运行时、7 种节点、Checkpoint | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
-| `agent-scheduler` | 定时 / 事件唤醒 + 任务队列 | `agent-channel`、调度示例 |
+| `agent-workflow` | 图运行时、7 种节点、Checkpoint；durable 执行：RunStore/Lease/Ledger/CheckpointStore（内存 + JDBC 后端，纯 ANSI SQL）、`DurableRunManager`（心跳续租 + 行监视）、`DistributedRunControl` 跨实例 Cancel/Resume 守卫/Approval Callback | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
+| `agent-scheduler` | 定时 / 事件唤醒 + 任务队列（内存 + `JdbcTaskQueue` 持久化任务表，孤儿回查 `requeueOrphaned`） | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
 | `agent-mcp` | MCP 客户端（stdio + HTTP/SSE transport，server 信任等级 / allowlist / 宿主认证适配器 / schema 校验）+ A2A 双向：`HttpA2AClient`（规范方言：卡片发现 / `message/send` / `tasks/get` / `message/stream` SSE / webhook 推送 / input-required 续跑）、`HttpA2AServer`（Agent 包装成端点：入站净化 + 可选 bearer 门 + HMAC 签名推送 + 重放窗 + 可插拔 `A2ATaskStore`）。无 PKI 卡签名；互操作验证为回环 + JDK HttpServer 模拟方言 | `agent-orchestrator`、MCP / A2A 示例 |

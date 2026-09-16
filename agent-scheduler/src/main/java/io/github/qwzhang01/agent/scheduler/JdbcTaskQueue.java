@@ -1,0 +1,430 @@
+package io.github.qwzhang01.agent.scheduler;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * JDBC-backed persistent task table (Stage 8.1: "Scheduler uses an
+ * external queue or a persistent task table"). Tasks survive process
+ * crashes and are shareable across runtime instances: one row per {@link
+ * AsyncTask}, claim by guarded UPDATE (PENDING→RUNNING under this
+ * worker), terminal completion, explicit cancel.
+ * <p>
+ * {@code input}/{@code result} are stored as caller-provided strings —
+ * the table stores opaque payloads, serialization belongs to the host
+ * (same policy as {@code A2ATaskStore}'s serializedState). Priority
+ * ordering uses the enum's weight column, FIFO by {@code seq} (an
+ * autoincrementing identity, assigned at enqueue time).
+ * <p>
+ * Portable ANSI SQL (H2 tests / PostgreSQL production); claim contention
+ * is a guarded UPDATE, not {@code FOR UPDATE SKIP LOCKED}.
+ */
+public final class JdbcTaskQueue {
+
+    static final String DDL = """
+            CREATE TABLE IF NOT EXISTS agent4j_tasks (
+                task_id        VARCHAR(128) PRIMARY KEY,
+                parent_run_id  VARCHAR(128),
+                workflow_name  VARCHAR(256),
+                priority       INT          NOT NULL,
+                priority_name  VARCHAR(32)  NOT NULL,
+                status         VARCHAR(32)  NOT NULL,
+                payload        TEXT,
+                result         TEXT,
+                seq            BIGINT       NOT NULL,
+                created_at     BIGINT       NOT NULL,
+                started_at     BIGINT,
+                completed_at   BIGINT
+            )
+            """;
+
+    /** A row in the persistent task table (DB-shaped AsyncTask mirror). */
+    public record TaskRow(
+            String taskId,
+            String parentRunId,
+            String workflowName,
+            TaskPriority priority,
+            TaskStatus status,
+            String payload,
+            String result,
+            long seq,
+            Instant createdAt,
+            Instant startedAt,
+            Instant completedAt) {
+
+        public TaskRow withStatus(TaskStatus next) {
+            return new TaskRow(taskId, parentRunId, workflowName, priority, next, payload,
+                    result, seq, createdAt,
+                    next == TaskStatus.RUNNING ? Instant.now() : startedAt,
+                    next.isTerminal() ? Instant.now() : completedAt);
+        }
+
+        public TaskRow withResult(String result) {
+            return new TaskRow(taskId, parentRunId, workflowName, priority,
+                    TaskStatus.SUCCEEDED, payload, result, seq, createdAt, startedAt,
+                    Instant.now());
+        }
+    }
+
+    @FunctionalInterface
+    public interface ConnectionSupplier {
+        Connection get() throws SQLException;
+    }
+
+    private final ConnectionSupplier connections;
+    private final boolean ownsConnections;
+
+    public JdbcTaskQueue(ConnectionSupplier connections) {
+        this.connections = Objects.requireNonNull(connections);
+        this.ownsConnections = true;
+    }
+
+    /**
+     * Convenience: single shared connection (tests, embedded H2). The
+     * queue borrows it per operation but never closes it — the caller
+     * owns that connection's lifecycle.
+     */
+    public JdbcTaskQueue(Connection connection) {
+        this.connections = () -> connection;
+        this.ownsConnections = false;
+    }
+
+    /**
+     * Borrows a connection for one operation: supplier-provided
+     * connections are released on close, a shared one is handed back
+     * untouched.
+     */
+    private CloseGuard guard() throws SQLException {
+        return new CloseGuard(connections.get(), ownsConnections);
+    }
+
+    /** Close only what the queue owns. */
+    private static final class CloseGuard implements AutoCloseable {
+        private final Connection connection;
+        private final boolean closeOnRelease;
+
+        private CloseGuard(Connection connection, boolean closeOnRelease) {
+            this.connection = connection;
+            this.closeOnRelease = closeOnRelease;
+        }
+
+        private Connection get() {
+            return connection;
+        }
+
+        @Override
+        public void close() {
+            if (closeOnRelease) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    // best-effort release; nothing actionable here
+                }
+            }
+        }
+    }
+
+    /** Execute the bootstrap DDL (idempotent). */
+    public void initialize() {
+try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
+            st.execute(DDL);
+            // Sequence counter table: portable autoincrement without IDENTITY
+            // dialect differences.
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS agent4j_task_seq (
+                        name VARCHAR(32) PRIMARY KEY,
+                        next_value BIGINT NOT NULL
+                    )
+                    """);
+            try (PreparedStatement ps = g.get().prepareStatement(
+                    "INSERT INTO agent4j_task_seq (name, next_value) VALUES ('task', 1)")) {
+                try {
+                    ps.executeUpdate();
+                } catch (SQLException alreadySeeded) {
+                    // seeded: fine
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task table init failed: " + e.getMessage(), e);
+        }
+    }
+
+    // ============ Enqueue / claim / complete ============
+
+    /** Enqueue a task row (status PENDING). Payload is an opaque host string. */
+    public TaskRow enqueue(String parentRunId, String workflowName,
+                           TaskPriority priority, String payload) {
+        String taskId = UUID.randomUUID().toString();
+        long seq = nextSeq();
+        long now = System.currentTimeMillis();
+        String sql = """
+                INSERT INTO agent4j_tasks
+                    (task_id, parent_run_id, workflow_name, priority, priority_name,
+                     status, payload, result, seq, created_at, started_at, completed_at)
+                VALUES (?, ?, ?, ?, ?, 'PENDING', ?, NULL, ?, ?, NULL, NULL)
+                """;
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, taskId);
+            ps.setString(2, parentRunId);
+            ps.setString(3, workflowName);
+            ps.setInt(4, priority.weight());
+            ps.setString(5, priority.name());
+            ps.setString(6, payload);
+            ps.setLong(7, seq);
+            ps.setLong(8, now);
+            ps.executeUpdate();
+            return new TaskRow(taskId, parentRunId, workflowName, priority,
+                    TaskStatus.PENDING, payload, null, seq,
+                    Instant.ofEpochMilli(now), null, null);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task enqueue failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Claim the next PENDING task (priority desc, seq asc) for this
+     * worker. The claim is a guarded UPDATE (PENDING→RUNING under this
+     * taskId) so two polling workers can never claim the same row — the
+     * loser sees the row already RUNNING and retries the next one.
+     *
+     * @return the claimed row, or {@code null} when no PENDING task exists
+     */
+    public TaskRow claimNext(String workerId) {
+        // Two-step claim without SKIP LOCKED: select candidate ids, then
+        // CAS one at a time until a claim lands. Both steps are cheap
+        // (bounded candidate list); the guarded UPDATE is the arbiter.
+        String candidates = """
+                SELECT task_id FROM agent4j_tasks
+                WHERE status = 'PENDING'
+                ORDER BY priority DESC, seq ASC
+                """;
+        String claim = """
+                UPDATE agent4j_tasks
+                SET status = 'RUNNING', started_at = ?
+                WHERE task_id = ? AND status = 'PENDING'
+                """;
+        try (CloseGuard g = guard()) {
+            Connection c = g.get();
+            List<String> ids = new ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement(candidates);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next() && ids.size() < 16) {
+                    ids.add(rs.getString(1));
+                }
+            }
+            for (String id : ids) {
+                try (PreparedStatement ps = c.prepareStatement(claim)) {
+                    ps.setLong(1, System.currentTimeMillis());
+                    ps.setString(2, id);
+                    if (ps.executeUpdate() == 1) {
+                        return get(id).orElseThrow();
+                    }
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task claim failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Mark a claimed task SUCCEEDED with its result. */
+    public TaskRow complete(String taskId, String result) {
+        String sql = """
+                UPDATE agent4j_tasks
+                SET status = 'SUCCEEDED', result = ?, completed_at = ?
+                WHERE task_id = ? AND status = 'RUNNING'
+                """;
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, result);
+            ps.setLong(2, System.currentTimeMillis());
+            ps.setString(3, taskId);
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalStateException(
+                        "Task '" + taskId + "' cannot complete: not RUNNING (already terminal?)");
+            }
+            return get(taskId).orElseThrow();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task complete failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Mark a claimed task FAILED (terminal). */
+    public TaskRow fail(String taskId) {
+        String sql = """
+                UPDATE agent4j_tasks
+                SET status = 'FAILED', completed_at = ?
+                WHERE task_id = ? AND status = 'RUNNING'
+                """;
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setLong(1, System.currentTimeMillis());
+            ps.setString(2, taskId);
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalStateException(
+                        "Task '" + taskId + "' cannot fail: not RUNNING (already terminal?)");
+            }
+            return get(taskId).orElseThrow();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task fail failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Cancel a PENDING task (terminal). */
+    public TaskRow cancel(String taskId) {
+        String sql = """
+                UPDATE agent4j_tasks
+                SET status = 'CANCELLED', completed_at = ?
+                WHERE task_id = ? AND status = 'PENDING'
+                """;
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setLong(1, System.currentTimeMillis());
+            ps.setString(2, taskId);
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalStateException(
+                        "Task '" + taskId + "' cannot cancel: not PENDING");
+            }
+            return get(taskId).orElseThrow();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task cancel failed: " + e.getMessage(), e);
+        }
+    }
+
+    // ============ Crash recovery ============
+
+    /**
+     * After a worker crash: RUNNING rows are orphans (their holder died).
+     * Requeue them to PENDING so another worker can claim. A live worker
+     * keeps its lease via the task's own completion — requeueing a row
+     * still actively RUNNING on a live instance is the host's call; the
+     * default policy here only requeues rows whose started_at is older
+     * than the given grace window (a live worker finishes faster than
+     * grace; a crashed one never finishes).
+     */
+    public List<String> requeueOrphaned(long graceMillis) {
+        // Snapshot the orphan ids first, then requeue exactly those rows via
+        // guarded UPDATE. The guard (status still RUNNING) means a task that
+        // completed between snapshot and sweep is NOT requeued — and the
+        // returned list contains only rows actually requeued, never freshly
+        // enqueued PENDING tasks that were never RUNNING.
+        long cutoff = System.currentTimeMillis() - graceMillis;
+        String find = """
+                SELECT task_id FROM agent4j_tasks
+                WHERE status = 'RUNNING' AND started_at <= ?
+                """;
+        String requeue = """
+                UPDATE agent4j_tasks
+                SET status = 'PENDING', started_at = NULL
+                WHERE task_id = ? AND status = 'RUNNING'
+                """;
+        try (CloseGuard g = guard()) {
+            Connection c = g.get();
+            List<String> orphans = new ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement(find)) {
+                ps.setLong(1, cutoff);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        orphans.add(rs.getString(1));
+                    }
+                }
+            }
+            List<String> requeued = new ArrayList<>();
+            for (String id : orphans) {
+                try (PreparedStatement ps = c.prepareStatement(requeue)) {
+                    ps.setString(1, id);
+                    if (ps.executeUpdate() == 1) {
+                        requeued.add(id);
+                    }
+                }
+            }
+            return requeued;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task requeue sweep failed: " + e.getMessage(), e);
+        }
+    }
+
+    // ============ Inspection ============
+
+    public java.util.Optional<TaskRow> get(String taskId) {
+        String sql = selectAll() + " WHERE task_id = ?";
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? java.util.Optional.of(fromRow(rs)) : java.util.Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task get failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<TaskRow> listByStatus(TaskStatus status) {
+        String sql = selectAll() + " WHERE status = ? ORDER BY seq";
+try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                List<TaskRow> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(fromRow(rs));
+                }
+                return rows;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task listByStatus failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<TaskRow> listPending() {
+        return listByStatus(TaskStatus.PENDING);
+    }
+
+    public int countByStatus(TaskStatus status) {
+        return listByStatus(status).size();
+    }
+
+    // ============ Internal ============
+
+    private long nextSeq() {
+        // Portable increment without IDENTITY: bump the counter row and
+        // read it back. Single-connection usage (embedded H2 / serialized
+        // schedulers) makes this race-free; a pooled production datasource
+        // should swap in a real sequence.
+        String bump = "UPDATE agent4j_task_seq SET next_value = next_value + 1 WHERE name = 'task'";
+        String read = "SELECT next_value FROM agent4j_task_seq WHERE name = 'task'";
+        try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
+            st.executeUpdate(bump);
+            try (ResultSet rs = st.executeQuery(read)) {
+                rs.next();
+                return rs.getLong(1) - 1;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("task seq failed: " + e.getMessage(), e);
+        }
+    }
+
+    private static String selectAll() {
+        return "SELECT task_id, parent_run_id, workflow_name, priority, priority_name, "
+                + "status, payload, result, seq, created_at, started_at, completed_at "
+                + "FROM agent4j_tasks";
+    }
+
+    private static TaskRow fromRow(ResultSet rs) throws SQLException {
+        return new TaskRow(
+                rs.getString("task_id"),
+                rs.getString("parent_run_id"),
+                rs.getString("workflow_name"),
+                TaskPriority.valueOf(rs.getString("priority_name")),
+                TaskStatus.valueOf(rs.getString("status")),
+                rs.getString("payload"),
+                rs.getString("result"),
+                rs.getLong("seq"),
+                Instant.ofEpochMilli(rs.getLong("created_at")),
+                rs.getLong("started_at") == 0 ? null : Instant.ofEpochMilli(rs.getLong("started_at")),
+                rs.getLong("completed_at") == 0 ? null : Instant.ofEpochMilli(rs.getLong("completed_at")));
+    }
+}

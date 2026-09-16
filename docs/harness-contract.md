@@ -108,7 +108,7 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 - Workflow = 图运行时（7 种节点），黑板 `WorkflowState`，Checkpoint 于 pause 点，`RunState` 五态机。
 - Workflow 不嵌套 Agent loop 语义：需要 Agent 的节点显式挂 AgentNode（或宿主包装），两者通过黑板交换数据。
-- **gap**：RunStore 已落地（Stage 3.1：乐观锁行 + 恢复候选来自 store 而非 JVM 内存），但 StepRecord 仍无 visitOrdinal/attempt 明细、账本未接入 GraphRuntime 节点执行链——真实节点执行不查账本，恢复重放保护依赖既有三保护。Stage 8。
+- **gap（Stage 8.1 后残余）**：StepRecord 仍无 visitOrdinal/attempt 明细、账本未接入 GraphRuntime 节点执行链——真实节点执行不查账本，恢复重放保护依赖既有三保护；backpressure/队列容量/租户隔离未做（JDBC 队列无容量上限、无租户列，8.2 候选）。已清偿：RunStore 的数据库真相源（`JdbcRunStore` + 乐观锁行 + 恢复候选扫描，跨实例接管经 `DistributedRunControl` + 共享 `JdbcCheckpointStore` 达成 Stage 8 完成定义第一条——两个 Runtime 实例可安全接管同一等待中的 Run，`DistributedRunControlTest` 8/8 验证）。
 
 ### 2.3 Tool 边界
 
@@ -166,6 +166,8 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | MCP 生产边界 | agent-mcp | SSE transport 连通 | 未信任 server 拒绝 | — | [x] done（Stage 6.2，2026-09-16：SseTransport 2024-11-05 方言 5/5 含 JDK HttpServer 第三方言互操作；McpServerTrust/McpAllowlist 三级缺席即拒 7/7；McpAuthConfig 宿主认证适配器；McpSchemaValidator 接入 McpToolAdapter 8/8；gap：Streamable-HTTP、完整 OAuth 流、resources/prompts 能力声明） |
 | A2A 认证与持久化 | agent-mcp | bearer 200 / 签名 push 可验证 | 错 bearer 401 / 篡改签名拒 | 共享 store 跨重启任务存活 | [x] done（Stage 6.3，2026-09-16：A2ATaskStore + StoredA2ATask + InMemoryA2ATaskStore（renewLease 过期租约真 bug 修复）+ A2ASecurity（恒时 bearer + HMAC-SHA256 + 时间窗 + 重放缓存）+ HttpA2AServer 7 参构造器接线；测试 21/21，agent-mcp 120/120；gap：无 PKI 卡签名、互操作为回环+模拟方言） |
 | Plugin 生产边界 | agent-plugin | manifest 授权后加载注册 | 未授权/篡改/错名拒绝 | — | [x] done（Stage 6.4，2026-09-16：PluginManifest 宿主侧 declare-to-grant + PluginJarLoader（checksum 门先于 classloader + per-jar classloader + SPI 域隔离）+ PluginRegistry（并发 per-plugin 锁 + 失败回滚 + 命名空间隔离）；PluginJarLoaderTest 5（真实 javac+jar）+ PluginRegistryHardeningTest 8；agent-plugin 42/42；gap：仅 tools 权限有注册面，checksum 非 GPG） |
+| 分布式执行（跨实例接管） | agent-workflow / agent-scheduler | 实例 B 从共享 DB 接管 A 留下的 Run 并完成 | 终态行拒绝盲目复活；分区期间所有 store 操作 fail-loud；lease 竞争单赢家 | worker 崩溃后行可恢复，B 取 lease 完成 | [x] done（Stage 8.1，2026-09-16：JDBC 持久化脊柱 7 后端——JdbcRunStore/JdbcRunLeases/JdbcSideEffectLedger/JdbcCheckpointStore/JdbcApprovalStore/JdbcTaskQueue，纯 ANSI SQL 受控行数即 CAS；DistributedRunControl 行即控制通道——跨实例 cancel CAS 行、心跳行监视一个轮询周期停机、迟到决策不作绿灯、终态行 resume 大声拒绝；DurableRunManager 心跳升级续租+行监视、TTL 可配置、cancel 门面；RunLeases 接口化；PartitionToleranceTest H2 SHUTDOWN 分区演练；测试 35+3+9+8+4；gap：backpressure/队列容量/租户隔离未做（8.2）、PostgreSQL profile 待 8.3 CI） |
+
 
 ### 3.2 模块依赖与禁止依赖矩阵
 

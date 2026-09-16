@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lease (DB row lock or Redis SETNX with TTL) must reproduce exactly these
  * three rules.
  */
-public final class RunLeaseRegistry {
+public final class RunLeaseRegistry implements RunLeases {
 
     private record Lease(String holder, long acquiredAt, long expiresAt) {
         boolean isExpired(long now) {
@@ -34,6 +34,7 @@ public final class RunLeaseRegistry {
      * @param ttlMillis lease lifetime; {@code <=0} = no expiry (held until release)
      * @return true when this worker now holds the lease
      */
+    @Override
     public boolean tryAcquire(String runId, String holder, long ttlMillis) {
         long now = System.currentTimeMillis();
         Lease fresh = new Lease(holder, now, ttlMillis <= 0 ? 0 : now + ttlMillis);
@@ -42,7 +43,25 @@ public final class RunLeaseRegistry {
         return winner.holder().equals(holder);
     }
 
+    /**
+     * Stage 8.1 heartbeat: extend a lease this holder still owns. Returns
+     * false when ownership was lost (expired + taken over, or another
+     * holder) — the caller must stop touching the run at once.
+     */
+    @Override
+    public boolean renew(String runId, String holder, long ttlMillis) {
+        long now = System.currentTimeMillis();
+        Lease current = leases.get(runId);
+        if (current == null || !current.holder().equals(holder) || current.isExpired(now)) {
+            return false;
+        }
+        Lease extended = new Lease(holder, current.acquiredAt(),
+                ttlMillis <= 0 ? 0 : now + ttlMillis);
+        return leases.replace(runId, current, extended);
+    }
+
     /** Release the lease; only the holder may release. */
+    @Override
     public boolean release(String runId, String holder) {
         Lease current = leases.get(runId);
         if (current == null || !current.holder().equals(holder)) {
@@ -53,12 +72,14 @@ public final class RunLeaseRegistry {
     }
 
     /** Whether the run's lease is currently held (and not expired). */
+    @Override
     public boolean isHeld(String runId) {
         Lease current = leases.get(runId);
         return current != null && !current.isExpired(System.currentTimeMillis());
     }
 
     /** Who holds the lease (empty when free or expired). */
+    @Override
     public Optional<String> holder(String runId) {
         Lease current = leases.get(runId);
         if (current == null || current.isExpired(System.currentTimeMillis())) {

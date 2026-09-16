@@ -557,13 +557,13 @@
 
 ### 8.1 分布式执行
 
-- [ ] RunStore 使用数据库或可靠外部存储作为真相源。
-- [ ] Scheduler 使用外部队列或可持久化任务表。
-- [ ] Worker 使用 Lease、Heartbeat、抢占和重试。
-- [ ] 支持跨实例 Resume、Cancel、Approval Callback。
-- [ ] 明确并发执行、顺序执行和分支合并语义。
-- [ ] 增加网络分区、Worker 崩溃、数据库短暂不可用测试。
-- [ ] 增加 backpressure、队列容量和租户级隔离。
+- [x] RunStore 使用数据库或可靠外部存储作为真相源。（`JdbcRunStore`：14 字段 RunRecord 行、乐观锁 version CAS、恢复候选扫描；H2 测试 / PostgreSQL 生产，纯 ANSI SQL——禁 MERGE/ON CONFLICT/SKIP LOCKED，受控行数即 CAS 判决。配套 `JdbcSideEffectLedger`/`JdbcCheckpointStore`（`agent-workflow/runtime/durable`）与 `JdbcApprovalStore`（agent-core）。共享连接走 CloseGuard 纪律：借用绝不关闭，supplier 连接每操作归还。**gap**：PostgreSQL 集成 profile 仍是 H2 方言验证，ANSI 纪律是准备不是证明——待 8.3 CI profile。）
+- [x] Scheduler 使用外部队列或可持久化任务表。（`agent-scheduler` 的 `JdbcTaskQueue`：priority DESC + seq ASC 的 FIFO claim 单赢家 CAS、complete/fail/cancel 状态机、`requeueOrphaned` 只回查 stale RUNNING（修掉了把从未 claim 的新任务误报进返回清单的真 bug）。**gap**：外部队列（Redis/RabbitMQ）未接——任务表是 roadmap 的"或"分支；队列无容量上限（backpressure 待 8.2/8.3）。）
+- [x] Worker 使用 Lease、Heartbeat、抢占和重试。（`RunLeases` 接口化（`RunLeaseRegistry` 内存参考实现 + `JdbcRunLeases` 后端）：单赢家 INSERT-then-takeover、TTL 过期可接管、心跳续约 `renew`、holder-only release。`DurableRunManager` 心跳升级为「续租 + 行监视」：TTL 可配置（5 参构造器，修掉 60s 硬编码），周期 `max(250, ttl/3)`；跨实例 cancel 在一个轮询周期内触达在跑 Run；续约丢所有权 → 取消在跑执行；resume 3 次乐观锁重试。`LeaseHeartbeatTest` 3/3 + `JdbcRunLeasesTest` 8/8。**gap**：竞争下 lease 公平性有界（3 重试后 CONTENDED）但非 starvation-free。）
+- [x] 支持跨实例 Resume、Cancel、Approval Callback。（`DistributedRunControl`：行即控制通道。Cancel 从任一实例 CAS 行翻 CANCELLED（三 outcome：CANCELLED/ALREADY_TERMINAL/NO_ROW）；持有实例心跳观察行变更，一个轮询周期内在节点边界停机；终态行 resume 被大声拒绝（`refusing to revive from a stale checkpoint`——checkpoint 滞后于行是设计）。Approval Callback：决策落共享 `JdbcApprovalStore`（幂等派生 approvalId 保证两实例同行），迟到决策不构成死亡 Run 的绿灯（`approvalStillRelevant` 守卫）。跨实例 resume 依赖共享 `JdbcCheckpointStore`（A 的 pause 即 B 的 resume，复用 `FileCheckpointStore.Snapshot` 单 codec 双传输）。`DistributedRunControlTest` 8/8：接管并完成、跨实例 cancel 停在跑 Run、陈旧复活拒绝、outcome 语义、approve/reject 跨实例、迟到决策、manager 门面。）
+- [x] 明确并发执行、顺序执行和分支合并语义。（并发/顺序沿用 Stage 1/3 既有语义不变：`ParallelNode` 分支取消可达每一支（共享 token，`ParallelCancelTest`）；顺序执行在节点边界检查 cancel（GraphRuntime while 头）；分支合并语义 = 各分支独立执行、合并点等待全部到达——现已跨实例接管场景下被 `DistributedRunControlTest` 的接管-完成路径复验。**gap**：跨实例分支合并语义有测试覆盖但未回写进 contract 矩阵文档。）
+- [x] 增加网络分区、Worker 崩溃、数据库短暂不可用测试。（`PartitionToleranceTest` 4/4：H2 SHUTDOWN 模拟断电——所有 store 操作对死库 fail-loud（IllegalStateException 点名操作；分区期间的静默"成功"正是 CAS 设计要防的脑裂）、lease acquire 遇断电抛异常而非静默授予、worker 崩溃留下可恢复状态（行完好、下次 sweep 列出、B 接管 lease 并完成）、重连契约诚实声明（H2 内存库 SHUTDOWN 即丢 schema——要活过重启的部署用持久化 DB）。**gap**：真实 PostgreSQL 断电演练待 8.3 集成 profile。）
+- [ ] 增加 backpressure、队列容量和租户级隔离。（**gap**：JDBC 队列无容量上限、无租户列；RunStore 行无 tenantId 字段。多租户隔离需要 `RunContext.tenantId` 落进行/队列两处，队列容量需要 enqueue 侧 guarded 拒绝语义（参照 AsyncTaskQueue 的 `[QUEUE_FULL]` 分类拒绝）。候选落点 Stage 8.2。）
 
 ### 8.2 Spring Boot Starter 生产 Profile
 

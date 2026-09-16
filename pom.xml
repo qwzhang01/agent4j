@@ -73,6 +73,7 @@
         <lombok.version>1.18.34</lombok.version>
         <junit.version>5.10.3</junit.version>
         <opentelemetry.version>1.44.1</opentelemetry.version>
+        <h2.version>2.2.224</h2.version>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
         <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
         <!-- Daily CI stays green if javadoc is noisy; release profile flips this to true. -->
@@ -199,6 +200,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- H2: in-JVM JDBC backend for distributed-store contract tests (Stage 8.1) -->
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+            </dependency>
             <!-- Jackson -->
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>

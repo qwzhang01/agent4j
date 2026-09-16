@@ -78,7 +78,8 @@ macOS 本地开发：guard 层 guest 强制即全部边界，进程以你的 OS 
 
 - **模型覆盖窄**：Mock、OpenAI-compatible、Anthropic。没有厂商全家桶 connector。
 - **记忆持久化是裸 JDBC**：`PgMemoryStore` 用宿主自带 `DataSource`（无连接池、无 ORM、无框架托管迁移），schema 幂等自建；`InMemoryMemoryStore` 适合单机与测试。
-- **Checkpoint 同理**：内存 / 文件 store，没有托管工作流后端。
+- **Checkpoint**：内存 / 文件 / JDBC 三种 store（`JdbcCheckpointStore` 复用同一 codec，跨实例共享黑板），没有托管工作流后端。
+- **分布式执行的边界（Stage 8.1）**：跨实例 Cancel/Resume/Approval Callback 语义已落地（行即控制通道 + 心跳行监视），但 JDBC 队列**无容量上限、无租户列**（backpressure 与租户隔离未做）；PostgreSQL 只验证了 ANSI 方言纪律，集成 profile 待 CI（8.3）；lease 竞争 3 次重试后有界让出（CONTENDED）但非 starvation-free；外部队列（Redis/RabbitMQ）未接。
 - **测试基线**：全仓 22 模块全绿是回归契约（以 CI 为准）；`notes/` 里的阶段叙事、公众号文章**不是**用户合同。
 - **学习项目**：通过造 Runtime 学架构。生产使用前先读本页和 [comparison.md](comparison.md)。
 

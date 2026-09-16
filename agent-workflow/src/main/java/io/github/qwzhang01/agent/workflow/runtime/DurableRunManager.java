@@ -5,8 +5,10 @@ import io.github.qwzhang01.agent.workflow.ExecutionResult;
 import io.github.qwzhang01.agent.workflow.Workflow;
 import io.github.qwzhang01.agent.workflow.WorkflowException;
 import io.github.qwzhang01.agent.workflow.WorkflowState;
+import io.github.qwzhang01.agent.workflow.runtime.durable.DistributedRunControl;
 import io.github.qwzhang01.agent.workflow.runtime.durable.RecoverySnapshot;
 import io.github.qwzhang01.agent.workflow.runtime.durable.RunLeaseRegistry;
+import io.github.qwzhang01.agent.workflow.runtime.durable.RunLeases;
 import io.github.qwzhang01.agent.workflow.runtime.durable.RunRecord;
 import io.github.qwzhang01.agent.workflow.runtime.durable.RunStore;
 import io.github.qwzhang01.agent.workflow.runtime.durable.SideEffectLedger;
@@ -50,19 +52,43 @@ public class DurableRunManager {
 
     private final RunManager delegate;
     private final RunStore runStore;
-    private final RunLeaseRegistry leases;
+    private final RunLeases leases;
     private final SideEffectLedger ledger;
+    private final long leaseTtlMs;
+    private final DistributedRunControl control;
 
     public DurableRunManager(RunManager delegate, RunStore runStore) {
-        this(delegate, runStore, new RunLeaseRegistry(), null);
+        this(delegate, runStore, new RunLeaseRegistry(), null, DEFAULT_LEASE_TTL_MS);
     }
 
+    /** Legacy 4-arg signature kept source-compatible (RunLeaseRegistry implements RunLeases). */
     public DurableRunManager(RunManager delegate, RunStore runStore,
                              RunLeaseRegistry leases, SideEffectLedger ledger) {
+        this(delegate, runStore, (RunLeases) leases, ledger, DEFAULT_LEASE_TTL_MS);
+    }
+
+    /**
+     * Stage 8.1: leases are pluggable ({@link RunLeases}) so a JDBC/Redis
+     * backend can back cross-instance recovery; the default stays the
+     * in-memory reference registry.
+     */
+    public DurableRunManager(RunManager delegate, RunStore runStore,
+                             RunLeases leases, SideEffectLedger ledger) {
+        this(delegate, runStore, leases, ledger, DEFAULT_LEASE_TTL_MS);
+    }
+
+    /**
+     * Stage 8.1: with an explicit lease TTL (tests and deployments whose
+     * lease backend policy differs from the 60s default).
+     */
+    public DurableRunManager(RunManager delegate, RunStore runStore,
+                             RunLeases leases, SideEffectLedger ledger, long leaseTtlMs) {
         this.delegate = delegate;
         this.runStore = runStore;
         this.leases = leases;
         this.ledger = ledger;
+        this.leaseTtlMs = leaseTtlMs;
+        this.control = new DistributedRunControl(runStore);
     }
 
     // ============ Start ============
@@ -119,13 +145,27 @@ public class DurableRunManager {
         // ---- Lease: only one worker may resume this run ----
         String holder = "worker-" + ProcessHandle.current().pid()
                 + ":" + Thread.currentThread().getId();
-        if (!leases.tryAcquire(runId, holder, DEFAULT_LEASE_TTL_MS)) {
+        if (!leases.tryAcquire(runId, holder, leaseTtlMs)) {
             String current = leases.holder(runId).orElse("unknown");
             throw new WorkflowException("Run '" + runId + "' is leased by " + current
                     + " - refusing concurrent resume");
         }
 
+        // Stage 8.1 cross-instance guard: the row must still be a recovery
+        // candidate. Another instance may have CAS-cancelled it (or the run
+        // finished elsewhere) while a stale PAUSED checkpoint still exists.
+        // Lease + row eligibility must BOTH hold before any node executes.
+        control.assertResumable(runId);
+
+        // Stage 8.1 fix: heartbeat. A resume that legitimately runs longer
+        // than the TTL previously looked like a crashed holder — another
+        // worker took the lease mid-flight and BOTH executed (duplicate
+        // execution bug). A daemon heartbeat renews while we hold; if the
+        // renew fails (lost ownership), the in-flight execution is aborted
+        // at the next node boundary via the run's cancel flag.
+        java.util.concurrent.ScheduledExecutorService heartbeat = null;
         try {
+            heartbeat = startHeartbeat(runId, holder, delegate.getRun(runId));
             // ---- Optimistic transition WAITING/PAUSED -> RUNNING ----
             transition(runId, "RUNNING", row.cursor(), null);
 
@@ -135,8 +175,62 @@ public class DurableRunManager {
         } catch (io.github.qwzhang01.agent.workflow.runtime.durable.VersionConflictException e) {
             throw e;
         } finally {
+            if (heartbeat != null) {
+                heartbeat.shutdownNow();
+            }
             leases.release(runId, holder);
         }
+    }
+
+    /**
+     * Heartbeat loop: renew the lease every TTL/3. When renewal fails the
+     * holder lost ownership (lease expired + taken over) — cancel the live
+     * run so the duplicate execution stops at the next node boundary,
+     * loudly.
+     */
+    private java.util.concurrent.ScheduledExecutorService startHeartbeat(
+            String runId, String holder, Run liveRun) {
+        long period = Math.max(250, leaseTtlMs / 3);
+        java.util.concurrent.ScheduledExecutorService hb =
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r, "run-lease-heartbeat-" + runId);
+                    t.setDaemon(true);
+                    return t;
+                });
+        hb.scheduleAtFixedRate(() -> {
+            boolean stillOurs;
+            try {
+                stillOurs = leases.renew(runId, holder, leaseTtlMs);
+            } catch (RuntimeException e) {
+                stillOurs = false; // backend hiccup: treat as lost, stop touching the run
+            }
+            if (!stillOurs) {
+                log.error("[{}] Lease heartbeat lost ownership - cancelling the in-flight "
+                        + "resume to stop duplicate execution", runId);
+                if (liveRun != null) {
+                    liveRun.cancel();
+                }
+                return;
+            }
+            // Stage 8.1 cross-instance cancel: watch the run row. Another
+            // instance's operator CAS-cancels the row; we observe it here and
+            // stop the in-flight run within one poll period (the lease alone
+            // cannot carry that signal — it only knows ownership, not intent).
+            try {
+                if (runStore.get(runId).map(r -> !r.isRecoveryCandidate()).orElse(false)) {
+                    log.warn("[{}] Run row observed terminal status while resuming - "
+                            + "cancelling the in-flight run (cross-instance control)", runId);
+                    if (liveRun != null) {
+                        liveRun.cancel();
+                    }
+                }
+            } catch (RuntimeException e) {
+                // Row watch must never kill a healthy run on a store hiccup:
+                // the lease is still ours; keep executing (fail-open on the
+                // control channel, fail-closed on ownership).
+            }
+        }, period, period, java.util.concurrent.TimeUnit.MILLISECONDS);
+        return hb;
     }
 
     // ============ Restart sweep ============
@@ -157,6 +251,35 @@ public class DurableRunManager {
         return RecoverySnapshot.of(row, ledger);
     }
 
+    /**
+     * Stage 8.1: cancel a run from this instance. Two channels:
+     * <ol>
+     *   <li><b>Local</b> — if the run is live in this JVM ({@link
+     *       RunManager#getRun}), flip its cancel flag directly (fastest
+     *       path, no row round-trip).</li>
+     *   <li><b>Durable</b> — CAS the run row to CANCELLED (the durable
+     *       command). The owning instance's heartbeat observes the row
+     *       within one poll period; a future resume of a stale checkpoint
+     *       is refused by the resume guard.</li>
+     * </ol>
+     * Order matters: the local flag first (best-effort immediate stop),
+     * then the row (durable, cross-instance).
+     */
+    public boolean cancel(String runId, String reason) {
+        Run live = delegate.getRun(runId);
+        boolean localFlipped = live != null && live.getStatus() != null
+                && !live.getStatus().isTerminal();
+        if (live != null && localFlipped) {
+            live.cancel();
+        }
+        return control.cancel(runId, reason) == DistributedRunControl.CancelOutcome.CANCELLED;
+    }
+
+    /** The cross-instance control plane (for operators / tests). */
+    public DistributedRunControl control() {
+        return control;
+    }
+
     // ============ Accessors ============
 
     public RunStore runStore() {
@@ -167,7 +290,7 @@ public class DurableRunManager {
         return ledger;
     }
 
-    public RunLeaseRegistry leases() {
+    public RunLeases leases() {
         return leases;
     }
 
