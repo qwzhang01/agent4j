@@ -604,20 +604,20 @@
 
 ## ToDo
 
-- [ ] Planner/Executor：结构化计划、计划校验、计划版本和计划恢复。
-- [ ] Tool Parallelism：并行 Tool Call 的预算、取消、顺序和合并语义。
-- [ ] Handoff：显式控制权转移、上下文携带、身份变化和恢复契约。
-- [ ] Multi-Agent Plan：子任务状态、子 Agent 上下文隔离、预算传播和结果去重。
-- [ ] Reflection/Critique：限制最大反思次数，区分反思输出和用户可见输出。
-- [ ] Model Routing：按 Step、风险、预算、质量门动态选择模型。
-- [ ] Replay/Time Travel：从事件历史重放，不重复执行真实副作用。
-- [ ] Typed Agent Event：模型开始/结束、Tool 参数校验、审批、恢复和路由事件完整化。
+- [x] Planner/Executor：结构化计划、计划校验、计划版本和计划恢复。（workflow `plan` 包：`Plan`（Step DAG 声明 + validate 拒绝未知/前向/自环/重复依赖 + planVersion 重建即新身份 + readySteps 前沿计算）+ `PlanExecutor`（降级为拓扑序线性链复用既有 `GraphRuntime`，黑板承载结果，completedFrom 支持部分恢复）；测试 PlanTest 5 + PlanExecutorTest 4 全绿。测试暴露并修复两个真 bug：Plan 自环漏检、diamond 扇出与单游标 runtime 冲突。）
+- [x] Tool Parallelism：并行 Tool Call 的预算、取消、顺序和合并语义。（core `ParallelToolExecutor`：dispatchAll 声明序 join、maxConcurrent 宽度钳制、失败转可读 `[ERROR]` 串；`ReActAgentLoop.withParallelTools` 装配后单轮多 toolCall 真并行、事件序两 Started 先于两 Finished；取消与轮预算沿用既有 deadline/cancellationToken 语义不另起炉灶。测试 ParallelToolExecutorTest 4 + ParallelToolLoopTest 4 全绿。）
+- [x] Handoff：显式控制权转移、上下文携带、身份变化和恢复契约。（既有 Stage 19 全套：`HandoffSpec` 显式转移、`HandoffInputFilter` 上下文携带、`AgentState.lastActiveAgentName` 身份变化、resolver 回指恢复契约；本轮无新代码，Stage 9 只做勾选引用。）
+- [x] Multi-Agent Plan：子任务状态、子 Agent 上下文隔离、预算传播和结果去重。（workflow `plan` 包 `MultiAgentPlanner`：每子任务 `new AgentState(instruction)` 隔离历史；parentCtx!=null 走 `RunContext.deriveChild(taskId)`（trace/tenant 继承、runId 新发、parentRunId 回指）实现预算与 Trace 传播；同输出折叠 canonical 集合去重；失败子任务不入去重且复用 `scratch.getStatus()/getLastError()` 既有分类。MultiAgentPlannerTest 6 全绿。）
+- [x] Reflection/Critique：限制最大反思次数，区分反思输出和用户可见输出。（core `ReflectiveAgent`：maxCycles 有界反思、critique 只进内部轮次不进用户可见输出、PASS/REVISE/GIVE_UP 协议词裁决、超限降级返回最后可用答案；ReflectionStarted/Finished 事件让反思轮次可观测。ReflectiveAgentTest 8 全绿；测试前预判命中的双 Done bug 已修（runInternal 独家发射 Done）。）
+- [x] Model Routing：按 Step、风险、预算、质量门动态选择模型。（既有 Stage 18 + E2：`BudgetAwareRouter`（预算维度）、`ComplexityRouter`（Step 维度）、`CascadeModelClient` + QualityGate（质量门维度）；本轮无新代码。诚实 gap：「按风险」维度未实现——tool 层无 riskLevel 声明，需要 Tool Contract 先扩 SideEffectLevel→riskLevel 映射，记入 limitations 待后续批次。）
+- [x] Replay/Time Travel：从事件历史重放，不重复执行真实副作用。（workflow `plan` 包 `EventReplayer`：TOOL 结果从录制的 history 折叠、绝不重新执行工具；partial replay（无 Done）标记 anomaly 并保留已见文本；Done 后到达的事件标记 anomaly；finalAnswerOf 按「最后 assistant」语义收敛。EventReplayerTest 7 全绿；测试暴露并修复文本丢失真 bug（ModelCallStarted/Done/!done 三处 flush）。）
+- [x] Typed Agent Event：模型开始/结束、Tool 参数校验、审批、恢复和路由事件完整化。（`AgentEvent` 新增 5 事件：ModelCallStarted/ModelCallFinished 接线 ReActAgentLoop 四路径、ToolValidationRejected 接线治理链（[UNKNOWN_TOOL]/[INVALID_TOOL_ARGUMENTS] → stage="validation"）、ReflectionStarted/ReflectionFinished 由 ReflectiveAgent 发射；既有精确事件序列断言适配 3 处（事件契约扩展是有意的）。诚实 gap：审批（approval）与恢复（recovery）事件尚未接线——FailureKind.PERMISSION_DENIED 已定义但 permission/approval 层无实现，落地后按各自 stage 名发同类事件。）
 
 ## 完成定义
 
-- [ ] 高级模式复用同一套 RunContext、Tool Governance、Checkpoint、Budget 和 Trace。
-- [ ] 新增 Planner 或 Multi-Agent 不复制一套新的 Runtime。
-- [ ] 高级模式失败时仍能落入统一失败分类和恢复协议。
+- [x] 高级模式复用同一套 RunContext、Tool Governance、Checkpoint、Budget 和 Trace。（PlanExecutor 生成的 Workflow 跑在既有 `GraphRuntime` 上；MultiAgentPlanner 子任务走 `RunContext.deriveChild(taskId)`（trace/tenant/budget 继承、parentRunId 回指）；ParallelToolExecutor/ReflectiveAgent 沿用既有 RunContext deadline/cancellationToken 语义；治理复用 ContractAwareToolExecutor 链。）
+- [x] 新增 Planner 或 Multi-Agent 不复制一套新的 Runtime。（零新 Runtime：Plan 是纯数据 + PlanExecutor 编译为既有 Workflow；MultiAgentPlanner 直接复用 `Agent` 接口与既有事件流；PlanExecutor 类 javadoc 已固化「单游标确定性状态机 → 拓扑序线性链」的降级理由。）
+- [x] 高级模式失败时仍能落入统一失败分类和恢复协议。（MultiAgentPlanner 子任务失败复用 `AgentState.getStatus()/getLastError()` 既有分类、失败输出不入去重、兄弟任务继续执行；PlanExecutor step 失败沿 Workflow 失败路径上抛；ParallelToolExecutor 失败转 `[ERROR]` 串入 loop 既有错误处理；ReflectiveAgent 超限降级返回最后可用答案而非异常。）
 
 ---
 

@@ -9,6 +9,26 @@ import java.util.List;
  * <p>
  * Content deltas are for live UI. {@link Done} is the persistence boundary
  * and must not be preceded by a delta that merely repeats the full answer.
+ * <p>
+ * Stage 9 (typed-event completeness): the model boundary and the governance
+ * boundary each get explicit facts. The loop already logged model calls and
+ * tool validation silently; these events make them first-class without
+ * changing any existing behavior:
+ * <ul>
+ *   <li>{@link ModelCallStarted} / {@link ModelCallFinished}: one pair per
+ *       model call, emitted right around the invoker. Carry config name,
+ *       model id, message count, latency, and (when the loop knows it)
+ *       token usage — the model-boundary facts a replay host needs.</li>
+ *   <li>{@link ToolValidationRejected}: a tool call was rejected by the
+ *       governance chain (permission/approval/validation) before execution.
+ *       Rejection is a fact, not a silent error string; hosts audit the
+ *       tool boundary without parsing error text.</li>
+ *   <li>{@link ReflectionStarted} / {@link ReflectionFinished}: a
+ *       {@link ReflectiveAgent} critique cycle began/ended. Reflection
+ *       output is internal by design — the events carry the cycle count and
+ *       verdict, never the critique text (user-visible output and
+ *       reflection output are separated by contract, not by convention).</li>
+ * </ul>
  */
 public sealed interface AgentEvent {
 
@@ -19,10 +39,60 @@ public sealed interface AgentEvent {
     }
 
     /**
+     * The model is about to be called. Emitted after input guardrails and
+     * request assembly, before the invoker runs. One event per model call,
+     * paired with {@link ModelCallFinished}.
+     *
+     * @param agentName    name of the config owning the loop at this call
+     *                     (differs from the entry name after a handoff)
+     * @param model        model id from the request (may be null when the
+     *                     client fills it in — record what the loop knows)
+     * @param messageCount messages in the assembled request
+     * @param step         1-based loop step this call belongs to
+     */
+    record ModelCallStarted(String agentName, String model, int messageCount, int step)
+            implements AgentEvent {
+    }
+
+    /**
+     * The model call returned (success or failure). Emitted right after the
+     * invoker, before tool handling. Latency is wall-clock milliseconds.
+     *
+     * @param agentName   name of the config owning the loop
+     * @param model       model id from the request (null when unknown)
+     * @param latencyMs   wall-clock duration of the model call
+     * @param toolCallCount number of tool calls in the response (0 = text)
+     * @param failed      true when the call threw or the stream errored
+     */
+    record ModelCallFinished(String agentName, String model, long latencyMs,
+                             int toolCallCount, boolean failed) implements AgentEvent {
+    }
+
+    /**
      * A tool is about to execute. Emitted only after a complete model response
      * that contains this call — not on incremental {@code ToolCallEvent}s.
      */
     record ToolStarted(ToolCall toolCall) implements AgentEvent {
+    }
+
+    /**
+     * A tool call was rejected by the governance chain (validation,
+     * permission, or approval boundary) BEFORE execution started.
+     * <p>
+     * Stage 9: rejection is an explicit fact. Previously a rejection
+     * surfaced only as an {@code [ERROR] ...} tool result string; hosts had
+     * to parse text to audit the tool boundary. The legacy error-string
+     * result is kept (models need it to self-correct); this event is the
+     * observability twin.
+     *
+     * @param toolCallId the rejected call's id
+     * @param toolName   the rejected call's tool name
+     * @param stage      which governance stage rejected: "validation",
+     *                   "permission", or "approval"
+     * @param reason     rejection reason (governance message, never null)
+     */
+    record ToolValidationRejected(String toolCallId, String toolName,
+                                  String stage, String reason) implements AgentEvent {
     }
 
     /**
@@ -110,5 +180,30 @@ public sealed interface AgentEvent {
      */
     record RetryStarted(String discardedReply, int attemptNumber, int maxAttempts)
             implements AgentEvent {
+    }
+
+    /**
+     * A reflection cycle started (Stage 9 {@link ReflectiveAgent}). The
+     * critique pass re-reads the candidate answer and returns a verdict.
+     * The critique text itself is NOT in this event — reflection output is
+     * internal to the reflective loop and never shown to the user.
+     *
+     * @param cycle  1-based reflection cycle index
+     * @param maxCycles the configured maximum (rejection beyond this is
+     *                  passed through as-is)
+     */
+    record ReflectionStarted(int cycle, int maxCycles) implements AgentEvent {
+    }
+
+    /**
+     * A reflection cycle finished with a verdict.
+     *
+     * @param cycle   1-based reflection cycle index
+     * @param verdict {@code PASS} when the critique accepted the answer,
+     *                {@code REVISE} when a revised candidate will be
+     *                generated, {@code GIVE_UP} when max cycles were hit
+     *                and the last candidate is returned as-is
+     */
+    record ReflectionFinished(int cycle, String verdict) implements AgentEvent {
     }
 }

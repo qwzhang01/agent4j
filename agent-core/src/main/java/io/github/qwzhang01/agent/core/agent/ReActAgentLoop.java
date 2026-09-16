@@ -46,6 +46,14 @@ public class ReActAgentLoop implements AgentLoop {
     private final ToolExecutor toolExecutor;
     private final HandoffTargetResolver resolver;
 
+    /**
+     * Stage 9 Tool Parallelism: when non-null and a response carries more
+     * than one plain tool call, the loop fans them out through this
+     * executor (bounded width, declaration-order join). Null = sequential
+     * legacy behavior, bit-for-bit.
+     */
+    private ParallelToolExecutor parallelToolExecutor;
+
     public ReActAgentLoop(ToolExecutor toolExecutor) {
         this(toolExecutor, HandoffTargetResolver.graph());
     }
@@ -53,6 +61,16 @@ public class ReActAgentLoop implements AgentLoop {
     public ReActAgentLoop(ToolExecutor toolExecutor, HandoffTargetResolver resolver) {
         this.toolExecutor = Objects.requireNonNull(toolExecutor, "toolExecutor");
         this.resolver = resolver == null ? HandoffTargetResolver.graph() : resolver;
+    }
+
+    /**
+     * Stage 9: opt in to parallel plain-tool execution. Injected after
+     * construction (the loop's existing constructors stay unchanged for
+     * binary compatibility).
+     */
+    public ReActAgentLoop withParallelTools(ParallelToolExecutor parallelToolExecutor) {
+        this.parallelToolExecutor = parallelToolExecutor;
+        return this;
     }
 
     /**
@@ -198,9 +216,16 @@ public class ReActAgentLoop implements AgentLoop {
             // 2. Call the model (via the CURRENT config's client)
             // --------------------------------------------
             ModelResponse response;
+            // Stage 9: model-boundary facts. One Started/Finished pair per
+            // model call, emitted around the invoker regardless of outcome.
+            sink.accept(new AgentEvent.ModelCallStarted(currentConfig.getName(),
+                    request.model(), request.messages().size(), state.getCurrentStep()));
+            long modelCallStart = System.nanoTime();
             try {
                 response = invoker.invoke(currentConfig.getModelClient(), request, state, sink, ctx);
             } catch (Exception e) {
+                sink.accept(new AgentEvent.ModelCallFinished(currentConfig.getName(),
+                        request.model(), elapsedMs(modelCallStart), 0, true));
                 log.error("[{}] Model call failed at step {}: {}",
                         currentConfig.getName(), state.getCurrentStep(), e.getMessage());
                 state.setStatus(AgentState.Status.ERROR);
@@ -217,6 +242,8 @@ public class ReActAgentLoop implements AgentLoop {
             }
 
             if (state.getStatus() == AgentState.Status.ERROR) {
+                sink.accept(new AgentEvent.ModelCallFinished(currentConfig.getName(),
+                        request.model(), elapsedMs(modelCallStart), 0, true));
                 if (events != null) {
                     emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
                             state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
@@ -227,6 +254,8 @@ public class ReActAgentLoop implements AgentLoop {
                 return;
             }
             if (response == null) {
+                sink.accept(new AgentEvent.ModelCallFinished(currentConfig.getName(),
+                        request.model(), elapsedMs(modelCallStart), 0, true));
                 state.setStatus(AgentState.Status.ERROR);
                 state.setLastError("Stream ended without a Done event");
                 sink.accept(new AgentEvent.Error(state.getLastError(), null));
@@ -239,6 +268,9 @@ public class ReActAgentLoop implements AgentLoop {
                 }
                 return;
             }
+            sink.accept(new AgentEvent.ModelCallFinished(currentConfig.getName(),
+                    request.model(), elapsedMs(modelCallStart),
+                    response.hasToolCalls() ? response.toolCalls().size() : 0, false));
 
             // --------------------------------------------
             // 3. Handle response: tool calls or final answer
@@ -254,6 +286,7 @@ public class ReActAgentLoop implements AgentLoop {
                 state.setStatus(AgentState.Status.EXECUTING_TOOL);
                 ToolCall pendingHandoffCall = null;
                 HandoffSpec pendingHandoffSpec = null;
+                List<ToolCall> plainCalls = new java.util.ArrayList<>();
                 for (ToolCall toolCall : response.toolCalls()) {
                     HandoffSpec spec = findDeclaredHandoff(currentConfig, toolCall);
                     if (spec != null) {
@@ -272,12 +305,49 @@ public class ReActAgentLoop implements AgentLoop {
                         pendingHandoffSpec = spec;
                         continue;
                     }
-                    log.info("[{}] Executing tool: {}", currentConfig.getName(), toolCall.name());
-                    sink.accept(new AgentEvent.ToolStarted(toolCall));
-                    String result = executePlainTool(config, currentConfig, toolCall, ctx);
-                    // Add tool result to conversation
-                    state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
-                    sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
+                    plainCalls.add(toolCall);
+                }
+
+                if (parallelToolExecutor != null && plainCalls.size() > 1) {
+                    // Stage 9 Tool Parallelism: fan out plain calls, join
+                    // in declaration order. Budget/cancel/order/merge
+                    // semantics live in ParallelToolExecutor; the loop
+                    // keeps the event pairing (Started before dispatch,
+                    // Finished after each result lands).
+                    for (ToolCall toolCall : plainCalls) {
+                        sink.accept(new AgentEvent.ToolStarted(toolCall));
+                    }
+                    final AgentConfig entryCfg = config;
+                    final AgentConfig activeCfg = currentConfig;
+                    final RunContext runCtx = ctx;
+                    List<String> results = parallelToolExecutor.dispatchAll(
+                            plainCalls.stream()
+                                    .<ParallelToolExecutor.Dispatch>map(tc -> new ParallelToolExecutor.Dispatch(
+                                            tc, tc2 -> executePlainTool(entryCfg, activeCfg, tc2, runCtx)))
+                                    .toList());
+                    for (int i = 0; i < plainCalls.size(); i++) {
+                        ToolCall toolCall = plainCalls.get(i);
+                        String result = results.get(i);
+                        state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
+                        sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
+                        AgentEvent.ToolValidationRejected rejected = governanceRejectionOf(toolCall, result);
+                        if (rejected != null) {
+                            sink.accept(rejected);
+                        }
+                    }
+                } else {
+                    for (ToolCall toolCall : plainCalls) {
+                        log.info("[{}] Executing tool: {}", currentConfig.getName(), toolCall.name());
+                        sink.accept(new AgentEvent.ToolStarted(toolCall));
+                        String result = executePlainTool(config, currentConfig, toolCall, ctx);
+                        // Add tool result to conversation
+                        state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
+                        sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
+                        AgentEvent.ToolValidationRejected rejected = governanceRejectionOf(toolCall, result);
+                        if (rejected != null) {
+                            sink.accept(rejected);
+                        }
+                    }
                 }
 
                 if (pendingHandoffCall != null) {
@@ -595,6 +665,29 @@ public class ReActAgentLoop implements AgentLoop {
             }
         }
         return "";
+    }
+
+    /**
+     * Stage 9: a tool result that is a governance refusal (not a tool
+     * output) gets an explicit {@code ToolValidationRejected} event — the
+     * observability twin of the model-visible error string. Currently the
+     * wired refusals are the validation boundaries of
+     * {@code ContractAwareToolExecutor} ({@code [UNKNOWN_TOOL]} /
+     * {@code [INVALID_TOOL_ARGUMENTS]}); permission/approval boundaries
+     * are roadmap classes that will emit the same event with their stage
+     * names when they land.
+     */
+    private static AgentEvent.ToolValidationRejected governanceRejectionOf(
+            ToolCall toolCall, String result) {
+        if (result == null) {
+            return null;
+        }
+        if (result.startsWith("[UNKNOWN_TOOL]")
+                || result.startsWith("[INVALID_TOOL_ARGUMENTS]")) {
+            return new AgentEvent.ToolValidationRejected(
+                    toolCall.id(), toolCall.name(), "validation", result);
+        }
+        return null;
     }
 
     private static ModelRequest withLastUserText(ModelRequest request, String replacement) {

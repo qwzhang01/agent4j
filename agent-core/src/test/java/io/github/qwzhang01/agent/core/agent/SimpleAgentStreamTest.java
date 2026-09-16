@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,9 +37,19 @@ class SimpleAgentStreamTest {
 
         agent.stream("Hi", state, events::add);
 
-        assertEquals(2, events.size());
-        assertEquals(new AgentEvent.ContentDelta("Hello"), events.get(0));
-        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(1));
+        // Stage 9 contract: every model call is wrapped in a
+        // ModelCallStarted/ModelCallFinished pair around the deltas.
+        assertEquals(4, events.size());
+        AgentEvent.ModelCallStarted started = assertInstanceOf(AgentEvent.ModelCallStarted.class,
+                events.get(0));
+        assertEquals("test", started.agentName());
+        assertEquals(1, started.step());
+        assertEquals(new AgentEvent.ContentDelta("Hello"), events.get(1));
+        AgentEvent.ModelCallFinished finished = assertInstanceOf(AgentEvent.ModelCallFinished.class,
+                events.get(2));
+        assertFalse(finished.failed());
+        assertEquals(0, finished.toolCallCount());
+        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(3));
         assertEquals("Hello", done.finalAnswer());
         assertEquals(AgentState.Status.DONE, done.state().getStatus());
         assertEquals(AgentState.Status.DONE, state.getStatus());
@@ -60,15 +71,34 @@ class SimpleAgentStreamTest {
 
         agent.stream("Echo 'test echo'", events::add);
 
-        assertEquals(4, events.size());
-        AgentEvent.ToolStarted started = assertInstanceOf(AgentEvent.ToolStarted.class, events.get(0));
+        // Stage 9: 8 events per the stream contract — the invoker emits
+        // ContentDelta DURING the model call (before ModelCallFinished):
+        // Started, ToolCallCount-in-Finished... but deltas come first.
+        // Actual order: [Started, delta, Finished(tool=1)] per call with
+        // text, [Started, Finished(tool=1)] for the tool-calls response,
+        // Tool pair between the two model calls, Done last.
+        assertEquals(8, events.size());
+        AgentEvent.ModelCallStarted call1 = assertInstanceOf(AgentEvent.ModelCallStarted.class,
+                events.get(0));
+        assertEquals(1, call1.step());
+        AgentEvent.ModelCallFinished call1Done = assertInstanceOf(AgentEvent.ModelCallFinished.class,
+                events.get(1));
+        assertEquals(1, call1Done.toolCallCount(), "first call returned the tool call");
+        assertFalse(call1Done.failed());
+        AgentEvent.ToolStarted started = assertInstanceOf(AgentEvent.ToolStarted.class, events.get(2));
         assertEquals("echo", started.toolCall().name());
-        AgentEvent.ToolFinished finished = assertInstanceOf(AgentEvent.ToolFinished.class, events.get(1));
+        AgentEvent.ToolFinished finished = assertInstanceOf(AgentEvent.ToolFinished.class, events.get(3));
         assertEquals("call_1", finished.toolCallId());
         assertEquals("echo", finished.toolName());
         assertEquals("Echo: test echo", finished.result());
-        assertEquals(new AgentEvent.ContentDelta("Echo result: Echo: test echo"), events.get(2));
-        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(3));
+        AgentEvent.ModelCallStarted call2 = assertInstanceOf(AgentEvent.ModelCallStarted.class,
+                events.get(4));
+        assertEquals(2, call2.step(), "second model call is step 2");
+        assertEquals(new AgentEvent.ContentDelta("Echo result: Echo: test echo"), events.get(5));
+        AgentEvent.ModelCallFinished call2Done = assertInstanceOf(AgentEvent.ModelCallFinished.class,
+                events.get(6));
+        assertEquals(0, call2Done.toolCallCount(), "second call returned plain text");
+        AgentEvent.Done done = assertInstanceOf(AgentEvent.Done.class, events.get(7));
         assertEquals("Echo result: Echo: test echo", done.finalAnswer());
         assertEquals(AgentState.Status.DONE, done.state().getStatus());
     }
@@ -105,9 +135,15 @@ class SimpleAgentStreamTest {
 
         agent.stream("Hi", state, events::add);
 
-        assertEquals(1, events.size());
-        AgentEvent.Error error = assertInstanceOf(AgentEvent.Error.class, events.get(0));
-        assertEquals("boom", error.message());
+        // Stage 9: the stream invoker emits the Error DURING the model
+        // call, so order is Started, Error, Finished(failed=true) — the
+        // Finished pair still closes the boundary even on failure.
+        assertEquals(3, events.size());
+        assertInstanceOf(AgentEvent.ModelCallStarted.class, events.get(0));
+        assertInstanceOf(AgentEvent.Error.class, events.get(1));
+        AgentEvent.ModelCallFinished finished = assertInstanceOf(AgentEvent.ModelCallFinished.class,
+                events.get(2));
+        assertTrue(finished.failed(), "stream failure must mark the model call failed");
         assertEquals(AgentState.Status.ERROR, state.getStatus());
         assertEquals("boom", state.getLastError());
     }

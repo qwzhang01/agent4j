@@ -9,11 +9,11 @@
 
 | artifactId | 职责 | 典型依赖方 |
 |------------|------|------------|
-| `agent-core` | 接口与数据：`ChatMessage`、`ModelClient`、`Tool`、`Agent`、`AgentLoop` | 几乎所有模块 |
+| `agent-core` | 接口与数据：`ChatMessage`、`ModelClient`、`Tool`、`Agent`、`AgentLoop`；表达层（Stage 9）：`ReflectiveAgent` 有界反思（PASS/REVISE/GIVE_UP 协议词裁决、critique 不入用户可见输出）、`ParallelToolExecutor` 声明序并行工具 + `ReActAgentLoop.withParallelTools` 装配、`AgentEvent` 五新事件（ModelCall/ToolValidationRejected/Reflection） | 几乎所有模块 |
 | `agent-model` | `MockModelClient`；OpenAI-compatible / Anthropic 客户端；Retry / Timeout / Fallback / StructuredOutput 装饰器 | 需要真实或 Mock 模型的模块与示例 |
 | `agent-plugin` | SPI 插件加载 / 卸载 / 重载 + 外部 JAR 加载（checksum 门、每 jar 独立 classloader、manifest 权限声明、注册回滚、命名空间隔离）；**无**多版本共存 / module layer 禁闭 | 自进化 Tool、`PluginExample` |
 | `agent-sandbox` | ClassLoader 沙箱 + Process 沙箱（**无** Docker / WASM） | `agent-coding`、沙箱示例 |
-| `agent-workflow` | 图运行时、7 种节点、Checkpoint；durable 执行：RunStore/Lease/Ledger/CheckpointStore（内存 + JDBC 后端，纯 ANSI SQL）、`DurableRunManager`（心跳续租 + 行监视）、`DistributedRunControl` 跨实例 Cancel/Resume 守卫/Approval Callback | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
+| `agent-workflow` | 图运行时、7 种节点、Checkpoint；durable 执行：RunStore/Lease/Ledger/CheckpointStore（内存 + JDBC 后端，纯 ANSI SQL）、`DurableRunManager`（心跳续租 + 行监视）、`DistributedRunControl` 跨实例 Cancel/Resume 守卫/Approval Callback；计划层（Stage 9 `plan` 包）：`Plan`（DAG 校验：未知/前向/自环/重复依赖全拒 + `planVersion` + `readySteps` 前沿）、`PlanExecutor`（编译为拓扑序线性链复用 GraphRuntime——单游标 runtime 不允许扇出无条件边）、`MultiAgentPlanner`（子任务状态隔离 + `deriveChild` 预算/Trace 传播 + 同输出去重）、`EventReplayer`（事件历史只读重放，工具不重复执行） | `agent-scheduler`、`agent-product`、`agent-enterprise`、`agent-trace-export` |
 | `agent-scheduler` | 定时 / 事件唤醒 + 任务队列（内存 + `JdbcTaskQueue` 持久化任务表，孤儿回查 `requeueOrphaned`） | `agent-channel`、调度示例 |
 | `agent-memory` | Working / Session / Long-term + `MemoryScope`。包：根接线面 + `extract/` `store/` `context/` `session/` `tools/` | `agent-channel`、`agent-enterprise`、`agent-tavern`、`agent-chat`（`MemorySource`） |
 | `agent-security` | 权限 / 审批 / 净化 / 审计 | `agent-mcp`、`agent-coding`、企业 / 酒馆 / 频道 |
