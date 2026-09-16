@@ -25,6 +25,7 @@ public enum DoneReason {
             case DONE -> DONE;
             case MAX_STEPS_EXCEEDED -> MAX_STEPS_EXCEEDED;
             case ERROR -> ERROR;
+            case CANCELLED -> CANCELLED;
             case IDLE, RUNNING, EXECUTING_TOOL -> null;
         };
     }

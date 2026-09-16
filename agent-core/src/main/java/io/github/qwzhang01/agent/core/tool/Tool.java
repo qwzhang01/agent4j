@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.core.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.qwzhang01.agent.core.run.RunContext;
+import io.github.qwzhang01.agent.core.tool.contract.ToolDefinition;
 
 /**
  * Interface for a tool that an Agent can call.
@@ -17,7 +18,7 @@ import io.github.qwzhang01.agent.core.run.RunContext;
 public interface Tool {
 
     /**
-     * Unique tool name (used by the model to call this tool).
+     * Unique tool name (used by the model to call it).
      * Convention: snake_case, e.g. "get_weather", "search_web".
      */
     String getName();
@@ -44,6 +45,19 @@ public interface Tool {
      * }</pre>
      */
     String getParametersSchema();
+
+    /**
+     * Structured contract (Stage 2.1, harness roadmap).
+     * <p>
+     * Default: a legacy-adapted definition (side-effect UNKNOWN, version
+     * "legacy", schema from {@link #getParametersSchema()}). Override to
+     * declare the real contract — schemas, version, side-effect level,
+     * required capabilities and size/timeout budgets. The validation
+     * chain and secure assemblies read this, never the loose accessors.
+     */
+    default ToolDefinition definition() {
+        return ToolDefinition.fromLegacyTool(this);
+    }
 
     /**
      * Execute the tool with the given arguments.

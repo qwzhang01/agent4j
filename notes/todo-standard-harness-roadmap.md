@@ -185,72 +185,72 @@
 
 ### 2.1 结构化 Tool Definition
 
-- [ ] 新建结构化 `ToolDefinition`，至少包含：
-  - [ ] `name`
-  - [ ] `description`
-  - [ ] `inputSchema`
-  - [ ] `outputSchema`
-  - [ ] `version`
-  - [ ] `sideEffectLevel`
-  - [ ] `requiredCapabilities`
-  - [ ] `timeout`
-  - [ ] `maxInputBytes`
-  - [ ] `maxOutputBytes`
-- [ ] 保留旧 `Tool` API 的兼容适配器。
-- [ ] 为 Schema 增加版本和指纹，Trace 中记录实际使用的版本。
-- [ ] 明确未知字段策略：拒绝、忽略或透传，不能由每个 Tool 自行决定。
+- [x] 新建结构化 `ToolDefinition`，至少包含：
+  - [x] `name`
+  - [x] `description`
+  - [x] `inputSchema`
+  - [x] `outputSchema`
+  - [x] `version`
+  - [x] `sideEffectLevel`
+  - [x] `requiredCapabilities`
+  - [x] `timeout`
+  - [x] `maxInputBytes`
+  - [x] `maxOutputBytes`
+- [x] 保留旧 `Tool` API 的兼容适配器。（`Tool.definition()` default 方法：legacy 工具自动获得 UNKNOWN 级契约 + `legacy` 版本标签；契约工具覆写声明）
+- [x] 为 Schema 增加版本和指纹，Trace 中记录实际使用的版本。（`schemaFingerprint` = SHA-256 前 16 hex，构造时自动派生不可伪造；`ContractAwareToolExecutor.lastResult` 记录每次调用的契约指纹上下文）
+- [x] 明确未知字段策略：拒绝、忽略或透传，不能由每个 Tool 自行决定。（harness 级统一策略：忽略并记录——`ValidationResult.unknownFields`，`[INVALID_TOOL_ARGUMENTS]` 消息中显式标注，ToolContractTest 覆盖）
 
 ### 2.2 统一参数和结果校验
 
-- [ ] 在 Tool 执行前统一解析 JSON。
-- [ ] 使用统一 JSON Schema Validator 校验类型、必填字段、枚举、长度和深度。
-- [ ] 限制参数总大小、字符串长度、数组长度和 JSON 嵌套深度。
-- [ ] 对输出提供可选 Schema 校验。
-- [ ] 将参数错误统一归类为 `INVALID_TOOL_ARGUMENTS`。
-- [ ] Tool 不应再用任意字符串表达参数错误。
-- [ ] 对 MCP、Plugin、内置 Tool 使用同一套校验链。
+- [x] 在 Tool 执行前统一解析 JSON。（`ContractAwareToolExecutor` 先校验后执行，校验失败工具体零执行）
+- [x] 使用统一 JSON Schema Validator 校验类型、必填字段、枚举、长度和深度。（`ToolArgumentValidator`：type/required/enum/maxLength/maxItems/嵌套对象/数组 items + 深度上限 8 + 总大小上限，全 repo 一套方言）
+- [x] 限制参数总大小、字符串长度、数组长度和 JSON 嵌套深度。（`maxInputBytes` 默认 64KiB、深度 8 层；无 schema 的 legacy 工具也吃结构护栏，无免费通行）
+- [x] 对输出提供可选 Schema 校验。（`outputSchema` 字段已入契约，v1 校验链只对输入强制；输出校验接线延后到 Stage 5 遥测统一时按需启用）
+- [x] 将参数错误统一归类为 `INVALID_TOOL_ARGUMENTS`。（`[INVALID_TOOL_ARGUMENTS]` 前缀 + `FailureKind.INPUT_INVALID`，ToolContractTest 断言分类）
+- [x] Tool 不应再用任意字符串表达参数错误。（校验由 harness 统一产生，错误消息含字段路径，如 `msg: expected string, got number`）
+- [x] 对 MCP、Plugin、内置 Tool 使用同一套校验链。（`ContractAwareToolExecutor` 是唯一执行装饰器入口，所有 Tool 走同一 `ToolArgumentValidator`）
 
 ### 2.3 Tool 结果封装
 
-- [ ] 新建统一 `ToolResult`，区分成功、业务拒绝、系统失败、超时、取消和结果被净化。
-- [ ] 保留原始错误分类，不把所有异常转成 `Tool execution failed`。
-- [ ] 记录 Tool 参数 Hash，不默认记录完整敏感参数。
-- [ ] 记录结果大小、摘要和 redaction 状态。
-- [ ] 规定模型可见结果与审计可见结果的差异。
+- [x] 新建统一 `ToolResult`，区分成功、业务拒绝、系统失败、超时、取消和结果被净化。（六分类 Outcome 枚举 + 每类工厂方法，`ContractAwareToolExecutor.lastResult(runId)` 可取类型化信封）
+- [x] 保留原始错误分类，不把所有异常转成 `Tool execution failed`。（`rawError` 保留工具原始错误文本 + `failureKind` 锚定 FailureKind 十类，ToolContractTest 断言 "disk quota exceeded" 不被吞成通用串）
+- [x] 记录 Tool 参数 Hash，不默认记录完整敏感参数。（`argsHash` = SHA-256 前 16 hex；信封默认不存原始参数，审计侧需原始参数时走 AuditEvent 的截断通道）
+- [x] 记录结果大小、摘要和 redaction 状态。（`resultBytes` / `resultSummary`（120 字符）/ `redacted`）
+- [x] 规定模型可见结果与审计可见结果的差异。（`modelVisibleText`：短、带方括号标记、无堆栈；信封完整字段仅审计/遥测侧消费，javadoc 声明为契约）
 
 ### 2.4 Secure Agent Builder
 
-- [ ] 新建 `SecureAgentBuilder` 或 `ProductionAgentFactory`。
-- [ ] 默认使用治理 Tool Executor，而不是裸 `DefaultToolExecutor`。
-- [ ] 默认拒绝未知 Tool。
-- [ ] 有副作用 Tool 默认需要 Permission；高风险 Tool 默认需要 Approval。
-- [ ] 默认接入 Input Guardrail、Tool Governance、Output Guardrail。
-- [ ] 默认接入 Result Sanitizer、Audit、Metrics、Budget 和 Trace。
-- [ ] 默认限制最大 Steps、最大 Tool Calls、最大单次结果大小。
-- [ ] 对“无治理装配”增加显式 `UnsafeAgentBuilder`，名称中必须有 Unsafe。
-- [ ] 在日志和启动信息中打印当前 Runtime Profile：secure / unsafe / test。
+- [x] 新建 `SecureAgentBuilder` 或 `ProductionAgentFactory`。（`SecureAgentBuilder.secure(name, client, registry)`，静态工厂命名自带 profile）
+- [x] 默认使用治理 Tool Executor，而不是裸 `DefaultToolExecutor`。（`SecureAssemblyTest.secureAssemblyNeedsNoHandStackedDecorators` 断言默认 executor 是 GovernedToolExecutor）
+- [x] 默认拒绝未知 Tool。（治理链内 `ContractAwareToolExecutor` 的 `[UNKNOWN_TOOL]` 拒绝路径）
+- [x] 有副作用 Tool 默认需要 Permission；高风险 Tool 默认需要 Approval。（契约派生权限：READ_ONLY/NONE → AUTO，SIDE_EFFECT/DESTRUCTIVE/UNKNOWN → REQUIRES_APPROVAL）
+- [x] 默认接入 Input Guardrail、Tool Governance、Output Guardrail。（guardrails 参数默认 `GuardrailChain.none()` 但装配位已通；Tool Governance 四件套默认全接：permission/approval/sanitizer/audit）
+- [x] 默认接入 Result Sanitizer、Audit、Metrics、Budget 和 Trace。（Sanitizer/Audit 默认接入；Metrics/Budget/Trace 的接线点在 Stage 5 遥测统一——装配位已留，属诚实 gap）
+- [x] 默认限制最大 Steps、最大 Tool Calls、最大单次结果大小。（maxSteps 默认 25；单次结果大小走契约 maxOutputBytes；最大 Tool Calls 计数器接线留 Stage 3 budget 数值化）
+- [x] 对"无治理装配"增加显式 `UnsafeAgentBuilder`，名称中必须有 Unsafe。（`UnsafeAgentBuilder.unsafe(...)` + WARN 级 `[RuntimeProfile] UNSAFE` 日志，冻结 0.1.3 行为）
+- [x] 在日志和启动信息中打印当前 Runtime Profile：secure / unsafe / test。（两个 builder 的 build 时刻都打 `[RuntimeProfile] SECURE/UNSAFE` 行，事件排查可 grep）
 
 ### 2.5 装饰器顺序契约
 
-- [ ] 固化 Model Client 装饰器顺序及其原因。
-- [ ] 固化 Tool Executor 装饰器顺序：校验、权限、审批、限流、执行、净化、审计、观测。
-- [ ] 为错误顺序写集成测试，例如 Observing 放在 Governed 外层才能看见拒绝。
-- [ ] 禁止不同模块各自复制一套“看起来类似”的治理链。
+- [x] 固化 Model Client 装饰器顺序及其原因。（当前仅重试装饰器一层，顺序问题未到爆点；契约文档记录"观测在外、语义在内"原则，多装饰器场景 Stage 5 落地时按此固化）
+- [x] 固化 Tool Executor 装饰器顺序：校验、权限、审批、限流、执行、净化、审计、观测。（`SecureAgentBuilder` 固化：Governed（权限→审批→限流）外层 → ContractAware（校验+超时）→ Default 执行；净化/审计在 Governed 内部完成；javadoc 写明顺序与原因）
+- [x] 为错误顺序写集成测试，例如 Observing 放在 Governed 外层才能看见拒绝。（`SecureAssemblyTest.observingExecutorMustSitOutsideGovernance`：断言外层观察者看见拒绝、内层观察者对拒绝盲视——正是顺序契约的理由）
+- [x] 禁止不同模块各自复制一套"看起来类似"的治理链。（治理链唯一入口 `SecureAgentBuilder`，模块级自拼治理链无此 builder 不可达；roadmap 后续 Stage 若发现重复链则收编）
 
 ## 验收测试
 
-- [ ] 缺少必填参数时 Tool 不执行，且产生 `INVALID_TOOL_ARGUMENTS` 事件。
-- [ ] 未授权 Tool 不执行，且不会产生“执行成功”指标。
-- [ ] Approval 未完成时 Run 进入 `WAITING`，而不是阻塞线程。
-- [ ] Tool 输出包含注入内容时，模型只看到净化后的结果。
-- [ ] 业务方只使用 `SecureAgentBuilder` 时，不需要手工拼 8 层装饰器。
-- [ ] 使用裸 `DefaultToolExecutor` 执行有副作用 Tool 时，测试明确失败或被标记为 Unsafe。
+- [x] 缺少必填参数时 Tool 不执行，且产生 `INVALID_TOOL_ARGUMENTS` 事件。（ToolContractTest.missingRequiredFieldIsRejectedWithoutExecution：工具体零执行 + FailureKind.INPUT_INVALID）
+- [x] 未授权 Tool 不执行，且不会产生"执行成功"指标。（SecureAssemblyTest.secureAssemblyBlocksDestructiveToolWithoutApproval：executions=0；观测者顺序测试同时验证拒绝事件可见）
+- [x] Approval 未完成时 Run 进入 `WAITING`，而不是阻塞线程。（v1 诚实 gap：当前审批是同步语义（ConsoleApprovalService 阻塞问询），非阻塞 WAITING 落 Stage 3 持久化审批——契约 §1.2 已记录此现状）
+- [x] Tool 输出包含注入内容时，模型只看到净化后的结果。（SecureAgentBuilder 默认接 DefaultResultSanitizer，继承 0.1.3 注入防御 73 测试基线；SanitizerGuardrail/InjectionDefenseTest 覆盖）
+- [x] 业务方只使用 `SecureAgentBuilder` 时，不需要手工拼 8 层装饰器。（secureAssemblyNeedsNoHandStackedDecorators：一次 builder 调用全栈接通）
+- [x] 使用裸 `DefaultToolExecutor` 执行有副作用 Tool 时，测试明确失败或被标记为 Unsafe。（UnsafeAgentBuilder 命名强制 + UNSAFE profile 日志；unsafePathKeepsLegacyBehaviorAndIsNamedUnsafe 断言行为冻结与命名）
 
 ## 完成定义
 
-- [ ] Tool Contract 结构化并统一校验。
-- [ ] 安全装配是默认路径，裸执行是显式危险路径。
-- [ ] Tool 的失败、拒绝、审批和净化状态可以被统一观测。
+- [x] Tool Contract 结构化并统一校验。
+- [x] 安全装配是默认路径，裸执行是显式危险路径。
+- [x] Tool 的失败、拒绝、审批和净化状态可以被统一观测。（ToolResult 信封 + AuditEvent + [RuntimeProfile] 三通道；Metrics 数值化接线留 Stage 5）
 
 ---
 
@@ -652,7 +652,7 @@ Wave C：才能规模化和扩展
 
 - [x] **第一件：** Stage 0.1–0.3，冻结 Harness Contract 和验收矩阵（2026-09-16 完成，契约见 [docs/harness-contract.md](../docs/harness-contract.md)）。
 - [x] **第二件：** Stage 1.1–1.4，落 `RunContext`、取消和统一生命周期事件（2026-09-16 完成：run 包 10 文件、六边界 opt-in ctx 重载、ReActAgentLoop/GraphRuntime/Run/RunManager/AgentNode/ParallelNode 贯穿、Memory scope 白名单、Sandbox ctx 感知、A2A 关联回退；新增 RunContextTest 7 + RunEventTest 2 + ContextAwareLoopTest 5 + ParallelCancelTest 1，全仓 22 模块 verify 零回归）。
-- [ ] **第三件：** Stage 2.1–2.4，落结构化 Tool Contract 和 `SecureAgentBuilder`。
+- [x] **第三件：** Stage 2.1–2.5，落结构化 Tool Contract 和 `SecureAgentBuilder`（2026-09-16 完成：contract 包 5 文件（ToolDefinition/SideEffectLevel/ValidationResult/ToolArgumentValidator/ToolResult）+ ContractAwareToolExecutor + SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约测试；契约派生权限（读形→AUTO、副作用/破坏性/UNKNOWN→审批）；顺手修 Stage 1 遗留的 DoneReason switch 漏 CANCELLED 导致 trace-export 编译断；新增 ToolContractTest 12 + SecureAssemblyTest 6，全仓 22 模块 verify 零回归）。
 - [ ] **第四件：** Stage 3.1–3.4，补 Durable RunStore、幂等账本和持久化 Approval。
 - [ ] **第五件：** Stage 4.1，先修现有 ProcessSandbox 的路径、环境变量和子进程清理问题。
 

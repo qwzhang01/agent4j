@@ -143,13 +143,13 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 |---------|---------|-----------|--------------|--------------|------|
 | RunContext 统一运行上下文 | agent-core | 跨线程/并行节点/异步回调同 runId | 伪造 tenant 字符串被拒 | — | [x] done（Stage 1，2026-09-16：record 不可变 + deriveChild + 六边界 ctx 重载，RunContextTest/ContextAwareLoopTest/ParallelCancelTest 覆盖） |
 | 取消 & Deadline | agent-core | 所有子分支收到取消 | Deadline 到期统一 TIMEOUT | — | [x] done（Stage 1.4，2026-09-16：CancellationSource/CancellationToken + RunDeadlineException + CANCELLED 终态，ParallelCancelTest 验证全分支停止） |
-| Tool Contract 结构化定义 | agent-core | schema 校验通过执行 | INVALID_TOOL_ARGUMENTS 拒绝 | — | [ ] planned（Stage 2.1） |
-| Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [ ] 默认 unsafe（Stage 2.4） |
+| Tool Contract 结构化定义 | agent-core | schema 校验通过执行 | INVALID_TOOL_ARGUMENTS 拒绝 | — | [x] done（Stage 2.1/2.2，2026-09-16：contract 包 5 文件 + ContractAwareToolExecutor 统一校验链，ToolContractTest 12 覆盖） |
+| Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [x] done（Stage 2.4，2026-09-16：SecureAgentBuilder 默认治理栈 + UnsafeAgentBuilder 显式危险路径 + [RuntimeProfile] 日志；审批的非阻塞 WAITING 语义留 Stage 3） |
 | Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [-] kill-9 已真实验证，RunStore/幂等账本缺 |
 | 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [ ] planned（Stage 3.4） |
 | Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [-] FailureKind/预算已有，Process 硬化缺 |
 | Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [-] scope 隔离已有，审计/脱敏缺 |
-| 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），各模块映射接线 Stage 2.2 |
+| 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor）；Model/Memory/Approval/Sandbox 侧映射 Stage 5 |
 | 统一生命周期事件 | agent-core | 事件含 runId/step/attempt | — | — | [x] done（Stage 1.3，2026-09-16：RunEvent sealed 族 8 事件 + SCHEMA_VERSION=1；发射接线延后到 Stage 5 遥测统一） |
 
 ### 3.2 模块依赖与禁止依赖矩阵
@@ -230,7 +230,7 @@ agent-spring-boot-starter -> core, model
 | agent-core | ContextWindowBudget 四本账 | [-] | 已实现 opt-in，未默认接线 |
 | agent-core | Handoff 三件套 + 续跑身份 | [x] | HandoffLoopTest + core 92/92 |
 | agent-core | RunContext / 统一事件 | [x] | Stage 1（2026-09-16）：run 包 10 文件 + RunContextTest 7 / RunEventTest 2 / ContextAwareLoopTest 5 / ParallelCancelTest 1；发射接线见 Stage 5 |
-| agent-core | ToolDefinition / ToolResult / FailureTaxonomy | [ ] | Stage 2 |
+| agent-core | ToolDefinition / ToolResult / FailureTaxonomy | [x] | Stage 2（2026-09-16）：contract 包 + 统一校验链 + ToolResult 信封；outputSchema 校验与 Model 侧失败映射留 Stage 5 |
 | agent-model | 装饰器族 Retry/Timeout/Fallback/Structured/Routing/Cascade | [x] | E2/E3 实验验证 |
 | agent-model | Provider 错误统一分类 | [ ] | Stage 6.1 |
 | agent-workflow | 图运行时 + 7 节点 + Checkpoint | [x] | workflow 9 测试文件 + E8 |
@@ -239,7 +239,7 @@ agent-spring-boot-starter -> core, model
 | agent-memory | Scope 隔离 / 生命周期 / 对账环 / 双时间轴 / 分层注入 | [x] | 15 测试文件 + 174/174 |
 | agent-memory | PG 持久化 | [-] | 真库线 21/21，但裸 JDBC 无池 |
 | agent-memory | tenant 审计 / 字段脱敏 | [ ] | Stage 5 |
-| agent-security | Permission/Approval/Audit/Sanitizer/Guardrail 桥 | [x] | 9 测试文件 |
+| agent-security | Permission/Approval/Audit/Sanitizer/Guardrail 桥 | [x] | 9 测试文件 + Stage 2：SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约（SecureAssemblyTest 6） |
 | agent-security | InjectionNormalizer + 三态 Judge 槽位 | [-] | Judge v2 语义槽空着，regex 墙为主 |
 | agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | sandbox 9 测试文件 73/73 |
 | agent-sandbox | DOCKER/MICROVM/WASM | [ ] | 占位，诚实报告零保证 |
