@@ -10,12 +10,15 @@ import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.run.RunCancelledException;
 import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.core.run.RunDeadlineException;
+import io.github.qwzhang01.agent.core.run.RunEvent;
+import io.github.qwzhang01.agent.core.run.FailureKind;
 import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -128,6 +131,12 @@ public class ReActAgentLoop implements AgentLoop {
      * RunCancelledException) and deadline (RunDeadlineException); the model
      * call and every tool call receive the context via their ctx-aware
      * overloads.
+     * <p>
+     * Stage 7.1: when {@code ctx.eventSink()} is present, the loop emits the
+     * eight lifecycle facts (RunStarted / StepStarted / StepCompleted /
+     * RunCompleted / RunFailed / RunCanceled; pause/resume belong to the
+     * workflow layer). Emission failures never break the run they observe -
+     * telemetry is a side channel (same discipline as MetricsSink).
      */
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          RunContext ctx, CtxModelInvoker invoker) {
@@ -135,6 +144,11 @@ public class ReActAgentLoop implements AgentLoop {
         AgentConfig handoffFrom = null;
         HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;
         state.setStatus(AgentState.Status.RUNNING);
+        java.util.function.Consumer<RunEvent> events = ctx != null ? ctx.eventSink() : null;
+        long runStartNanos = System.nanoTime();
+        if (events != null) {
+            emit(events, new RunEvent.RunStarted(ctx.runId(), ctx.traceId(), Instant.now()));
+        }
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
             // Stage 1.4: cooperative cancellation + deadline check at the
@@ -147,11 +161,22 @@ public class ReActAgentLoop implements AgentLoop {
                     state.setLastError(signal.getMessage());
                     sink.accept(new AgentEvent.Error(signal.getClass().getSimpleName()
                             + ": " + signal.getMessage(), signal));
+                    if (events != null) {
+                        emit(events, new RunEvent.RunCanceled(ctx.runId(), ctx.traceId(),
+                                signal.getMessage(), Instant.now()));
+                    }
                     return;
                 }
             }
             state.incrementStep();
             log.debug("[{}] Step {}", currentConfig.getName(), state.getCurrentStep());
+            String stepId = "step-" + state.getCurrentStep();
+            int attempt = 1;
+            if (events != null) {
+                emit(events, new RunEvent.StepStarted(ctx.runId(), ctx.traceId(),
+                        stepId, state.getCurrentStep(), attempt, Instant.now()));
+            }
+            long stepStartNanos = System.nanoTime();
 
             // --------------------------------------------
             // 1. Build model request from current state
@@ -159,6 +184,13 @@ public class ReActAgentLoop implements AgentLoop {
             ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter, ctx);
             request = applyInputGuardrails(currentConfig, state, request, sink);
             if (state.getStatus() == AgentState.Status.ERROR) {
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "input guardrail blocked", FailureKind.INPUT_INVALID, Instant.now()));
+                    emit(events, new RunEvent.RunFailed(ctx.runId(), ctx.traceId(),
+                            FailureKind.INPUT_INVALID, state.getLastError(), Instant.now()));
+                }
                 return;
             }
 
@@ -174,16 +206,37 @@ public class ReActAgentLoop implements AgentLoop {
                 state.setStatus(AgentState.Status.ERROR);
                 state.setLastError("Model call failed: " + e.getMessage());
                 sink.accept(new AgentEvent.Error(state.getLastError(), e));
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "model call failed", FailureKind.MODEL_FAILURE, Instant.now()));
+                    emit(events, new RunEvent.RunFailed(ctx.runId(), ctx.traceId(),
+                            FailureKind.MODEL_FAILURE, state.getLastError(), Instant.now()));
+                }
                 return;
             }
 
             if (state.getStatus() == AgentState.Status.ERROR) {
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "stream error", FailureKind.MODEL_FAILURE, Instant.now()));
+                    emit(events, new RunEvent.RunFailed(ctx.runId(), ctx.traceId(),
+                            FailureKind.MODEL_FAILURE, state.getLastError(), Instant.now()));
+                }
                 return;
             }
             if (response == null) {
                 state.setStatus(AgentState.Status.ERROR);
                 state.setLastError("Stream ended without a Done event");
                 sink.accept(new AgentEvent.Error(state.getLastError(), null));
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "stream ended without Done", FailureKind.MODEL_FAILURE, Instant.now()));
+                    emit(events, new RunEvent.RunFailed(ctx.runId(), ctx.traceId(),
+                            FailureKind.MODEL_FAILURE, state.getLastError(), Instant.now()));
+                }
                 return;
             }
 
@@ -246,17 +299,36 @@ public class ReActAgentLoop implements AgentLoop {
                 }
 
                 state.setStatus(AgentState.Status.RUNNING);
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "tools executed", null, Instant.now()));
+                }
             } else {
                 // Model gave a final answer — output door runs before state or Done.
                 String answer = response.content() != null ? response.content() : "";
                 String guarded = applyOutputGuardrails(currentConfig, state, answer, sink);
                 if (state.getStatus() == AgentState.Status.ERROR) {
+                    if (events != null) {
+                        emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                                state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                                "output guardrail blocked", FailureKind.INPUT_INVALID, Instant.now()));
+                        emit(events, new RunEvent.RunFailed(ctx.runId(), ctx.traceId(),
+                                FailureKind.INPUT_INVALID, state.getLastError(), Instant.now()));
+                    }
                     return;
                 }
                 state.addMessage(ChatMessage.assistant(guarded));
                 state.setStatus(AgentState.Status.DONE);
                 log.info("[{}] Completed in {} steps", currentConfig.getName(), state.getCurrentStep());
                 sink.accept(new AgentEvent.Done(guarded, state));
+                if (events != null) {
+                    emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                            state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                            "done", null, Instant.now()));
+                    emit(events, new RunEvent.RunCompleted(ctx.runId(), ctx.traceId(),
+                            elapsedMs(runStartNanos), state.getCurrentStep(), Instant.now()));
+                }
                 return;
             }
         }
@@ -268,7 +340,28 @@ public class ReActAgentLoop implements AgentLoop {
             log.warn("[{}] Max steps ({}) exceeded", currentConfig.getName(), state.getMaxSteps());
             state.setStatus(AgentState.Status.MAX_STEPS_EXCEEDED);
             sink.accept(new AgentEvent.Done(SimpleAgent.MAX_STEPS_PLACEHOLDER, state));
+            if (events != null) {
+                emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(),
+                        "step-" + state.getCurrentStep(), state.getCurrentStep(), 1,
+                        elapsedMs(runStartNanos), "max steps exceeded",
+                        FailureKind.RESOURCE_EXHAUSTED, Instant.now()));
+                emit(events, new RunEvent.RunCompleted(ctx.runId(), ctx.traceId(),
+                        elapsedMs(runStartNanos), state.getCurrentStep(), Instant.now()));
+            }
         }
+    }
+
+    /** Side-channel emission: telemetry failures never break the observed run. */
+    private static void emit(java.util.function.Consumer<RunEvent> events, RunEvent event) {
+        try {
+            events.accept(event);
+        } catch (RuntimeException e) {
+            log.warn("run event sink failed (events are a side channel, swallowing): {}", e.toString());
+        }
+    }
+
+    private static long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000;
     }
 
     /**

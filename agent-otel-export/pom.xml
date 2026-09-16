@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.qwzhang01</groupId>
+        <artifactId>seven-agent</artifactId>
+        <version>0.1.4-SNAPSHOT</version>
+    </parent>
+    <artifactId>agent-otel-export</artifactId>
+    <name>Java Agent Framework :: OpenTelemetry Export</name>
+    <description>OTel span adapter - a thin translation layer over the framework's
+        stable RunEvent/MetricsSink contracts. The OpenTelemetry SDK is a PROVIDED
+        dependency here (never in agent-observability): code compiled against the
+        API works with any SDK at runtime, and deployments that never wire an SDK
+        keep zero OTel classes on their classpath (Stage 7.1, blueprint D9).</description>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qwzhang01</groupId>
+            <artifactId>agent-observability</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>${opentelemetry.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- test-only SDK: proves the API-only compile scope works with a real SDK -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+            <version>${opentelemetry.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <version>${opentelemetry.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

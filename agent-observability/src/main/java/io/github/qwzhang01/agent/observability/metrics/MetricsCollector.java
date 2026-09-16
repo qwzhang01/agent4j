@@ -194,6 +194,16 @@ public final class MetricsCollector implements MetricsSink {
         return inRuns + orphanToolCalls;
     }
 
+    /** Model-call events that arrived OUTSIDE any run context (wiring-bug signal, Stage 7.2). */
+    public synchronized long orphanModelCalls() {
+        return orphanModelCalls;
+    }
+
+    /** Tool-call events that arrived OUTSIDE any run context (wiring-bug signal, Stage 7.2). */
+    public synchronized long orphanToolCalls() {
+        return orphanToolCalls;
+    }
+
     // ============ Nested ============
 
     /** Per-agent success-rate statistics (the "task success rate" acceptance metric). */

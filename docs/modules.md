@@ -26,7 +26,8 @@
 | `agent-tavern` | 游戏 Profile：角色 / 世界 / 回合 | 酒馆示例 |
 | `agent-chat` | 房间对话引擎：选人 / 拼上下文 / 流式 / 通知。可选 `MemorySource` / `LoreSource` / `RelationSource`；可选 `ConsistencyGuard`（默认 no-op）；群聊 `RoundRobinSpeaker`；`PersonaRenderer` 挂钩。**不是**酒馆游戏 | Moonlit / SillyTavern 一类；`ChatRoomExample` |
 | `agent-coding` | 工作区 / 补丁 / 命令白名单 / 修复环 | 编码 Agent 示例 |
-| `agent-observability` | 指标、五维预算、路由、评估、版本三元组 | 可观测示例 |
+| `agent-observability` | 指标（Prometheus 文本 / JSONL sink）、五维预算、路由、评估（黄金集 + 在线五指标 / 采样 / 版本对照 / 漂移告警 / 统一报告）、版本三元组、ops 事件总线 | 可观测示例 |
+| `agent-otel-export` | RunEvent → OTel span 薄壳（`agent.run`/`agent.step`/`agent.model`/`agent.tool`）；SDK 仅测试域，不进核心 | OTel 示例 |
 | `agent-spring-boot-starter` | **可选** Spring Boot 自动配置：`ModelClient` + `AgentFactory`。**唯一依赖 Spring 的模块**。不自动依赖 `agent-chat` | Spring Boot 3.2 应用（如 Moonlit） |
 | `examples` | 可运行示例（见 `examples/README.md`） | 无（消费以上模块） |
 

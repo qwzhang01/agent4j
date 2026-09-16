@@ -119,7 +119,7 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 - `ModelClient` 端口 + 装饰器族（Retry/Timeout/Fallback/StructuredOutput/Routing/Cascade）。
 - Provider 错误统一分类已落地（Stage 6.1，2026-09-16）：`ProviderCallException` 九类 taxonomy（AUTH_ERROR/RATE_LIMITED/INVALID_REQUEST/MODEL_ERROR/NETWORK_ERROR/PARSE_ERROR/CANCELED/TIMEOUT/UNKNOWN），`fromLegacy`/`toLegacy` 双向兼容；`ModelClientContract` 契约测试基类每 Provider 8 契约（同步/Tool Call/流式/流式 Tool Call 累积 + 4 错误映射，双 Provider 16/16）；`ResilientModelClient` 装饰器三合一（Retry-After 退避 + 熔断器 + CredentialRotation SPI，caller 侧错误不进熔断）；`ProviderCapabilities` 按 Flavor 声明厂商差异。**修复真 bug**：Anthropic 流式 tool use 从不累积（content_block/delta 解析了但 toolCalls 被丢弃）。
-- **gap**：ModelClient 无 RunContext 视角（谁在调、什么预算）——预算自动接线属 Stage 7.2。
+- **gap 清偿（Stage 7.2，2026-09-16）**：预算自动接线已落地——`BudgetedModelClient`（五维 RUN/USER/TENANT/CHANNEL/AGENT 从 RunContext 派生，pre-flight requireBudget chars/4 估算 fail-closed，DENIED 抛 BudgetExhaustedException 非_ModelException_，post-hoc recordUsage 实际 totalTokens；stream 在 Done/Error 终态记一次，Error 记估算作为诚实下限）+ `BudgetedToolExecutor`（RUN 维 1 call=1 unit 断路器，DENIED 走 `[DENIED] ` 文本前缀模型可转述）。**残余 gap**：无 ctx 的 legacy 单参调用不过闸（无身份不发明租户）；PROVIDER 维未单列枚举。
 
 ### 2.5 Memory 边界
 
@@ -229,7 +229,7 @@ agent-spring-boot-starter -> core, model
 | 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例），TierLimits 已落 DOCKER/MICROVMM 结构性限制表 | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
 | MCP | stdio 官方 filesystem server 已验；SSE 方言 + JDK HttpServer 模拟对端 5/5 | [-] Stage 6.2 完成；官方参考实现互操作待补 |
 | A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；认证/签名/store 已落 | [-] Stage 6.3 完成；外部第三方 A2A 实现互操作待补 |
-| OpenTelemetry | 无 SDK | [ ] Stage 7.1 Span Adapter |
+| OpenTelemetry | `agent-otel-export` 薄壳模块（Stage 7.1，2026-09-16）：RunEvent→span 四层（run/step/model/tool）+ 真实 SDK InMemorySpanExporter 测试 7/7；SDK 仅 test scope，核心零新依赖（D9） | [x] 已有；Workflow/Memory/Sandbox/MCP/A2A span 未做（诚实 gap，记 roadmap 7.1） |
 | GPG/Central 发布 | 流程已定（RELEASING.md） | [x] 已有 |
 
 ---
@@ -264,7 +264,7 @@ agent-spring-boot-starter -> core, model
 | agent-mcp | MCP HTTP/SSE Transport | [-] | Stage 6.2（2026-09-16）：SseTransport 2024-11-05 SSE 方言 + server 信任三级 + 宿主认证适配器 + schema 校验接入；Streamable-HTTP 方言未实现（诚实 gap） |
 | agent-chat | 房间引擎（选人/拼上下文/流式） | [x] | 16 测试文件，Moonlit 166/166 消费验证 |
 | agent-observability | 五指标 HealthPipeline | [x] | E7 19/19 |
-| agent-observability | OTel Span / Micrometer | [ ] | Stage 7 |
+| agent-observability | OTel Span / Prometheus 出口 | [x] | Stage 7（2026-09-16）：agent-otel-export span adapter（SDK 仅 test scope，D9）+ PrometheusTextSink 零依赖 0.0.4 + JsonlMetricsSink + PersistentRunRegistry + BudgetedModelClient/ToolExecutor 预算自动接线 + online 包（OnlineMetrics/OnlineSampler/VersionComparator/DriftDetector/UnifiedEvalReport）+ ops 包（OpsEventBus/OpsEventFactories/AnomalyLocalizer），模块 271/271；gap：Micrometer adapter、Memory/Sandbox/MCP/A2A span 未做 |
 | agent-spring-boot-starter | 自动配置 | [-] | Profile（secure/test/unsafe）Stage 8.2 |
 | agent-plugin | SPI 加载/卸载/重载 | [x] | Stage 6.4（2026-09-16）：PluginJarLoader（checksum 门 + per-jar classloader + SPI 域隔离）+ PluginManifest 宿主权限声明 + registry 并发/回滚/命名空间隔离，42/42（PluginJarLoaderTest 5 真实 javac+jar + HardeningTest 8）；多版本共存与 module layer 禁闭未做（v1 边界） |
 

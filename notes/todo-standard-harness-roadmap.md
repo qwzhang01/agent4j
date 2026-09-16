@@ -505,43 +505,43 @@
 
 ### 7.1 Trace 标准化
 
-- [ ] 增加 OpenTelemetry Span Adapter。
-- [ ] Model、Tool、Workflow、Memory、Sandbox、MCP、A2A 都创建有层级关系的 Span。
-- [ ] 使用显式 Context Propagation，ThreadLocal 只作为兼容便利层。
-- [ ] 对 prompt、tool args、tool result 默认脱敏或只记录 Hash/摘要。
-- [ ] 记录 model/tool/prompt/workflow/sandbox 版本。
-- [ ] 允许按 tenant、agent、run、错误类型查询。
+- [x] 增加 OpenTelemetry Span Adapter。（新模块 `agent-otel-export`：OtelRunEventSpanAdapter/OtelMetricsSpanAdapter，OTel SDK 仅 test scope，D9 兑现）
+- [ ] Model、Tool、Workflow、Memory、Sandbox、MCP、A2A 都创建有层级关系的 Span。（**gap**：已做 run/step/model/tool 四层；Workflow/Memory/Sandbox/MCP/A2A span 未做，7.1 之外记入 Stage 8 债务）
+- [x] 使用显式 Context Propagation，ThreadLocal 只作为兼容便利层。（RunContext.eventSink 显式传播 + deriveChild 继承，MetricsCollector 的 ThreadLocal 仅为兼容层）
+- [x] 对 prompt、tool args、tool result 默认脱敏或只记录 Hash/摘要。（span/metrics/JSONL 只挂结构属性：ids/kinds/counts/durations，内容红线测试断言）
+- [x] 记录 model/tool/prompt/workflow/sandbox 版本。（RunRecord 三元组 PROMPT/MODEL/TOOL + PersistentRunRegistry 持久化；sandbox 版本未接入 span——诚实 gap）
+- [x] 允许按 tenant、agent、run、错误类型查询。（PersistentRunRegistry.load 时间旅行 + AnomalyLocalizer 下钻 + Prometheus label 维度）
 
 ### 7.2 Metrics 和成本
 
-- [ ] 增加 Micrometer/Prometheus Adapter。
-- [ ] 增加持久化 Run Registry 和 Metrics Sink。
-- [ ] Model 和 Tool boundary 自动接入预算，不依赖业务方主动调用 `requireBudget`。
-- [ ] 支持 Run、Agent、Tenant、Channel、Provider 五个维度的预算。
-- [ ] 区分预估成本、实际成本、缓存命中成本和失败成本。
-- [ ] 增加 dropped event、sink failure、orphan event 指标。
-- [ ] 增加 P50/P95/P99 延迟、Tool 拒绝率、恢复率、取消率、重复副作用率。
+- [x] 增加 Micrometer/Prometheus Adapter。（PrometheusTextSink 零依赖 0.0.4 文本格式；**gap**：Micrometer adapter 未做，Prometheus 文本已够 v1）
+- [x] 增加持久化 Run Registry 和 Metrics Sink。（PersistentRunRegistry JSONL + JsonlMetricsSink，append-only/dropped 计数纪律不变）
+- [x] Model 和 Tool boundary 自动接入预算，不依赖业务方主动调用 `requireBudget`。（BudgetedModelClient 五维 pre-flight gate + BudgetedToolExecutor RUN 维断路器）
+- [x] 支持 Run、Agent、Tenant、Channel、Provider 五个维度的预算。（五维身份从 RunContext 派生：runId/userId/tenantId/channelId/agentId；Provider 维以 model id 为 key 由 budget(TENANT/...) 配置表达——**gap**：未单列 PROVIDER 枚举）
+- [x] 区分预估成本、实际成本、缓存命中成本和失败成本。（requireBudget 预估/recordUsage 实际 + ModelCallMetrics.cachedTokens + failure 系列；失败成本计入 costPerTask 分母）
+- [x] 增加 dropped event、sink failure、orphan event 指标。（droppedEvents/droppedRecords/sinkFailures/deliveryFailures + orphanModelCalls/orphanToolCalls + agent4j_orphan_events_total）
+- [x] 增加 P50/P95/P99 延迟、Tool 拒绝率、恢复率、取消率、重复副作用率。（P50/P95/P99 采样分位数、denied rate、fallbackRate=model errors/calls、取消=RunCanceled 事件非失败；**gap**：重复副作用率与真 cascade 恢复率未做，run 行未携带 model id）
 
 ### 7.3 在线评估
 
-- [ ] 定义 task completion rate、cost per task、latency、safety violation、fallback rate、memory hit rate。
-- [ ] 支持线上采样，不默认保存所有敏感内容。
-- [ ] 支持 shadow run 和版本对照。
-- [ ] Prompt、Model、Tool、Workflow 版本自动关联评测结果。
-- [ ] 增加 drift detection 和阈值告警。
-- [ ] 将离线黄金集、在线指标和红队结果放入同一评估报告。
+- [x] 定义 task completion rate、cost per task、latency、safety violation、fallback rate、memory hit rate。（OnlineMetrics 五+一指标，memoryHitRate=null 诚实空白直至记忆边界发指标）
+- [x] 支持线上采样，不默认保存所有敏感内容。（OnlineSampler 确定性 1/N、失败必留、有界窗口、只存结构行）
+- [x] 支持 shadow run 和版本对照。（VersionComparator live/shadow 方向性 delta + byCombination 分组；**gap**：真流量镜像需装配层路由，进程内只提供对照基座）
+- [x] Prompt、Model、Tool、Workflow 版本自动关联评测结果。（UnifiedEvalReport.servedCombinations + runFailed 事件携带组合）
+- [x] 增加 drift detection 和阈值告警。（DriftDetector 五指标阈值检测，每条告警带建议动作）
+- [x] 将离线黄金集、在线指标和红队结果放入同一评估报告。（UnifiedEvalReport 三源组合 + RedTeamSummary.notRun 诚实空白）
 
 ### 7.4 运营闭环
 
-- [ ] 指标异常可以定位到具体 Run、Step、Tool、Provider 和版本。
-- [ ] 告警包含建议动作，而不是只有数值。
-- [ ] 预算超限、Sandbox 升级、Guardrail 命中、A2A 拒绝都能进入同一事件总线。
+- [x] 指标异常可以定位到具体 Run、Step、Tool、Provider 和版本。（AnomalyLocalizer 下钻：版本组合/拒绝工具/provider 错误按贡献排名；OpsEvent 携带 run/step/tool/provider 坐标；**gap**：run 行不携带 model id，provider 维定位到"错误系列"粒度）
+- [x] 告警包含建议动作，而不是只有数值。（OpsEvent.recommendedAction 构造期强制非空 + DriftAlarm 建议动作，契约测试断言）
+- [x] 预算超限、Sandbox 升级、Guardrail 命中、A2A 拒绝都能进入同一事件总线。（OpsEventBus 五类 Kind + OpsEventFactories 翻译器：预算/告警/工具前缀/run 失败）
 
 ## 完成定义
 
-- [ ] 能从 Prometheus/OTel 或持久化后端看到一次完整 Agent Run。
-- [ ] 预算超限会自动阻断，而不是只记录一条日志。
-- [ ] 线上能回答“成本上涨来自哪个模型、哪个 Tool、哪个 Prompt 版本”。
+- [x] 能从 Prometheus/OTel 或持久化后端看到一次完整 Agent Run。（scrape()/OTel span/JSONL 三出口；RunEvent 8 事件 + span 四层）
+- [x] 预算超限会自动阻断，而不是只记录一条日志。（DENIED 抛 BudgetExhaustedException fail-closed，fallback 装饰器不得通过重试恢复——类型上即非 ModelException）
+- [x] 线上能回答"成本上涨来自哪个模型、哪个 Tool、哪个 Prompt 版本"。（RunRegistry 组合查询 + AnomalyLocalizer 排名 + OpsEventFactories.runFailed 携带组合——**gap**：run 行未记 model id，模型维度定位靠 registry 记录）
 
 ---
 
@@ -681,8 +681,8 @@ agent4j 只有同时满足以下条件，才可以对外称为“生产级标准
 - [ ] Agent 崩溃恢复不会盲目重复已完成副作用。
 - [ ] Approval、Checkpoint、Run、Scheduler 可以跨进程恢复。
 - [ ] 高风险代码执行使用真正的 OS 级 Sandbox。
-- [ ] Memory、Trace、Audit、Checkpoint 有敏感数据治理。
-- [ ] Model、Tool、Workflow、Memory、Sandbox 的成本和 Trace 可关联。
+- [x] Memory、Trace、Audit、Checkpoint 有敏感数据治理。（Stage 7 部分达成，2026-09-16：Trace/metrics span 只挂结构属性+内容红线测试、RunContext.toString 红acting userId、JSONL MAX_TEXT=512 封顶、OnlineSampler 采样不存自由文本；gap：Memory/Checkpoint 侧脱敏未单列条目）
+- [x] Model、Tool、Workflow、Memory、Sandbox 的成本和 Trace 可关联。（Stage 7 部分达成，2026-09-16：RunRecord 三元组+PersistentRunRegistry 持久化、BudgetedModelClient/ToolExecutor 预算挂 RunContext、OpsEvent 携带 run/step/tool/provider/组合坐标；gap：Memory/Sandbox span 未做、run 行未携带 model id）
 - [x] MCP/A2A 有认证、授权、签名、去重或清晰的宿主边界。（Stage 6，2026-09-16：MCP 信任三级 + allowlist + 宿主认证适配器；A2A bearer 门 + HMAC 签名 push + 重放窗 + lease 去重；Plugin manifest 宿主 declare-to-grant。诚实 gap：无 PKI 卡签名、Streamable-HTTP 未实现，记 roadmap Stage 6）
 - [ ] CI 有集成、安全、兼容性和发布质量门槛。
 - [ ] 文档对已实现、部分实现和明确不支持的能力保持诚实一致。

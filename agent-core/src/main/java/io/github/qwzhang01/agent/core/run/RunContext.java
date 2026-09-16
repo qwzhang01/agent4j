@@ -3,6 +3,7 @@ package io.github.qwzhang01.agent.core.run;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Immutable execution context for one run (Stage 1.1 of the harness roadmap).
@@ -31,6 +32,15 @@ import java.util.UUID;
  * requires re-entering through a real entry point - which is the host's
  * trust boundary, not the tool's.
  * <p>
+ * <b>Lifecycle event sink (Stage 7.1).</b> {@code eventSink} is the
+ * explicit-propagation channel for {@link RunEvent}s: the entry adapter
+ * hands it in at boundary construction, the loop pushes the eight
+ * lifecycle facts into it, child contexts inherit it via
+ * {@link #deriveChild} so a whole trace lands on one sink. Null = no
+ * lifecycle telemetry (legacy behavior, bit-for-bit). This is the
+ * mechanism of record; any ThreadLocal broadcaster stays a compatibility
+ * convenience (RunEvent's own dispatch contract, Stage 1.3).
+ * <p>
  * <b>Sensitive fields (roadmap 1.1: safe logging format).</b> {@code toString}
  * redacts userId and never prints the cancellation token: logs may carry
  * runId/traceId/tenantId freely (they are correlation keys, not
@@ -51,7 +61,8 @@ public record RunContext(
         RunBudget budget,
         IdempotencyScope idempotencyScope,
         RunIdentity identity,
-        Set<String> capabilities
+        Set<String> capabilities,
+        Consumer<RunEvent> eventSink
 ) {
 
     /** A context with no tenant/user identity (tests, local one-shots). */
@@ -148,6 +159,7 @@ public record RunContext(
         private IdempotencyScope idempotencyScope;
         private RunIdentity identity;
         private Set<String> capabilities = Set.of();
+        private java.util.function.Consumer<RunEvent> eventSink;
 
         private Builder() {
         }
@@ -167,6 +179,7 @@ public record RunContext(
             this.idempotencyScope = from.idempotencyScope;
             this.identity = from.identity;
             this.capabilities = from.capabilities;
+            this.eventSink = from.eventSink;
         }
 
         public Builder runId(String runId) {
@@ -239,6 +252,12 @@ public record RunContext(
             return this;
         }
 
+        /** Lifecycle event sink (Stage 7.1): the loop pushes RunEvents here. */
+        public Builder eventSink(java.util.function.Consumer<RunEvent> eventSink) {
+            this.eventSink = eventSink;
+            return this;
+        }
+
         /** Fresh runId + traceId (used by deriveChild). */
         private Builder generateIds() {
             this.runId = UUID.randomUUID().toString();
@@ -264,7 +283,8 @@ public record RunContext(
                     budget,
                     idempotencyScope,
                     identity,
-                    capabilities);
+                    capabilities,
+                    eventSink);
         }
     }
 }

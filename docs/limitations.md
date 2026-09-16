@@ -23,7 +23,7 @@
 | MCP Streamable-HTTP、完整 OAuth 客户端流、resources/prompts 能力 | MCP 客户端：stdio + HTTP/SSE transport（2024-11-05 SSE 方言）；server 信任三级（TRUSTED/RESTRICTED/UNTRUSTED，缺席即拒）+ allowlist + 宿主认证适配器（bearer/staticToken/refreshable）+ 入口 schema 结构校验；可连官方 filesystem server |
 | A2A 卡片签名、外部第三方对端互操作 | A2A **HTTP** 双向：`HttpA2AClient`（`message/send` / `tasks/get` / 卡片发现 / `message/stream` SSE / webhook 推送 / input-required 续跑）+ `HttpA2AServer`（Agent 包成端点：入站净化 + 可选 bearer 门（恒时比对）+ HMAC-SHA256 签名 webhook 推送 + 5 分钟时间窗 + nonce 重放缓存）；任务存储走可插拔 `A2ATaskStore` 接口（默认内存实现，可换持久化 store），共享 store 跨 server 重启任务存活已测，lease 语义支撑跨实例认领；互操作验证 = 自家两端回环 + JDK HttpServer 模拟第三方言，无外部实现 |
 | 真 Git | `agent-coding` 是工作区 + 补丁 + 命令白名单 + 有界修复环，不封装 Git |
-| OpenTelemetry SDK | `agent-observability` 自管指标 / 预算 / 路由 / 评估 / 版本三元组 |
+| OpenTelemetry SDK 进核心 | `agent-otel-export` 薄壳模块（Stage 7.1）已提供 RunEvent/Metrics→OTel span 翻译（opentelemetry-api compile、SDK 仅 test scope 验证）；`agent-observability` 自管指标 / 预算 / 路由 / 评估 / 版本三元组不变，SDK 不进任何核心模块（D9）；Workflow/Memory/Sandbox/MCP/A2A span 与 Micrometer adapter 未做 |
 | Mini VERL 训练 | `agent-trace-export` 导出轨迹 JSONL 与 DPO 偏好，训练环不在库内 |
 | LLM-as-judge | 评估走规则 / 失败样本回归集，不用模型当裁判 |
 

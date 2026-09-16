@@ -59,6 +59,7 @@
         <module>agent-chat</module>
         <module>agent-coding</module>
         <module>agent-observability</module>
+        <module>agent-otel-export</module>
         <module>agent-spring-boot-starter</module>
         <module>examples</module>
     </modules>
@@ -71,6 +72,7 @@
         <slf4j.version>2.0.13</slf4j.version>
         <lombok.version>1.18.34</lombok.version>
         <junit.version>5.10.3</junit.version>
+        <opentelemetry.version>1.44.1</opentelemetry.version>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
         <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
         <!-- Daily CI stays green if javadoc is noisy; release profile flips this to true. -->
@@ -179,6 +181,17 @@
                 <groupId>io.github.qwzhang01</groupId>
                 <artifactId>agent-observability</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qwzhang01</groupId>
+                <artifactId>agent-otel-export</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- OTel API pinned for agent-otel-export (SDK stays runtime-provided) -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api</artifactId>
+                <version>${opentelemetry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.qwzhang01</groupId>
