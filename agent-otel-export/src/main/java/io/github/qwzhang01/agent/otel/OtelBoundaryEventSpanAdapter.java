@@ -28,13 +28,18 @@ import java.util.function.Consumer;
  *   <li>{@code agent.model.serving} span per
  *       {@link BoundaryEvent.ModelServingFinished} (the host-facing aggregate;
  *       the loop-facing twin is the metrics adapter's {@code agent.model}).</li>
+ *   <li>{@code agent.mcp} span per {@link BoundaryEvent.McpToolCallFinished};
+ *       {@link BoundaryEvent.McpToolCallFailed} is a one-shot ERROR span —
+ *       a refusal is an observable outcome, not a gap (harness batch 7).</li>
+ *   <li>{@code agent.a2a} span per {@link BoundaryEvent.A2ATaskSent};
+ *       {@link BoundaryEvent.A2ATaskFailed} likewise one-shot ERROR.</li>
  * </ul>
  * Workflow spans come from {@link OtelRunEventSpanAdapter} (run/step); the
  * Model loop path comes from {@link OtelMetricsSpanAdapter}. MCP and A2A
- * spans are NOT here: those boundaries do not yet emit BoundaryEvents (no
- * emitter exists upstream); they land with their respective batches (MCP
- * capability negotiation, A2A trusted-source) when the emitters do. This
- * adapter stays honest about what the contracts actually carry.
+ * spans land here since harness batch 7 wired the upstream emitters
+ * (McpToolAdapter / InProcessA2AClient); the HTTP A2A client's emitter and
+ * trace-context propagation across servers remain open (see limitations).
+ * This adapter stays honest about what the contracts actually carry.
  * <p>
  * Structural-attribute discipline is identical to the sibling adapters:
  * ids, kinds, counts, durations - never memory content, approval payloads,
@@ -57,6 +62,10 @@ public final class OtelBoundaryEventSpanAdapter implements Consumer<BoundaryEven
     public static final String APPROVAL_SPAN_NAME = "agent.approval";
     /** Span name for the host-facing model serving aggregate. */
     public static final String MODEL_SERVING_SPAN_NAME = "agent.model.serving";
+    /** Span name for the MCP protocol boundary (harness batch 7). */
+    public static final String MCP_SPAN_NAME = "agent.mcp";
+    /** Span name for the A2A protocol boundary (harness batch 7). */
+    public static final String A2A_SPAN_NAME = "agent.a2a";
 
     private final Tracer tracer;
     private long sinkFailures;
@@ -147,6 +156,34 @@ public final class OtelBoundaryEventSpanAdapter implements Consumer<BoundaryEven
             // durations.
             // Intentionally not translated (see class javadoc).
             sinkFailures = sinkFailures; // no-op, documents the drop decision
+        } else if (event instanceof BoundaryEvent.McpToolCallFinished e) {
+            Span span = tracer.spanBuilder(MCP_SPAN_NAME)
+                    .setSpanKind(SpanKind.CLIENT)
+                    .setAttribute("agent4j.mcp.server", e.serverName())
+                    .setAttribute("agent4j.mcp.tool", e.toolName())
+                    .setAttribute("agent4j.mcp.duration_ms", e.latencyMs())
+                    .startSpan();
+            span.setStatus(StatusCode.OK);
+            span.end();
+        } else if (event instanceof BoundaryEvent.McpToolCallFailed e) {
+            oneShotError(MCP_SPAN_NAME,
+                    "agent4j.mcp.server", e.serverName(),
+                    "agent4j.mcp.tool", e.toolName(),
+                    "agent4j.mcp.failure_kind", e.failureKind());
+        } else if (event instanceof BoundaryEvent.A2ATaskSent e) {
+            Span span = tracer.spanBuilder(A2A_SPAN_NAME)
+                    .setSpanKind(SpanKind.CLIENT)
+                    .setAttribute("agent4j.a2a.task_id", e.taskId())
+                    .setAttribute("agent4j.a2a.recipient", e.recipient())
+                    .setAttribute("agent4j.a2a.duration_ms", e.latencyMs())
+                    .startSpan();
+            span.setStatus(StatusCode.OK);
+            span.end();
+        } else if (event instanceof BoundaryEvent.A2ATaskFailed e) {
+            oneShotError(A2A_SPAN_NAME,
+                    "agent4j.a2a.task_id", e.taskId(),
+                    "agent4j.a2a.recipient", e.recipient(),
+                    "agent4j.a2a.failure_kind", e.failureKind());
         }
     }
 

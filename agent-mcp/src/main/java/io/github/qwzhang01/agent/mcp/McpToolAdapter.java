@@ -1,14 +1,18 @@
 package io.github.qwzhang01.agent.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.qwzhang01.agent.core.event.BoundaryEvent;
 import io.github.qwzhang01.agent.core.run.RunContext;
+import io.github.qwzhang01.agent.core.run.RunCancelledException;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.core.tool.ToolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Adapts an MCP tool (remote, served by an MCP server) to our local {@link Tool} interface (Stage 10 D1).
@@ -32,14 +36,40 @@ public class McpToolAdapter implements Tool {
 
     private final McpClient client;
     private final McpToolSchema schema;
+    private final Consumer<BoundaryEvent> eventSink;
 
     /**
      * @param client the connected MCP client (used for remote tool calls)
      * @param schema the tool definition received from the server via tools/list
      */
     public McpToolAdapter(McpClient client, McpToolSchema schema) {
+        this(client, schema, null);
+    }
+
+    /**
+     * Full wiring with the boundary telemetry sink (harness batch 7): one
+     * {@link BoundaryEvent.McpBoundaryEvent} per tool call — success or
+     * failure — emitted at the protocol boundary. The sink is a side
+     * channel: a throwing sink is swallowed with a counted warn and never
+     * breaks the call (the same discipline as every other boundary emitter).
+     *
+     * @param eventSink consumer of boundary telemetry (null = no events,
+     *                  legacy behavior byte-for-byte)
+     */
+    public McpToolAdapter(McpClient client, McpToolSchema schema,
+                          Consumer<BoundaryEvent> eventSink) {
         this.client = Objects.requireNonNull(client, "client must not be null");
         this.schema = Objects.requireNonNull(schema, "schema must not be null");
+        this.eventSink = eventSink != null ? eventSink : e -> { };
+    }
+
+    /** Side-channel emission: telemetry must never break the tool call. */
+    private void emit(BoundaryEvent event) {
+        try {
+            eventSink.accept(event);
+        } catch (RuntimeException e) {
+            log.warn("[McpToolAdapter] event sink failed (side channel, swallowed): {}", e);
+        }
     }
 
     @Override
@@ -96,15 +126,36 @@ public class McpToolAdapter implements Tool {
     public String execute(JsonNode arguments, RunContext ctx) throws ToolException {
         log.debug("Calling MCP tool '{}' on server '{}'",
                 schema.name(), client.getDescriptor().name());
+        long start = System.currentTimeMillis();
+        String serverName = client.getDescriptor().name();
         // Stage 6.2: validate arguments against the server-declared schema
         // BEFORE the wire — malformed args must fail here, not at the remote
         // server (correctness + injection surface).
-        McpSchemaValidator.validateOrThrow(schema.inputSchema(), arguments);
+        try {
+            McpSchemaValidator.validateOrThrow(schema.inputSchema(), arguments);
+        } catch (IllegalArgumentException e) {
+            emit(new BoundaryEvent.McpToolCallFailed(
+                    serverName, schema.name(), "SCHEMA_INVALID", Instant.now()));
+            throw e;
+        }
         io.github.qwzhang01.agent.core.run.CancellationToken token =
                 ctx != null ? ctx.cancellationToken() : null;
         try {
-            return client.callTool(schema.name(), arguments, token);
+            String result = client.callTool(schema.name(), arguments, token);
+            emit(new BoundaryEvent.McpToolCallFinished(
+                    serverName, schema.name(),
+                    System.currentTimeMillis() - start, Instant.now()));
+            return result;
+        } catch (RunCancelledException e) {
+            // Cancellation is control flow, not a boundary failure — but it
+            // IS an observable outcome of the protocol call: the wire was
+            // abandoned mid-flight. Structure only, never a rethrow here.
+            emit(new BoundaryEvent.McpToolCallFailed(
+                    serverName, schema.name(), "CANCELLED", Instant.now()));
+            throw e;
         } catch (IOException e) {
+            emit(new BoundaryEvent.McpToolCallFailed(
+                    serverName, schema.name(), "TRANSPORT", Instant.now()));
             throw new ToolException(
                     "MCP tool call failed for '" + schema.name() + "': " + e.getMessage(), e);
         }

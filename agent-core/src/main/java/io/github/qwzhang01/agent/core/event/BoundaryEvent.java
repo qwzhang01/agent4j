@@ -29,7 +29,8 @@ import java.time.Instant;
  */
 public sealed interface BoundaryEvent permits
         BoundaryEvent.MemoryBoundaryEvent, BoundaryEvent.ApprovalBoundaryEvent,
-        BoundaryEvent.SandboxBoundaryEvent, BoundaryEvent.ModelBoundaryEvent {
+        BoundaryEvent.SandboxBoundaryEvent, BoundaryEvent.ModelBoundaryEvent,
+        BoundaryEvent.McpBoundaryEvent, BoundaryEvent.A2ABoundaryEvent {
 
     /** Boundary telemetry schema version (1 since harness 4.4). */
     int SCHEMA_VERSION = 1;
@@ -181,5 +182,86 @@ public sealed interface BoundaryEvent permits
     record ModelServingFinished(String modelId, long latencyMs, int tokenCount,
                                 boolean failed, String failureKind, Instant occurredAt)
             implements ModelBoundaryEvent {
+    }
+
+    // ============ MCP boundary (harness batch 7: the emitter batch) ============
+
+    /**
+     * The MCP boundary called (or failed to call) a remote tool. One event
+     * per {@code McpClient.callTool} execution — the host-facing aggregate
+     * for the protocol boundary, mirroring {@link ModelServingFinished}'s
+     * shape: the span opens at finish when latency and outcome are known,
+     * never fabricating a duration.
+     * <p>
+     * Covers both transport shapes (stdio subprocess / SSE remote server):
+     * the boundary fact is "a tool crossed the MCP protocol line and how it
+     * went", not which transport carried it.
+     */
+    sealed interface McpBoundaryEvent extends BoundaryEvent permits
+            McpToolCallFinished, McpToolCallFailed {
+    }
+
+    /**
+     * @param serverName the MCP server's name (descriptor identity, an id)
+     * @param toolName   the tool that was called (an id, never args/results)
+     * @param latencyMs  wall-clock duration of the call
+     */
+    record McpToolCallFinished(String serverName, String toolName, long latencyMs,
+                               Instant occurredAt)
+            implements McpBoundaryEvent {
+    }
+
+    /**
+     * The call never completed: schema refusal before the wire, transport
+     * death mid-call, protocol error, or a cancellation signal. The
+     * failureKind is structural ("SCHEMA_INVALID", "TRANSPORT", "TIMEOUT",
+     * "CANCELLED", "PROTOCOL"), never tool output or args content.
+     *
+     * @param serverName  the MCP server's name
+     * @param toolName    the tool that was attempted
+     * @param failureKind structural failure classification
+     */
+    record McpToolCallFailed(String serverName, String toolName, String failureKind,
+                             Instant occurredAt)
+            implements McpBoundaryEvent {
+    }
+
+    // ============ A2A boundary (harness batch 7: the emitter batch) ============
+
+    /**
+     * The A2A boundary delegated (or failed to delegate) a task. One event
+     * per {@code A2AClient.sendTask} execution — the protocol boundary twin
+     * of the MCP family, covering both the in-process and HTTP transports
+     * (which transport carried the task is the client's business; the
+     * boundary fact is "a task crossed the A2A protocol line and how it
+     * went").
+     */
+    sealed interface A2ABoundaryEvent extends BoundaryEvent permits
+            A2ATaskSent, A2ATaskFailed {
+    }
+
+    /**
+     * @param taskId    the task's id (sender-assigned pre-wire, an id)
+     * @param recipient the recipient agent's name (an id, never payload)
+     * @param latencyMs wall-clock duration of the delegation
+     */
+    record A2ATaskSent(String taskId, String recipient, long latencyMs,
+                       Instant occurredAt)
+            implements A2ABoundaryEvent {
+    }
+
+    /**
+     * The delegation never completed: unknown recipient, the peer agent
+     * ended in an error state, transport/protocol failure. The failureKind
+     * is structural ("UNKNOWN_RECIPIENT", "AGENT_FAILED", "TRANSPORT",
+     * "PROTOCOL"), never task payload.
+     *
+     * @param taskId      the task that was attempted
+     * @param recipient   the intended recipient
+     * @param failureKind structural failure classification
+     */
+    record A2ATaskFailed(String taskId, String recipient, String failureKind,
+                         Instant occurredAt)
+            implements A2ABoundaryEvent {
     }
 }

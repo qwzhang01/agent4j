@@ -27,10 +27,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * stops renewing; a worker observing {@link #lost()} between work units
  * should abandon the task rather than keep spending on it.
  * <p>
- * One daemon thread per holder (v1). Hosts claiming many tasks
- * concurrently can batch on their own executor — the primitive {@link
- * JdbcTaskQueue#heartbeat(String)} is the API; this class is the
- * convenience.
+ * Two thread shapes (harness batch 7): the legacy constructors own ONE
+ * DAEMON THREAD PER HOLDER (fine for a handful of claimed tasks); hosts
+ * claiming many tasks concurrently should hand ONE SHARED
+ * {@link ScheduledExecutorService} to the new constructor — every
+ * holder then rides the pool's threads and {@link #close()} only cancels
+ * its own future, never shuts the shared pool down. The primitive
+ * {@link JdbcTaskQueue#heartbeat(String)} remains the API; this class is
+ * the convenience.
  */
 public final class ClaimedTaskHeartbeat implements AutoCloseable {
 
@@ -39,29 +43,51 @@ public final class ClaimedTaskHeartbeat implements AutoCloseable {
     private final JdbcTaskQueue queue;
     private final String taskId;
     private final ScheduledExecutorService executor;
+    private final boolean ownsExecutor;
     private final ScheduledFuture<?> future;
     private final AtomicBoolean lost = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicLong errors = new AtomicLong();
 
     /**
-     * Renew {@code taskId}'s lease every {@code intervalMillis}. The
-     * first renewal fires after one interval (a fresh claim already
-     * stamped the lease clock at claim time).
+     * Renew {@code taskId}'s lease every {@code intervalMillis} on a
+     * dedicated daemon thread. The first renewal fires after one interval
+     * (a fresh claim already stamped the lease clock at claim time).
      */
     public ClaimedTaskHeartbeat(JdbcTaskQueue queue, String taskId, long intervalMillis) {
+        this(queue, taskId, intervalMillis, null);
+    }
+
+    /**
+     * Shared-pool shape (harness batch 7): renew on the GIVEN executor —
+     * the holder never spawns a thread of its own and {@link #close()}
+     * never shuts the pool down. The pool must outlive every holder on it
+     * (the host owns its lifecycle). A null executor falls back to the
+     * dedicated-thread shape.
+     *
+     * @param executor the host-owned shared pool; must not be shut down
+     *                 while any holder is alive
+     */
+    public ClaimedTaskHeartbeat(JdbcTaskQueue queue, String taskId, long intervalMillis,
+                                ScheduledExecutorService executor) {
         this.queue = Objects.requireNonNull(queue);
         this.taskId = Objects.requireNonNull(taskId);
         if (intervalMillis <= 0) {
             throw new IllegalArgumentException(
                     "heartbeat interval must be positive: " + intervalMillis);
         }
-        this.executor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "agent4j-task-heartbeat-" + taskId);
-            t.setDaemon(true);
-            return t;
-        });
-        this.future = executor.scheduleWithFixedDelay(this::tick, intervalMillis,
+        if (executor != null) {
+            this.executor = executor;
+            this.ownsExecutor = false;
+        } else {
+            this.executor = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "agent4j-task-heartbeat-" + taskId);
+                t.setDaemon(true);
+                return t;
+            });
+            this.ownsExecutor = true;
+        }
+        this.future = this.executor.scheduleWithFixedDelay(this::tick, intervalMillis,
                 intervalMillis, TimeUnit.MILLISECONDS);
     }
 
@@ -108,12 +134,16 @@ public final class ClaimedTaskHeartbeat implements AutoCloseable {
     /**
      * Stop renewing. The row's lease then ages normally into sweep
      * range (crash cleanup, or a deliberate hand-back). Idempotent.
+     * A shared pool is never shut down here — only the holder's own
+     * future is cancelled; the host owns the pool's lifecycle.
      */
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
             future.cancel(false);
-            executor.shutdownNow();
+            if (ownsExecutor) {
+                executor.shutdownNow();
+            }
         }
     }
 }

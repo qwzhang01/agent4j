@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.qwzhang01.agent.core.agent.Agent;
 import io.github.qwzhang01.agent.core.agent.AgentState;
+import io.github.qwzhang01.agent.core.event.BoundaryEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * In-process implementation of {@link A2AClient} (Stage 11 M11.4, D6).
@@ -38,6 +41,35 @@ public class InProcessA2AClient implements A2AClient {
     private final Map<String, Agent> agents = new ConcurrentHashMap<>();
     private final Map<String, AgentCard> cards = new ConcurrentHashMap<>();
     private final Map<String, A2ATaskStatus> taskStatus = new ConcurrentHashMap<>();
+    private final Consumer<BoundaryEvent> eventSink;
+
+    /** Legacy wiring: no boundary telemetry (harness batch 7 opt-in). */
+    public InProcessA2AClient() {
+        this(null);
+    }
+
+    /**
+     * Full wiring with the boundary telemetry sink (harness batch 7): one
+     * {@link BoundaryEvent.A2ABoundaryEvent} per sendTask — success or
+     * failure — emitted at the protocol boundary. The sink is a side
+     * channel: a throwing sink is swallowed with a counted warn, never
+     * breaks the delegation.
+     *
+     * @param eventSink consumer of boundary telemetry (null = no events)
+     */
+    public InProcessA2AClient(Consumer<BoundaryEvent> eventSink) {
+        this.eventSink = eventSink != null ? eventSink : e -> { };
+    }
+
+    /** Side-channel emission: telemetry must never break the delegation. */
+    private void emit(BoundaryEvent event) {
+        try {
+            eventSink.accept(event);
+        } catch (RuntimeException e) {
+            log.warn("[InProcessA2AClient] event sink failed (side channel, swallowed): {}",
+                    e);
+        }
+    }
 
     /**
      * Register a local agent with an auto-built AgentCard.
@@ -76,9 +108,12 @@ public class InProcessA2AClient implements A2AClient {
     @Override
     public JsonNode sendTask(A2ATask task) {
         Objects.requireNonNull(task, "task must not be null");
+        long start = System.currentTimeMillis();
         Agent agent = agents.get(task.recipient());
         if (agent == null) {
             taskStatus.put(task.taskId(), A2ATaskStatus.FAILED);
+            emit(new BoundaryEvent.A2ATaskFailed(
+                    task.taskId(), task.recipient(), "UNKNOWN_RECIPIENT", Instant.now()));
             throw new IllegalArgumentException(
                     "No agent registered for recipient '" + task.recipient() + "'");
         }
@@ -92,13 +127,25 @@ public class InProcessA2AClient implements A2AClient {
             // The core Agent contract encodes errors in state, not exceptions.
             if (state.getStatus() == AgentState.Status.ERROR
                     || state.getStatus() == AgentState.Status.MAX_STEPS_EXCEEDED) {
+                emit(new BoundaryEvent.A2ATaskFailed(
+                        task.taskId(), task.recipient(), "AGENT_FAILED", Instant.now()));
                 throw new IllegalStateException("A2A task '" + task.taskId()
                         + "' failed on '" + task.recipient() + "': " + state.getLastError());
             }
 
             taskStatus.put(task.taskId(), A2ATaskStatus.COMPLETED);
+            emit(new BoundaryEvent.A2ATaskSent(
+                    task.taskId(), task.recipient(),
+                    System.currentTimeMillis() - start, Instant.now()));
             return MAPPER.createObjectNode().put("output", output);
         } catch (RuntimeException e) {
+            if (!(e instanceof IllegalStateException)
+                    || !e.getMessage().startsWith("A2A task '")) {
+                // The peer agent threw an unexpected runtime failure (not the
+                // encoded-error path above): the delegation still failed.
+                emit(new BoundaryEvent.A2ATaskFailed(
+                        task.taskId(), task.recipient(), "AGENT_FAILED", Instant.now()));
+            }
             taskStatus.put(task.taskId(), A2ATaskStatus.FAILED);
             throw e;
         }

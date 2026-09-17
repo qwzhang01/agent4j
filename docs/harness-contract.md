@@ -233,7 +233,7 @@ agent-spring-boot-starter -> core, model
 | A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；`a2a-it` tag（8.3）：RoundTrip 13 + Protocol 9 + Security 4 = 26 例挂 CI 矩阵 | [-] 已有；外部第三方 A2A 实现互操作待补 |
 | SBOM / License | CycloneDX 聚合 SBOM（每模块 `target/bom.json`）+ `THIRD-PARTY.txt` 随构建生成（8.3） | [ ] grype 漏洞扫描接 CI（`vulnerability-scan` job，anchore/scan-action） |
 | API 兼容 | japicmp `-Papi-compat` 对 0.1.3 基线断言（8.3 闭环：Checkpoint 兼容构造器 + starter shim + 无基线模块显式 skip + 0.1.3 字节码真机链接验证） | [-] 已有；CI `api-compat` job |
-| OpenTelemetry | `agent-otel-export` 薄壳模块（Stage 7.1，2026-09-16）：RunEvent→span 四层（run/step/model/tool）+ 真实 SDK InMemorySpanExporter 测试 7/7；SDK 仅 test scope，核心零新依赖（D9）；2026-09-17 batch 2 补 `OtelBoundaryEventSpanAdapter`：BoundaryEvent 四族→span（agent.memory/agent.sandbox 含 escalate/refuse 变体/agent.approval/agent.model.serving），span 清单达十种，内容红线测试抓住 purpose/reason 自由文本违规并收紧 | [x] 已有；MCP 侧能力协商边界发射器随 batch 3（2026-09-17）具备协商事实，但 MCP/A2A span 仍待 Batch 4 A2A 可信来源批次的边界发射器（不在适配器伪造） |
+| OpenTelemetry | `agent-otel-export` 薄壳模块（Stage 7.1，2026-09-16）：RunEvent→span 四层（run/step/model/tool）+ 真实 SDK InMemorySpanExporter 测试 7/7；SDK 仅 test scope，核心零新依赖（D9）；2026-09-17 batch 2 补 `OtelBoundaryEventSpanAdapter`：BoundaryEvent 四族→span（agent.memory/agent.sandbox 含 escalate/refuse 变体/agent.approval/agent.model.serving），span 清单达十种，内容红线测试抓住 purpose/reason 自由文本违规并收紧；batch 7（2026-09-17）MCP/A2A 面接线：BoundaryEvent 扩两族（McpToolCallFinished/Failed、A2ATaskSent/Failed）+ McpToolAdapter/InProcessA2AClient 边界发射器（旁路纪律、结构属性、legacy 构造器逐字节不变）+ agent.mcp/agent.a2a span，清单达十二种 | [x] 已有；HttpA2AClient 发射器与跨 server trace context 透传（traceparent 跟 JSON-RPC）未做 |
 | GPG/Central 发布 | 流程已定（RELEASING.md） | [x] 已有 |
 
 ---

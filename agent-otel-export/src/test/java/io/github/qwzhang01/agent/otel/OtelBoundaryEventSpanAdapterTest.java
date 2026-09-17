@@ -152,4 +152,62 @@ class OtelBoundaryEventSpanAdapterTest {
                             "no content-level attribute may carry raw text: " + key.getKey()));
         }
     }
+
+    @Test
+    void mcpFamilyProducesClientSpansWithStructure() {
+        OtelBoundaryEventSpanAdapter adapter = new OtelBoundaryEventSpanAdapter(otel);
+        adapter.accept(new BoundaryEvent.McpToolCallFinished(
+                "filesystem", "read_file", 87, Instant.now()));
+        adapter.accept(new BoundaryEvent.McpToolCallFailed(
+                "filesystem", "read_file", "TRANSPORT", Instant.now()));
+
+        assertEquals(2, spans().size());
+        SpanData ok = spans().stream()
+                .filter(s -> s.getName().equals(OtelBoundaryEventSpanAdapter.MCP_SPAN_NAME))
+                .filter(s -> s.getStatus().getStatusCode()
+                        == io.opentelemetry.api.trace.StatusCode.OK)
+                .findFirst().orElseThrow();
+        assertEquals("filesystem", ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.mcp.server")));
+        assertEquals("read_file", ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.mcp.tool")));
+        assertEquals(87L, ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.longKey("agent4j.mcp.duration_ms")));
+
+        SpanData failed = spans().stream()
+                .filter(s -> s.getStatus().getStatusCode()
+                        == io.opentelemetry.api.trace.StatusCode.ERROR)
+                .findFirst().orElseThrow();
+        assertEquals("TRANSPORT", failed.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.mcp.failure_kind")));
+    }
+
+    @Test
+    void a2aFamilyProducesClientSpansWithStructure() {
+        OtelBoundaryEventSpanAdapter adapter = new OtelBoundaryEventSpanAdapter(otel);
+        adapter.accept(new BoundaryEvent.A2ATaskSent(
+                "t-1", "researcher", 210, Instant.now()));
+        adapter.accept(new BoundaryEvent.A2ATaskFailed(
+                "t-2", "ghost", "UNKNOWN_RECIPIENT", Instant.now()));
+
+        assertEquals(2, spans().size());
+        SpanData ok = spans().stream()
+                .filter(s -> s.getName().equals(OtelBoundaryEventSpanAdapter.A2A_SPAN_NAME))
+                .filter(s -> s.getStatus().getStatusCode()
+                        == io.opentelemetry.api.trace.StatusCode.OK)
+                .findFirst().orElseThrow();
+        assertEquals("t-1", ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.a2a.task_id")));
+        assertEquals("researcher", ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.a2a.recipient")));
+        assertEquals(210L, ok.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.longKey("agent4j.a2a.duration_ms")));
+
+        SpanData failed = spans().stream()
+                .filter(s -> s.getStatus().getStatusCode()
+                        == io.opentelemetry.api.trace.StatusCode.ERROR)
+                .findFirst().orElseThrow();
+        assertEquals("UNKNOWN_RECIPIENT", failed.getAttributes().get(
+                io.opentelemetry.api.common.AttributeKey.stringKey("agent4j.a2a.failure_kind")));
+    }
 }
