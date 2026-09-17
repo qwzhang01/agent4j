@@ -7,7 +7,6 @@ package io.github.qwzhang01.agent.sandbox;
  * Each tier adds an isolation layer and raises the startup cost.
  * The right tier is determined by the risk / latency / escape-surface triangle,
  * not by "stronger is always better."
- * <p>
  * <pre>
  *   Tier          Startup     Escape surface              v1 status
  *   ──────────────────────────────────────────────────────────────

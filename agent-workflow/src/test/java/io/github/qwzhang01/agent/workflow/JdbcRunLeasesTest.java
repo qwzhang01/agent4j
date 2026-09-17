@@ -23,6 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class JdbcRunLeasesTest {
 
+    static {
+        // DriverManager's ServiceLoader discovery is racy under in-process
+        // (forkCount=0) runs where module classloaders share one JVM; forcing
+        // H2 class init self-registers the driver regardless of SPI timing.
+        org.h2.Driver.load();
+    }
+
     private Connection conn;
     private RunLeases leases;
 
