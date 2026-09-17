@@ -41,6 +41,14 @@ public class SimpleRateLimiter implements RateLimiter {
         return counter.tryAcquire(maxCallsPerMinute, windowMs);
     }
 
+    @Override
+    public void release(String toolName) {
+        WindowCounter counter = counters.get(toolName);
+        if (counter != null) {
+            counter.release();
+        }
+    }
+
     /**
      * Reset the counter for a tool (for testing).
      */
@@ -69,6 +77,12 @@ public class SimpleRateLimiter implements RateLimiter {
                 count.set(0);
             }
             return count.getAndIncrement() < max;
+        }
+
+        synchronized void release() {
+            if (count.get() > 0) {
+                count.decrementAndGet();
+            }
         }
     }
 }

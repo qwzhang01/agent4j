@@ -207,9 +207,30 @@ public class ContractAwareToolExecutor implements ToolExecutor {
             return envelope.modelVisibleText();
         }
 
+        if (isInnerGovernanceRefusal(result)) {
+            record(ctx, envelopeForGovernanceRefusal(result, toolCall));
+            return result;
+        }
         ToolResult envelope = ToolResult.success(result);
         record(ctx, envelope);
         return result;
+    }
+
+    private static boolean isInnerGovernanceRefusal(String result) {
+        return result != null && (result.startsWith("[DENIED]")
+                || result.startsWith("[WAITING_APPROVAL]")
+                || result.startsWith("[RATE_LIMITED]"));
+    }
+
+    private static ToolResult envelopeForGovernanceRefusal(String result, ToolCall toolCall) {
+        FailureKind kind = result.startsWith("[WAITING_APPROVAL]")
+                ? FailureKind.APPROVAL_WAITING
+                : result.startsWith("[RATE_LIMITED]")
+                    ? FailureKind.RESOURCE_EXHAUSTED
+                    : FailureKind.PERMISSION_DENIED;
+        return new ToolResult(ToolResult.Outcome.BUSINESS_REJECTED, result, kind, result,
+                ToolResult.hashArguments(String.valueOf(toolCall.arguments())),
+                0, null, false);
     }
 
     private boolean deadlineBeforeToolTimeout(RunContext ctx, long timeoutMs) {

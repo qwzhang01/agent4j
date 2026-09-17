@@ -54,7 +54,7 @@ public final class DurableToolApprovalService implements ToolApprovalService {
                     toolCall.name());
             return Verdict.REJECTED;
         }
-        String hash = ToolResult.hashArguments(String.valueOf(toolCall.arguments()));
+        String hash = callHash(toolCall);
         String approvalId = ApprovalRequest.idForToolCall(runId, hash);
         Optional<ApprovalRequest> existing = store.get(approvalId);
         if (existing.isEmpty()) {
@@ -97,10 +97,18 @@ public final class DurableToolApprovalService implements ToolApprovalService {
 
     private ApprovalRequest decide(String runId, ToolCall toolCall, ApprovalStatus target,
                                    String decidedBy, String reason) {
-        String hash = ToolResult.hashArguments(String.valueOf(toolCall.arguments()));
+        String hash = callHash(toolCall);
         String approvalId = ApprovalRequest.idForToolCall(runId, hash);
         ApprovalRequest row = store.get(approvalId)
                 .orElseThrow(() -> new IllegalStateException("No approval request for " + approvalId));
         return store.decide(row, ApprovalDecision.of(decidedBy, reason, row.version()), target);
+    }
+
+    /**
+     * Tool name rides in the hash so two REQUIRES_APPROVAL tools with the
+     * same (or null) arguments in one run never share an approval row.
+     */
+    static String callHash(ToolCall toolCall) {
+        return ToolResult.hashArguments(toolCall.name() + "\n" + toolCall.arguments());
     }
 }

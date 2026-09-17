@@ -87,6 +87,11 @@ public class SimpleAgent implements Agent {
     @Override
     public String resume(AgentState state, RunContext ctx) {
         Objects.requireNonNull(state, "state");
+        if (state.getStatus() == AgentState.Status.WAITING_APPROVAL
+                && (ctx == null || ctx.runId() == null || ctx.runId().isBlank())) {
+            throw new IllegalArgumentException(
+                    "resume of WAITING_APPROVAL requires a RunContext with runId");
+        }
         state.setMaxSteps(config.getMaxSteps());
         loop.execute(config, state, ctx != null ? ctx : RunContext.create());
         return extractFinalAnswer(state);
@@ -117,6 +122,12 @@ public class SimpleAgent implements Agent {
     }
 
     private static String extractFinalAnswer(AgentState state) {
+        // Waiting is not a final answer even if the assistant turn carried
+        // text alongside tool_calls (real providers often do).
+        if (state.getStatus() == AgentState.Status.WAITING_APPROVAL) {
+            return "[Agent waiting for approval]";
+        }
+
         var messages = state.getMessages();
         for (int i = messages.size() - 1; i >= 0; i--) {
             var msg = messages.get(i);
@@ -129,7 +140,6 @@ public class SimpleAgent implements Agent {
             case MAX_STEPS_EXCEEDED -> MAX_STEPS_PLACEHOLDER;
             case ERROR -> "[Agent error: " + state.getLastError() + "]";
             case CANCELLED -> "[Agent run cancelled]";
-            case WAITING_APPROVAL -> "[Agent waiting for approval]";
             default -> "[Agent did not produce a final answer]";
         };
     }

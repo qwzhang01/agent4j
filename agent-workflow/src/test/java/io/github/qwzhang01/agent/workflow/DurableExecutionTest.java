@@ -196,6 +196,39 @@ class DurableExecutionTest {
     }
 
     @Test
+    void ledgerReplayHonorsExplicitNodeJump() {
+        java.util.concurrent.atomic.AtomicInteger fires = new java.util.concurrent.atomic.AtomicInteger();
+        Workflow wf = Workflow.builder("jump-flow").version("1.0")
+                .node(ActionNode.of("a", ctx -> io.github.qwzhang01.agent.workflow.NodeResult.jump(
+                        "b", "from-a-" + fires.incrementAndGet())))
+                .node(ActionNode.of("b", ctx -> "landed-b"))
+                .node(ActionNode.of("c", ctx -> "landed-c"))
+                .edge(Workflow.START, "a")
+                .edge("a", "c")
+                .edge("b", Workflow.END)
+                .edge("c", Workflow.END)
+                .build();
+        SideEffectLedger ledger = new InMemorySideEffectLedger();
+        GraphRuntime runtime = new GraphRuntime().sideEffectLedger(ledger);
+
+        io.github.qwzhang01.agent.workflow.runtime.Run first =
+                new io.github.qwzhang01.agent.workflow.runtime.Run(
+                        "r-jump", wf, WorkflowState.of("x"));
+        ExecutionResult once = runtime.execute(first);
+        assertEquals("landed-b", String.valueOf(once.output()));
+        assertEquals(1, fires.get());
+
+        GraphRuntime replayRuntime = new GraphRuntime().sideEffectLedger(ledger);
+        io.github.qwzhang01.agent.workflow.runtime.Run second =
+                new io.github.qwzhang01.agent.workflow.runtime.Run(
+                        "r-jump", wf, WorkflowState.of("x"));
+        ExecutionResult replayed = replayRuntime.execute(second);
+        assertEquals(1, fires.get(), "ledger hit must not re-execute the jumping node");
+        assertEquals("landed-b", String.valueOf(replayed.output()),
+                "replay must keep NodeResult.jump, not fall through the default edge");
+    }
+
+    @Test
     void recoverySnapshotAssemblesDiagnostics() {
         RunStore store = new InMemoryRunStore();
         SideEffectLedger ledger = new InMemorySideEffectLedger();

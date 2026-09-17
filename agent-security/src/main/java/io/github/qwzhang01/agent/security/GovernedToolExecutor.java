@@ -100,6 +100,11 @@ public class GovernedToolExecutor implements ToolExecutor {
             if (verdict == ToolApprovalService.Verdict.PENDING) {
                 String reason = "Tool '" + toolCall.name() + "' waiting for approval";
                 log.info("[Security] {}", reason);
+                // The wait is not an execution: refund the rate-limit token
+                // taken above so resume can still acquire after approval.
+                if (rateLimiter != null) {
+                    rateLimiter.release(toolCall.name());
+                }
                 return "[WAITING_APPROVAL] " + reason;
             }
             if (verdict != ToolApprovalService.Verdict.APPROVED) {

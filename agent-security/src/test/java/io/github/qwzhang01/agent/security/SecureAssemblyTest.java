@@ -7,10 +7,13 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.core.model.ToolCall;
 import io.github.qwzhang01.agent.core.run.RunContext;
+import io.github.qwzhang01.agent.core.run.FailureKind;
 import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.core.tool.Tool;
+import io.github.qwzhang01.agent.core.tool.contract.ContractAwareToolExecutor;
 import io.github.qwzhang01.agent.core.tool.contract.SideEffectLevel;
 import io.github.qwzhang01.agent.core.tool.contract.ToolDefinition;
+import io.github.qwzhang01.agent.core.tool.contract.ToolResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -162,6 +165,25 @@ class SecureAssemblyTest {
         agent.run("delete it", new io.github.qwzhang01.agent.core.agent.AgentState());
         assertEquals(0, delete.executions.get(),
                 "deny-on-absence: zero-config destructive tools must not run");
+    }
+
+    @Test
+    void governedDenialIsNotRecordedAsSuccess() {
+        InMemoryToolRegistry registry = new InMemoryToolRegistry();
+        DestructiveTool delete = new DestructiveTool();
+        registry.register(delete);
+        ContractAwareToolExecutor stack =
+                (ContractAwareToolExecutor) SecureAgentBuilder.secure("secure-agent",
+                                new ToolCallingClient("delete_file"), registry)
+                        .buildConfig()
+                        .getToolExecutor();
+        RunContext ctx = RunContext.builder().runId("run-deny").build();
+        String out = stack.execute(new ToolCall("c1", "delete_file", null), ctx);
+        assertTrue(out.startsWith("[DENIED]"), out);
+        assertEquals(0, delete.executions.get());
+        ToolResult envelope = stack.lastResult("run-deny");
+        assertEquals(ToolResult.Outcome.BUSINESS_REJECTED, envelope.outcome());
+        assertEquals(FailureKind.PERMISSION_DENIED, envelope.failureKind());
     }
 
     @Test

@@ -15,4 +15,13 @@ public interface RateLimiter {
      * @return true if allowed, false if rate limit exceeded
      */
     boolean tryAcquire(String toolName);
+
+    /**
+     * Give back a permit previously taken by {@link #tryAcquire}. Default is
+     * a no-op so hosts with one-way limiters stay compatible. Used when a
+     * REQUIRES_APPROVAL call parks as PENDING — the wait must not spend the
+     * quota that the later approved execute still needs.
+     */
+    default void release(String toolName) {
+    }
 }

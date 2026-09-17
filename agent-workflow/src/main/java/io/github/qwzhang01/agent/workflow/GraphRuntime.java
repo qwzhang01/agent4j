@@ -201,7 +201,12 @@ public class GraphRuntime {
                             System.currentTimeMillis(), System.currentTimeMillis()));
                     lastOutput = replayed;
                     log.info("[{}] Node '{}' replayed from side-effect ledger", runId, cursor);
-                    cursor = route(workflow, node.id(), null, state);
+                    // idempotencyKey holds the recorded NodeResult.next()
+                    // (empty = no explicit jump; route falls through to edges).
+                    String recordedNext = hit.get().idempotencyKey();
+                    cursor = route(workflow, node.id(),
+                            recordedNext == null || recordedNext.isBlank() ? null : recordedNext,
+                            state);
                     continue;
                 }
             }
@@ -271,7 +276,7 @@ public class GraphRuntime {
                     outcome.attempts(), summarize(result.output()),
                     nodeStart, System.currentTimeMillis()));
             lastOutput = result.output();
-            recordLedger(runId, node.id(), result.output());
+            recordLedger(runId, node.id(), result.output(), result.next());
 
             timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);
             if (timedOut != null) {
@@ -292,16 +297,19 @@ public class GraphRuntime {
         return ExecutionResult.success(lastOutput, state);
     }
 
-    private void recordLedger(String runId, String nodeId, Object output) {
+    private void recordLedger(String runId, String nodeId, Object output, String next) {
         if (ledger == null || runId == null || runId.isBlank()) {
             return;
         }
         String rendered = output == null ? "null" : String.valueOf(output);
         // Node-scoped row: empty argsHash so JDBC lookup(runId, nodeId) hits
         // the same row InMemory finds by Effect.idFor(runId, nodeId).
+        // idempotencyKey carries NodeResult.next() so replay keeps explicit jumps
+        // (Effect has no next field; empty = route via edges).
+        String recordedNext = next == null ? "" : next;
         ledger.record(new SideEffectLedger.Effect(
                 SideEffectLedger.Effect.idFor(runId, nodeId),
-                runId, nodeId, "", "",
+                runId, nodeId, recordedNext, "",
                 SideEffectLedger.DeliverySemantics.AT_MOST_ONCE,
                 SideEffectLedger.RetryDisposition.NOT_RETRYABLE,
                 rendered, System.currentTimeMillis()));
