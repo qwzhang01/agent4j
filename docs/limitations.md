@@ -1,10 +1,10 @@
 # v1 边界与已知限制
 
-版本：`0.1.4`（2026-09-17 发布版，deploy 手动执行中）。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
+版本：`0.1.5`（2026-09-17 发布版，deploy 手动执行中）。下面是**有意不做**或**尚未具备**的能力，避免按 `notes/` 或仓库体量误判为已交付。
 
 ## Maven Central
 
-坐标是 `io.github.qwzhang01:seven-agent`（Central 最新 `0.1.3`）。发布走 `./mvnw -DskipTests deploy`，`examples` 不进 bundle。直接从 Central 引用即可；要跟踪仓库开发版，克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。
+坐标是 `io.github.qwzhang01:seven-agent`（Central 最新 `0.1.5`）。发布走 `./mvnw -DskipTests deploy`，`examples` 不进 bundle。直接从 Central 引用即可；要跟踪仓库开发版，克隆仓库 → `./mvnw -B verify` 或 `mvn install`，再从本地仓库引用。
 
 用法见 [getting-started.md](getting-started.md)。
 

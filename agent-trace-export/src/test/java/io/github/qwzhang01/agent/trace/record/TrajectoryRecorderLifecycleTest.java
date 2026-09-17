@@ -90,9 +90,11 @@ class TrajectoryRecorderLifecycleTest {
         assertEquals(DoneReason.DONE, DoneReason.from(AgentState.Status.DONE));
         assertEquals(DoneReason.MAX_STEPS_EXCEEDED, DoneReason.from(AgentState.Status.MAX_STEPS_EXCEEDED));
         assertEquals(DoneReason.ERROR, DoneReason.from(AgentState.Status.ERROR));
+        assertEquals(DoneReason.CANCELLED, DoneReason.from(AgentState.Status.CANCELLED));
         assertNull(DoneReason.from(AgentState.Status.IDLE));
         assertNull(DoneReason.from(AgentState.Status.RUNNING));
         assertNull(DoneReason.from(AgentState.Status.EXECUTING_TOOL));
+        assertNull(DoneReason.from(AgentState.Status.WAITING_APPROVAL));
     }
 
     @Test

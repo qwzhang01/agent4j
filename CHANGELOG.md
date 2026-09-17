@@ -5,9 +5,11 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.5-SNAPSHOT` (Central latest release: `0.1.4`).
+The current Maven version is `0.1.5` (Central latest release: `0.1.5`).
 
-## [0.1.5-SNAPSHOT] - unreleased
+## [未发布]
+
+## [0.1.5] - 2026-09-17
 
 ### Added
 
@@ -16,6 +18,7 @@ The current Maven version is `0.1.5-SNAPSHOT` (Central latest release: `0.1.4`).
 ### Fixed
 
 - **Durable tool-approval identity, rate-limit refund, waiting answer, and ledger jump.** Approval hash now includes the tool name and call id (`callHash`), so two `REQUIRES_APPROVAL` tools — even the same tool with the same args — never share a store row. `RateLimiter.release` refunds the token taken before a `PENDING` wait, so a `limit=1` resume after approve is not `[RATE_LIMITED]`. `extractFinalAnswer` prefers `WAITING_APPROVAL` over assistant text that rode along with `tool_calls`. `ContractAwareToolExecutor` records inner `[DENIED]` / `[WAITING_APPROVAL]` / `[RATE_LIMITED]` as `BUSINESS_REJECTED`, not `SUCCESS`. `SimpleAgent.resume` of a waiting run requires a `RunContext` with `runId` (auto-mint would miss the pending row). `GraphRuntime` ledger replay restores `NodeResult.next()` via `Effect.idempotencyKey`. A WAITING pause pairs an unused handoff `tool_use` (`[WAITING_HANDOFF]`) and applies the persona swap on resume.
+- **`DoneReason.from` covers `WAITING_APPROVAL`.** The P0 non-terminal status was missing from the exhaustive switch, so `agent-trace-export` failed to compile (`switch 表达式不包含所有可能的输入值`). Waiting maps to `null` like IDLE / RUNNING / EXECUTING_TOOL — a pause is not a trajectory ending.
 - **GovernedToolExecutor rate-limit now runs before approval.** A REQUIRES_APPROVAL tool that is already over quota is refused with `[RATE_LIMITED]` and a DENIED audit row; the approval service is not called and no APPROVED event is written for a call that never runs. Chain is now permission → rate-limit → approval → execute. Regression: `rateLimit_runsBeforeApproval_andDoesNotWriteApproved`.
 - **`Agent.run(ChatMessage, AgentState)` default no longer throws.** Stubs that only implement the String overloads degrade to `content()` (or concatenated text parts). Image-only parts are dropped unless the agent overrides the method. `defaultAgentFallbackProducesDone` now exercises the default path.
 - **Parallel tool join honors `RunContext.deadline`.** `ParallelToolExecutor.dispatchAll(dispatches, deadline)` times out unfinished calls as `[TIMEOUT] tool 'name' exceeded run deadline` and cancels their futures; a deadline already in the past skips dispatch. The ReAct loop passes `ctx.deadline()` through.
@@ -184,7 +187,8 @@ The current Maven version is `0.1.5-SNAPSHOT` (Central latest release: `0.1.4`).
 - Drop Spring Boot parent POM in favor of a standalone Maven parent
 - Open-source packaging for GitHub (`qwzhang01/agent4j`) and Maven Central coordinates
 
-[未发布]: https://github.com/qwzhang01/agent4j/compare/v0.1.4...HEAD
+[未发布]: https://github.com/qwzhang01/agent4j/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.5
 [0.1.4]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.4
 [0.1.3]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.3
 [Unreleased]: https://github.com/qwzhang01/agent4j/compare/v0.1.0...HEAD
