@@ -228,7 +228,7 @@ agent-spring-boot-starter -> core, model
 | 依赖 | 现状 | 计划 |
 |------|------|------|
 | PostgreSQL | `postgres` tag IT（`PostgresIT`，`AGENT4J_IT_PG_*` 环境变量探测）+ CI PG16 service（8.3） | [-] 已有；外部队列互操作不在 v1 |
-| 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例）；`DockerDaemonProbeIT`（8.3）：daemon 探测可审计 + DOCKER placeholder loud-fail 契约固化（daemon 在场仍宣称零保证） | [ ] Docker Adapter（Linux CI，Stage 4.3 诚实 gap） |
+| 容器 Sandbox | PROCESS 层 guard 已硬化（红队 11 例）；`DockerDaemonProbeIT`（8.3）：daemon 探测可审计 + DOCKER placeholder loud-fail 契约固化（daemon 在场仍宣称零保证）；batch 6（2026-09-17）：`DockerSandboxAdapter` 骨架落地 docker 包——命令组装纯函数全量映射 4.3 硬化行（--user 65534:65534/--cap-drop ALL/seccomp=default/--read-only + tmpfs workspace/--memory/--network none + digest 检测）本机 10/10 测试锚定；执行路径双分支 loud-fail（无 daemon 拒 [DOCKER_DAEMON_UNAVAILABLE]、daemon 在场仍拒 [DOCKER_TIER_NOT_INTEGRATED]，绝不静默降级弱 tier）；方言纪律 shell docker CLI 零新依赖 | [-] 骨架已落；容器生命周期（run/inspect/copy/cleanup）与 device-mapping IO 配额留 Linux CI 集成批，DOCKER 档 SandboxReport 仍零保证 |
 | MCP | stdio 官方 filesystem server 已验；SSE 方言 + JDK HttpServer 模拟对端 5/5；`mcp-it` tag（8.3）：真实 Python 子进程 server 全链路 `McpStdioIT` 3/3（握手/发现/调用/崩溃自愈重启重试/协议错误不误重启） | [-] 已有；官方参考实现互操作矩阵待补 |
 | A2A | 自家两端回环（零 mock 真实 socket）+ JDK HttpServer 模拟方言；`a2a-it` tag（8.3）：RoundTrip 13 + Protocol 9 + Security 4 = 26 例挂 CI 矩阵 | [-] 已有；外部第三方 A2A 实现互操作待补 |
 | SBOM / License | CycloneDX 聚合 SBOM（每模块 `target/bom.json`）+ `THIRD-PARTY.txt` 随构建生成（8.3） | [ ] grype 漏洞扫描接 CI（`vulnerability-scan` job，anchore/scan-action） |
@@ -264,7 +264,7 @@ agent-spring-boot-starter -> core, model
 | agent-security | Permission/Approval/Audit/Sanitizer/Guardrail 桥 | [x] | 9 测试文件 + Stage 2：SecureAgentBuilder/UnsafeAgentBuilder + 顺序契约（SecureAssemblyTest 6） |
 | agent-security | InjectionNormalizer + 三态 Judge 槽位 | [-] | Judge v2 语义槽空着，regex 墙为主 |
 | agent-sandbox | ClassLoader/Process 双档 + FailureKind + 升级预算 | [x] | Stage 4（2026-09-16）：12 测试文件 91/91（红队 11 + TierLimits 7 新增） |
-| agent-sandbox | DOCKER/MICROVM/WASM | [ ] | 占位，诚实报告零保证；TierLimits 已落结构性限制表（STRUCTURAL_TIERS），实现待 Linux CI |
+| agent-sandbox | DOCKER/MICROVM/WASM | [-] | batch 6（2026-09-17）：DockerSandboxAdapter 骨架（docker 包）+ DockerSandboxAdapterTest 10/10——命令组装纯函数 + 双分支 loud-fail + daemon 探测缓存 + hardeningSurface 七键；DOCKER 档 SandboxReport 仍零保证（保证由已集成档声明），容器生命周期集成与 MICROVM/WASM 仍占位待 Linux CI |
 | agent-mcp | MCP stdio 客户端 | [x] | 可连官方 filesystem server |
 | agent-mcp | A2A HTTP 双向 + v2 SSE/推送/续跑 | [x] | 120/120（Stage 6.3，2026-09-16：bearer 门 + HMAC-SHA256 签名 push + 重放窗 + A2ATaskStore 可插拔存储 + lease 跨实例语义 + 共享 store 重启存活；互操作为回环 + JDK HttpServer 模拟方言，外部第三方对端仍缺——记 [-] 于 §3.5） |
 | agent-mcp | MCP HTTP/SSE Transport | [-] | Stage 6.2（2026-09-16）：SseTransport 2024-11-05 SSE 方言 + server 信任三级 + 宿主认证适配器 + schema 校验接入；Streamable-HTTP 方言未实现（诚实 gap） |

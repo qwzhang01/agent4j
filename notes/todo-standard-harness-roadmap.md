@@ -361,13 +361,13 @@
 
 ### 4.3 OS 级实现
 
-- [ ] 新建 Docker Sandbox Adapter，先覆盖 Linux CI。（诚实 gap：v1 无 Docker daemon 依赖是既定边界，SandboxTier javadoc 已声明；DockerSandboxAdapter 留待 Linux CI 环境）
+- [x] 新建 Docker Sandbox Adapter，先覆盖 Linux CI。（batch 6（2026-09-17）骨架落地 `agent-sandbox/docker/DockerSandboxAdapter`：实现 Sandbox 契约，4.3 硬化行全量映射到 docker run 旗标——非特权 `--user 65534:65534`、`--cap-drop ALL`、`--security-opt seccomp=default`（default profile 永不 unconfined）、`--read-only` rootfs + tmpfs workspace、`--memory`/`--cpus` cgroup 上限、`--network none` deny-all、`--rm` 退出清理、镜像 digest pinning（`repo@sha256:...` 引用原样进命令，tag 引用诚实报 tagged 不伪造 digest）；命令组装是纯函数本机全测（DockerSandboxAdapterTest 10/10：每行硬化旗标逐一断言、memory/network spec 联动、digest pin 形态、INVALID_CLASS_NAME 门先于 daemon 探测、执行路径双分支 loud-fail 拒绝指名原因绝无弱 tier 回退、SandboxReport DOCKER 层 placeholder 语义保持零保证、hardeningSurface 七机制数据化）；执行路径是刻意的 loud-fail stub——无 daemon 拒绝 `[DOCKER_DAEMON_UNAVAILABLE]`、有 daemon 也诚实拒绝 `[DOCKER_TIER_NOT_INTEGRATED]`（生命周期集成等 Linux CI 批次），绝不静默降级到 PROCESS/CLASSLOADER（DockerDaemonProbeIT placeholder 契约延伸到 adapter 本体）；方言纪律与 JDBC 脊柱同款：shell out 到 docker CLI 零新编译依赖（CLI 是 Docker/Podman 共同契约）。agent-sandbox 113 全绿、全仓 23 模块 verify 零回归）
 - [ ] 评估 gVisor / Firecracker 作为高风险生产 Tier。（评估结论已落 TierLimits：MICROVMM 在 STRUCTURAL_TIERS，生产高风险路径的推荐 tier；实现未落地）
 - [ ] 配置非特权 UID/GID。（诚实 gap：PROCESS 层 guest 以宿主 OS 用户运行，记 4.3 Linux 侧待做）
-- [ ] 配置 seccomp、capability drop、cgroup CPU/内存/IO。（诚实 gap：DOCKER 层机制，TierLimits 已记 cgroup 描述字段，实现待 Docker adapter）
-- [ ] 配置网络 namespace 和域名 allowlist。（诚实 gap：同上，DOCKER 层机制）
-- [ ] 配置 read-only rootfs 和 workspace mount。（诚实 gap：同上）
-- [ ] 记录镜像 Digest、Sandbox Policy 版本和运行结果。（诚实 gap：镜像 Digest 待 Docker adapter；Sandbox Policy 版本与运行结果已有 SandboxReport 覆盖）
+- [-] 配置 seccomp、capability drop、cgroup CPU/内存/IO。（batch 6（2026-09-17）：机制设计已落 `DockerSandboxAdapter.dockerRunCommand`——`--cap-drop ALL`/`--security-opt seccomp=default`（default profile 永不 unconfined）/`--memory <spec>b`/`--cpus 1.0` 全部进真 docker run 旗标并由 DockerSandboxAdapterTest 逐一断言；集成验证（真 daemon 上跑通限制生效）留 Linux CI 批次；IO 配额等 device-mapping 形态同留 CI）
+- [-] 配置网络 namespace 和域名 allowlist。（batch 6（2026-09-17）：`--network none` deny-all 已落 dockerRunCommand（spec.networkBlocked 默认 true 时进命令，测试锚定；spec 放开时不加旗标=Docker 默认 bridge，诚实 gap 不伪造 allowlist）；域名 allowlist 形态（自定义网络 + DNS 劫持）留 Linux CI 批次）
+- [-] 配置 read-only rootfs 和 workspace mount。（batch 6（2026-09-17）：`--read-only` + `--tmpfs /workspace:rw,size=64m` 已落 dockerRunCommand（测试锚定 tmpfs 目标路径与可写挂载）；容器内实际挂载行为验证留 Linux CI 批次）
+- [-] 记录镜像 Digest、Sandbox Policy 版本和运行结果。（batch 6（2026-09-17）：`DockerSandboxAdapter` 支持 `repo@sha256:...` digest-pinned 引用原样进命令（tag 引用诚实报 tagged、isDigestPinned 可判），imageReference() 报告配置引用；pull 时 digest 解析与实际运行结果记录留 Linux CI 集成批次；Sandbox Policy 版本与运行结果已有 SandboxReport 覆盖）
 - [x] 明确 macOS 本地开发与 Linux 生产执行的差异。（docs/limitations.md「macOS 本地 vs Linux 生产」章节 + PROCESS 层 guard 强制 vs DOCKER 层结构隔离的差异说明）
 
 ### 4.4 红队和逃逸测试
