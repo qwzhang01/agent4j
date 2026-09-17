@@ -1,6 +1,6 @@
 # ToDo：agent4j 标准 Harness 演进路线
 
-> 状态：🚧 施工中（Stage 0 已完成，2026-09-16；契约冻结于 [docs/harness-contract.md](../docs/harness-contract.md)）
+> 状态：✅ Stage 0–9 全部完成（2026-09-17 核对确认），Stage 9 四个诚实 gap 已清偿；契约冻结于 [docs/harness-contract.md](../docs/harness-contract.md)。剩余未完成项见各段诚实标注：OS 级 Sandbox（Stage 4）、多租户/队列容量（8.1 gap）、恢复事件（approval 闭环批次）、MCP Streamable-HTTP 与能力协商（Stage 6）。
 > 目标：把 agent4j 从“架构覆盖面较完整的 Agent Runtime”推进为“默认安全、可恢复、可观测、可部署的标准 Harness”。  
 > 范围：只记录通用框架能力；Moonlit、Enterprise、Tavern、Coding 等产品判断不进入本清单。  
 > 现状基线：`v0.1.3` 已本地发版，Stage 1–18 主线、Memory 四步路线、Handoff、Guardrail/Sanitizing、模型路由、成本预算、Trace/Eval、红队与跨进程 kill-9 恢复实验已有实现或实验记录。  
@@ -269,15 +269,15 @@
 - [x] 新建持久化 `RunStore`，保存 Run 元数据、状态、版本和最后事件位置。（RunRecord/RunStore/InMemoryRunStore，乐观锁 + lastEventSeq）
 - [x] `Checkpoint` 增加 schema version。（SCHEMA_VERSION=2，load 拒绝更新版本，v1 兼容）
 - [x] 记录 Workflow Definition ID、版本和 Hash。（RunRecord.workflowHash + Checkpoint 五元组）
-- [ ] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。（gap：仅 Workflow identity 落档，Agent/Prompt/Model 版本链未接，记入 Stage 8 清单）
+- [ ] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。（描述更正 2026-09-17：observability 侧已有 `ComponentVersion`（Kind=PROMPT/MODEL/TOOL）+ `RunRecord.versions` 三元组 + `PersistentRunRegistry` 持久化；本条真缺的是 durable RunStore 行无版本三元组列、无 AGENT Kind。原注「记入 Stage 8 清单」为悬空引用——Stage 8 无此条目）
 - [x] 将 checkpoint、事件位置和 Run 状态建立一致性关系。（transitionFromResult 持久化 checkpointId + lastEventSeq）
 - [x] `FileCheckpointStore` 使用临时文件、fsync 和 atomic rename。（writeString tmp → FileChannel.force(true) → ATOMIC_MOVE，失败降级非原子并警告）
 - [x] 对 `runId` 做合法字符校验，禁止直接拼接任意路径。（`^[A-Za-z0-9._-]{1,128}$` 白名单）
-- [ ] 为 PostgreSQL 或其他生产后端设计 migration，而不是启动时隐式改表。（gap：v1 教学版只有 InMemory 参考实现，生产后端留给 Stage 8）
+- [x] 为 PostgreSQL 或其他生产后端设计 migration，而不是启动时隐式改表。（Stage 8.1 落地、2026-09-17 核对翻牌：六个 JDBC store（Run/Checkpoint/RunLeases/SideEffectLedger/Approval/TaskQueue）均为显式 `initialize()` 幂等建表，`ddl()` 暴露给宿主走 Flyway/Liquibase，无启动隐式改表。诚实边界：方言验证仍走 H2，PG 断电演练待 CI postgres profile）
 
 ### 3.2 Step History 与副作用账本
 
-- [ ] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。（gap：StepRecord 仍是旧结构，无 visitOrdinal/attempt 明细；Checkpoint.trace 目前携带空历史，记入后续清单）
+- [ ] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。（描述更正 2026-09-17：「Checkpoint.trace 携带空历史」为事实错误——`GraphRuntime` 7 处 `state.record(...)` 实时写 trace，`Checkpoint.of()` 捕获 `getTrace()`，`JdbcCheckpointStoreTest` 断言 trace 随 checkpoint round-trip；`StepRecord` 已含 nodeId/status/durationMs/attempts/summary。真缺仅剩 visitOrdinal 与起止时间戳两个字段）
 - [x] 记录 Tool Call 的幂等键和参数 Hash。（Effect.idempotencyKey + argsHash，idFor(runId,nodeId) / idFor(runId,nodeId,callHash)）
 - [x] 新建 `SideEffectLedger` 或等价接口。（SideEffectLedger + InMemorySideEffectLedger，putIfAbsent 幂等）
 - [x] 外部副作用成功后先落结果账本，再允许 Run 继续推进，或定义清晰的反向恢复语义。（ledger.record 先于 Run 推进的语义在协议层落地；GraphRuntime 节点接入见 gap）
@@ -307,7 +307,7 @@
 
 - [x] Scheduler 只调度持久化 Run，不以 JVM 内存 active map 作为唯一真相。（TaskScheduler.restoreDurableRuns 从 RunStore 候选扫描，recoverySweepUsesRunStoreNotMemory 锚定）
 - [x] 启动扫描 WAITING/RUNNING 恢复候选。（restoreDurableRuns：RUNNING/PAUSED/WAITING_APPROVAL，本进程 activeRuns 已有者跳过）
-- [ ] 增加任务 Lease、租约过期和抢占规则。（gap：RunLeaseRegistry 只在 DurableRunManager.resume 路径生效，调度器自身的任务级 Lease 未接，与 3.3 共用机制待 Stage 8）
+- [-] 增加任务 Lease、租约过期和抢占规则。（状态更新 2026-09-17：任务级 lease 原语已于 Stage 8.1 落地——`JdbcTaskQueue.claimNext` guarded UPDATE 单赢家、`requeueOrphaned` stale-RUNNING 接管、`RunLeases.renew` 心跳续约（LeaseHeartbeatTest 3/3）。真缺：`requeueOrphaned` 无周期调用者、任务级无独立 heartbeat（claim 后仅靠 grace period））
 - [ ] 事件恢复具备幂等消费和重复消息去重。（gap：事件总线仍是 fire-and-forget，lastEventSeq 已落 RunRecord 但无消费去重，记入 Stage 8）
 - [x] 异步队列满时有 backpressure 和明确拒绝事件。（AsyncTaskQueue 容量 + [QUEUE_FULL] QueueFullException + totalRejected 计数，fullQueueRejectsWithClassifiedEvent 锚定）
 
@@ -658,11 +658,13 @@ Wave C：才能规模化和扩展
 
 ## 明确暂不做
 
-在 Stage 0–4 没有完成前，暂不把主要精力投入：
+（前提更正 2026-09-17：原前提「Stage 0–4 没有完成前」已失效——Stage 0–9 已全部完成；其中第三条已被 Stage 9 落地超越。其余条目维持不做。）
+
+当前仍然不做：
 
 - [ ] 更多业务 Profile。
 - [ ] 更多模型 Provider 的数量扩张。
-- [ ] 复杂 Planner 和 Reflection。
+- [x] 复杂 Planner 和 Reflection。（已被 Stage 9 落地超越：`Plan`/`PlanExecutor`/`MultiAgentPlanner`/`ReflectiveAgent`，plan 包测试全绿）
 - [ ] 自研向量数据库或图数据库。
 - [ ] 完整插件市场。
 - [ ] 训练、RL 或自动生成大量 Agent。
@@ -676,15 +678,15 @@ Wave C：才能规模化和扩展
 agent4j 只有同时满足以下条件，才可以对外称为“生产级标准 Harness”：
 
 - [x] 任意 Run 都有统一且可传播的 `RunContext`。（Stage 1，2026-09-16）
-- [ ] Tool 有结构化 Schema、输入限制、输出限制和统一错误语义。
-- [ ] 有副作用 Tool 默认经过 Permission、Approval、Audit 和 Sanitizer。
-- [ ] Agent 崩溃恢复不会盲目重复已完成副作用。
-- [ ] Approval、Checkpoint、Run、Scheduler 可以跨进程恢复。
-- [ ] 高风险代码执行使用真正的 OS 级 Sandbox。
+- [x] Tool 有结构化 Schema、输入限制、输出限制和统一错误语义。（Stage 2，2026-09-16：contract 包 ToolDefinition/SideEffectLevel/ToolResult/ToolArgumentValidator + ContractAwareToolExecutor；ToolContractTest 12）
+- [x] 有副作用 Tool 默认经过 Permission、Approval、Audit 和 Sanitizer。（Stage 2.4，2026-09-16：SecureAgentBuilder 默认治理链，契约派生权限——副作用/破坏性/UNKNOWN 默认 REQUIRES_APPROVAL；SecureAssemblyTest 6）
+- [x] Agent 崩溃恢复不会盲目重复已完成副作用。（Stage 3.2，2026-09-16：SideEffectLedger 先落账本再推进 + 恢复命中重放不重调；ledgerHitReplaysResultWithoutRecall）
+- [x] Approval、Checkpoint、Run、Scheduler 可以跨进程恢复。（Stage 3.4 + 8.1：持久化 approval 包 + 六个 JDBC store + DistributedRunControlTest 8/8 跨实例接管/cancel/approval callback）
+- [ ] 高风险代码执行使用真正的 OS 级 Sandbox。（诚实保持未完成：PROCESS 是最高已实现 tier，Docker adapter 待 Linux CI，见 Stage 4 诚实标注）
 - [x] Memory、Trace、Audit、Checkpoint 有敏感数据治理。（Stage 7 部分达成，2026-09-16：Trace/metrics span 只挂结构属性+内容红线测试、RunContext.toString 红acting userId、JSONL MAX_TEXT=512 封顶、OnlineSampler 采样不存自由文本；gap：Memory/Checkpoint 侧脱敏未单列条目）
 - [x] Model、Tool、Workflow、Memory、Sandbox 的成本和 Trace 可关联。（Stage 7 部分达成，2026-09-16：RunRecord 三元组+PersistentRunRegistry 持久化、BudgetedModelClient/ToolExecutor 预算挂 RunContext、OpsEvent 携带 run/step/tool/provider/组合坐标；gap：Memory/Sandbox span 未做、run 行未携带 model id）
 - [x] MCP/A2A 有认证、授权、签名、去重或清晰的宿主边界。（Stage 6，2026-09-16：MCP 信任三级 + allowlist + 宿主认证适配器；A2A bearer 门 + HMAC 签名 push + 重放窗 + lease 去重；Plugin manifest 宿主 declare-to-grant。诚实 gap：无 PKI 卡签名、Streamable-HTTP 未实现，记 roadmap Stage 6）
-- [ ] CI 有集成、安全、兼容性和发布质量门槛。
+- [x] CI 有集成、安全、兼容性和发布质量门槛。（Stage 8.3，2026-09-17：六 job 矩阵——build 双 JDK verify + SBOM、postgres-it（PG16 service）、transport-it（mcp-it/a2a-it）、sandbox-escape（dind）、api-compat（japicmp 对 0.1.3 基线）、vulnerability-scan（grype severity-cutoff high）；jacoco 覆盖率地板；cyclonedx SBOM + THIRD-PARTY.txt；协议 fuzz 10 例）
 - [ ] 文档对已实现、部分实现和明确不支持的能力保持诚实一致。
 
 ## 一句话收口
