@@ -42,7 +42,8 @@ public final class JdbcTaskQueue {
                 seq            BIGINT       NOT NULL,
                 created_at     BIGINT       NOT NULL,
                 started_at     BIGINT,
-                completed_at   BIGINT
+                completed_at   BIGINT,
+                tenant_id      VARCHAR(128)
             )
             """;
 
@@ -58,19 +59,29 @@ public final class JdbcTaskQueue {
             long seq,
             Instant createdAt,
             Instant startedAt,
-            Instant completedAt) {
+            Instant completedAt,
+            String tenantId) {
+
+        /** Legacy 11-field shape (pre-0.1.4 rows): tenant stays null. */
+        public TaskRow(String taskId, String parentRunId, String workflowName,
+                       TaskPriority priority, TaskStatus status, String payload,
+                       String result, long seq, Instant createdAt, Instant startedAt,
+                       Instant completedAt) {
+            this(taskId, parentRunId, workflowName, priority, status, payload,
+                    result, seq, createdAt, startedAt, completedAt, null);
+        }
 
         public TaskRow withStatus(TaskStatus next) {
             return new TaskRow(taskId, parentRunId, workflowName, priority, next, payload,
                     result, seq, createdAt,
                     next == TaskStatus.RUNNING ? Instant.now() : startedAt,
-                    next.isTerminal() ? Instant.now() : completedAt);
+                    next.isTerminal() ? Instant.now() : completedAt, tenantId);
         }
 
         public TaskRow withResult(String result) {
             return new TaskRow(taskId, parentRunId, workflowName, priority,
                     TaskStatus.SUCCEEDED, payload, result, seq, createdAt, startedAt,
-                    Instant.now());
+                    Instant.now(), tenantId);
         }
     }
 
@@ -81,20 +92,59 @@ public final class JdbcTaskQueue {
 
     private final ConnectionSupplier connections;
     private final boolean ownsConnections;
+    private final int capacity;
+    private final java.util.concurrent.atomic.AtomicInteger totalRejected =
+            new java.util.concurrent.atomic.AtomicInteger();
 
     public JdbcTaskQueue(ConnectionSupplier connections) {
-        this.connections = Objects.requireNonNull(connections);
-        this.ownsConnections = true;
+        this(connections, 0);
     }
 
     /**
-     * Convenience: single shared connection (tests, embedded H2). The
-     * queue borrows it per operation but never closes it — the caller
-     * owns that connection's lifecycle.
+     * Harness 8.1 (2026-09-17): bounded capacity. {@code capacity <= 0}
+     * keeps the legacy unbounded behavior (an honest default — the queue
+     * table has no inherent limit); {@code capacity > 0} makes enqueue a
+     * guarded refusal: at capacity, enqueue throws {@link QueueFullException}
+     * (same classified backpressure signal as {@code AsyncTaskQueue}), it
+     * never silently drops or grows unbounded.
      */
+    public JdbcTaskQueue(ConnectionSupplier connections, int capacity) {
+        this.connections = Objects.requireNonNull(connections);
+        this.ownsConnections = true;
+        this.capacity = capacity;
+    }
+
+    /** The configured capacity (0 = unbounded). */
+    public int capacity() {
+        return capacity;
+    }
+
+    /** Tasks refused by the capacity guard (observable backpressure metric). */
+    public int totalRejected() {
+        return totalRejected.get();
+    }
+
     public JdbcTaskQueue(Connection connection) {
         this.connections = () -> connection;
         this.ownsConnections = false;
+        this.capacity = 0;
+    }
+
+    /**
+     * Count non-terminal rows (PENDING + RUNNING) — the occupancy the
+     * capacity guard meters. Terminal rows (SUCCEEDED/FAILED/CANCELLED)
+     * are history, not load. Public for monitoring: occupancy vs capacity
+     * is the queue-health pair operators watch.
+     */
+    public int activeCount() {
+        String sql = "SELECT COUNT(*) FROM agent4j_tasks WHERE status IN ('PENDING', 'RUNNING')";
+        try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task count failed: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -134,7 +184,7 @@ public final class JdbcTaskQueue {
 
     /** Execute the bootstrap DDL (idempotent). */
     public void initialize() {
-try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
+                try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
             st.execute(DDL);
             // Sequence counter table: portable autoincrement without IDENTITY
             // dialect differences.
@@ -162,16 +212,33 @@ try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
     /** Enqueue a task row (status PENDING). Payload is an opaque host string. */
     public TaskRow enqueue(String parentRunId, String workflowName,
                            TaskPriority priority, String payload) {
+        return enqueue(parentRunId, workflowName, priority, payload, null);
+    }
+
+    /**
+     * Harness 8.1 (2026-09-17): tenant-tagged enqueue with the capacity
+     * guard. The guard meters non-terminal occupancy (PENDING + RUNNING)
+     * against the configured capacity; at capacity the enqueue is refused
+     * with {@link QueueFullException} — loud, classified backpressure,
+     * same signal family as {@link AsyncTaskQueue}. The tenant column is
+     * the row's identity (written once); {@code listByTenant} isolates.
+     */
+    public TaskRow enqueue(String parentRunId, String workflowName,
+                           TaskPriority priority, String payload, String tenantId) {
+        if (capacity > 0 && activeCount() >= capacity) {
+            totalRejected.incrementAndGet();
+            throw new QueueFullException(capacity, activeCount());
+        }
         String taskId = UUID.randomUUID().toString();
         long seq = nextSeq();
         long now = System.currentTimeMillis();
         String sql = """
                 INSERT INTO agent4j_tasks
                     (task_id, parent_run_id, workflow_name, priority, priority_name,
-                     status, payload, result, seq, created_at, started_at, completed_at)
-                VALUES (?, ?, ?, ?, ?, 'PENDING', ?, NULL, ?, ?, NULL, NULL)
+                     status, payload, result, seq, created_at, started_at, completed_at, tenant_id)
+                VALUES (?, ?, ?, ?, ?, 'PENDING', ?, NULL, ?, ?, NULL, NULL, ?)
                 """;
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setString(1, taskId);
             ps.setString(2, parentRunId);
             ps.setString(3, workflowName);
@@ -180,12 +247,39 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
             ps.setString(6, payload);
             ps.setLong(7, seq);
             ps.setLong(8, now);
+            ps.setString(9, tenantId);
             ps.executeUpdate();
             return new TaskRow(taskId, parentRunId, workflowName, priority,
                     TaskStatus.PENDING, payload, null, seq,
-                    Instant.ofEpochMilli(now), null, null);
+                    Instant.ofEpochMilli(now), null, null, tenantId);
         } catch (SQLException e) {
             throw new IllegalStateException("Task enqueue failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** Backpressure signal (harness 8.1): the queue table is at capacity. */
+    public static final class QueueFullException extends RuntimeException {
+        public QueueFullException(int capacity, int size) {
+            super("[QUEUE_FULL] Persistent task table at capacity " + capacity
+                    + " (active " + size + ") - reject and backpressure");
+        }
+    }
+
+    /** Non-terminal rows for one tenant (isolation boundary for sweeps). */
+    public List<TaskRow> listByTenant(String tenantId) {
+        String sql = selectAll() + " WHERE tenant_id = ? AND status IN ('PENDING', 'RUNNING') "
+                + "ORDER BY seq";
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<TaskRow> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(fromRow(rs));
+                }
+                return rows;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task listByTenant failed: " + e.getMessage(), e);
         }
     }
 
@@ -242,7 +336,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 SET status = 'SUCCEEDED', result = ?, completed_at = ?
                 WHERE task_id = ? AND status = 'RUNNING'
                 """;
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setString(1, result);
             ps.setLong(2, System.currentTimeMillis());
             ps.setString(3, taskId);
@@ -263,7 +357,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 SET status = 'FAILED', completed_at = ?
                 WHERE task_id = ? AND status = 'RUNNING'
                 """;
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setLong(1, System.currentTimeMillis());
             ps.setString(2, taskId);
             if (ps.executeUpdate() == 0) {
@@ -283,7 +377,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 SET status = 'CANCELLED', completed_at = ?
                 WHERE task_id = ? AND status = 'PENDING'
                 """;
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setLong(1, System.currentTimeMillis());
             ps.setString(2, taskId);
             if (ps.executeUpdate() == 0) {
@@ -353,7 +447,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
 
     public java.util.Optional<TaskRow> get(String taskId) {
         String sql = selectAll() + " WHERE task_id = ?";
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setString(1, taskId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? java.util.Optional.of(fromRow(rs)) : java.util.Optional.empty();
@@ -365,7 +459,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
 
     public List<TaskRow> listByStatus(TaskStatus status) {
         String sql = selectAll() + " WHERE status = ? ORDER BY seq";
-try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+                try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setString(1, status.name());
             try (ResultSet rs = ps.executeQuery()) {
                 List<TaskRow> rows = new ArrayList<>();
@@ -409,7 +503,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
 
     private static String selectAll() {
         return "SELECT task_id, parent_run_id, workflow_name, priority, priority_name, "
-                + "status, payload, result, seq, created_at, started_at, completed_at "
+                + "status, payload, result, seq, created_at, started_at, completed_at, tenant_id "
                 + "FROM agent4j_tasks";
     }
 
@@ -425,6 +519,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 rs.getLong("seq"),
                 Instant.ofEpochMilli(rs.getLong("created_at")),
                 rs.getLong("started_at") == 0 ? null : Instant.ofEpochMilli(rs.getLong("started_at")),
-                rs.getLong("completed_at") == 0 ? null : Instant.ofEpochMilli(rs.getLong("completed_at")));
+                rs.getLong("completed_at") == 0 ? null : Instant.ofEpochMilli(rs.getLong("completed_at")),
+                rs.getString("tenant_id"));
     }
 }

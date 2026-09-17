@@ -105,9 +105,17 @@ public class DurableRunManager {
      * executes, so even a crash at the first node leaves a recovery
      * candidate behind. The runId is threaded into the delegate via a
      * bound RunContext, so the durable row and the live Run share one id.
+     * <p>
+     * Harness 3.1 (2026-09-17): when the caller's context carries a
+     * tenantId, it lands on the row (tenancy is identity, written once at
+     * create, never rewritten by transitions); a non-null {@code versions}
+     * hint (component-version snapshot, e.g. the JSON form of the
+     * observability ComponentVersion list) is stamped on the row the same
+     * way — the durable row answers "which prompt/model/tool served this
+     * run" without a second registry lookup.
      */
     public ExecutionResult start(Workflow workflow, Object input, String runId, RunContext ctx) {
-        createRow(workflow, runId, "RUNNING");
+        createRow(workflow, runId, "RUNNING", ctx);
         log.info("[{}] Durable run started, workflow='{}'@{}({})", runId,
                 workflow.name(), workflow.version(), workflow.fingerprint());
         // Bind the caller's durable runId into the context unconditionally:
@@ -301,9 +309,28 @@ public class DurableRunManager {
     // ============ Internal ============
 
     private void createRow(Workflow workflow, String runId, String status) {
+        createRow(workflow, runId, status, null);
+    }
+
+    /**
+     * Harness 3.1: row creation stamps the caller's tenancy and version
+     * snapshot. The versions string is assembled from the context's agent
+     * identity (an AGENT entry) — a full PROMPT/MODEL/TOOL snapshot is the
+     * host's call to pass via {@link #start(Workflow, Object, String,
+     * RunContext)} with a pre-decorated context; the row records what the
+     * context knew, absence is honest.
+     */
+    private void createRow(Workflow workflow, String runId, String status, RunContext ctx) {
+        String tenantId = ctx != null ? ctx.tenantId() : null;
+        String versions = "";
+        if (ctx != null && ctx.agentId() != null && !ctx.agentId().isBlank()) {
+            versions = "[{\"kind\":\"AGENT\",\"name\":\"" + ctx.agentId()
+                    + "\",\"version\":\"unversioned\"}]";
+        }
         RunRecord row = new RunRecord(runId, workflow.name(), workflow.version(),
                 workflow.fingerprint(), status, null, 0, 0, null, null,
-                System.currentTimeMillis(), System.currentTimeMillis(), 0, List.of());
+                System.currentTimeMillis(), System.currentTimeMillis(), 0, List.of(),
+                tenantId, versions);
         try {
             runStore.create(row);
         } catch (io.github.qwzhang01.agent.workflow.runtime.durable.VersionConflictException dup) {
@@ -322,7 +349,7 @@ public class DurableRunManager {
                     row.workflowVersion(), row.workflowHash(), status, cursor,
                     row.stepsExecuted(), row.lastEventSeq(), row.checkpointId(),
                     error, row.createdAt(), System.currentTimeMillis(),
-                    row.version(), row.lastTrace());
+                    row.version(), row.lastTrace(), row.tenantId(), row.versions());
             try {
                 runStore.update(updated);
                 return;
@@ -358,7 +385,8 @@ public class DurableRunManager {
             RunRecord updated = new RunRecord(row.runId(), row.workflowName(),
                     row.workflowVersion(), row.workflowHash(), status, cursor,
                     row.stepsExecuted(), seq, cpId, error, row.createdAt(),
-                    System.currentTimeMillis(), row.version(), row.lastTrace());
+                    System.currentTimeMillis(), row.version(), row.lastTrace(),
+                    row.tenantId(), row.versions());
             try {
                 runStore.update(updated);
                 return;

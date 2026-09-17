@@ -54,7 +54,9 @@ public final class JdbcRunStore implements RunStore {
                 created_at        BIGINT        NOT NULL,
                 updated_at        BIGINT        NOT NULL,
                 version           BIGINT        NOT NULL,
-                last_trace        TEXT           NOT NULL
+                last_trace        TEXT           NOT NULL,
+                tenant_id         VARCHAR(128),
+                versions          TEXT           NOT NULL
             )
             """;
 
@@ -148,8 +150,8 @@ try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
                 INSERT INTO agent4j_runs
                     (run_id, workflow_name, workflow_version, workflow_hash, status,
                      cursor, steps_executed, last_event_seq, checkpoint_id, error_message,
-                     created_at, updated_at, version, last_trace)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     created_at, updated_at, version, last_trace, tenant_id, versions)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
             ps.setString(1, record.runId());
@@ -166,6 +168,8 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
             ps.setLong(12, record.updatedAt());
             ps.setLong(13, record.version());
             ps.setString(14, TraceCodec.write(mapper, record.lastTrace()));
+            ps.setString(15, record.tenantId());
+            ps.setString(16, nvl(record.versions()));
             try {
                 ps.executeUpdate();
             } catch (SQLException dup) {
@@ -220,7 +224,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
         String sql = """
                 SELECT run_id, workflow_name, workflow_version, workflow_hash, status,
                        cursor, steps_executed, last_event_seq, checkpoint_id, error_message,
-                       created_at, updated_at, version, last_trace
+                       created_at, updated_at, version, last_trace, tenant_id, versions
                 FROM agent4j_runs WHERE run_id = ?
                 """;
 try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
@@ -238,7 +242,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
         String sql = """
                 SELECT run_id, workflow_name, workflow_version, workflow_hash, status,
                        cursor, steps_executed, last_event_seq, checkpoint_id, error_message,
-                       created_at, updated_at, version, last_trace
+                       created_at, updated_at, version, last_trace, tenant_id, versions
                 FROM agent4j_runs
                 WHERE status IN ('RUNNING', 'PAUSED', 'WAITING_APPROVAL')
                 ORDER BY created_at
@@ -251,7 +255,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
         String sql = """
                 SELECT run_id, workflow_name, workflow_version, workflow_hash, status,
                        cursor, steps_executed, last_event_seq, checkpoint_id, error_message,
-                       created_at, updated_at, version, last_trace
+                       created_at, updated_at, version, last_trace, tenant_id, versions
                 FROM agent4j_runs WHERE status = ? ORDER BY created_at
                 """;
 try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
@@ -273,7 +277,7 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
         return queryList("""
                 SELECT run_id, workflow_name, workflow_version, workflow_hash, status,
                        cursor, steps_executed, last_event_seq, checkpoint_id, error_message,
-                       created_at, updated_at, version, last_trace
+                       created_at, updated_at, version, last_trace, tenant_id, versions
                 FROM agent4j_runs ORDER BY created_at
                 """);
     }
@@ -310,7 +314,9 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 rs.getLong("created_at"),
                 rs.getLong("updated_at"),
                 rs.getLong("version"),
-                trace);
+                trace,
+                rs.getString("tenant_id"),
+                rs.getString("versions") == null ? "" : rs.getString("versions"));
     }
 
     private static String nvl(String s) {

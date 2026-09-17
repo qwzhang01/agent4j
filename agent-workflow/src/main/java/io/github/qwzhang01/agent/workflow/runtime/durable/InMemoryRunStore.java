@@ -38,7 +38,8 @@ public final class InMemoryRunStore implements RunStore {
                 record.workflowHash(), record.status(), record.cursor(),
                 record.stepsExecuted(), record.lastEventSeq(), record.checkpointId(),
                 record.errorMessage(), record.createdAt(), System.currentTimeMillis(),
-                stored.version() + 1, record.lastTrace());
+                stored.version() + 1, record.lastTrace(),
+                record.tenantId(), record.versions());
         rows.put(record.runId(), next);
         return next;
     }

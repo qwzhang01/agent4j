@@ -70,7 +70,7 @@ public final class DistributedRunControl {
                     row.workflowVersion(), row.workflowHash(), "CANCELLED", row.cursor(),
                     row.stepsExecuted(), row.lastEventSeq(), row.checkpointId(),
                     reason, row.createdAt(), System.currentTimeMillis(),
-                    row.version(), row.lastTrace());
+                    row.version(), row.lastTrace(), row.tenantId(), row.versions());
             try {
                 runStore.update(cancelledRow);
                 return CancelOutcome.CANCELLED;

@@ -179,6 +179,7 @@ public class GraphRuntime {
                     scheduler, run.getRunContext());
             resuming = false;  // only the first node (resume target) gets isResuming=true
 
+            long nodeStart = System.currentTimeMillis();
             ExecOutcome outcome;
             try {
                 outcome = executeWithRetry(workflow, node, ctx, timeout);
@@ -188,7 +189,8 @@ public class GraphRuntime {
                 run.setPendingInput(lastOutput);
                 run.setStepsExecuted(steps);
                 run.setStatus(RunState.PAUSED);
-                state.record(StepRecord.paused(cursor, pe.getMessage()));
+                state.record(StepRecord.paused(cursor, pe.getMessage(),
+                        nodeStart, System.currentTimeMillis()));
                 log.info("[{}] Paused at node '{}': {}", run.getRunId(), cursor, pe.getMessage());
                 return ExecutionResult.paused(
                         new ResumeToken(run.getRunId(), null, cursor), state);
@@ -205,7 +207,8 @@ public class GraphRuntime {
             // --------------------------------------------
             if (outcome.failure() != null) {
                 state.record(StepRecord.failed(node.id(), outcome.durationMs(),
-                        outcome.attempts(), outcome.failure().getMessage()));
+                        outcome.attempts(), outcome.failure().getMessage(),
+                        nodeStart, System.currentTimeMillis()));
                 log.warn("[{}] Node '{}' failed after {} attempt(s): {}",
                         run.getRunId(), node.id(), outcome.attempts(), outcome.failure().getMessage());
 
@@ -231,7 +234,8 @@ public class GraphRuntime {
             NodeResult result = outcome.result();
             state.put(node.id(), result.output());
             state.record(StepRecord.success(node.id(), outcome.durationMs(),
-                    outcome.attempts(), summarize(result.output())));
+                    outcome.attempts(), summarize(result.output()),
+                    nodeStart, System.currentTimeMillis()));
             lastOutput = result.output();
 
             timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);

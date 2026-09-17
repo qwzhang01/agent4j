@@ -74,8 +74,18 @@ public class WorkflowState {
 
     // ============ Trace Zone ============
 
+    /**
+     * Append one trace entry. The record's {@code visitOrdinal} is assigned
+     * here (harness 3.2): every entry gets a 1-based position; a restored
+     * trace replays entries with their ORIGINAL ordinals preserved (the
+     * checkpoint already recorded them — a re-numbering would falsify the
+     * history it is supposed to report).
+     */
     public void record(StepRecord record) {
-        trace.add(record);
+        StepRecord entry = record.visitOrdinal() == null
+                ? record.withVisitOrdinal(trace.size() + 1)
+                : record;
+        trace.add(entry);
     }
 
     public List<StepRecord> getTrace() {

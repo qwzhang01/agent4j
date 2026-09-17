@@ -104,10 +104,12 @@ public final class ParallelNode implements WorkflowNode {
                 ctx.state().put(node.id(), output);
                 ctx.state().record(StepRecord.success(node.id(),
                         System.currentTimeMillis() - start, 1,
-                        String.valueOf(output)));
+                        String.valueOf(output),
+                        start, System.currentTimeMillis()));
             } catch (Exception e) {
                 ctx.state().record(StepRecord.failed(node.id(),
-                        System.currentTimeMillis() - start, 1, e.getMessage()));
+                        System.currentTimeMillis() - start, 1, e.getMessage(),
+                        start, System.currentTimeMillis()));
                 throw new CompletionException("Branch '" + branchName
                         + "' failed at node '" + node.id() + "'", e);
             }

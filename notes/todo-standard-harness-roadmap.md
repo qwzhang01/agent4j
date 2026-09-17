@@ -269,7 +269,7 @@
 - [x] 新建持久化 `RunStore`，保存 Run 元数据、状态、版本和最后事件位置。（RunRecord/RunStore/InMemoryRunStore，乐观锁 + lastEventSeq）
 - [x] `Checkpoint` 增加 schema version。（SCHEMA_VERSION=2，load 拒绝更新版本，v1 兼容）
 - [x] 记录 Workflow Definition ID、版本和 Hash。（RunRecord.workflowHash + Checkpoint 五元组）
-- [ ] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。（描述更正 2026-09-17：observability 侧已有 `ComponentVersion`（Kind=PROMPT/MODEL/TOOL）+ `RunRecord.versions` 三元组 + `PersistentRunRegistry` 持久化；本条真缺的是 durable RunStore 行无版本三元组列、无 AGENT Kind。原注「记入 Stage 8 清单」为悬空引用——Stage 8 无此条目）
+- [x] 记录 Agent/Prompt/Tool/Model 版本三元组或等价版本信息。（2026-09-17 落地：`RunRecord` 尾插 `tenantId`/`versions` 两字段，`JdbcRunStore` DDL/INSERT/SELECT/fromRow 全链携带；`DurableRunManager.createRow` create 时写入一次（agentId 有值则写 `{"kind":"AGENT","name":"<agentId>","version":"unversioned"}`），transition 复制保留、永不重写；`ComponentVersion.Kind` 加 `AGENT`。`JdbcRunStoreTenantVersionsTest` 4/4：round-trip、null 归一化、transition 保留、recovery 候选带身份。原注「记入 Stage 8 清单」为悬空引用——Stage 8 无此条目，现已闭合）
 - [x] 将 checkpoint、事件位置和 Run 状态建立一致性关系。（transitionFromResult 持久化 checkpointId + lastEventSeq）
 - [x] `FileCheckpointStore` 使用临时文件、fsync 和 atomic rename。（writeString tmp → FileChannel.force(true) → ATOMIC_MOVE，失败降级非原子并警告）
 - [x] 对 `runId` 做合法字符校验，禁止直接拼接任意路径。（`^[A-Za-z0-9._-]{1,128}$` 白名单）
@@ -277,7 +277,7 @@
 
 ### 3.2 Step History 与副作用账本
 
-- [ ] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。（描述更正 2026-09-17：「Checkpoint.trace 携带空历史」为事实错误——`GraphRuntime` 7 处 `state.record(...)` 实时写 trace，`Checkpoint.of()` 捕获 `getTrace()`，`JdbcCheckpointStoreTest` 断言 trace 随 checkpoint round-trip；`StepRecord` 已含 nodeId/status/durationMs/attempts/summary。真缺仅剩 visitOrdinal 与起止时间戳两个字段）
+- [x] 为每个节点记录 `visitOrdinal`、attempt、开始、结束和结果摘要。（2026-09-17 落地：`StepRecord` 尾插 `visitOrdinal`/`startedAt`/`endedAt` 三字段 + 旧 5 参兼容构造器 + visit-aware 工厂（success/failed/paused/cancelled 各带窗口重载）；`WorkflowState.record` 统一分配 1-based ordinal，恢复 trace 保留原序号（不伪造历史）；`GraphRuntime` 主循环三处 + `ParallelNode` 两处 record 改带 `nodeStart..now` 执行窗口。`StepRecordVisitMetadataTest` 3/3：append 序分配、recovered 序号保留、窗口携带/旧形态 null。null=诚实缺席语义保持）
 - [x] 记录 Tool Call 的幂等键和参数 Hash。（Effect.idempotencyKey + argsHash，idFor(runId,nodeId) / idFor(runId,nodeId,callHash)）
 - [x] 新建 `SideEffectLedger` 或等价接口。（SideEffectLedger + InMemorySideEffectLedger，putIfAbsent 幂等）
 - [x] 外部副作用成功后先落结果账本，再允许 Run 继续推进，或定义清晰的反向恢复语义。（ledger.record 先于 Run 推进的语义在协议层落地；GraphRuntime 节点接入见 gap）
@@ -356,7 +356,7 @@
 - [x] 默认禁止网络。（SandboxSpec `networkBlocked=true` 默认 + guard SocketPermission/NetPermission 全拒，红队 RED-4 验证）
 - [x] 默认只读根文件系统，workspace 单独挂载可写目录。（PROCESS 层语义已满足：guard 拒 workspace 外读写，`/etc/passwd` 不可读，红队 RED-3 验证；容器 read-only rootfs 属 4.3 DOCKER 范围）
 - [x] 高风险执行必须经过人工审批或升级到更强 Sandbox。（语义已入表：`limitsFor(tier, ADVERSARIAL).requiresApproval=true`；gap：与 SandboxEscalator/审批服务接线留 Stage 8 运维层）
-- [ ] 升级预算与租户、RunContext、成本预算关联。（`SandboxSpec.runId` 归因 + `SandboxEscalationBudgetByRunTest` run 级预算已在 debt-2 落地；gap：tenantId 与成本预算接线留 Stage 5/8）
+- [x] 升级预算与租户、RunContext、成本预算关联。（2026-09-17 落地租户两级账本：`SandboxSpec` 加 `tenantId` 字段（与 runId 独立，tenant 优先计费），`SandboxEscalator.tryAcquireBudget(tenantId, runId)` 两级获取——tenant 账本优先（同租户多 run 共享，noisy tenant 不能稀释他人）→ run 账本 → 无归因兜底实例账本；`getEscalationsUsedByTenant`/`getTrackedTenantCount` 监控访问器。`SandboxEscalationBudgetByTenantTest` 2/2：租户预算跨 run 共享、租户间隔离。**gap**：与成本预算（CostBook）的金额级联动留 Stage 8 运维层）
 - [x] Sandbox 报告明确区分“被策略拦截”和“执行失败”。（`SandboxResult.FailureKind` 四分类：SANDBOX_FAILURE/BLOCKED_BY_POLICY/TIMEOUT/CODE_FAILURE，SandboxFailureKindTest 锚定）
 
 ### 4.3 OS 级实现
@@ -563,7 +563,7 @@
 - [x] 支持跨实例 Resume、Cancel、Approval Callback。（`DistributedRunControl`：行即控制通道。Cancel 从任一实例 CAS 行翻 CANCELLED（三 outcome：CANCELLED/ALREADY_TERMINAL/NO_ROW）；持有实例心跳观察行变更，一个轮询周期内在节点边界停机；终态行 resume 被大声拒绝（`refusing to revive from a stale checkpoint`——checkpoint 滞后于行是设计）。Approval Callback：决策落共享 `JdbcApprovalStore`（幂等派生 approvalId 保证两实例同行），迟到决策不构成死亡 Run 的绿灯（`approvalStillRelevant` 守卫）。跨实例 resume 依赖共享 `JdbcCheckpointStore`（A 的 pause 即 B 的 resume，复用 `FileCheckpointStore.Snapshot` 单 codec 双传输）。`DistributedRunControlTest` 8/8：接管并完成、跨实例 cancel 停在跑 Run、陈旧复活拒绝、outcome 语义、approve/reject 跨实例、迟到决策、manager 门面。）
 - [x] 明确并发执行、顺序执行和分支合并语义。（并发/顺序沿用 Stage 1/3 既有语义不变：`ParallelNode` 分支取消可达每一支（共享 token，`ParallelCancelTest`）；顺序执行在节点边界检查 cancel（GraphRuntime while 头）；分支合并语义 = 各分支独立执行、合并点等待全部到达——现已跨实例接管场景下被 `DistributedRunControlTest` 的接管-完成路径复验。**gap**：跨实例分支合并语义有测试覆盖但未回写进 contract 矩阵文档。）
 - [x] 增加网络分区、Worker 崩溃、数据库短暂不可用测试。（`PartitionToleranceTest` 4/4：H2 SHUTDOWN 模拟断电——所有 store 操作对死库 fail-loud（IllegalStateException 点名操作；分区期间的静默"成功"正是 CAS 设计要防的脑裂）、lease acquire 遇断电抛异常而非静默授予、worker 崩溃留下可恢复状态（行完好、下次 sweep 列出、B 接管 lease 并完成）、重连契约诚实声明（H2 内存库 SHUTDOWN 即丢 schema——要活过重启的部署用持久化 DB）。**gap**：真实 PostgreSQL 断电演练待 8.3 集成 profile。）
-- [ ] 增加 backpressure、队列容量和租户级隔离。（**gap**：JDBC 队列无容量上限、无租户列；RunStore 行无 tenantId 字段。多租户隔离需要 `RunContext.tenantId` 落进行/队列两处，队列容量需要 enqueue 侧 guarded 拒绝语义（参照 AsyncTaskQueue 的 `[QUEUE_FULL]` 分类拒绝）。候选落点 Stage 8.2。）
+- [x] 增加 backpressure、队列容量和租户级隔离。（2026-09-17 落地：`JdbcTaskQueue` DDL 加 `tenant_id` 列，enqueue 5 参签名带 tenant + 容量守卫（`JdbcTaskQueue(ConnectionSupplier, int capacity)` 构造器，守卫 meter 非 terminal 占用 PENDING+RUNNING，超限抛 `QueueFullException`——与 AsyncTaskQueue 同 `[QUEUE_FULL]` 信号族，`totalRejected` 计数可观测，`activeCount()` public 监控访问器）；`TaskRow` 加 tenantId + 11 参兼容构造器，withStatus/withResult 携带；`listByTenant(tenantId)` 租户隔离视图（非 terminal 行）。RunStore 侧 `tenantId` 列见 3.1。`JdbcTaskQueueBackpressureTest` 4/4：容量拒绝、完成释放容量、零容量不限、租户隔离。诚实边界：容量守卫是 enqueue 时点检查，非并发安全配额（多 worker 并发 enqueue 竞态下可少量超容——诚实记录，与 AsyncTaskQueue 同水位））
 
 ### 8.2 Spring Boot Starter 生产 Profile
 

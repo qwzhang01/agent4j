@@ -72,8 +72,17 @@ public class SandboxEscalator implements Sandbox {
      * map grows with the number of distinct runIds seen — bounded by
      * caller behavior, same class of state as {@code activeRuns} in
      * RunManager (long-lived service hosts both).
+     * <p>
+     * Harness 4.x (2026-09-17) two-tier ledger: a spec carrying a
+     * {@code tenantId} is metered against the <b>tenant</b> ledger FIRST
+     * (all of that tenant's runs share one budget — a noisy tenant
+     * cannot dilute other tenants' budgets by spawning many runs), then
+     * against the run ledger. Unattributed specs keep the pre-fix
+     * instance-level fallback.
      */
     private final java.util.concurrent.ConcurrentHashMap<String, AtomicInteger> budgetByRunId =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, AtomicInteger> budgetByTenantId =
             new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Fallback ledger for unattributed specs (no runId): the pre-fix instance-level behavior. */
@@ -187,15 +196,19 @@ public class SandboxEscalator implements Sandbox {
         }
         if (isBlocked(fast)) {
             String runId = spec != null ? spec.getRunId() : null;
-            boolean withinBudget = tryAcquireBudget(runId);
+            String tenantId = spec != null ? spec.getTenantId() : null;
+            boolean withinBudget = tryAcquireBudget(tenantId, runId);
             if (!withinBudget) {
-                log.warn("[SandboxEscalator] Escalation budget ({} for '{}', key={}) spent; "
+                log.warn("[SandboxEscalator] Escalation budget ({} for '{}', tenant={}, key={}) spent; "
                                 + "returning the BLOCKED result as-is",
-                        escalationBudget, className, runId != null ? runId : "<instance>");
+                        escalationBudget, className,
+                        tenantId != null ? tenantId : "<none>",
+                        runId != null ? runId : "<instance>");
                 return fast;
             }
-            log.warn("[SandboxEscalator] Fast tier blocked '{}' ({}); escalating (used {}/{} for key={})",
-                    className, fast.error(), usedFor(runId), escalationBudget,
+            log.warn("[SandboxEscalator] Fast tier blocked '{}' ({}); escalating (used {}/{} for tenant={}, key={})",
+                    className, fast.error(), usedFor(tenantId, runId), escalationBudget,
+                    tenantId != null ? tenantId : "<none>",
                     runId != null ? runId : "<instance>");
             SandboxResult escalated = strongSandbox.execute(className, code, spec);
             log.debug("[SandboxEscalator] Strong tier result for '{}': success={}",
@@ -209,17 +222,26 @@ public class SandboxEscalator implements Sandbox {
     // ============ Budget ledger ============
 
     /**
-     * Reserve one escalation slot for the given attribution key.
-     * Runs {@code budget} or fewer escalations; beyond that, fail-closed.
-     * The counter only counts REAL escalations (a rejected attempt
-     * leaves it untouched) — the metric stays honest for monitoring.
+     * Reserve one escalation slot. Attribution order (harness 4.x):
+     * tenant ledger first (when the spec carries one), then the run
+     * ledger, then the instance-level fallback. The counter only counts
+     * REAL escalations (a rejected attempt leaves it untouched) — the
+     * metric stays honest for monitoring.
      */
-    private boolean tryAcquireBudget(String runId) {
+    private boolean tryAcquireBudget(String tenantId, String runId) {
+        if (tenantId != null && !tenantId.isBlank()) {
+            // Two-tier claim: tenant slot first. A tenant that spent its
+            // shared budget is refused even though its individual run has
+            // budget left — tenancy is the isolation boundary the budget
+            // exists to protect.
+            return acquireSlot(budgetByTenantId.computeIfAbsent(tenantId, k -> new AtomicInteger()))
+                    && (runId == null || runId.isBlank()
+                        || acquireSlot(budgetByRunId.computeIfAbsent(runId, k -> new AtomicInteger())));
+        }
         if (runId == null || runId.isBlank()) {
             return acquireSlot(unattributedEscalations);
         }
-        AtomicInteger used = budgetByRunId.computeIfAbsent(runId, k -> new AtomicInteger());
-        return acquireSlot(used);
+        return acquireSlot(budgetByRunId.computeIfAbsent(runId, k -> new AtomicInteger()));
     }
 
     /** Bounded claim via CAS: every successful claim is a real escalation. */
@@ -234,12 +256,15 @@ public class SandboxEscalator implements Sandbox {
         return true;
     }
 
-    /** Escalations consumed so far for the given attribution key. */
-    private int usedFor(String runId) {
-        if (runId == null || runId.isBlank()) {
-            return unattributedEscalations.get();
+    /** Escalations consumed so far for the given attribution pair. */
+    private int usedFor(String tenantId, String runId) {
+        if (tenantId != null && !tenantId.isBlank()) {
+            return budgetByTenantId.getOrDefault(tenantId, new AtomicInteger()).get();
         }
-        return budgetByRunId.getOrDefault(runId, new AtomicInteger()).get();
+        if (runId != null && !runId.isBlank()) {
+            return budgetByRunId.getOrDefault(runId, new AtomicInteger()).get();
+        }
+        return unattributedEscalations.get();
     }
 
     /**
@@ -309,8 +334,21 @@ public class SandboxEscalator implements Sandbox {
         return budgetByRunId.getOrDefault(runId, new AtomicInteger()).get();
     }
 
+    /** Escalations consumed so far for the given tenant (0 if never seen). */
+    public int getEscalationsUsedByTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return unattributedEscalations.get();
+        }
+        return budgetByTenantId.getOrDefault(tenantId, new AtomicInteger()).get();
+    }
+
     /** Distinct attributed runs this escalator has seen (ledger size). */
     public int getTrackedRunCount() {
         return budgetByRunId.size();
+    }
+
+    /** Distinct attributed tenants this escalator has seen (ledger size). */
+    public int getTrackedTenantCount() {
+        return budgetByTenantId.size();
     }
 }

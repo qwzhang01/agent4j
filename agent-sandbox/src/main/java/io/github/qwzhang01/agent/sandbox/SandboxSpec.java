@@ -67,6 +67,7 @@ public class SandboxSpec {
     private final List<String> blockedPackages;
     private final List<String> blockedClasses;
     private final String runId;
+    private final String tenantId;
 
     private SandboxSpec(Builder builder) {
         this.timeout = builder.timeout;
@@ -80,6 +81,7 @@ public class SandboxSpec {
         this.blockedPackages = builder.blockedPackages;
         this.blockedClasses = builder.blockedClasses;
         this.runId = builder.runId;
+        this.tenantId = builder.tenantId;
     }
 
     /**
@@ -166,6 +168,17 @@ public class SandboxSpec {
         return runId;
     }
 
+    /**
+     * Tenant attribution (harness 4.x, 2026-09-17): which tenant this
+     * execution's escalation budget is billed to. Independent of {@code
+     * runId}: a tenant may own many runs; the budget ledger keys on
+     * tenant first (a noisy tenant cannot dilute another tenant's budget
+     * by spawning many runs), run second. Null = unattributed.
+     */
+    public String getTenantId() {
+        return tenantId;
+    }
+
     public static class Builder {
         private Duration timeout = Duration.ofSeconds(10);
         private String workingDirectory;
@@ -178,6 +191,7 @@ public class SandboxSpec {
         private List<String> blockedPackages = defaultBlockedPackages();
         private List<String> blockedClasses = List.of();
         private String runId;
+        private String tenantId;
 
         public Builder timeout(Duration timeout) {
             this.timeout = timeout;
@@ -239,6 +253,16 @@ public class SandboxSpec {
          */
         public Builder runId(String runId) {
             this.runId = runId;
+            return this;
+        }
+
+        /**
+         * Tenant attribution for the escalation budget (harness 4.x).
+         * Null (default) = unattributed; the budget then keys on runId
+         * (or instance-level when that is absent too).
+         */
+        public Builder tenantId(String tenantId) {
+            this.tenantId = tenantId;
             return this;
         }
 
