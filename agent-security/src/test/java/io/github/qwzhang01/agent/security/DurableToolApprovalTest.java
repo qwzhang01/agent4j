@@ -141,6 +141,23 @@ class DurableToolApprovalTest {
     }
 
     @Test
+    void sameToolDifferentCallIdsGetDistinctApprovals() {
+        DurableToolApprovalService approval =
+                new DurableToolApprovalService(new InMemoryApprovalStore());
+        ToolCall first = ToolCall.of("c1", "delete_file",
+                (com.fasterxml.jackson.databind.JsonNode) null);
+        ToolCall second = ToolCall.of("c2", "delete_file",
+                (com.fasterxml.jackson.databind.JsonNode) null);
+
+        assertEquals(ToolApprovalService.Verdict.PENDING, approval.verdict(first, "run-x"));
+        assertEquals(ToolApprovalService.Verdict.PENDING, approval.verdict(second, "run-x"));
+        approval.approve("run-x", first, "ops", "ok");
+        assertEquals(ToolApprovalService.Verdict.APPROVED, approval.verdict(first, "run-x"));
+        assertEquals(ToolApprovalService.Verdict.PENDING, approval.verdict(second, "run-x"),
+                "one approval must not execute a second identical delete");
+    }
+
+    @Test
     void resumeWaitingApprovalRequiresRunId() {
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         registry.register(new DestructiveTool());

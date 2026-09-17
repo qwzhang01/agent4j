@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 public class ReActAgentLoop implements AgentLoop {
 
     private static final Logger log = LoggerFactory.getLogger(ReActAgentLoop.class);
+    private static final String WAITING_HANDOFF_PREFIX = "[WAITING_HANDOFF] ";
 
     private final ToolExecutor toolExecutor;
     private final HandoffTargetResolver resolver;
@@ -173,6 +174,13 @@ public class ReActAgentLoop implements AgentLoop {
         if (state.getStatus() == AgentState.Status.WAITING_APPROVAL) {
             if (!replayPendingApprovals(config, currentConfig, state, sink, ctx)) {
                 return;
+            }
+            DeferredHandoff deferred = applyDeferredHandoff(currentConfig, state, sink);
+            if (deferred != null) {
+                handoffFrom = currentConfig;
+                currentConfig = deferred.target();
+                activeInputFilter = deferred.filter();
+                state.setLastActiveAgentName(currentConfig.getName());
             }
         }
         state.setStatus(AgentState.Status.RUNNING);
@@ -363,6 +371,14 @@ public class ReActAgentLoop implements AgentLoop {
                 }
 
                 if (hasWaitingApproval(state, plainCalls.size())) {
+                    if (pendingHandoffCall != null) {
+                        // Pair the unused handoff tool_use so a later model
+                        // turn is valid. Do not swap persona until resume
+                        // after the waiting tools land.
+                        state.addMessage(ChatMessage.tool(pendingHandoffCall.id(),
+                                pendingHandoffCall.name(),
+                                WAITING_HANDOFF_PREFIX + pendingHandoffSpec.targetName()));
+                    }
                     pauseForApproval(state, sink, events, ctx, stepId, attempt, stepStartNanos);
                     return;
                 }
@@ -527,6 +543,39 @@ public class ReActAgentLoop implements AgentLoop {
             return false;
         }
         return true;
+    }
+
+    /**
+     * A WAITING pause writes a pairing row for the unused handoff tool_use.
+     * After pending tools land, swap persona using that marker.
+     */
+    private DeferredHandoff applyDeferredHandoff(AgentConfig currentConfig, AgentState state,
+                                                Consumer<AgentEvent> sink) {
+        List<ChatMessage> messages = state.getMessages();
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage message = messages.get(i);
+            if (message.role() != ChatRole.TOOL || message.content() == null
+                    || !message.content().startsWith(WAITING_HANDOFF_PREFIX)) {
+                continue;
+            }
+            ToolCall call = findToolCall(messages, i, message.toolCallId());
+            if (call == null) {
+                continue;
+            }
+            HandoffSpec spec = findDeclaredHandoff(currentConfig, call);
+            if (spec == null) {
+                continue;
+            }
+            String transfer = "Conversation transferred to agent '" + spec.targetName() + "'.";
+            messages.set(i, ChatMessage.tool(call.id(), call.name(), transfer));
+            sink.accept(new AgentEvent.Handoff(currentConfig.getName(), spec.targetName(),
+                    spec.toolName()));
+            return new DeferredHandoff(spec.target(), spec.inputFilter());
+        }
+        return null;
+    }
+
+    private record DeferredHandoff(AgentConfig target, HandoffInputFilter filter) {
     }
 
     private static ToolCall findToolCall(List<ChatMessage> messages, int toolIndex, String toolCallId) {

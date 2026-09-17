@@ -396,6 +396,45 @@ class HandoffLoopTest {
         assertEquals("Echo: hi", echoResult.content());
     }
 
+    @Test
+    void waitingApprovalPairsHandoffAndAppliesItOnResume() {
+        var clientA = new RecordingScriptedMock()
+                .addResponse(ModelResponse.toolCalls(List.of(
+                        ToolCall.of("c1", "delete_file", (com.fasterxml.jackson.databind.JsonNode) null),
+                        handoffCall("h1", "B"))));
+        var clientB = new RecordingScriptedMock()
+                .addResponse(ModelResponse.text("done by B"));
+
+        AgentConfig b = config("B", "You are B.", clientB);
+        AgentConfig a = config("A", "You are A.", clientA, List.of(HandoffSpec.to(b)));
+
+        java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+        ToolExecutor waitingThenOk = toolCall -> {
+            if ("delete_file".equals(toolCall.name()) && attempts.getAndIncrement() == 0) {
+                return "[WAITING_APPROVAL] wait";
+            }
+            return "deleted";
+        };
+
+        Agent agent = new SimpleAgent(a, new ReActAgentLoop(waitingThenOk));
+        AgentState state = new AgentState();
+        io.github.qwzhang01.agent.core.run.RunContext ctx =
+                io.github.qwzhang01.agent.core.run.RunContext.builder().runId("run-h").build();
+        agent.run("start", state, ctx);
+
+        assertEquals(AgentState.Status.WAITING_APPROVAL, state.getStatus());
+        assertEquals(1, state.getMessages().stream()
+                .filter(m -> m.role() == ChatRole.TOOL && "h1".equals(m.toolCallId()))
+                .count(), "handoff tool_use must be paired before pause");
+
+        String out = agent.resume(state, ctx);
+        assertEquals("done by B", out);
+        assertEquals("B", state.getLastActiveAgentName());
+        assertEquals("You are B.", clientB.requests.get(0).messages().get(0).content());
+        assertTrue(state.getMessages().stream()
+                .noneMatch(m -> m.content() != null && m.content().startsWith("[WAITING_HANDOFF]")));
+    }
+
     private static class RecordingExecutor implements ToolExecutor {
         final List<String> names = new ArrayList<>();
         private final ToolExecutor delegate;

@@ -105,10 +105,13 @@ public final class DurableToolApprovalService implements ToolApprovalService {
     }
 
     /**
-     * Tool name rides in the hash so two REQUIRES_APPROVAL tools with the
-     * same (or null) arguments in one run never share an approval row.
+     * Tool call id and name ride in the hash so two REQUIRES_APPROVAL
+     * calls — even the same tool with the same arguments — never share
+     * an approval row (one human decision must not green-light a double
+     * delete).
      */
     static String callHash(ToolCall toolCall) {
-        return ToolResult.hashArguments(toolCall.name() + "\n" + toolCall.arguments());
+        String id = toolCall.id() == null ? "" : toolCall.id();
+        return ToolResult.hashArguments(id + "\n" + toolCall.name() + "\n" + toolCall.arguments());
     }
 }
