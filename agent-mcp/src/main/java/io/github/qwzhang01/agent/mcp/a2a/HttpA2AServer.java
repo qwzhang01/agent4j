@@ -81,6 +81,7 @@ public class HttpA2AServer implements AutoCloseable {
     private final A2ATaskStore taskStore;
     private final String bearerToken;           // null = auth off (dev/tests only)
     private final String pushSharedSecret;      // null = unsigned pushes (legacy)
+    private final java.security.KeyPair cardSigningKeys;  // null = unsigned card (legacy)
 
     private HttpServer server;
     private ExecutorService executor;
@@ -120,6 +121,28 @@ public class HttpA2AServer implements AutoCloseable {
                          A2ATaskStore taskStore,
                          String bearerToken,
                          String pushSharedSecret) {
+        this(card, agent, port, inboundSanitizer, taskStore,
+                bearerToken, pushSharedSecret, null);
+    }
+
+    /**
+     * Batch 4 full form: card identity signing on top of the Stage 6.3
+     * form. When {@code cardSigningKeys} is set, every well-known card
+     * response carries {@link A2ACardIdentity#CARD_SIGNATURE_HEADER} — a
+     * signature over the card body bytes made with this server's private
+     * key, so a caller with the matching public key in its trust store can
+     * verify WHO it is talking to (name/url/capabilities/version ride the
+     * signed payload). Null keeps the legacy unsigned card.
+     *
+     * @param cardSigningKeys key pair that signs the card (the public half
+     *                        feeds the keyId fingerprint); null = unsigned
+     */
+    public HttpA2AServer(AgentCard card, Agent agent, int port,
+                         UnaryOperator<String> inboundSanitizer,
+                         A2ATaskStore taskStore,
+                         String bearerToken,
+                         String pushSharedSecret,
+                         java.security.KeyPair cardSigningKeys) {
         this.card = Objects.requireNonNull(card, "card must not be null");
         this.agent = Objects.requireNonNull(agent, "agent must not be null");
         this.requestedPort = port;
@@ -127,6 +150,13 @@ public class HttpA2AServer implements AutoCloseable {
         this.taskStore = taskStore != null ? taskStore : new InMemoryA2ATaskStore();
         this.bearerToken = bearerToken;
         this.pushSharedSecret = pushSharedSecret;
+        this.cardSigningKeys = cardSigningKeys;
+    }
+
+    /** Public key id of the card signing key (null when the card is unsigned). */
+    public String cardSigningKeyId() {
+        return cardSigningKeys == null ? null
+                : A2ACardIdentity.keyIdOf(cardSigningKeys.getPublic());
     }
 
     // ============ Lifecycle ============
@@ -193,6 +223,19 @@ public class HttpA2AServer implements AutoCloseable {
                 if ("GET".equals(method)) {
                     byte[] body = A2AJson.cardJson(cardWithV2Caps(), wellKnownUrlOverride())
                             .toString().getBytes(StandardCharsets.UTF_8);
+                    if (cardSigningKeys != null) {
+                        String signature = A2ACardIdentity.sign(
+                                body, cardSigningKeys.getPrivate());
+                        exchange.getResponseHeaders().set(
+                                A2ACardIdentity.CARD_SIGNATURE_HEADER,
+                                A2ACardIdentity.headerValue(
+                                        A2ACardIdentity.keyIdOf(
+                                                cardSigningKeys.getPublic()),
+                                        A2ACardIdentity.algorithmFor(
+                                                cardSigningKeys.getPrivate()
+                                                        .getAlgorithm()),
+                                        signature));
+                    }
                     respond(exchange, 200, body);
                 } else {
                     respond(exchange, 405, plainError("GET only"));

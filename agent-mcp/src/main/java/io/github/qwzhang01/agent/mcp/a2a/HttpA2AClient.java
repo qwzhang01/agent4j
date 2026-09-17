@@ -59,6 +59,7 @@ public class HttpA2AClient implements A2AClient {
     private final Duration timeout;
     private final AtomicLong rpcIds = new AtomicLong(1);
     private final Map<String, String> localToRemoteTask = new ConcurrentHashMap<>();
+    private final java.util.Set<java.security.PublicKey> cardTrustStore;  // empty = D7 legacy
 
     /** Default timeout 120s: server-side agents run synchronously and can be slow. */
     public HttpA2AClient(String baseUrl) {
@@ -70,6 +71,22 @@ public class HttpA2AClient implements A2AClient {
     }
 
     public HttpA2AClient(String baseUrl, Duration timeout, HttpClient http) {
+        this(baseUrl, timeout, http, java.util.Set.of());
+    }
+
+    /**
+     * Batch 4 full form: card identity trust store. When non-empty, every
+     * discovered card MUST carry a signature that verifies against one of
+     * these public keys — a card without a signature, with an unparseable
+     * signature, or with a signature by an unknown key is REFUSED (the
+     * discovery throws), never silently accepted as a routing fact. An
+     * empty set keeps the D7 legacy behavior (self-reported cards are
+     * routing input, never trust input).
+     *
+     * @param cardTrustStore public keys whose card signatures this client believes
+     */
+    public HttpA2AClient(String baseUrl, Duration timeout, HttpClient http,
+                         java.util.Set<java.security.PublicKey> cardTrustStore) {
         String base = Objects.requireNonNull(baseUrl, "baseUrl must not be null").strip();
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
@@ -80,6 +97,8 @@ public class HttpA2AClient implements A2AClient {
         this.baseUrl = base;
         this.timeout = Objects.requireNonNull(timeout, "timeout must not be null");
         this.http = Objects.requireNonNull(http, "http must not be null");
+        this.cardTrustStore = cardTrustStore == null
+                ? java.util.Set.of() : java.util.Set.copyOf(cardTrustStore);
     }
 
     // ============ Discovery ============
@@ -88,16 +107,89 @@ public class HttpA2AClient implements A2AClient {
      * Fetch the peer's agent card from {@code /.well-known/agent.json}.
      * One endpoint = one card (the spec's rule), so this returns a
      * one-element list.
+     * <p>
+     * Batch 4: when a card trust store is configured, the card response
+     * must carry {@link A2ACardIdentity#CARD_SIGNATURE_HEADER} verifying
+     * against a trusted key — the check is fail-closed (missing/garbage/
+     * unknown-key signatures throw), because a trust store is only
+     * meaningful if it can say no.
      */
     @Override
     public List<AgentCard> discoverAgents() {
         String url = baseUrl + "/.well-known/agent.json";
-        String body = getJson(url);
+        CardHttpResponse card = getCard(url);
+        if (!cardTrustStore.isEmpty()) {
+            A2ACardIdentity.CardSignature parsed =
+                    A2ACardIdentity.parseHeader(card.signatureHeader);
+            if (parsed == null) {
+                throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                        "agent card at " + url + " has no verifiable signature "
+                                + "(trust store configured, "
+                                + A2ACardIdentity.CARD_SIGNATURE_HEADER + " missing or malformed)",
+                        null);
+            }
+            java.security.PublicKey trusted = matchTrustedKey(parsed);
+            if (trusted == null) {
+                throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                        "agent card at " + url + " signed by unknown key " + parsed.keyId()
+                                + " (not in trust store)", null);
+            }
+            if (!A2ACardIdentity.verify(card.bodyBytes, parsed.signature(), trusted)) {
+                throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                        "agent card at " + url + " signature verification FAILED for key "
+                                + parsed.keyId() + " (card may be tampered)", null);
+            }
+        }
         try {
-            return List.of(A2AJson.cardFrom(A2AJson.mapper().readTree(body), baseUrl + "/"));
+            return List.of(A2AJson.cardFrom(A2AJson.mapper().readTree(card.body), baseUrl + "/"));
         } catch (IOException e) {
             throw new A2AHttpException(A2AHttpException.TRANSPORT,
                     "agent card at " + url + " is not valid JSON: " + e.getMessage(), e);
+        }
+    }
+
+    private java.security.PublicKey matchTrustedKey(A2ACardIdentity.CardSignature parsed) {
+        for (java.security.PublicKey key : cardTrustStore) {
+            if (A2ACardIdentity.keyIdOf(key).equals(parsed.keyId())) {
+                return key;
+            }
+        }
+        return null;
+    }
+
+    /** Card fetch outcome: body text, exact body bytes (what the signature covers), signature header. */
+    private record CardHttpResponse(String body, byte[] bodyBytes, String signatureHeader) {
+    }
+
+    private CardHttpResponse getCard(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(timeout)
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response =
+                    http.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 200) {
+                throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                        "agent card fetch " + url + " returned HTTP "
+                                + response.statusCode()
+                                + snippet(new String(response.body(), java.nio.charset.StandardCharsets.UTF_8)),
+                        null);
+            }
+            return new CardHttpResponse(
+                    new String(response.body(), java.nio.charset.StandardCharsets.UTF_8),
+                    response.body(),
+                    response.headers().firstValue(A2ACardIdentity.CARD_SIGNATURE_HEADER)
+                            .orElse(null));
+        } catch (A2AHttpException e) {
+            throw e;
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new A2AHttpException(A2AHttpException.TRANSPORT,
+                    "agent card fetch " + url + " failed: " + e.getMessage(), e);
         }
     }
 
@@ -317,32 +409,6 @@ public class HttpA2AClient implements A2AClient {
             }
             throw new A2AHttpException(A2AHttpException.TRANSPORT,
                     "A2A transport failure to " + baseUrl + ": " + e.getMessage(), e);
-        }
-    }
-
-    private String getJson(String url) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(timeout)
-                    .GET()
-                    .build();
-            HttpResponse<String> response =
-                    http.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                throw new A2AHttpException(A2AHttpException.TRANSPORT,
-                        "agent card fetch " + url + " returned HTTP "
-                                + response.statusCode() + snippet(response.body()), null);
-            }
-            return response.body();
-        } catch (A2AHttpException e) {
-            throw e;
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new A2AHttpException(A2AHttpException.TRANSPORT,
-                    "agent card fetch " + url + " failed: " + e.getMessage(), e);
         }
     }
 
