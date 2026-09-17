@@ -145,12 +145,14 @@ class JdbcTaskQueueTest {
         JdbcTaskQueue.TaskRow fresh = queue.enqueue(null, "flow", TaskPriority.NORMAL, "f");
         queue.claimNext("worker-a"); // fresh RUNNING: inside grace
 
-        // Simulate a crashed worker: claim, then backdate started_at.
+        // Simulate a crashed worker: claim, then backdate the lease clock
+        // (batch 5: liveness is COALESCE(heartbeat_at, started_at), so the
+        // simulation must age the lease marker the claim just stamped).
         JdbcTaskQueue.TaskRow orphan = queue.enqueue(null, "flow", TaskPriority.NORMAL, "o");
         queue.claimNext("worker-b");
         try (var st = conn.createStatement()) {
-            st.execute("UPDATE agent4j_tasks SET started_at = 1000 WHERE task_id = '"
-                    + orphan.taskId() + "'");
+            st.execute("UPDATE agent4j_tasks SET started_at = 1000, heartbeat_at = 1000 "
+                    + "WHERE task_id = '" + orphan.taskId() + "'");
         }
 
         // Also enqueue a never-claimed PENDING task: must NOT be reported.
@@ -169,8 +171,8 @@ class JdbcTaskQueueTest {
         JdbcTaskQueue.TaskRow orphan = queue.enqueue(null, "flow", TaskPriority.NORMAL, "o");
         queue.claimNext("worker-a");
         try (var st = conn.createStatement()) {
-            st.execute("UPDATE agent4j_tasks SET started_at = 1000 WHERE task_id = '"
-                    + orphan.taskId() + "'");
+            st.execute("UPDATE agent4j_tasks SET started_at = 1000, heartbeat_at = 1000 "
+                    + "WHERE task_id = '" + orphan.taskId() + "'");
         }
         queue.requeueOrphaned(60_000);
         // Another worker claims it: single-winner still applies.

@@ -40,10 +40,11 @@ public final class JdbcTaskQueue {
                 payload        TEXT,
                 result         TEXT,
                 seq            BIGINT       NOT NULL,
-                created_at     BIGINT       NOT NULL,
-                started_at     BIGINT,
-                completed_at   BIGINT,
-                tenant_id      VARCHAR(128)
+                created_at   BIGINT       NOT NULL,
+                started_at   BIGINT,
+                completed_at BIGINT,
+                heartbeat_at BIGINT,
+                tenant_id    VARCHAR(128)
             )
             """;
 
@@ -300,9 +301,13 @@ public final class JdbcTaskQueue {
                 WHERE status = 'PENDING'
                 ORDER BY priority DESC, seq ASC
                 """;
+        // The claim stamps the lease clock (heartbeat_at) together with
+        // started_at — an unattended task (holder never renews) is judged
+        // by claim time via COALESCE(heartbeat_at, started_at), so legacy
+        // claim-only behavior is preserved byte-for-byte.
         String claim = """
                 UPDATE agent4j_tasks
-                SET status = 'RUNNING', started_at = ?
+                SET status = 'RUNNING', started_at = ?, heartbeat_at = ?
                 WHERE task_id = ? AND status = 'PENDING'
                 """;
         try (CloseGuard g = guard()) {
@@ -316,8 +321,10 @@ public final class JdbcTaskQueue {
             }
             for (String id : ids) {
                 try (PreparedStatement ps = c.prepareStatement(claim)) {
-                    ps.setLong(1, System.currentTimeMillis());
-                    ps.setString(2, id);
+                    long now = System.currentTimeMillis();
+                    ps.setLong(1, now);
+                    ps.setLong(2, now);
+                    ps.setString(3, id);
                     if (ps.executeUpdate() == 1) {
                         return get(id).orElseThrow();
                     }
@@ -393,13 +400,63 @@ public final class JdbcTaskQueue {
     // ============ Crash recovery ============
 
     /**
+     * Renew the lease of a claimed (RUNNING) task: stamp the lease clock
+     * ({@code heartbeat_at}) now. Returns {@code true} when the row was
+     * RUNNING and got renewed; {@code false} when the row is not RUNNING
+     * (never claimed, completed, cancelled, or already requeued by a
+     * sweep) — a holder seeing {@code false} no longer owns the task and
+     * should stop working on it (fail-closed on ownership; see {@link
+     * ClaimedTaskHeartbeat} for the auto-renewing holder). Store errors
+     * still throw — the caller decides whether to fail open (retry next
+     * interval) or give up; a throw is never a renewal.
+     */
+    public boolean heartbeat(String taskId) {
+        String sql = """
+                UPDATE agent4j_tasks
+                SET heartbeat_at = ?
+                WHERE task_id = ? AND status = 'RUNNING'
+                """;
+        try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setLong(1, System.currentTimeMillis());
+            ps.setString(2, taskId);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task heartbeat failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * The task's lease clock (last holder renewal; claim time when never
+     * renewed), for monitoring and tests. Empty when the row does not
+     * exist.
+     */
+    public java.util.Optional<Instant> heartbeatAt(String taskId) {
+        String sql = "SELECT COALESCE(heartbeat_at, started_at) FROM agent4j_tasks "
+                + "WHERE task_id = ?";
+        try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql)) {
+            ps.setString(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getLong(1) > 0
+                        ? java.util.Optional.of(Instant.ofEpochMilli(rs.getLong(1)))
+                        : java.util.Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Task heartbeatAt failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * After a worker crash: RUNNING rows are orphans (their holder died).
      * Requeue them to PENDING so another worker can claim. A live worker
      * keeps its lease via the task's own completion — requeueing a row
      * still actively RUNNING on a live instance is the host's call; the
-     * default policy here only requeues rows whose started_at is older
-     * than the given grace window (a live worker finishes faster than
-     * grace; a crashed one never finishes).
+     * default policy here only requeues rows whose lease clock — {@code
+     * COALESCE(heartbeat_at, started_at)}: the last holder renewal, or
+     * claim time when the holder never renewed — is older than the given
+     * grace window (a live worker renews faster than grace; a crashed
+     * one never renews or finishes). Harness batch 5 moved liveness off
+     * claim-time-only: a task running longer than grace stays claimed as
+     * long as its holder heartbeats (see {@link ClaimedTaskHeartbeat}).
      */
     public List<String> requeueOrphaned(long graceMillis) {
         // Snapshot the orphan ids first, then requeue exactly those rows via
@@ -410,11 +467,13 @@ public final class JdbcTaskQueue {
         long cutoff = System.currentTimeMillis() - graceMillis;
         String find = """
                 SELECT task_id FROM agent4j_tasks
-                WHERE status = 'RUNNING' AND started_at <= ?
+                WHERE status = 'RUNNING' AND COALESCE(heartbeat_at, started_at) <= ?
                 """;
+        // The requeue resets the lease clock too: the next claim starts a
+        // fresh lease instead of inheriting the dead holder's aged one.
         String requeue = """
                 UPDATE agent4j_tasks
-                SET status = 'PENDING', started_at = NULL
+                SET status = 'PENDING', started_at = NULL, heartbeat_at = NULL
                 WHERE task_id = ? AND status = 'RUNNING'
                 """;
         try (CloseGuard g = guard()) {
