@@ -25,9 +25,20 @@ import java.util.function.Consumer;
 public final class ChatRoom {
 
     private final ChatEngine engine;
+    private final io.github.qwzhang01.agent.chat.speaker.BeatPolicy beatPolicy;
+    private final int maxBeats;
+    private final String beatPrompt;
 
     ChatRoom(ChatEngine engine) {
+        this(engine, null, EnsembleChatEngine.DEFAULT_MAX_BEATS, null);
+    }
+
+    ChatRoom(ChatEngine engine, io.github.qwzhang01.agent.chat.speaker.BeatPolicy beatPolicy,
+             int maxBeats, String beatPrompt) {
         this.engine = Objects.requireNonNull(engine, "engine");
+        this.beatPolicy = beatPolicy;
+        this.maxBeats = maxBeats;
+        this.beatPrompt = beatPrompt;
     }
 
     public static Builder builder() {
@@ -50,6 +61,21 @@ public final class ChatRoom {
         engine.stream(userText, listener);
     }
 
+    /**
+     * Ensemble streaming: when a {@code BeatPolicy} is configured, one user
+     * line may produce several persona replies ("beats"). See
+     * {@code EnsembleChatEngine}. Without a beat policy this behaves exactly
+     * like {@link #stream}.
+     */
+    public void streamEnsemble(String userText, Consumer<AgentEvent> listener) {
+        if (beatPolicy == null) {
+            engine.stream(userText, listener);
+            return;
+        }
+        new EnsembleChatEngine(engine, beatPolicy, maxBeats, beatPrompt)
+                .stream(userText, listener);
+    }
+
     public static final class Builder {
 
         private String roomId;
@@ -64,6 +90,9 @@ public final class ChatRoom {
         private RoomIdentity identity = RoomIdentity.empty();
         private ConsistencyGuard consistencyGuard = ConsistencyGuard.noop();
         private RetryPolicy retryPolicy = RetryPolicy.never();
+        private io.github.qwzhang01.agent.chat.speaker.BeatPolicy beatPolicy;
+        private int maxBeats = EnsembleChatEngine.DEFAULT_MAX_BEATS;
+        private String beatPrompt;
 
         public Builder roomId(String roomId) {
             this.roomId = roomId;
@@ -144,11 +173,36 @@ public final class ChatRoom {
         }
 
         /**
-         * Optional retry policy for hard-label violations detected after a reply completes.
+         * Optional retry policy for hard-label violations detected post-completion.
          * {@code null} defaults to {@link RetryPolicy#never()} (no retries, backward-compatible).
          */
         public Builder retryPolicy(RetryPolicy retryPolicy) {
             this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;
+            return this;
+        }
+
+        /**
+         * Optional ensemble continuation: after the first reply, the beat
+         * policy decides whether another persona speaks next. {@code null}
+         * keeps the room single-reply (backward-compatible).
+         */
+        public Builder beatPolicy(io.github.qwzhang01.agent.chat.speaker.BeatPolicy beatPolicy) {
+            this.beatPolicy = beatPolicy;
+            return this;
+        }
+
+        /** Beat cap for {@link #streamEnsemble}; default {@code 3}. */
+        public Builder maxBeats(int maxBeats) {
+            this.maxBeats = maxBeats;
+            return this;
+        }
+
+        /**
+         * Stage-direction template for continuation beats;
+         * {@code {name}} is replaced with the beat speaker's display name.
+         */
+        public Builder beatPrompt(String beatPrompt) {
+            this.beatPrompt = beatPrompt;
             return this;
         }
 
@@ -172,7 +226,7 @@ public final class ChatRoom {
                     .retryPolicy(retryPolicy);
             listeners.forEach(engine::listener);
             engine.consistencyGuard(consistencyGuard);
-            return new ChatRoom(engine.build());
+            return new ChatRoom(engine.build(), beatPolicy, maxBeats, beatPrompt);
         }
     }
 }

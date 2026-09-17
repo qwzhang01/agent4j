@@ -111,6 +111,24 @@ public sealed interface AgentEvent {
     }
 
     /**
+     * An ensemble engine started a continuation beat: the named persona is
+     * about to speak after another persona's reply within the same user
+     * turn (see {@code EnsembleChatEngine}). Emitted before the beat's
+     * first {@link ContentDelta}.
+     * <p>
+     * Hosts use this to split streaming output into per-speaker bubbles
+     * and to reset per-beat UI state. The first beat does NOT emit this
+     * event; it is indistinguishable from a normal single-reply turn until
+     * the engine decides to continue.
+     *
+     * @param speakerId persona id of the persona speaking this beat
+     * @param beatIndex 1-based index of the beat within the turn
+     *                   (2 = first continuation beat)
+     */
+    record BeatStarted(String speakerId, int beatIndex) implements AgentEvent {
+    }
+
+    /**
      * The loop failed. {@code cause} may be null when only a message is known.
      */
     record Error(String message, Throwable cause) implements AgentEvent {

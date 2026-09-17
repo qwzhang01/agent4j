@@ -100,8 +100,8 @@ public final class ChatEngine {
      * {@link RetryPolicy#shouldRetry} are regenerated (up to
      * {@link RetryPolicy#maxAttempts()} times). Each attempt streams its
      * {@link AgentEvent.ContentDelta}s through {@code listener}; before a discarded
-     * attempt is retried, an {@link AgentEvent.RetryStarted} event is emitted so the
-     * host can reset any partial rendering. Only the accepted reply's TurnTrace and
+     * attempt is retried, an {@link AgentEvent.RetryStarted} event is emitted so
+     * the host can reset any partial rendering. Only the accepted reply's TurnTrace and
      * Done are emitted.
      */
     public void stream(String userText, Consumer<AgentEvent> listener) {
@@ -117,7 +117,26 @@ public final class ChatEngine {
             fireNoSpeaker(userText);
             return;
         }
-        ChatPersona speaker = picked.get();
+        streamForced(picked.get(), userText, userText, listener);
+    }
+
+    /**
+     * One reply for a FORCED speaker: no user-message append (the caller
+     * already put it on history) and no speaker pick. Ensemble engines
+     * (see {@code EnsembleChatEngine}) use this for continuation beats,
+     * passing a stage-direction {@code inputText} while keeping the original
+     * {@code userText} for context sources, listeners, and traces.
+     * <p>
+     * Everything else matches {@link #stream}: retry policy, TurnTrace,
+     * history append, ConsistencyGuard, listener callbacks, Done.
+     */
+    public void streamForced(ChatPersona speaker, String userText, String inputText,
+                             Consumer<AgentEvent> listener) {
+        Objects.requireNonNull(listener, "listener");
+        Objects.requireNonNull(speaker, "speaker");
+        if (userText == null || inputText == null) {
+            throw new IllegalArgumentException("userText and inputText must not be null");
+        }
 
         long startNanos = System.nanoTime();
         // Base prefix: assembled once; retry attempts may append retryExtraText.
@@ -150,12 +169,12 @@ public final class ChatEngine {
             final boolean[] errorOccurred = {false};
 
             try {
-                agent.stream(ChatMessage.user(userText), state, event -> {
+                agent.stream(ChatMessage.user(inputText), state, event -> {
                     if (event instanceof AgentEvent.Done done) {
                         replyHolder[0] = done.finalAnswer() == null ? "" : done.finalAnswer();
                         // Done is NOT forwarded here; emitted once at the end of all retries.
                     } else if (event instanceof AgentEvent.Error err) {
-                        fireError(speaker, userText, err.message(), err.cause());
+                        fireError(speaker, inputText, err.message(), err.cause());
                         listener.accept(event);
                         errorOccurred[0] = true;
                     } else {
@@ -164,7 +183,7 @@ public final class ChatEngine {
                 });
             } catch (RuntimeException e) {
                 log.error("chat stream failed in room '{}': {}", room.roomId(), e.getMessage());
-                fireError(speaker, userText, e.getMessage(), e);
+                fireError(speaker, inputText, e.getMessage(), e);
                 listener.accept(new AgentEvent.Error(
                         e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), e));
                 return;

@@ -1,11 +1,10 @@
 package io.github.qwzhang01.agent.chat;
 
 import io.github.qwzhang01.agent.chat.model.ChatPersona;
+import io.github.qwzhang01.agent.chat.model.RoomMessage;
 import io.github.qwzhang01.agent.chat.speaker.BeatPolicy;
 import io.github.qwzhang01.agent.core.agent.AgentEvent;
-import io.github.qwzhang01.agent.core.client.ModelClient;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -18,35 +17,69 @@ import java.util.function.Consumer;
  * whether another persona speaks next (no immediate self-followup) or the
  * turn stops.
  * <p>
+ * Beat detection reads room history (the engine appends each reply before
+ * this class regains control), so no fragile event interception is needed:
+ * <ul>
+ *   <li>{@code historyLength} before the first {@code engine.stream} call;</li>
+ *   <li>a new trailing assistant message whose speaker differs from the
+ *       previous trailing speaker (or the first reply of the turn) means
+ *       the beat succeeded.</li>
+ * </ul>
+ * <p>
  * Contract with hosts:
  * <ul>
  *   <li>{@link AgentEvent.Done} is emitted exactly once per user turn,
  *       after the last beat; its {@code finalAnswer} is the last beat's
- *       reply (hosts that need every beat should listen to
- *       {@code ChatListener.onReplied}, which fires per beat).</li>
- *   <li>{@link AgentEvent.ContentDelta}s from each beat stream through
- *       unchanged; hosts that render per-speaker bubbles can split beats
- *       on {@code onReplied} or a beat marker event.</li>
- *   <li>Beat replies are appended to room history immediately, so the
- *       next beat's context includes what the previous persona said.</li>
+ *       reply. Hosts that need every beat listen to
+ *       {@code ChatListener.onReplied}, which fires once per beat.</li>
+ *   <li>{@link AgentEvent.BeatStarted} is emitted before each continuation
+ *       beat's first delta so hosts can split per-speaker bubbles.</li>
+ *   <li>Beat replies land on room history immediately, so the next beat's
+ *       context includes what the previous persona said.</li>
+ *   <li>The beat input is a stage direction, not a user message: the beat
+ *       persona sees the room transcript (including the user line and all
+ *       previous replies) plus an instruction like
+ *       "(顾时安 speaks next)" without a second user line appended.</li>
  * </ul>
  * <p>
  * Fallback behavior: when the {@code BeatPolicy} misses (empty), throws,
- * or re-picks the last speaker only, the turn stops gracefully.
+ * or re-picks the last speaker, the turn stops gracefully — the first
+ * reply alone is a complete turn.
  */
 public final class EnsembleChatEngine {
+
+    /** Default beat cap: first reply + up to 2 continuations. */
+    public static final int DEFAULT_MAX_BEATS = 3;
 
     private final ChatEngine engine;
     private final BeatPolicy beatPolicy;
     private final int maxBeats;
+    private final String beatPrompt;
+
+    public EnsembleChatEngine(ChatEngine engine, BeatPolicy beatPolicy) {
+        this(engine, beatPolicy, DEFAULT_MAX_BEATS, null);
+    }
 
     public EnsembleChatEngine(ChatEngine engine, BeatPolicy beatPolicy, int maxBeats) {
+        this(engine, beatPolicy, maxBeats, null);
+    }
+
+    /**
+     * @param beatPrompt stage-direction template for continuation beats;
+     *                   {@code {name}} is replaced with the beat speaker's
+     *                   display name. Null falls back to a default.
+     */
+    public EnsembleChatEngine(ChatEngine engine, BeatPolicy beatPolicy,
+                              int maxBeats, String beatPrompt) {
         this.engine = Objects.requireNonNull(engine, "engine");
         this.beatPolicy = Objects.requireNonNull(beatPolicy, "beatPolicy");
         if (maxBeats < 1) {
             throw new IllegalArgumentException("maxBeats must be >= 1");
         }
         this.maxBeats = maxBeats;
+        this.beatPrompt = beatPrompt == null || beatPrompt.isBlank()
+                ? "(next: {name})"
+                : beatPrompt.trim();
     }
 
     public ChatEngine engine() {
@@ -81,31 +114,55 @@ public final class EnsembleChatEngine {
             throw new IllegalArgumentException("userText must not be null");
         }
 
-        BeatCollector collector = new BeatCollector(listener);
-        engine.stream(userText, collector);
+        // Swallow per-beat Done events; the ensemble emits exactly one Done
+        // at the end of the whole turn. Everything else streams through.
+        Consumer<AgentEvent> sink = event -> {
+            if (!(event instanceof AgentEvent.Done)) {
+                listener.accept(event);
+            }
+        };
 
-        // No first speaker -> nothing to continue.
-        if (collector.lastSpeaker() == null) {
-            return;
+        int base = engine.room().history().size();
+
+        // Beat 1: normal speaker pick. The engine appends the user line,
+        // picks the speaker, streams, and appends the reply to history.
+        engine.stream(userText, sink);
+
+        // The user line alone makes history longer; a real first reply adds
+        // a trailing ASSISTANT message. No new assistant line = nobody spoke.
+        if (!hasNewAssistantSince(engine.room().history(), base)) {
+            return;  // no speaker (or error before append): nothing to continue
         }
 
         for (int beat = 2; beat <= maxBeats; beat++) {
-            ChatPersona lastSpeaker = collector.lastSpeaker();
-            String lastReply = collector.lastReply() == null ? "" : collector.lastReply();
-
-            Optional<ChatPersona> next = pickNextBeat(lastSpeaker, lastReply);
-            if (next.isEmpty() || next.get().personaId().equals(lastSpeaker.personaId())) {
+            RoomMessage last = trailingAssistant(engine.room().history());
+            if (last == null) {
                 break;
             }
-            collector.reset();
-            engine.streamForced(next.get(), userText, collector);
-            if (collector.lastSpeaker() == null) {
+            ChatPersona lastSpeaker = engine.room().member(last.speakerId()).orElse(null);
+            if (lastSpeaker == null) {
                 break;
+            }
+
+            Optional<ChatPersona> next = pickNextBeat(lastSpeaker, last.content());
+            if (next.isEmpty()
+                    || next.get().personaId().equals(lastSpeaker.personaId())) {
+                break;
+            }
+            ChatPersona beatSpeaker = next.get();
+
+            listener.accept(new AgentEvent.BeatStarted(beatSpeaker.personaId(), beat));
+            int before = engine.room().history().size();
+            engine.streamForced(beatSpeaker, userText,
+                    stageDirection(beatSpeaker), sink);
+            if (engine.room().history().size() == before) {
+                break;  // beat failed (model error): stop the turn gracefully
             }
         }
 
-        listener.accept(new AgentEvent.Done(collector.lastReply() == null
-                ? "" : collector.lastReply(), null));
+        RoomMessage last = trailingAssistant(engine.room().history());
+        listener.accept(new AgentEvent.Done(
+                last == null ? "" : last.content(), null));
     }
 
     private Optional<ChatPersona> pickNextBeat(ChatPersona lastSpeaker, String lastReply) {
@@ -116,44 +173,28 @@ public final class EnsembleChatEngine {
         }
     }
 
-    /**
-     * Forwards deltas and captures the per-beat speaker/reply pair from
-     * {@code ChatListener.onReplied} (fired once per beat by the engine).
-     */
-    private static final class BeatCollector implements Consumer<AgentEvent> {
+    private String stageDirection(ChatPersona beatSpeaker) {
+        return beatPrompt.replace("{name}", beatSpeaker.displayName());
+    }
 
-        private final Consumer<AgentEvent> downstream;
-        private ChatPersona lastSpeaker;
-        private String lastReply;
-
-        BeatCollector(Consumer<AgentEvent> downstream) {
-            this.downstream = downstream;
-        }
-
-        @Override
-        public void accept(AgentEvent event) {
-            if (event instanceof AgentEvent.Done) {
-                return; // per-beat Done is swallowed; the ensemble emits one at the end
+    private static RoomMessage trailingAssistant(List<RoomMessage> history) {
+        for (int i = history.size() - 1; i >= 0; i--) {
+            RoomMessage message = history.get(i);
+            if (message.role() == io.github.qwzhang01.agent.core.model.ChatRole.ASSISTANT) {
+                return message;
             }
-            downstream.accept(event);
         }
+        return null;
+    }
 
-        ChatPersona lastSpeaker() {
-            return lastSpeaker;
+    /** True when an assistant line exists at index >= base (a reply happened). */
+    private static boolean hasNewAssistantSince(List<RoomMessage> history, int base) {
+        for (int i = history.size() - 1; i >= base; i--) {
+            RoomMessage message = history.get(i);
+            if (message.role() == io.github.qwzhang01.agent.core.model.ChatRole.ASSISTANT) {
+                return true;
+            }
         }
-
-        String lastReply() {
-            return lastReply;
-        }
-
-        void capture(ChatPersona speaker, String reply) {
-            this.lastSpeaker = speaker;
-            this.lastReply = reply == null ? "" : reply;
-        }
-
-        void reset() {
-            this.lastSpeaker = null;
-            this.lastReply = null;
-        }
+        return false;
     }
 }

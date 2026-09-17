@@ -2,6 +2,7 @@ package io.github.qwzhang01.agent.chat.speaker;
 
 import io.github.qwzhang01.agent.chat.model.ChatPersona;
 import io.github.qwzhang01.agent.chat.model.Room;
+import io.github.qwzhang01.agent.chat.model.RoomMessage;
 import io.github.qwzhang01.agent.core.client.ModelClient;
 import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
@@ -80,13 +81,40 @@ public final class DirectorSpeaker implements SpeakerPolicy {
 
     private ModelRequest buildRequest(Room room, String userText) {
         String system = instructions + "\n\nMembers:\n" + roster(room);
+        String transcriptTail = transcriptTail(room);
+        String user = (userText == null ? "" : userText)
+                + (transcriptTail.isEmpty() ? "" : "\n\nRecent transcript:\n" + transcriptTail);
         return ModelRequest.builder()
                 .messages(List.of(
                         ChatMessage.system(system),
-                        ChatMessage.user(userText == null ? "" : userText)))
+                        ChatMessage.user(user)))
                 .temperature(0.0)
                 .maxTokens(32)
                 .build();
+    }
+
+    /**
+     * Up to 6 recent messages as "[name]: text" lines, so the director can
+     * see whom the user was talking to before choosing the answerer.
+     */
+    private static String transcriptTail(Room room) {
+        List<RoomMessage> history = room.history();
+        int from = Math.max(0, history.size() - 6);
+        StringBuilder sb = new StringBuilder();
+        for (RoomMessage message : history.subList(from, history.size())) {
+            String name = message.role() == io.github.qwzhang01.agent.core.model.ChatRole.USER
+                    ? "user"
+                    : speakerName(room, message.speakerId());
+            sb.append(name).append(": ").append(message.content() == null ? "" : message.content())
+                    .append('\n');
+        }
+        return sb.toString().trim();
+    }
+
+    private static String speakerName(Room room, String personaId) {
+        return room.member(personaId)
+                .map(ChatPersona::displayName)
+                .orElse(personaId);
     }
 
     private static String nullToEmpty(String text) {
