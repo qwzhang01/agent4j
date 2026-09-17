@@ -2,7 +2,6 @@ package io.github.qwzhang01.agent.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.qwzhang01.agent.mcp.jsonrpc.JsonRpcNotification;
 import io.github.qwzhang01.agent.mcp.jsonrpc.JsonRpcRequest;
@@ -21,17 +20,35 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
- * MCP client: manages connection lifecycle and protocol operations (Stage 10 D3/D5).
+ * MCP client: manages connection lifecycle and protocol operations (Stage 10 D3/D5,
+ * harness batch 3: capability negotiation + cancellation wiring).
  * <p>
  * Operations:
  * <ol>
  *   <li>{@link #connect} -- initialize handshake (send capabilities, receive server capabilities)
+ *   <li>{@link #serverCapabilities} -- what the server declared at initialize (tools/resources/prompts/logging)
  *   <li>{@link #listTools} -- discover tools the server exposes
  *   <li>{@link #callTool} -- invoke a tool and get its result
+ *   <li>{@link #callTool(String, JsonNode, io.github.qwzhang01.agent.core.run.CancellationToken)} -- cancellable variant
  *   <li>{@link #ping} -- MCP-standard liveness probe (process management)
  *   <li>{@link #reconnect} -- close dead transport, build a fresh one, redo the handshake
  *   <li>{@link #disconnect} -- graceful shutdown
  * </ol>
+ * <p>
+ * Capability negotiation (harness 6.2 batch 3): the initialize handshake now
+ * records the server's declared capabilities as a typed
+ * {@link McpServerCapabilities} record. The client keeps its own consumption
+ * honest — it implements tools only, so the client capability declaration
+ * stays empty (declaring capabilities we do not implement would be a lie the
+ * server could act on); the record exists so the ASSEMBLY can decide what to
+ * do with a server that also offers resources/prompts/sampling/elicitation
+ * (log it, refuse it, or wire a future consumer) instead of silently
+ * ignoring the declaration. {@link #supportsTools()} guards the tool path:
+ * a server that declared no tools capability is refused at listTools/callTool
+ * with a clear message instead of an obscure protocol error — but the
+ * handshake-era servers that declared nothing (capability-absent = the
+ * 2024-11-05 optional-field semantics) are honored as tools-capable, the
+ * era the framework has always served.
  * <p>
  * v1 uses synchronous request-response: send a request, block on receive() for
  * the matching response (by id). Notifications (no id) are fire-and-forget.
@@ -42,6 +59,8 @@ import java.util.function.Supplier;
 public class McpClient {
 
     private static final Logger log = LoggerFactory.getLogger(McpClient.class);
+
+    /** Shared JSON mapper for request params (thread-safe). */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /** Max unmatched notifications / out-of-order responses before sendRequest fails. */
@@ -56,6 +75,7 @@ public class McpClient {
     private volatile boolean initialized = false;
     private volatile int maxStrayMessages = DEFAULT_MAX_STRAY_MESSAGES;
     private volatile Duration receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+    private volatile McpServerCapabilities serverCapabilities;
 
     /**
      * Create a client with a stdio transport (descriptor.command -> StdioTransport).
@@ -100,11 +120,15 @@ public class McpClient {
     // ============ Connection Lifecycle ============
 
     /**
-     * Initialize handshake with the MCP server (D5).
+     * Initialize handshake with the MCP server (D5, batch 3 capability record).
      * <p>
-     * Step 1: send initialize request (client capabilities + protocol version)
-     * Step 2: receive initialize response (server capabilities)
-     * Step 3: send initialized notification (handshake complete)
+     * Step 1: send initialize request (client capabilities + protocol version).
+     * The client capability object stays EMPTY on purpose: this client consumes
+     * tools only, and a declared-but-unimplemented capability is a lie the
+     * server may act upon (e.g. sending sampling requests we would drop).
+     * Step 2: receive initialize response — the server's declared capabilities
+     * are parsed into {@link #serverCapabilities()} (typed record).
+     * Step 3: send initialized notification (handshake complete).
      */
     public void connect() throws IOException {
         log.info("Connecting to MCP server '{}'...", descriptor.name());
@@ -124,8 +148,11 @@ public class McpClient {
         if (initResp.isError()) {
             throw new IOException("Initialize failed: " + initResp.error());
         }
-        log.info("MCP server '{}' initialized: {}", descriptor.name(),
-                initResp.result() != null ? initResp.result().get("serverInfo") : "(unknown)");
+        this.serverCapabilities = McpServerCapabilities.from(initResp.result());
+        log.info("MCP server '{}' initialized: {} capabilities={}",
+                descriptor.name(),
+                initResp.result() != null ? initResp.result().get("serverInfo") : "(unknown)",
+                serverCapabilities);
 
         // Step 3: initialized notification (fire-and-forget)
         JsonRpcNotification initNotif = new JsonRpcNotification("notifications/initialized", null);
@@ -136,28 +163,24 @@ public class McpClient {
     }
 
     /**
-     * Graceful shutdown (D5).
-     * Sends shutdown request, then closes the transport.
+     * The server's declared capabilities from the initialize handshake, or
+     * null before the first successful connect.
      */
-    public void disconnect() {
-        if (!initialized) {
-            log.warn("Disconnect called but not initialized, just closing transport");
-            closeTransport();
-            return;
-        }
-        try {
-            JsonRpcRequest shutdownReq = new JsonRpcRequest(
-                    nextId.getAndIncrement(), "shutdown", null);
-            transport.send(shutdownReq.toJson());
-            // Best-effort: read response (server may have already exited)
-            String respJson = transport.receive();
-            log.info("MCP server '{}' shutdown response: {}", descriptor.name(), respJson);
-        } catch (IOException e) {
-            log.warn("Error during shutdown of '{}': {}", descriptor.name(), e.getMessage());
-        } finally {
-            closeTransport();
-            initialized = false;
-        }
+    public McpServerCapabilities serverCapabilities() {
+        return serverCapabilities;
+    }
+
+    /**
+     * Whether the tool path is usable on this server: the server declared a
+     * tools capability, or declared none at all (2024-11-05 optional-field
+     * semantics — absent is allowed and historically means "tools only
+     * server", the era this framework has always served). A server that
+     * declared capabilities EXCLUDING tools is refused at the tool path
+     * with a clear message.
+     */
+    public boolean supportsTools() {
+        McpServerCapabilities caps = serverCapabilities;
+        return caps == null || caps.tools();
     }
 
     // ============ Tool Operations ============
@@ -167,6 +190,10 @@ public class McpClient {
      */
     public List<McpToolSchema> listTools() throws IOException {
         ensureConnected();
+        if (!supportsTools()) {
+            throw new IOException("MCP server '" + descriptor.name()
+                    + "' declared capabilities without tools: " + serverCapabilities);
+        }
         JsonRpcResponse resp = sendRequest("tools/list", null);
 
         if (resp.isError()) {
@@ -198,7 +225,35 @@ public class McpClient {
      * @return the concatenated text content from the tool result
      */
     public String callTool(String toolName, JsonNode args) throws IOException {
+        return callTool(toolName, args, null);
+    }
+
+    /**
+     * Cancellable tool call (harness batch 3): the RunContext's
+     * {@link io.github.qwzhang01.agent.core.run.CancellationToken} is checked
+     * before the wire and between receive polls. A cancellation hit surfaces
+     * as {@link io.github.qwzhang01.agent.core.run.RunCancelledException} —
+     * the structured signal every other boundary already throws — never as
+     * an IOException the caller might retry.
+     * <p>
+     * Honest boundary: the check is cooperative at the CLIENT side; the wire
+     * itself keeps blocking until a response or timeout (MCP-protocol
+     * cancellation notifications are not implemented — a server that ignores
+     * cancellations keeps its side of the work; we just stop waiting and
+     * surface the run-level cancellation).
+     *
+     * @param token the run's cancellation view; null = uncancellable legacy path
+     */
+    public String callTool(String toolName, JsonNode args,
+                           io.github.qwzhang01.agent.core.run.CancellationToken token) throws IOException {
         ensureConnected();
+        if (!supportsTools()) {
+            throw new IOException("MCP server '" + descriptor.name()
+                    + "' declared capabilities without tools: " + serverCapabilities);
+        }
+        if (token != null) {
+            token.check();
+        }
 
         ObjectNode callParams = MAPPER.createObjectNode();
         callParams.put("name", toolName);
@@ -208,13 +263,83 @@ public class McpClient {
             callParams.set("arguments", MAPPER.createObjectNode());
         }
 
-        JsonRpcResponse resp = sendRequest("tools/call", callParams);
+        long id = nextId.getAndIncrement();
+        JsonRpcRequest request = new JsonRpcRequest(id, "tools/call", callParams);
+        transport.send(request.toJson());
 
-        if (resp.isError()) {
-            throw new IOException("tools/call failed for '" + toolName + "': " + resp.error());
+        // Cancellation-aware receive: the same stray-skip loop, plus a token
+        // check per poll. receive(receiveTimeout) bounds each poll; the wire
+        // itself BLOCKS through that window, so a cancellation that fires
+        // mid-poll cannot surface until the poll exits — and when it exits
+        // via timeout, the token check rewrites the story: a cancelled run
+        // surfaces as the structured signal, never as a timeout IOException
+        // the caller might retry.
+        int stray = 0;
+        int strayLimit = maxStrayMessages;
+        while (true) {
+            if (token != null) {
+                token.check();
+            }
+            String respJson;
+            try {
+                respJson = transport.receive(receiveTimeout);
+            } catch (IOException io) {
+                // Cancellation beats the error story: if the run was
+                // cancelled while the wire was blocking, the structured
+                // signal takes precedence over the timeout.
+                if (token != null && token.isCancelled()) {
+                    token.check();
+                }
+                throw io;
+            }
+            JsonRpcResponse response;
+            try {
+                response = JsonRpcResponse.fromJson(respJson);
+            } catch (RuntimeException e) {
+                stray++;
+                if (stray > strayLimit) {
+                    throw new IOException("Too many stray MCP messages (limit="
+                            + strayLimit + ") while waiting for id=" + id, e);
+                }
+                continue;
+            }
+            if (response.id() != null
+                    && String.valueOf(response.id()).equals(String.valueOf(id))) {
+                if (response.isError()) {
+                    throw new IOException("tools/call failed for '" + toolName + "': " + response.error());
+                }
+                return extractTextContent(response.result());
+            }
+            stray++;
+            if (stray > strayLimit) {
+                throw new IOException("Too many stray MCP messages (limit="
+                        + strayLimit + ") while waiting for id=" + id);
+            }
         }
+    }
 
-        return extractTextContent(resp.result());
+    /**
+     * Graceful shutdown: best-effort shutdown request, then close the transport.
+     */
+    public void disconnect() {
+        if (!initialized) {
+            log.warn("Disconnect called but not initialized, just closing transport");
+            closeTransport();
+            return;
+        }
+        try {
+            JsonRpcRequest shutdownReq = new JsonRpcRequest(
+                    nextId.getAndIncrement(), "shutdown", null);
+            transport.send(shutdownReq.toJson());
+            // Best-effort: read response (server may have already exited)
+            String respJson = transport.receive();
+            log.info("MCP server '{}' shutdown response: {}", descriptor.name(), respJson);
+        } catch (IOException e) {
+            log.warn("Error during shutdown of '{}': {}", descriptor.name(), e.getMessage());
+        } finally {
+            closeTransport();
+            initialized = false;
+        }
     }
 
     // ============ Health & Reconnect (process management) ============
@@ -235,7 +360,8 @@ public class McpClient {
     /**
      * Re-establish the connection after the old one died: close the old
      * transport, build a fresh one from the factory, redo the initialize
-     * handshake. The mechanism behind {@link ManagedMcpClient}'s auto-recovery.
+     * handshake. The mechanism behind {@link ManagedMcpClient}'s auto-recovery
+     * (whose {@code McpRestartPolicy} carries the backoff/cooldown budget).
      */
     public void reconnect() throws IOException {
         log.info("Reconnecting to MCP server '{}'...", descriptor.name());
@@ -311,7 +437,7 @@ public class McpClient {
         if (result == null) return "";
 
         JsonNode contentArray = result.get("content");
-        if (contentArray == null || !contentArray.isArray()) return "";
+        if (contentArray == null || !contentNodeArray(contentArray)) return "";
 
         StringBuilder sb = new StringBuilder();
         for (JsonNode item : contentArray) {
@@ -323,6 +449,10 @@ public class McpClient {
             // Other types (image, resource) skipped in v1
         }
         return sb.toString();
+    }
+
+    private static boolean contentNodeArray(JsonNode node) {
+        return node != null && node.isArray();
     }
 
     private void ensureConnected() throws IOException {

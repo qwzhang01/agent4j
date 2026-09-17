@@ -1,6 +1,7 @@
 package io.github.qwzhang01.agent.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.qwzhang01.agent.core.run.RunContext;
 import io.github.qwzhang01.agent.core.tool.Tool;
 import io.github.qwzhang01.agent.core.tool.ToolException;
 import org.slf4j.Logger;
@@ -70,14 +71,39 @@ public class McpToolAdapter implements Tool {
      */
     @Override
     public String execute(JsonNode arguments) throws ToolException {
+        return execute(arguments, null);
+    }
+
+    /**
+     * Context-aware execution (harness batch 3: cancellation wiring).
+     * <p>
+     * The run's {@link RunContext} carries the {@code CancellationToken};
+     * {@code DefaultToolExecutor} hands the ctx down to every tool, and here
+     * it reaches the wire: {@link McpClient#callTool(String, JsonNode,
+     * io.github.qwzhang01.agent.core.run.CancellationToken)} checks the token
+     * before sending and between receive polls. A cancellation hit surfaces
+     * as {@code RunCancelledException} — the same structured signal every
+     * other boundary throws — and must NOT be wrapped into ToolException:
+     * cancellation is not a business failure, and the loop's event contract
+     * (TOOL_FAILURE vs cancelled) depends on the exception type surviving.
+     * <p>
+     * A null ctx (legacy path) or a ctx without token keeps the uncancellable
+     * legacy behavior bit-for-bit.
+     *
+     * @param ctx the run's execution context; null = legacy uncancellable path
+     */
+    @Override
+    public String execute(JsonNode arguments, RunContext ctx) throws ToolException {
         log.debug("Calling MCP tool '{}' on server '{}'",
                 schema.name(), client.getDescriptor().name());
         // Stage 6.2: validate arguments against the server-declared schema
         // BEFORE the wire — malformed args must fail here, not at the remote
         // server (correctness + injection surface).
         McpSchemaValidator.validateOrThrow(schema.inputSchema(), arguments);
+        io.github.qwzhang01.agent.core.run.CancellationToken token =
+                ctx != null ? ctx.cancellationToken() : null;
         try {
-            return client.callTool(schema.name(), arguments);
+            return client.callTool(schema.name(), arguments, token);
         } catch (IOException e) {
             throw new ToolException(
                     "MCP tool call failed for '" + schema.name() + "': " + e.getMessage(), e);

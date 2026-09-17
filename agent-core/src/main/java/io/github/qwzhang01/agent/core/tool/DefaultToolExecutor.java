@@ -1,7 +1,9 @@
 package io.github.qwzhang01.agent.core.tool;
 
 import io.github.qwzhang01.agent.core.model.ToolCall;
+import io.github.qwzhang01.agent.core.run.RunCancelledException;
 import io.github.qwzhang01.agent.core.run.RunContext;
+import io.github.qwzhang01.agent.core.run.RunDeadlineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,12 @@ public class DefaultToolExecutor implements ToolExecutor {
             log.debug("Tool {} returned: {}", toolCall.name(),
                     result != null && result.length() > 200 ? result.substring(0, 200) + "..." : result);
             return result;
+        } catch (RunCancelledException | RunDeadlineException signal) {
+            // Structured signals are control flow, not tool failures (Stage
+            // 1.4 contract): cancellation must surface to the loop so it can
+            // record CANCELLED / TIMEOUT — never as "[ERROR] ..." text the
+            // model would try to self-heal from, and never swallowed.
+            throw signal;
         } catch (ToolException e) {
             log.error("Tool {} failed: {}", toolCall.name(), e.getMessage());
             return "[ERROR] Tool '" + toolCall.name() + "' failed: " + e.getMessage();
