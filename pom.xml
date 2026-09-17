@@ -6,7 +6,7 @@
 
     <groupId>io.github.qwzhang01</groupId>
     <artifactId>seven-agent</artifactId>
-    <version>0.1.4-SNAPSHOT</version>
+    <version>0.1.4</version>
     <packaging>pom</packaging>
     <name>Java Agent Framework</name>
     <description>A persistent, observable, governable, hot-pluggable Java Agent Runtime</description>
@@ -81,7 +81,7 @@
         <!-- false: `mvn deploy` uploads. Set true only for a local-only dry run. -->
         <skip.central.publish>false</skip.central.publish>
         <central.serverId>avinzhang-opensource</central.serverId>
-        <agent4j.version>0.1.4-SNAPSHOT</agent4j.version>
+        <agent4j.version>0.1.4</agent4j.version>
         <!-- Stage 8.3: default surefire tag exclusion (transport/DB ITs are opt-in).
              CI opens them by clearing the exclusion and selecting the tag:
              -Dagent4j.surefire.excludedGroups= -Dgroups=postgres

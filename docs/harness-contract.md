@@ -1,6 +1,6 @@
 # Harness Contract：agent4j 标准 Harness 最小契约
 
-> 版本：`0.1.4-SNAPSHOT`（开发版）｜状态：Draft（Stage 0.2 产出，2026-09-16）
+> 版本：`0.1.4`（发布版，2026-09-17 去 SNAPSHOT，deploy 待手动执行）｜状态：Draft（Stage 0.2 产出，2026-09-16）
 > 定位：本文档是 [todo-standard-harness-roadmap.md](../notes/todo-standard-harness-roadmap.md) Stage 0.2 的交付物，把"标准 Harness"从目标态口号变成可验收的契约。**契约按代码现状如实记录**：已兑现的写 implemented，没兑现的写 gap，不把目标伪装成事实。
 > 纪律：后续 Stage 1–9 每项能力落地时，必须回写本文档对应条目并更新状态标记，禁止只改 roadmap 不改契约。
 
@@ -10,8 +10,8 @@
 
 ### 0.1.1 版本
 
-- 本轮开发版本：`0.1.4-SNAPSHOT`（23 处 pom 已对齐：根 pom 2 处 + BOM + 20 模块 + examples）。
-- Central 最新发布版：`0.1.3`（docs 中"Central 最新"引用保持不动，直到 0.1.4 发版时统一刷新）。
+- 本轮开发版本：`0.1.4`（2026-09-17 去 SNAPSHOT：26 处 pom 已对齐——根 pom 2 处 + BOM + 21 模块 + examples）。
+- Central 最新发布版：`0.1.4`（2026-09-17 版本翻转完成、deploy 手动执行中；README/getting-started 的坐标引用已随之刷新）。
 - 版本纪律：发布时去 SNAPSHOT、打 tag、CHANGELOG 落档；发版后回灌下一版本 SNAPSHOT（0.1.3 发版时欠的"回灌 0.1.4-SNAPSHOT"动作本轮已补上）。
 
 ### 0.1.2 范围边界

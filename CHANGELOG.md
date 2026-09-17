@@ -5,9 +5,9 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.4-SNAPSHOT`.
+The current Maven version is `0.1.4` (Central latest release: `0.1.4`).
 
-## [未发布]
+## [0.1.4] - 2026-09-17
 
 ### Added
 
@@ -166,5 +166,8 @@ The current Maven version is `0.1.4-SNAPSHOT`.
 - Drop Spring Boot parent POM in favor of a standalone Maven parent
 - Open-source packaging for GitHub (`qwzhang01/agent4j`) and Maven Central coordinates
 
+[未发布]: https://github.com/qwzhang01/agent4j/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.4
+[0.1.3]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.3
 [Unreleased]: https://github.com/qwzhang01/agent4j/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/qwzhang01/agent4j/releases/tag/v0.1.0
