@@ -168,6 +168,34 @@ class DurableExecutionTest {
     }
 
     @Test
+    void graphRuntimeReplaysLedgerHitInsteadOfReExecuting() {
+        java.util.concurrent.atomic.AtomicInteger fires = new java.util.concurrent.atomic.AtomicInteger();
+        Workflow wf = Workflow.builder("charge-flow").version("1.0")
+                .node(ActionNode.of("charge", ctx -> "paid-" + fires.incrementAndGet()))
+                .edge(Workflow.START, "charge")
+                .edge("charge", Workflow.END)
+                .build();
+        SideEffectLedger ledger = new InMemorySideEffectLedger();
+        GraphRuntime runtime = new GraphRuntime().sideEffectLedger(ledger);
+
+        io.github.qwzhang01.agent.workflow.runtime.Run first =
+                new io.github.qwzhang01.agent.workflow.runtime.Run(
+                        "r-se-rt", wf, WorkflowState.of("x"));
+        ExecutionResult once = runtime.execute(first);
+        assertEquals(ExecutionResult.Status.SUCCEEDED, once.status());
+        assertEquals("paid-1", String.valueOf(once.output()));
+        assertEquals(1, fires.get());
+
+        GraphRuntime replayRuntime = new GraphRuntime().sideEffectLedger(ledger);
+        io.github.qwzhang01.agent.workflow.runtime.Run second =
+                new io.github.qwzhang01.agent.workflow.runtime.Run(
+                        "r-se-rt", wf, WorkflowState.of("x"));
+        ExecutionResult replayed = replayRuntime.execute(second);
+        assertEquals(1, fires.get(), "ledger hit must not re-execute the node");
+        assertEquals("paid-1", String.valueOf(replayed.output()));
+    }
+
+    @Test
     void recoverySnapshotAssemblesDiagnostics() {
         RunStore store = new InMemoryRunStore();
         SideEffectLedger ledger = new InMemorySideEffectLedger();

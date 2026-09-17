@@ -2,12 +2,16 @@ package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ToolCall;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Parallel tool-call execution for the ReAct loop (Stage 9 Tool
@@ -22,9 +26,11 @@ import java.util.concurrent.Executor;
  *       running the surplus sequentially in join order. The budget is
  *       never silently multiplied by parallelism.</li>
  *   <li><b>cancellation</b>: the ctx-aware run's cancellation/deadline is
- *       checked before dispatch and after the join; a cancelled run
- *       leaves no orphan futures writing to state (results are only
- *       written after the join).</li>
+ *       checked before dispatch and after the join. {@link #dispatchAll(List, Instant)}
+ *       also applies the remaining deadline as a join timeout: unfinished
+ *       calls become {@code [TIMEOUT]} strings and their futures are cancelled.
+ *       Results are only written after the join, so a cancelled run leaves
+ *       no orphan writes to state.</li>
  *   <li><b>ordering</b>: tool results are appended to the conversation
  *       history in the model's declaration order, whatever the finish
  *       order was — the provider invariant (every toolCall paired with a
@@ -84,9 +90,24 @@ public final class ParallelToolExecutor {
      * @return results in the same order as {@code dispatches}
      */
     public List<String> dispatchAll(List<Dispatch> dispatches) {
+        return dispatchAll(dispatches, null);
+    }
+
+    /**
+     * Same as {@link #dispatchAll(List)} but the join (and surplus sequential
+     * calls) stop at {@code deadline}. Null deadline keeps the unbounded join.
+     */
+    public List<String> dispatchAll(List<Dispatch> dispatches, Instant deadline) {
         Objects.requireNonNull(dispatches, "dispatches");
         if (dispatches.isEmpty()) {
             return List.of();
+        }
+        if (deadlineExceeded(deadline)) {
+            List<String> timedOut = new ArrayList<>(dispatches.size());
+            for (Dispatch d : dispatches) {
+                timedOut.add(timeoutResult(d));
+            }
+            return timedOut;
         }
 
         // Width clamp: dispatch the first maxConcurrent in parallel; the
@@ -105,11 +126,19 @@ public final class ParallelToolExecutor {
         }
 
         List<String> results = new ArrayList<>(dispatches.size());
-        for (CompletableFuture<String> f : futures) {
-            results.add(join(f));
+        if (deadline == null) {
+            for (CompletableFuture<String> f : futures) {
+                results.add(join(f));
+            }
+        } else {
+            results.addAll(joinUntil(parallelSlice, futures, deadline));
         }
         for (Dispatch d : surplus) {
-            results.add(runQuietly(d));
+            if (deadlineExceeded(deadline)) {
+                results.add(timeoutResult(d));
+            } else {
+                results.add(runQuietly(d));
+            }
         }
         return results;
     }
@@ -140,5 +169,55 @@ public final class ParallelToolExecutor {
             }
             throw new RuntimeException(cause);
         }
+    }
+
+    private List<String> joinUntil(List<Dispatch> slice, List<CompletableFuture<String>> futures,
+                                   Instant deadline) {
+        long remainingMs = Math.max(0, Duration.between(Instant.now(), deadline).toMillis());
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(remainingMs, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException timedOut) {
+            futures.forEach(f -> f.cancel(true));
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            futures.forEach(f -> f.cancel(true));
+            throw new CompletionException(interrupted);
+        } catch (java.util.concurrent.ExecutionException ignored) {
+            // Individual tool failures are already strings from runQuietly.
+            // Interrupt-shaped exceptions are collected as TIMEOUT below.
+        }
+        List<String> results = new ArrayList<>(slice.size());
+        for (int i = 0; i < slice.size(); i++) {
+            results.add(resultOf(slice.get(i), futures.get(i)));
+        }
+        return results;
+    }
+
+    private String resultOf(Dispatch d, CompletableFuture<String> f) {
+        if (!f.isDone() || f.isCancelled()) {
+            f.cancel(true);
+            return timeoutResult(d);
+        }
+        try {
+            return f.join();
+        } catch (CompletionException ce) {
+            Throwable cause = ce.getCause() != null ? ce.getCause() : ce;
+            if (cause instanceof InterruptedException) {
+                return timeoutResult(d);
+            }
+            if (cause instanceof RuntimeException re) {
+                throw re;
+            }
+            throw new RuntimeException(cause);
+        }
+    }
+
+    private static boolean deadlineExceeded(Instant deadline) {
+        return deadline != null && !Instant.now().isBefore(deadline);
+    }
+
+    private static String timeoutResult(Dispatch d) {
+        return "[TIMEOUT] tool '" + d.toolCall().name() + "' exceeded run deadline";
     }
 }

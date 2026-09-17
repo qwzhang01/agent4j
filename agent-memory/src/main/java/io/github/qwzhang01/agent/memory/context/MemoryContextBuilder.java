@@ -128,10 +128,12 @@ public class MemoryContextBuilder implements ContextBuilder {
 
     /**
      * Stage 1.2 (harness roadmap): ctx-aware recall. When the run context
-     * carries tenant/user identity, the recall scopes are intersected with
-     * the context-derived scope whitelist: only scopes the run's identity
-     * may see are actually queried. Without a context (legacy path) the
-     * configured scopes list is used as-is - bit-for-bit unchanged.
+     * carries tenant/user/channel/agent identity, the recall scopes are
+     * intersected with the context-derived scope whitelist: only scopes the
+     * run's identity may see are actually queried. An anonymous context
+     * (the auto-minted {@code RunContext.create()} with no identity fields)
+     * keeps the configured scopes list as-is — same as the legacy no-ctx
+     * path — so minting a runId does not silently drop channel memory.
      * <p>
      * This is the read-side hook for Stage 5's full tenant governance
      * (write-side audit + field redaction land there); today it guarantees
@@ -143,25 +145,25 @@ public class MemoryContextBuilder implements ContextBuilder {
         List<String> effectiveScopes = scopes;
         if (ctx != null) {
             List<String> allowed = contextAllowedScopes(ctx);
-            effectiveScopes = scopes.stream()
-                    .filter(allowed::contains)
-                    .toList();
-            if (effectiveScopes.isEmpty()) {
-                // No configured scope is visible to this identity: inject
-                // no memories rather than silently widening the view.
-                log.debug("All configured scopes filtered out by run context (tenant={}); "
-                        + "injecting no memories", ctx.tenantId());
-                return new ArrayList<>(state.getMessages());
+            if (!allowed.isEmpty()) {
+                effectiveScopes = scopes.stream()
+                        .filter(allowed::contains)
+                        .toList();
+                if (effectiveScopes.isEmpty()) {
+                    // No configured scope is visible to this identity: inject
+                    // no memories rather than silently widening the view.
+                    log.debug("All configured scopes filtered out by run context (tenant={}); "
+                            + "injecting no memories", ctx.tenantId());
+                    return new ArrayList<>(state.getMessages());
+                }
             }
         }
         return doBuild(config, state, effectiveScopes);
     }
 
     /**
-     * Scope whitelist derived from the run context: the tenant scope plus
-     * the calling user's scope. The identity may only read its own tenant
-     * and user scopes - everything else (other tenants, other users) is
-     * filtered out before recall.
+     * Scope whitelist derived from the run context. Empty means the context
+     * carries no identity — skip filtering (anonymous / auto-minted runs).
      */
     private static List<String> contextAllowedScopes(
             io.github.qwzhang01.agent.core.run.RunContext ctx) {
@@ -171,6 +173,12 @@ public class MemoryContextBuilder implements ContextBuilder {
         }
         if (ctx.userId() != null) {
             allowed.add("user:" + ctx.userId());
+        }
+        if (ctx.channelId() != null) {
+            allowed.add("channel:" + ctx.channelId());
+        }
+        if (ctx.agentId() != null) {
+            allowed.add("agent:" + ctx.agentId());
         }
         return allowed;
     }

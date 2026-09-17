@@ -195,4 +195,25 @@ class ApprovalAndRateLimitTest {
         // get_time is auto + rate limited by same limiter (but different tool counter)
         assertTrue(executor.execute(call("get_time")).startsWith("ok:"));
     }
+
+    @Test
+    void rateLimit_runsBeforeApproval_andDoesNotWriteApproved() {
+        java.util.concurrent.atomic.AtomicInteger approvals = new java.util.concurrent.atomic.AtomicInteger();
+        ToolPolicy policy = new ToolPolicy(ToolPermission.AUTO)
+                .setPermission("delete_file", ToolPermission.REQUIRES_APPROVAL);
+        ToolApprovalService countingApproval = (toolCall, runId) -> {
+            approvals.incrementAndGet();
+            return true;
+        };
+        GovernedToolExecutor executor = buildExecutor(policy, countingApproval, name -> false);
+
+        String result = executor.execute(call("delete_file"));
+
+        assertTrue(result.startsWith("[RATE_LIMITED]"), result);
+        assertEquals(0, approvals.get(), "rate limit must refuse before asking a human");
+        assertEquals(1, audit.getAll().size());
+        assertEquals(AuditEvent.AuditStatus.DENIED, audit.getAll().get(0).status());
+        assertTrue(audit.getAll().stream().noneMatch(e -> e.status() == AuditEvent.AuditStatus.APPROVED),
+                "must not record APPROVED for a call that never ran");
+    }
 }

@@ -191,15 +191,13 @@ class SimpleAgentStreamTest {
             }
 
             @Override
-            public String run(ChatMessage userMessage, AgentState state) {
-                return run(userMessage.content(), state);
-            }
-
-            @Override
             public AgentConfig getConfig() {
                 return new AgentConfig("stub", "sys", null, null, 5);
             }
         };
+
+        assertEquals("ok", stub.run(ChatMessage.user("hi")),
+                "default run(ChatMessage) must degrade to run(String, state)");
 
         List<AgentEvent> events = new ArrayList<>();
         stub.stream("hi", events::add);

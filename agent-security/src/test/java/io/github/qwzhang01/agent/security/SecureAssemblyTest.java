@@ -144,8 +144,64 @@ class SecureAssemblyTest {
                 .buildConfig();
 
         assertNotNull(config.getToolExecutor(), "governed executor wired by default");
-        assertInstanceOf(GovernedToolExecutor.class, config.getToolExecutor(),
-                "default executor must be governed, not bare DefaultToolExecutor");
+        assertInstanceOf(io.github.qwzhang01.agent.core.tool.contract.ContractAwareToolExecutor.class,
+                config.getToolExecutor(),
+                "validation sits outside governance so malformed calls never consume approval");
+    }
+
+    @Test
+    void zeroConfigDestructiveToolDoesNotExecute() {
+        InMemoryToolRegistry registry = new InMemoryToolRegistry();
+        DestructiveTool delete = new DestructiveTool();
+        registry.register(delete);
+
+        Agent agent = SecureAgentBuilder.secure("secure-agent",
+                        new ToolCallingClient("delete_file"), registry)
+                .build();
+
+        agent.run("delete it", new io.github.qwzhang01.agent.core.agent.AgentState());
+        assertEquals(0, delete.executions.get(),
+                "deny-on-absence: zero-config destructive tools must not run");
+    }
+
+    @Test
+    void invalidArgumentsNeverReachApproval() throws Exception {
+        InMemoryToolRegistry registry = new InMemoryToolRegistry();
+        java.util.concurrent.atomic.AtomicInteger approvals = new java.util.concurrent.atomic.AtomicInteger();
+        Tool schemaTool = new Tool() {
+            @Override public String getName() { return "delete_file"; }
+            @Override public String getDescription() { return "deletes"; }
+            @Override public String getParametersSchema() {
+                return """
+                        {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}""";
+            }
+            @Override public ToolDefinition definition() {
+                return ToolDefinition.builder("delete_file")
+                        .sideEffectLevel(SideEffectLevel.DESTRUCTIVE)
+                        .inputSchema(getParametersSchema())
+                        .build();
+            }
+            @Override public String execute(com.fasterxml.jackson.databind.JsonNode a) {
+                return "deleted";
+            }
+        };
+        registry.register(schemaTool);
+
+        io.github.qwzhang01.agent.core.tool.ToolExecutor stack =
+                SecureAgentBuilder.secure("secure-agent",
+                                new ToolCallingClient("delete_file"), registry)
+                        .approvalService((call, runId) -> {
+                            approvals.incrementAndGet();
+                            return true;
+                        })
+                        .buildConfig()
+                        .getToolExecutor();
+
+        String out = stack.execute(new ToolCall("c1", "delete_file",
+                new com.fasterxml.jackson.databind.ObjectMapper().readTree("{}")),
+                RunContext.create());
+        assertTrue(out.startsWith("[INVALID_TOOL_ARGUMENTS]"), out);
+        assertEquals(0, approvals.get(), "validation must sit outside approval");
     }
 
     @Test

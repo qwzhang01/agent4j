@@ -22,7 +22,7 @@ cd agent4j
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
 ```
 
-不需要 API Key。最小代码：
+不需要 API Key。最小代码（Secure 路径，deny-on-absence）：
 
 ```java
 MockModelClient model = MockModelClient.scripted()
@@ -33,13 +33,17 @@ MockModelClient model = MockModelClient.scripted()
 InMemoryToolRegistry tools = new InMemoryToolRegistry();
 tools.register(new CurrentTimeTool());
 
-Agent agent = new SimpleAgent(new AgentConfig(
-        "demo", "Use tools when needed.", model, tools, 10));
+Agent agent = SecureAgentBuilder.secure("demo", model, tools)
+        .systemPrompt("Use tools when needed.")
+        .maxSteps(10)
+        .build();
 
 System.out.println(agent.run("What time is it?"));
 ```
 
-换成真实模型：把 `MockModelClient` 换成 `OpenAiModelClient` 或 `AnthropicModelClient`，不必改 `SimpleAgent` / `Tool` / Loop。构造参数见 `agent-model` 的 javadoc。
+`CurrentTimeTool` 声明 `SideEffectLevel.NONE`，Secure 装配自动放行。破坏性工具零配置不会执行（默认 `autoReject`）。裸奔路径必须显式 `UnsafeAgentBuilder` / `new SimpleAgent(...)`。
+
+换成真实模型：把 `MockModelClient` 换成 `OpenAiModelClient` 或 `AnthropicModelClient`，不必改 `Tool` / Loop。构造参数见 `agent-model` 的 javadoc。
 
 完整步骤与依赖坐标：[docs/getting-started.md](docs/getting-started.md)
 
@@ -81,6 +85,7 @@ agent-tavern         角色 · 世界 · 回合（游戏 Profile）
 agent-chat           房间对话：选人 · 上下文 · 流式（不是酒馆）
 agent-coding         工作区 · 补丁 · 命令白名单 · 修复环
 agent-observability  指标 · 五维预算 · 路由 · 评估 · 版本三元组
+agent-otel-export    RunEvent / 边界事件 → OTel span 薄壳（SDK 不进核心；指标仍走 agent-observability）
 agent-spring-boot-starter  可选 Spring Boot 自动配置（唯一依赖 Spring 的模块）
 examples             可运行示例（不发布）
 ```
@@ -114,7 +119,7 @@ examples             可运行示例（不发布）
 | CI | GitHub Actions，JDK 17 + 21 |
 | 许可证 | [Apache-2.0](LICENSE) |
 | 运行时依赖 | Jackson + SLF4J；**无 Spring** |
-| 未做（有意） | JAR 多版本插件、Docker/WASM 沙箱、MCP SSE、真 Git、OTel、Mini VERL、LLM-as-judge |
+| 未做（有意） | JAR 多版本插件、Docker/WASM 沙箱（adapter 骨架除外）、MCP Streamable-HTTP、真 Git、Mini VERL、LLM-as-judge。OTel 走独立模块 `agent-otel-export`（SDK 不进核心），不是「没做」 |
 
 ## 贡献
 

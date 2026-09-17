@@ -40,7 +40,7 @@ IDE 里直接运行 `MockAgentExample.main` 也可以。
 
 ## 最小可运行代码
 
-下面这段与 `examples` 里的 `MockAgentExample` 一致：用脚本化 `MockModelClient` 驱动一次 tool call，再给出最终文本。
+下面这段与 `examples` 里的 `MockAgentExample` 一致：用脚本化 `MockModelClient` 驱动一次 tool call，再给出最终文本。**5 分钟上手走 Secure 路径**（未知工具拒绝、副作用工具 deny-on-absence）。
 
 ```java
 MockModelClient modelClient = MockModelClient.scripted()
@@ -52,14 +52,10 @@ InMemoryToolRegistry registry = new InMemoryToolRegistry();
 registry.register(new CurrentTimeTool());
 registry.register(new EchoTool());
 
-AgentConfig config = new AgentConfig(
-    "mock-agent-v1",
-    "You are a helpful assistant. Use tools when needed to answer questions.",
-    modelClient,
-    registry,
-    10
-);
-Agent agent = new SimpleAgent(config);
+Agent agent = SecureAgentBuilder.secure("mock-agent-v1", modelClient, registry)
+    .systemPrompt("You are a helpful assistant. Use tools when needed to answer questions.")
+    .maxSteps(10)
+    .build();
 String response = agent.run("What time is it now?");
 ```
 
@@ -68,15 +64,16 @@ String response = agent.run("What time is it now?");
 | 类型 | 包 |
 |------|-----|
 | `Agent` / `AgentConfig` / `SimpleAgent` | `io.github.qwzhang01.agent.core.agent` |
+| `SecureAgentBuilder` | `io.github.qwzhang01.agent.security` |
 | `InMemoryToolRegistry` | `io.github.qwzhang01.agent.core.tool` |
 | `ToolCall` | `io.github.qwzhang01.agent.core.model` |
 | `MockModelClient` / `CurrentTimeTool` / `EchoTool` | `io.github.qwzhang01.agent.model.mock` |
 
-`AgentConfig` 的第五个参数是 `maxSteps`（安全上限，防止无限 tool 循环）。
+`maxSteps` 是安全上限，防止无限 tool 循环。读形工具（`NONE` / `READ_ONLY`）自动执行；`SIDE_EFFECT` / `DESTRUCTIVE` / `UNKNOWN` 默认要审批，零配置则拒绝。裸奔装配走 `UnsafeAgentBuilder` 或直接 `new SimpleAgent(config)`。
 
 ## 换成真实模型（概念上）
 
-`AgentConfig` 只认 `ModelClient`。把 `MockModelClient` 换成 `OpenAiModelClient`（或 `AnthropicModelClient`）即可，**不必改 `SimpleAgent` / `Tool` / Loop**。
+`SecureAgentBuilder` / `AgentConfig` 只认 `ModelClient`。把 `MockModelClient` 换成 `OpenAiModelClient`（或 `AnthropicModelClient`）即可，**不必改 `Tool` / Loop**。
 
 `OpenAiModelClient` 走 Java `HttpClient`，兼容 OpenAI、Azure OpenAI、Ollama 等 OpenAI-compatible 端点，以及火山方舟的兼容接口。构造参数（`apiKey` / `baseUrl` / `defaultModel` / timeout）以 `agent-model` 里 `OpenAiModelClient` 的 javadoc 与测试为准，这里不展开以免过期。
 

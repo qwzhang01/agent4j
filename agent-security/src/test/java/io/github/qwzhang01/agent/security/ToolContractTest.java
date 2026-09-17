@@ -301,6 +301,21 @@ class ToolContractTest {
     }
 
     @Test
+    void sideEffectToolWithoutRunContextIsRefused() throws Exception {
+        InMemoryToolRegistry registry = new InMemoryToolRegistry();
+        WriteTool tool = new WriteTool();
+        registry.register(tool);
+        ContractAwareToolExecutor executor =
+                new ContractAwareToolExecutor(registry, new io.github.qwzhang01.agent.core.tool.DefaultToolExecutor(registry));
+
+        String out = executor.execute(new ToolCall("c1", "write_note",
+                MAPPER.readTree("{\"note\":\"hi\"}")));
+        assertTrue(out.startsWith("[DENIED]"), "got: " + out);
+        assertTrue(out.contains("requires RunContext"), out);
+        assertEquals(0, tool.executions.get());
+    }
+
+    @Test
     void hungToolTimesOutWithEnvelope() throws Exception {
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         Tool hung = new Tool() {

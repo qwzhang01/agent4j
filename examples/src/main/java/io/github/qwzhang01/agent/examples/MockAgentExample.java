@@ -8,6 +8,7 @@ import io.github.qwzhang01.agent.core.tool.InMemoryToolRegistry;
 import io.github.qwzhang01.agent.model.mock.CurrentTimeTool;
 import io.github.qwzhang01.agent.model.mock.EchoTool;
 import io.github.qwzhang01.agent.model.mock.MockModelClient;
+import io.github.qwzhang01.agent.security.SecureAgentBuilder;
 
 /**
  * A minimal Mock Agent example.
@@ -44,17 +45,15 @@ public class MockAgentExample {
         registry.register(new EchoTool());
 
         // --------------------------------------------
-        // 3. Create Agent
+        // 3. Create Agent (secure assembly: deny-on-absence)
         // --------------------------------------------
-        AgentConfig config = new AgentConfig(
-                "mock-agent-v1",
-                "You are a helpful assistant. Use tools when needed to answer questions.",
-                modelClient,
-                registry,
-                10  // max steps
-        );
-
-        Agent agent = new SimpleAgent(config);
+        Agent agent = SecureAgentBuilder.secure(
+                        "mock-agent-v1",
+                        modelClient,
+                        registry)
+                .systemPrompt("You are a helpful assistant. Use tools when needed to answer questions.")
+                .maxSteps(10)
+                .build();
 
         // --------------------------------------------
         // 4. Run the agent

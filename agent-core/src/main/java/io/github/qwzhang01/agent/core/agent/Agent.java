@@ -1,10 +1,12 @@
 package io.github.qwzhang01.agent.core.agent;
 
 import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ContentPart;
 import io.github.qwzhang01.agent.core.run.RunContext;
 
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Interface for an Agent.
@@ -44,6 +46,12 @@ public interface Agent {
      * Re-entering through THIS agent resolves that name via
      * {@link HandoffTargetResolver} and resumes as the last handoff target.
      * Old checkpoints without the field still start as the entry persona.
+     * <p>
+     * Step budget: {@code currentStep} is conversation-cumulative and is
+     * not reset between turns. {@link AgentConfig#getMaxSteps()} is the
+     * SSOT for the cap ({@code SimpleAgent} overwrites {@code state.maxSteps}
+     * on every prepare). Tighten or raise the cap by changing the config,
+     * not by mutating the state.
      *
      * @param userInput user's question or instruction
      * @param state     existing conversation state (will be mutated)
@@ -60,9 +68,33 @@ public interface Agent {
 
     /**
      * Continue a conversation with a pre-built USER message (text or multimodal).
+     * <p>
+     * Default: degrade to {@link #run(String, AgentState)} using
+     * {@code content()}, or concatenated text parts if content is blank.
+     * Image-only parts are dropped — override this method to keep them.
+     * Agents that only implement the String overloads stay callable
+     * through {@code run(ChatMessage)} / default {@code stream} without
+     * throwing at runtime.
      */
     default String run(ChatMessage userMessage, AgentState state) {
-        throw new UnsupportedOperationException("This agent does not support ChatMessage input");
+        Objects.requireNonNull(userMessage, "userMessage");
+        return run(textOf(userMessage), state);
+    }
+
+    /** Text fallback for agents that do not consume multimodal parts. */
+    private static String textOf(ChatMessage message) {
+        if (message.content() != null && !message.content().isBlank()) {
+            return message.content();
+        }
+        if (message.parts() == null || message.parts().isEmpty()) {
+            return message.content() != null ? message.content() : "";
+        }
+        String joined = message.parts().stream()
+                .filter(ContentPart.TextPart.class::isInstance)
+                .map(part -> ((ContentPart.TextPart) part).text())
+                .filter(text -> text != null && !text.isBlank())
+                .collect(Collectors.joining("\n"));
+        return joined.isBlank() && message.content() != null ? message.content() : joined;
     }
 
     /**
@@ -141,5 +173,15 @@ public interface Agent {
     default void stream(ChatMessage userMessage, AgentState state,
                         Consumer<AgentEvent> listener, RunContext ctx) {
         throw new UnsupportedOperationException("This agent does not support RunContext");
+    }
+
+    /**
+     * Resume a {@link AgentState.Status#WAITING_APPROVAL} run without
+     * appending a new user message. Default throws; {@link SimpleAgent}
+     * re-enters the loop so pending tool calls can be retried after a
+     * human decision lands.
+     */
+    default String resume(AgentState state, RunContext ctx) {
+        throw new UnsupportedOperationException("This agent does not support resume");
     }
 }

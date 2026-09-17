@@ -134,4 +134,51 @@ class ParallelToolExecutorTest {
         assertEquals(List.of("a-ok", "b-ok"), results,
                 "both tools must overlap; sequential fallback would time out");
     }
+
+    @Test
+    @DisplayName("joinUntil turns unfinished calls into TIMEOUT when the deadline fires")
+    void joinHonorsDeadline() {
+        ParallelToolExecutor executor = new ParallelToolExecutor(
+                java.util.concurrent.Executors.newFixedThreadPool(8));
+        java.time.Instant deadline = java.time.Instant.now().plusMillis(40);
+        List<ParallelToolExecutor.Dispatch> dispatches = List.of(
+                new ParallelToolExecutor.Dispatch(
+                        ToolCall.of("c1", "slow", "{}"), call -> {
+                    Thread.sleep(400);
+                    return "too late";
+                }),
+                new ParallelToolExecutor.Dispatch(
+                        ToolCall.of("c2", "alsoSlow", "{}"), call -> {
+                    Thread.sleep(400);
+                    return "also too late";
+                }));
+
+        List<String> results = executor.dispatchAll(dispatches, deadline);
+
+        assertEquals(2, results.size());
+        assertTrue(results.get(0).startsWith("[TIMEOUT]"), results.get(0));
+        assertTrue(results.get(1).startsWith("[TIMEOUT]"), results.get(1));
+        assertTrue(results.get(0).contains("slow"));
+        assertTrue(results.get(1).contains("alsoSlow"));
+    }
+
+    @Test
+    @DisplayName("a deadline already in the past skips dispatch entirely")
+    void pastDeadlineSkipsDispatch() {
+        AtomicInteger started = new AtomicInteger();
+        ParallelToolExecutor executor = new ParallelToolExecutor(
+                java.util.concurrent.Executors.newFixedThreadPool(2));
+        List<ParallelToolExecutor.Dispatch> dispatches = List.of(
+                new ParallelToolExecutor.Dispatch(
+                        ToolCall.of("c1", "never", "{}"), call -> {
+                    started.incrementAndGet();
+                    return "ran";
+                }));
+
+        List<String> results = executor.dispatchAll(
+                dispatches, java.time.Instant.now().minusSeconds(1));
+
+        assertEquals(0, started.get(), "must not start work after the deadline");
+        assertTrue(results.get(0).startsWith("[TIMEOUT]"));
+    }
 }

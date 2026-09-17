@@ -161,12 +161,21 @@ public class ReActAgentLoop implements AgentLoop {
         AgentConfig currentConfig = resolver.resolve(config, state.getLastActiveAgentName());
         AgentConfig handoffFrom = null;
         HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;
-        state.setStatus(AgentState.Status.RUNNING);
         java.util.function.Consumer<RunEvent> events = ctx != null ? ctx.eventSink() : null;
         long runStartNanos = System.nanoTime();
         if (events != null) {
             emit(events, new RunEvent.RunStarted(ctx.runId(), ctx.traceId(), Instant.now()));
         }
+
+        // Resume must replay pending tool calls BEFORE flipping to RUNNING,
+        // otherwise the WAITING_APPROVAL check is unreachable and the model
+        // is asked a new turn while the side-effect tool never ran.
+        if (state.getStatus() == AgentState.Status.WAITING_APPROVAL) {
+            if (!replayPendingApprovals(config, currentConfig, state, sink, ctx)) {
+                return;
+            }
+        }
+        state.setStatus(AgentState.Status.RUNNING);
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
             // Stage 1.4: cooperative cancellation + deadline check at the
@@ -291,14 +300,16 @@ public class ReActAgentLoop implements AgentLoop {
                     HandoffSpec spec = findDeclaredHandoff(currentConfig, toolCall);
                     if (spec != null) {
                         if (pendingHandoffCall != null) {
-                            // Multiple handoff calls in one response: the first wins,
-                            // later ones are unreachable because the active config
-                            // changes. Record as a tool error to keep every
-                            // toolCall paired with a toolResult.
+                            // Multiple handoff calls in one response: the first
+                            // wins. Later ones still need a tool result so the
+                            // assistant toolCall stays paired, but the wording
+                            // is factual — not an [ERROR] that the next model
+                            // turn would treat as a failure to recover from.
+                            log.warn("[{}] Skipping extra handoff '{}'; '{}' already pending",
+                                    currentConfig.getName(), toolCall.name(),
+                                    pendingHandoffCall.name());
                             state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(),
-                                    "[ERROR] Handoff '" + toolCall.name() + "' skipped: another "
-                                            + "handoff in the same response already transferred "
-                                            + "the conversation."));
+                                    "Handoff not applied: only one transfer is taken per model response."));
                             continue;
                         }
                         pendingHandoffCall = toolCall;
@@ -324,7 +335,8 @@ public class ReActAgentLoop implements AgentLoop {
                             plainCalls.stream()
                                     .<ParallelToolExecutor.Dispatch>map(tc -> new ParallelToolExecutor.Dispatch(
                                             tc, tc2 -> executePlainTool(entryCfg, activeCfg, tc2, runCtx)))
-                                    .toList());
+                                    .toList(),
+                            runCtx != null ? runCtx.deadline() : null);
                     for (int i = 0; i < plainCalls.size(); i++) {
                         ToolCall toolCall = plainCalls.get(i);
                         String result = results.get(i);
@@ -348,6 +360,11 @@ public class ReActAgentLoop implements AgentLoop {
                             sink.accept(rejected);
                         }
                     }
+                }
+
+                if (hasWaitingApproval(state, plainCalls.size())) {
+                    pauseForApproval(state, sink, events, ctx, stepId, attempt, stepStartNanos);
+                    return;
                 }
 
                 if (pendingHandoffCall != null) {
@@ -432,6 +449,99 @@ public class ReActAgentLoop implements AgentLoop {
 
     private static long elapsedMs(long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000;
+    }
+
+    /**
+     * True when any of the last {@code count} TOOL messages is a pending
+     * approval pause. Those calls stay paired with the assistant tool_calls
+     * so resume can retry them.
+     */
+    private static boolean hasWaitingApproval(AgentState state, int count) {
+        if (count <= 0) {
+            return false;
+        }
+        List<ChatMessage> messages = state.getMessages();
+        int from = Math.max(0, messages.size() - count);
+        for (int i = from; i < messages.size(); i++) {
+            if (isWaitingApproval(messages.get(i).content())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isWaitingApproval(String result) {
+        return result != null && result.startsWith("[WAITING_APPROVAL]");
+    }
+
+    private void pauseForApproval(AgentState state, Consumer<AgentEvent> sink,
+                                  java.util.function.Consumer<RunEvent> events, RunContext ctx,
+                                  String stepId, int attempt, long stepStartNanos) {
+        state.setStatus(AgentState.Status.WAITING_APPROVAL);
+        log.info("[{}] Waiting for approval", resolverName(state));
+        if (events != null && ctx != null) {
+            emit(events, new RunEvent.StepCompleted(ctx.runId(), ctx.traceId(), stepId,
+                    state.getCurrentStep(), attempt, elapsedMs(stepStartNanos),
+                    "waiting for approval", FailureKind.APPROVAL_WAITING, Instant.now()));
+        }
+    }
+
+    private String resolverName(AgentState state) {
+        String name = state.getLastActiveAgentName();
+        return name != null ? name : "agent";
+    }
+
+    /**
+     * Retry TOOL messages whose content is still {@code [WAITING_APPROVAL]}.
+     * Returns false when at least one call is still pending (run stays paused).
+     */
+    private boolean replayPendingApprovals(AgentConfig entryConfig, AgentConfig currentConfig,
+                                           AgentState state, Consumer<AgentEvent> sink,
+                                           RunContext ctx) {
+        List<ChatMessage> messages = state.getMessages();
+        boolean stillWaiting = false;
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage message = messages.get(i);
+            if (message.role() != ChatRole.TOOL || !isWaitingApproval(message.content())) {
+                continue;
+            }
+            ToolCall call = findToolCall(messages, i, message.toolCallId());
+            if (call == null) {
+                stillWaiting = true;
+                continue;
+            }
+            sink.accept(new AgentEvent.ToolStarted(call));
+            String result = executePlainTool(entryConfig, currentConfig, call, ctx);
+            messages.set(i, ChatMessage.tool(call.id(), call.name(), result));
+            sink.accept(new AgentEvent.ToolFinished(call.id(), call.name(), result));
+            AgentEvent.ToolValidationRejected rejected = governanceRejectionOf(call, result);
+            if (rejected != null) {
+                sink.accept(rejected);
+            }
+            if (isWaitingApproval(result)) {
+                stillWaiting = true;
+            }
+        }
+        if (stillWaiting) {
+            state.setStatus(AgentState.Status.WAITING_APPROVAL);
+            return false;
+        }
+        return true;
+    }
+
+    private static ToolCall findToolCall(List<ChatMessage> messages, int toolIndex, String toolCallId) {
+        for (int i = toolIndex - 1; i >= 0; i--) {
+            ChatMessage candidate = messages.get(i);
+            if (candidate.role() == ChatRole.ASSISTANT && candidate.toolCalls() != null) {
+                for (ToolCall call : candidate.toolCalls()) {
+                    if (Objects.equals(call.id(), toolCallId)) {
+                        return call;
+                    }
+                }
+                return null;
+            }
+        }
+        return null;
     }
 
     /**

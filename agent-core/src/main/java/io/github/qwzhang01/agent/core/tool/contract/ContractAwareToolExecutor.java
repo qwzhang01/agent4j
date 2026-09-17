@@ -24,9 +24,9 @@ import java.util.concurrent.TimeoutException;
  * Validation-first tool executor (Stage 2.2, harness roadmap).
  * <p>
  * One executor decorator, applied identically to built-ins, MCP tools and
- * plugins — the same validation chain for everything. Sits <b>inside</b> the
- * governance chain (the order contract: validate → permission → approval →
- * rate-limit → execute → sanitize → audit): arguments that fail the contract
+ * plugins — the same validation chain for everything. Sits <b>outside</b>
+ * governance (the order contract: validate → permission → rate-limit →
+ * approval → execute → sanitize → audit): arguments that fail the contract
  * never reach permission checks, because a malformed call has no business
  * consuming governance decisions.
  * <p>
@@ -119,6 +119,18 @@ public class ContractAwareToolExecutor implements ToolExecutor {
                     ToolResult.hashArguments(String.valueOf(toolCall.arguments())),
                     0, null, false);
             record(ctx, envelope);
+            return refusal;
+        }
+
+        // Side-effect tools are identity-bound: no RunContext means the
+        // call has no tenant/run to attribute, so it cannot run. Read-shaped
+        // tools (NONE / READ_ONLY) still execute on the legacy path.
+        if (ctx == null && !definition.sideEffectLevel().isReadShaped()) {
+            String refusal = "[DENIED] side-effect tool '" + toolCall.name()
+                    + "' requires RunContext";
+            log.warn(refusal);
+            record(null, ToolResult.systemFailure(refusal,
+                    ToolResult.hashArguments(String.valueOf(toolCall.arguments()))));
             return refusal;
         }
 

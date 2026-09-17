@@ -20,6 +20,7 @@ import io.github.qwzhang01.agent.core.tool.DefaultToolExecutor;
 import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -266,6 +267,35 @@ class HandoffLoopTest {
                 .filter(m -> m.role() == ChatRole.TOOL && "h1".equals(m.toolCallId()))
                 .findFirst().orElseThrow();
         assertTrue(handoffResult.content().contains("transferred to agent 'B'"));
+    }
+
+    @Test
+    void shouldPairExtraHandoffWithoutErrorPrefix() {
+        var clientA = new RecordingScriptedMock()
+                .addResponse(ModelResponse.toolCalls(List.of(
+                        handoffCall("h1", "B"),
+                        handoffCall("h2", "C"))));
+        var clientB = new RecordingScriptedMock()
+                .addResponse(ModelResponse.text("done by B"));
+        var clientC = new RecordingScriptedMock();
+
+        AgentConfig c = config("C", "You are C.", clientC);
+        AgentConfig b = config("B", "You are B.", clientB);
+        AgentConfig a = config("A", "You are A.", clientA,
+                List.of(HandoffSpec.to(b), HandoffSpec.to(c)));
+
+        AgentState state = new AgentState();
+        new SimpleAgent(a).run("start", state);
+
+        ChatMessage skipped = state.getMessages().stream()
+                .filter(m -> m.role() == ChatRole.TOOL && "h2".equals(m.toolCallId()))
+                .findFirst().orElseThrow();
+        assertFalse(skipped.content().startsWith("[ERROR]"),
+                "skipped handoff must not look like a tool failure. Got: " + skipped.content());
+        assertTrue(skipped.content().contains("only one transfer"),
+                skipped.content());
+        assertEquals("B", state.getLastActiveAgentName());
+        assertEquals(0, clientC.requests.size(), "second handoff must not swap to C");
     }
 
     @Test

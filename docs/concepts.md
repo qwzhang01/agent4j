@@ -6,7 +6,7 @@
 
 `Agent` 是调用入口，故意很薄：`run(userInput)` 一次跑完，`run(userInput, state)` 带着已有 `AgentState` 续跑。流式输出走 `stream(userInput, listener)`，边生成边回调 `AgentEvent`。多模态用户消息走 `run(ChatMessage)` / `stream(ChatMessage, listener)`。
 
-默认实现是 `SimpleAgent`。静态蓝图是 `AgentConfig`：名字、system prompt、`ModelClient`、`ToolRegistry`、`maxSteps`，以及可选的 `ContextBuilder`（记忆注入；`null` 则透传）。
+默认实现是 `SimpleAgent`。生产入口是 `SecureAgentBuilder`（校验在治理外：validate → permission → rate-limit → approval → execute）。静态蓝图是 `AgentConfig`：名字、system prompt、`ModelClient`、`ToolRegistry`、`maxSteps`，以及可选的 `ContextBuilder`（记忆注入；`null` 则透传）。`run(...)` 未传 `RunContext` 时自动 `RunContext.create()`；无 ctx 的副作用工具在校验层直接 `[DENIED]`。
 
 模块：`agent-core`。示例：`MockAgentExample` / `StreamingAgentExample`。
 
@@ -21,6 +21,8 @@
 ## Loop
 
 `AgentLoop` 是 ReAct 循环：在 `maxSteps` 内反复「组请求 → `ModelClient.chat` → 有 tool call 就执行 → 否则结束」。`stream` 走同一循环，但调用 `ModelClient.stream`，把 token / 工具起止推给 `AgentEvent` sink。Loop 是函数，不是线程：吃 `AgentConfig` + 可变 `AgentState`，返回更新后的 state。可测、可续跑。
+
+`maxSteps` 是**整段对话累计**的步数上限，`AgentConfig` 是 SSOT：每次 `run(input, state)` 都会把 `state.maxSteps` 同步成当前 config 的值，但 **不会**清零 `currentStep`。已经跑了 8 步、config 仍是 10，续跑只剩 2 步。要放宽或收紧上限，改 config，不要改 state。
 
 默认实现是 `ReActAgentLoop`。`SimpleAgent` 把 `run` / `stream` 委托给它。
 
@@ -70,10 +72,12 @@ v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `H
 
 ## Governance
 
-工具默认不可信。治理四件套挂在 `GovernedToolExecutor` 上（装饰 `DefaultToolExecutor`，向后兼容）：
+工具默认不可信。5 分钟上手走 `SecureAgentBuilder`：校验在治理外（validate → permission → rate-limit → approval → execute），读形工具 AUTO，其余 REQUIRES_APPROVAL，零配置 `autoReject`。未决审批把 Agent 停在 `WAITING_APPROVAL`（`DurableToolApprovalService` 写 `ApprovalStore`，不阻塞线程）；`Agent.resume` 在决策落地后重试同一 tool call。裸奔必须点名 `UnsafeAgentBuilder`。
+
+治理四件套挂在 `GovernedToolExecutor` 上：
 
 1. **Permission** — `AUTO` / `REQUIRES_APPROVAL` / `DENY`
-2. **Approval** — 人工或自动审批
+2. **Approval** — 人工、自动或持久化审批（`PENDING` → 暂停）
 3. **Sanitizer** — 工具回包注入防御（替换 / 截断 / 阻断）
 4. **Audit** — 允许、拒绝、执行、失败、净化都记
 

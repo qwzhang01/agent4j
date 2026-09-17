@@ -197,6 +197,12 @@ public class AgentState {
          * terminal state. Control-flow outcome, not a business failure -
          * distinct from ERROR so cancellation is never recorded as failure.
          */
-        CANCELLED
+        CANCELLED,
+        /**
+         * A REQUIRES_APPROVAL tool is waiting for a human decision. Not
+         * terminal: {@link Agent#resume(AgentState, RunContext)} re-enters
+         * the loop and retries the pending tool calls.
+         */
+        WAITING_APPROVAL
     }
 }

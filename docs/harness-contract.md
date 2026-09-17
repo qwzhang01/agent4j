@@ -48,14 +48,16 @@ PAUSED  -> RUNNING     （resume）
 `AgentState.Status`（agent-core，单 Agent 无 workflow 时）：
 
 ```text
-IDLE -> RUNNING -> EXECUTING_TOOL -> DONE / MAX_STEPS_EXCEEDED / ERROR
+IDLE -> RUNNING -> EXECUTING_TOOL -> DONE / MAX_STEPS_EXCEEDED / ERROR / CANCELLED
+RUNNING / EXECUTING_TOOL -> WAITING_APPROVAL  （REQUIRES_APPROVAL 工具未决）
+WAITING_APPROVAL -> RUNNING                   （resume 重试同一 tool call）
 ```
 
 ### 1.2 契约声明（与 roadmap 草案的差异）
 
 Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> SUCCEEDED / FAILED / CANCELED`。**本契约如实记录 gap**：
 
-- `WAITING`（审批等待）：Stage 3.4 已引入 `WAITING_APPROVAL` 独立态（持久化审批协议消费），但 GraphRuntime 暂停路径仍统一落 `PAUSED`——WAITING_APPROVAL 目前由 RunStore 行状态与恢复候选消费，主循环内联接线是 Stage 8 gap。
+- `WAITING`（审批等待）：Agent 主循环已接线——`GovernedToolExecutor` 对 `PENDING` 返回 `[WAITING_APPROVAL]`，`ReActAgentLoop` 把状态落 `WAITING_APPROVAL`（非终态），`Agent.resume` 重试未决 tool call。Workflow 节点暂停路径仍统一落 `PAUSED`（`HumanApprovalNode`）；RunStore `WAITING_APPROVAL` 行仍由恢复候选消费。
 - `CREATED` 前置态目前不存在：Run 创建即进入 RUNNING。Stage 3.1 RunStore 已落地（行先建再执行，崩溃首节点也留恢复候选），但内存 Run 对象仍无 CREATED 前置态。
 - 取消语义各自成立（workflow CANCELLED / agent 侧 CANCELED），但跨层事件模型未统一——Stage 1.3 统一生命周期事件时对齐。
 - **契约承诺**：Stage 1 RunContext 落地前，`RunState` 五态机保持稳定，不新增第六态；WorkflowState 黑板读写保持现有语义。
@@ -70,12 +72,12 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 
 **现状（诚实记录）**：
 
-- 未知 Tool：`DefaultToolExecutor` **不拒绝**，返回 `"Tool not found: " + name` 字符串给模型。`GovernedToolExecutor` 可配置权限，未配置时未知 Tool 走默认 executor 行为。
-- 有副作用 Tool：治理不是默认——需要业务方显式装配 GovernedToolExecutor + Permission + Approval + Sanitizer。
+- 未知 Tool：`DefaultToolExecutor` **不拒绝**，返回 `"Tool not found: " + name` 字符串给模型。`ContractAwareToolExecutor` / `SecureAgentBuilder` 拒绝 `[UNKNOWN_TOOL]`。
+- 有副作用 Tool：5 分钟上手与 Starter 默认走 `SecureAgentBuilder`（读形 AUTO，其余 REQUIRES_APPROVAL，零配置 autoReject）。直接 `new SimpleAgent(config)` 仍是无治理的裸路径，必须显式选择（`UnsafeAgentBuilder` 点名）。
 - 预算未配置：无默认行为（`ContextWindowBudget` 是 opt-in 装饰器，未挂载就不生效）。
 - Sandbox 未配置：无默认行为（不挂 sandbox 就直接跑，无兜底隔离）。
 
-**契约目标（Stage 2.4 SecureAgentBuilder 落地）**：安全装配成为默认路径——未知 Tool 默认拒绝、副作用 Tool 默认治理、无治理装配必须显式 `UnsafeAgentBuilder`。在落地前，**当前默认是 unsafe**，limitations.md 已如实声明。
+**契约目标（Stage 2.4 SecureAgentBuilder）**：安全装配是文档与 Starter 的默认路径——未知 Tool 默认拒绝、副作用 Tool 默认治理、无治理装配必须显式 `UnsafeAgentBuilder`。
 
 ### 1.5 可恢复的含义（现状 -> 目标）
 
@@ -155,9 +157,9 @@ Roadmap Stage 0.2 草案写的生命周期是 `CREATED -> RUNNING -> WAITING -> 
 | RunContext 统一运行上下文 | agent-core | 跨线程/并行节点/异步回调同 runId | 伪造 tenant 字符串被拒 | — | [x] done（Stage 1，2026-09-16：record 不可变 + deriveChild + 六边界 ctx 重载，RunContextTest/ContextAwareLoopTest/ParallelCancelTest 覆盖） |
 | 取消 & Deadline | agent-core | 所有子分支收到取消 | Deadline 到期统一 TIMEOUT | — | [x] done（Stage 1.4，2026-09-16：CancellationSource/CancellationToken + RunDeadlineException + CANCELLED 终态，ParallelCancelTest 验证全分支停止） |
 | Tool Contract 结构化定义 | agent-core | schema 校验通过执行 | INVALID_TOOL_ARGUMENTS 拒绝 | — | [x] done（Stage 2.1/2.2，2026-09-16：contract 包 5 文件 + ContractAwareToolExecutor 统一校验链，ToolContractTest 12 覆盖） |
-| Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [x] done（Stage 2.4，2026-09-16：SecureAgentBuilder 默认治理栈 + UnsafeAgentBuilder 显式危险路径 + [RuntimeProfile] 日志；审批的非阻塞 WAITING 语义留 Stage 3） |
-| Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [x] done（Stage 3.1/3.2/3.3，2026-09-16：RunStore 乐观锁 + Checkpoint schemaVersion=2 + 定义指纹 mismatch 拒绝 + SideEffectLedger 命中重放 + RunLease 单赢家 + RecoverySnapshot 诊断；kill-9 用同 store 新实例模拟，DurableExecutionTest 14 覆盖） |
-| 持久化 Approval | agent-workflow | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4，2026-09-16：approval 包五态协议 + PersistentApprovalService + WAITING_APPROVAL 状态 + 重启扫描恢复候选；agent-security Tool 侧接线留 Stage 4/8） |
+| Secure 默认装配 | agent-core / starter | SecureAgentBuilder 默认治理 | 裸 DefaultToolExecutor 副作用工具被拒/标记 Unsafe | — | [x] done（Stage 2.4 + 2026-09-17 P0：SecureAgentBuilder 默认 autoReject；校验在治理外；getting-started 走 Secure） |
+| Durable Checkpoint | agent-workflow | pause 点快照恢复 | 版本不匹配拒绝恢复 | kill-9 后恢复不重复副作用 | [x] done（Stage 3.1/3.2/3.3 + 2026-09-17：GraphRuntime 节点执行前查 SideEffectLedger，命中重放不再执行；DurableRunManager 注入 ledger） |
+| 持久化 Approval | agent-workflow / agent-security | 重启后继续审批 | 重复审批幂等 | 重启扫描待审批 Run | [x] done（Stage 3.4 + 2026-09-17：Tool 侧 `DurableToolApprovalService` 接 ApprovalStore；PENDING 暂停 WAITING_APPROVAL，resume 执行一次） |
 | Sandbox 边界硬化 | agent-sandbox | 合法代码跑通 | 路径穿越被挡 | 超时后子进程树清理 | [x] done（Stage 4.1/4.2/4.4，2026-09-16：className 白名单 + containment + env allowlist + CappedBuffer + 进程树击杀 + guard 注入 + TierLimits 限制表；红队 11 例全绿，八条攻击全 BLOCKED） |
 | Memory 治理 | agent-memory | 读写带 tenant/scope | 跨租户访问被拒 | — | [x] done（Stage 5.2，2026-09-16：MemoryGovernance 门面——RunContext 派生 scope 白名单不可伪造 + purpose 强制 + MemoryAccessAuditRecord 审计 + RedactionPolicy 默认 rawPlusMasked 脱敏 + purgeForUser/Tenant 删除传播 DeletionPropagation 可验证；MemoryAdmin 字段保真修复，updateContent/setTtl 不再丢 lifecycle/embedding/双时间轴，两测试锚定） |
 | 统一失败分类 | agent-core | 各模块映射到统一枚举 | — | — | [-] FailureKind 十类已定义（Stage 1），Tool 边界已映射 INPUT_INVALID/TOOL_FAILURE/TIMEOUT/CANCELLED（Stage 2.2，ContractAwareToolExecutor），Provider 边界已映射九类 taxonomy（Stage 6.1，ProviderCallException，fromLegacy/toLegacy 双向兼容）；Memory/Approval/Sandbox 侧映射 Stage 7 |

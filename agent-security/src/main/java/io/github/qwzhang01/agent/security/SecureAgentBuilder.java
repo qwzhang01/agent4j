@@ -19,15 +19,17 @@ import org.slf4j.LoggerFactory;
  * the raw path still exists but must be asked for by name
  * ({@link UnsafeAgentBuilder}), so "ungoverned" can never be silent.
  * <p>
- * Default stack (order per the Stage 2.5 order contract):
+ * Default stack (order per the Stage 2.5 order contract — validation first):
  * <pre>
  *   Agent
  *     └─ AgentConfig
  *          ├─ guardrails: input + output guardrail chain (if configured)
- *          └─ toolExecutor: GovernedToolExecutor            // outermost: permission → approval → rate-limit
- *               └─ ContractAwareToolExecutor                // validation + timeout
+ *          └─ toolExecutor: ContractAwareToolExecutor       // outermost: schema + timeout + no-ctx refuse
+ *               └─ GovernedToolExecutor                     // permission → rate-limit → approval → sanitize → audit
  *                    └─ DefaultToolExecutor                 // actual lookup + execution
  * </pre>
+ * Side-effect tools without an approval service are denied (deny-on-absence).
+ * Call {@link #approvalService} to plug in a human / durable approver.
  * Default permissions derived from the Tool Contract (Stage 2.1):
  * read-shaped tools (NONE / READ_ONLY) run automatic; everything else —
  * SIDE_EFFECT, DESTRUCTIVE and the honest UNKNOWN — requires approval.
@@ -48,7 +50,7 @@ public class SecureAgentBuilder {
     private int maxSteps = 25;
     private io.github.qwzhang01.agent.core.agent.ContextBuilder contextBuilder;
     private GuardrailChain guardrails;
-    private ToolApprovalService approvalService = ConsoleApprovalService.autoApprove();
+    private ToolApprovalService approvalService = ConsoleApprovalService.autoReject();
     private ResultSanitizer resultSanitizer = new DefaultResultSanitizer();
     private AuditLogger auditLogger = new InMemoryAuditLogger();
     private RateLimiter rateLimiter;
@@ -67,7 +69,7 @@ public class SecureAgentBuilder {
                                             ToolRegistry toolRegistry) {
         log.info("[RuntimeProfile] SECURE agent '{}' assembling: governed executor, " +
                 "validation-first chain, unknown tools refused, " +
-                "side-effect tools require approval", name);
+                "side-effect tools require approval (deny-on-absence)", name);
         return new SecureAgentBuilder(name, modelClient, toolRegistry);
     }
 
@@ -119,18 +121,21 @@ public class SecureAgentBuilder {
 
     /** Build the governed AgentConfig. */
     public AgentConfig buildConfig() {
-        ToolPolicy policy = contractDerivedPolicy();
         GovernedToolExecutor governed = GovernedToolExecutor
-                .builder(innerExecutor())
+                .builder(new DefaultToolExecutor(toolRegistry))
                 .permissionChecker(new PermissionChecker(contractDerivedPolicy()))
                 .approvalService(approvalService)
                 .resultSanitizer(resultSanitizer)
                 .auditLogger(auditLogger)
                 .rateLimiter(rateLimiter)
                 .build();
+        // Validation sits OUTSIDE governance: malformed calls never consume
+        // a permission check, a rate-limit token, or a human decision.
+        io.github.qwzhang01.agent.core.tool.ToolExecutor stack =
+                new ContractAwareToolExecutor(toolRegistry, governed);
         return new AgentConfig(name, systemPrompt, modelClient, toolRegistry,
                 maxSteps, contextBuilder, java.util.List.of(),
-                guardrails == null ? GuardrailChain.none() : guardrails, governed);
+                guardrails == null ? GuardrailChain.none() : guardrails, stack);
     }
 
     /** Build the governed Agent. */
@@ -158,24 +163,4 @@ public class SecureAgentBuilder {
         return policy;
     }
 
-    private ToolExecutorStack innerExecutor() {
-        return new ToolExecutorStack(
-                new ContractAwareToolExecutor(toolRegistry, new DefaultToolExecutor(toolRegistry)));
-    }
-
-    /** Tiny adapter so buildConfig can pass the stack to GovernedToolExecutor.builder. */
-    private record ToolExecutorStack(io.github.qwzhang01.agent.core.tool.ToolExecutor executor)
-            implements io.github.qwzhang01.agent.core.tool.ToolExecutor {
-
-        @Override
-        public String execute(io.github.qwzhang01.agent.core.model.ToolCall toolCall) {
-            return executor.execute(toolCall);
-        }
-
-        @Override
-        public String execute(io.github.qwzhang01.agent.core.model.ToolCall toolCall,
-                              io.github.qwzhang01.agent.core.run.RunContext ctx) {
-            return executor.execute(toolCall, ctx);
-        }
-    }
 }

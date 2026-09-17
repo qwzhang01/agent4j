@@ -89,6 +89,9 @@ public class DurableRunManager {
         this.ledger = ledger;
         this.leaseTtlMs = leaseTtlMs;
         this.control = new DistributedRunControl(runStore);
+        if (this.ledger != null) {
+            this.delegate.runtime().sideEffectLedger(this.ledger);
+        }
     }
 
     // ============ Start ============

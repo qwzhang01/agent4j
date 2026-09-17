@@ -2,6 +2,8 @@ package io.github.qwzhang01.agent.model.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.qwzhang01.agent.core.tool.Tool;
+import io.github.qwzhang01.agent.core.tool.contract.SideEffectLevel;
+import io.github.qwzhang01.agent.core.tool.contract.ToolDefinition;
 
 /**
  * A simple echo tool for testing.
@@ -32,6 +34,15 @@ public class EchoTool implements Tool {
                   },
                   "required": ["input"]
                 }""";
+    }
+
+    @Override
+    public ToolDefinition definition() {
+        return ToolDefinition.builder(getName())
+                .description(getDescription())
+                .inputSchema(getParametersSchema())
+                .sideEffectLevel(SideEffectLevel.NONE)
+                .build();
     }
 
     @Override

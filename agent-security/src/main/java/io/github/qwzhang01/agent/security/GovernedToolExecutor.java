@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
  * and inserts the governance four-pack around each tool call:
  * <ol>
  *   <li>Permission check (AUTO / REQUIRES_APPROVAL / DENY)</li>
- *   <li>Rate limiting (optional)</li>
+ *   <li>Rate limiting (optional; before approval so a throttle does not
+ *       waste a human decision or write APPROVED for a call that never runs)</li>
  *   <li>Approval (for REQUIRES_APPROVAL tools)</li>
  *   <li>Execution (via delegate)</li>
  *   <li>Result sanitization (injection defense)</li>
@@ -68,39 +69,46 @@ public class GovernedToolExecutor implements ToolExecutor {
                              io.github.qwzhang01.agent.core.run.RunContext ctx,
                              String effectiveRunId) {
         // ---- 1. Permission check ----
+        ToolPermission perm = ToolPermission.AUTO;
         if (permissionChecker != null) {
-            ToolPermission perm = permissionChecker.check(toolCall.name());
+            perm = permissionChecker.check(toolCall.name());
             if (perm == ToolPermission.DENY) {
                 String reason = "Tool '" + toolCall.name() + "' is denied by policy";
                 log.warn("[Security] {}", reason);
                 audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
                 return "[DENIED] " + reason;
             }
-            if (perm == ToolPermission.REQUIRES_APPROVAL) {
-                // ---- 2. Approval ----
-                if (approvalService == null) {
-                    String reason = "Tool '" + toolCall.name() + "' requires approval but no approval service configured";
-                    log.warn("[Security] {}", reason);
-                    audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
-                    return "[DENIED] " + reason;
-                }
-                boolean approved = approvalService.request(toolCall, effectiveRunId);
-                if (!approved) {
-                    String reason = "Approval rejected for tool '" + toolCall.name() + "'";
-                    log.info("[Security] {}", reason);
-                    audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
-                    return "[DENIED] " + reason;
-                }
-                audit(AuditEvent.approved(effectiveRunId, toolCall));
-            }
         }
 
-        // ---- 3. Rate limiting ----
+        // ---- 2. Rate limiting (before approval) ----
         if (rateLimiter != null && !rateLimiter.tryAcquire(toolCall.name())) {
             String reason = "Rate limit exceeded for tool '" + toolCall.name() + "'";
             log.warn("[Security] {}", reason);
             audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
             return "[RATE_LIMITED] " + reason;
+        }
+
+        // ---- 3. Approval ----
+        if (perm == ToolPermission.REQUIRES_APPROVAL) {
+            if (approvalService == null) {
+                String reason = "Tool '" + toolCall.name() + "' requires approval but no approval service configured";
+                log.warn("[Security] {}", reason);
+                audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
+                return "[DENIED] " + reason;
+            }
+            ToolApprovalService.Verdict verdict = approvalService.verdict(toolCall, effectiveRunId);
+            if (verdict == ToolApprovalService.Verdict.PENDING) {
+                String reason = "Tool '" + toolCall.name() + "' waiting for approval";
+                log.info("[Security] {}", reason);
+                return "[WAITING_APPROVAL] " + reason;
+            }
+            if (verdict != ToolApprovalService.Verdict.APPROVED) {
+                String reason = "Approval rejected for tool '" + toolCall.name() + "'";
+                log.info("[Security] {}", reason);
+                audit(AuditEvent.denied(effectiveRunId, toolCall, reason));
+                return "[DENIED] " + reason;
+            }
+            audit(AuditEvent.approved(effectiveRunId, toolCall));
         }
 
         // ---- 4. Execute via delegate ----

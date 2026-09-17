@@ -5,7 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The current Maven version is `0.1.4` (Central latest release: `0.1.4`).
+The current Maven version is `0.1.5-SNAPSHOT` (Central latest release: `0.1.4`).
+
+## [0.1.5-SNAPSHOT] - unreleased
+
+### Added
+
+- **Harness P0 close-out: Secure defaults, validation-outside-governance, auto RunContext, durable tool approval, GraphRuntime ledger.** Five industrial-harness gaps close together. (1) `SecureAgentBuilder` default approval is now `ConsoleApprovalService.autoReject()` (deny-on-absence); zero-config destructive tools never execute (`zeroConfigDestructiveToolDoesNotExecute`). Getting started / `MockAgentExample` assemble through Secure; `CurrentTimeTool`/`EchoTool` declare `NONE` so the demo is not denied. (2) Stack order is `ContractAwareToolExecutor` wrapping `GovernedToolExecutor` wrapping `DefaultToolExecutor` — schema failures never consume a permission check, rate-limit token, or human decision (`invalidArgumentsNeverReachApproval`). (3) `SimpleAgent.run/stream` without a ctx mint `RunContext.create()`; a side-effect tool called with no ctx is refused `[DENIED] ... requires RunContext`. (4) `ToolApprovalService.Verdict` adds `PENDING`; `DurableToolApprovalService` persists through core `ApprovalStore`; ReAct pauses as `AgentState.Status.WAITING_APPROVAL` and `Agent.resume` retries the same tool call after an operator decision (`DurableToolApprovalTest`). (5) `GraphRuntime` consults `SideEffectLedger` before executing a node and records write-ahead of advance; a crash-replay hits the ledger and does not re-touch the outside world (`graphRuntimeReplaysLedgerHitInsteadOfReExecuting`). `DurableRunManager` wires the ledger into the runtime when present.
+
+### Fixed
+
+- **GovernedToolExecutor rate-limit now runs before approval.** A REQUIRES_APPROVAL tool that is already over quota is refused with `[RATE_LIMITED]` and a DENIED audit row; the approval service is not called and no APPROVED event is written for a call that never runs. Chain is now permission → rate-limit → approval → execute. Regression: `rateLimit_runsBeforeApproval_andDoesNotWriteApproved`.
+- **`Agent.run(ChatMessage, AgentState)` default no longer throws.** Stubs that only implement the String overloads degrade to `content()` (or concatenated text parts). Image-only parts are dropped unless the agent overrides the method. `defaultAgentFallbackProducesDone` now exercises the default path.
+- **Parallel tool join honors `RunContext.deadline`.** `ParallelToolExecutor.dispatchAll(dispatches, deadline)` times out unfinished calls as `[TIMEOUT] tool 'name' exceeded run deadline` and cancels their futures; a deadline already in the past skips dispatch. The ReAct loop passes `ctx.deadline()` through.
+- **Extra handoff in the same response is paired without an `[ERROR]` prefix.** First handoff still wins; the skipped call gets a factual tool result (`only one transfer is taken per model response`) so the next model turn is not nudged into "recovering" from a fake tool failure.
+
+### Changed
+
+- **README** lists `agent-otel-export` and no longer claims OTel is unimplemented. `docs/concepts.md` states that `maxSteps` is conversation-cumulative and `AgentConfig` is the SSOT for the cap.
 
 ## [0.1.4] - 2026-09-17
 

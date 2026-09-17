@@ -70,6 +70,11 @@ public class RunManager {
         this.store = store;
     }
 
+    /** The interpreter this manager drives (hosts inject a ledger here). */
+    public GraphRuntime runtime() {
+        return runtime;
+    }
+
     /** Stage 7: allow swapping the runtime (e.g. to inject a scheduler). */
     public void setRuntime(GraphRuntime runtime) {
         this.runtime = runtime;

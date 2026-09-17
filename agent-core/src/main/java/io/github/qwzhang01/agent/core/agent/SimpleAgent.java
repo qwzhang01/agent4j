@@ -54,24 +54,20 @@ public class SimpleAgent implements Agent {
 
     @Override
     public String run(ChatMessage userMessage, AgentState state) {
-        prepare(userMessage, state);
-        loop.execute(config, state);
-        return extractFinalAnswer(state);
+        return run(userMessage, state, RunContext.create());
     }
 
     /** Stage 1.2: run with a RunContext (cancellation/deadline/identity ride along). */
     @Override
     public String run(ChatMessage userMessage, AgentState state, RunContext ctx) {
         prepare(userMessage, state);
-        loop.execute(config, state, ctx);
+        loop.execute(config, state, ctx != null ? ctx : RunContext.create());
         return extractFinalAnswer(state);
     }
 
     @Override
     public void stream(ChatMessage userMessage, AgentState state, Consumer<AgentEvent> listener) {
-        Objects.requireNonNull(listener, "listener");
-        prepare(userMessage, state);
-        loop.stream(config, state, listener);
+        stream(userMessage, state, listener, RunContext.create());
     }
 
     /** Stage 1.2: stream with a RunContext. */
@@ -80,7 +76,20 @@ public class SimpleAgent implements Agent {
                        Consumer<AgentEvent> listener, RunContext ctx) {
         Objects.requireNonNull(listener, "listener");
         prepare(userMessage, state);
-        loop.stream(config, state, listener, ctx);
+        loop.stream(config, state, listener, ctx != null ? ctx : RunContext.create());
+    }
+
+    /**
+     * Resume a paused {@link AgentState.Status#WAITING_APPROVAL} run.
+     * Does not append a user message — the pending tool calls stay paired
+     * with the last assistant turn.
+     */
+    @Override
+    public String resume(AgentState state, RunContext ctx) {
+        Objects.requireNonNull(state, "state");
+        state.setMaxSteps(config.getMaxSteps());
+        loop.execute(config, state, ctx != null ? ctx : RunContext.create());
+        return extractFinalAnswer(state);
     }
 
     private static ToolExecutor executorOf(AgentConfig config) {
@@ -100,6 +109,10 @@ public class SimpleAgent implements Agent {
         }
         state.addMessage(userMessage);
 
+        // Config is the SSOT for the step cap. currentStep is NOT reset:
+        // the budget is conversation-cumulative across run(input, state)
+        // continuations. A restored state's maxSteps is overwritten to
+        // match this agent; raise or tighten the cap on AgentConfig.
         state.setMaxSteps(config.getMaxSteps());
     }
 
@@ -116,6 +129,7 @@ public class SimpleAgent implements Agent {
             case MAX_STEPS_EXCEEDED -> MAX_STEPS_PLACEHOLDER;
             case ERROR -> "[Agent error: " + state.getLastError() + "]";
             case CANCELLED -> "[Agent run cancelled]";
+            case WAITING_APPROVAL -> "[Agent waiting for approval]";
             default -> "[Agent did not produce a final answer]";
         };
     }

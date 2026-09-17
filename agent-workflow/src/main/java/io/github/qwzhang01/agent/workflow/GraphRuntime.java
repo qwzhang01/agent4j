@@ -6,6 +6,7 @@ import io.github.qwzhang01.agent.workflow.runtime.ResumeToken;
 import io.github.qwzhang01.agent.workflow.runtime.Run;
 import io.github.qwzhang01.agent.workflow.runtime.RunState;
 import io.github.qwzhang01.agent.workflow.runtime.TimeoutPolicy;
+import io.github.qwzhang01.agent.workflow.runtime.durable.SideEffectLedger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,14 @@ public class GraphRuntime {
     /** Stage 7: scheduler passed to nodes via NodeContext (null in Stage 5-6). */
     private Object scheduler;
 
+    /**
+     * Optional side-effect ledger. When set and the Run has a runId, a
+     * successful node consults the ledger before executing and records
+     * after: a hit replays the stored result so crash-replay does not
+     * re-touch the outside world. Null = current behavior (no ledger).
+     */
+    private SideEffectLedger ledger;
+
     static String summarize(Object output) {
         if (output == null) {
             return "null";
@@ -61,6 +70,12 @@ public class GraphRuntime {
     /** Stage 7: set the scheduler, available to nodes via ctx.scheduler(). */
     public GraphRuntime scheduler(Object scheduler) {
         this.scheduler = scheduler;
+        return this;
+    }
+
+    /** Wire the durability ledger into the node execute path. */
+    public GraphRuntime sideEffectLedger(SideEffectLedger ledger) {
+        this.ledger = ledger;
         return this;
     }
 
@@ -173,6 +188,25 @@ public class GraphRuntime {
             }
 
             // --------------------------------------------
+            // Ledger hit: replay instead of re-executing
+            // --------------------------------------------
+            String runId = run.getRunId();
+            if (ledger != null && runId != null && !runId.isBlank()) {
+                java.util.Optional<SideEffectLedger.Effect> hit = ledger.lookup(runId, cursor);
+                if (hit.isPresent()) {
+                    Object replayed = hit.get().result();
+                    state.put(node.id(), replayed);
+                    state.record(StepRecord.success(node.id(), 0, 1,
+                            summarize(replayed) + " [ledger-replay]",
+                            System.currentTimeMillis(), System.currentTimeMillis()));
+                    lastOutput = replayed;
+                    log.info("[{}] Node '{}' replayed from side-effect ledger", runId, cursor);
+                    cursor = route(workflow, node.id(), null, state);
+                    continue;
+                }
+            }
+
+            // --------------------------------------------
             // Execute node (with retry, catch pause)
             // --------------------------------------------
             NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming,
@@ -237,6 +271,7 @@ public class GraphRuntime {
                     outcome.attempts(), summarize(result.output()),
                     nodeStart, System.currentTimeMillis()));
             lastOutput = result.output();
+            recordLedger(runId, node.id(), result.output());
 
             timedOut = failIfRunTimedOut(run, state, cursor, executeStarted, timeout);
             if (timedOut != null) {
@@ -255,6 +290,21 @@ public class GraphRuntime {
         log.info("[{}] Completed in {} step(s), {} trace record(s)",
                 run.getRunId(), steps, state.getTrace().size());
         return ExecutionResult.success(lastOutput, state);
+    }
+
+    private void recordLedger(String runId, String nodeId, Object output) {
+        if (ledger == null || runId == null || runId.isBlank()) {
+            return;
+        }
+        String rendered = output == null ? "null" : String.valueOf(output);
+        // Node-scoped row: empty argsHash so JDBC lookup(runId, nodeId) hits
+        // the same row InMemory finds by Effect.idFor(runId, nodeId).
+        ledger.record(new SideEffectLedger.Effect(
+                SideEffectLedger.Effect.idFor(runId, nodeId),
+                runId, nodeId, "", "",
+                SideEffectLedger.DeliverySemantics.AT_MOST_ONCE,
+                SideEffectLedger.RetryDisposition.NOT_RETRYABLE,
+                rendered, System.currentTimeMillis()));
     }
 
     // ============ Node Execution (retry wrapper) ============

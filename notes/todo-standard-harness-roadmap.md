@@ -301,7 +301,7 @@
 - [x] Approval 等待期间 Run 状态为 `WAITING_APPROVAL`。（RunState 新增 + isResumable，恢复候选包含之）
 - [x] 重启后能扫描待审批 Run 并恢复。（listRecoveryCandidates 含 WAITING_APPROVAL，TaskScheduler.restoreDurableRuns 扫描）
 - [x] 审批过期、拒绝、撤销和重复审批有独立失败语义。（PENDING/APPROVED/REJECTED/EXPIRED/REVOKED 五态 + ApprovalExpiredException/ApprovalRevokedException，三个独立测试锚定）
-- [x] Workflow Approval 与 Tool Approval 复用同一持久化协议。（agent-core approval 包中立，workflow 侧 PersistentApprovalService 已接线；gap：agent-security Tool 侧接线留 Stage 4/8）
+- [x] Workflow Approval 与 Tool Approval 复用同一持久化协议。（agent-core approval 包中立；workflow 侧 PersistentApprovalService；agent-security `DurableToolApprovalService` 接同一 ApprovalStore，PENDING → Agent WAITING_APPROVAL，resume 后执行一次）
 
 ### 3.5 Scheduler 对接
 
