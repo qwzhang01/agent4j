@@ -1,5 +1,6 @@
 package io.github.qwzhang01.agent.memory;
 
+import io.github.qwzhang01.agent.core.event.BoundaryEvent;
 import io.github.qwzhang01.agent.core.redact.RedactionPolicy;
 import io.github.qwzhang01.agent.core.redact.SecretMasker;
 import io.github.qwzhang01.agent.core.run.RunContext;
@@ -52,6 +53,7 @@ public class MemoryGovernance {
     private final MemoryStore store;
     private final RedactionPolicy readPolicy;
     private final Consumer<MemoryAccessAuditRecord> auditSink;
+    private final Consumer<BoundaryEvent> eventSink;
 
     /**
      * @param store     the underlying store (required)
@@ -63,9 +65,37 @@ public class MemoryGovernance {
     public MemoryGovernance(MemoryStore store,
                             RedactionPolicy readPolicy,
                             Consumer<MemoryAccessAuditRecord> auditSink) {
+        this(store, readPolicy, auditSink, null);
+    }
+
+    /**
+     * Full wiring with the boundary telemetry sink (harness 4.4): one
+     * {@link BoundaryEvent.MemoryBoundaryEvent} per governed access —
+     * success or refusal — alongside the audit ledger. The sink is a side
+     * channel: a throwing sink is swallowed with a counted warn, never
+     * breaks the access.
+     *
+     * @param eventSink consumer of boundary telemetry (null = no events,
+     *                  legacy behavior byte-for-byte)
+     */
+    public MemoryGovernance(MemoryStore store,
+                            RedactionPolicy readPolicy,
+                            Consumer<MemoryAccessAuditRecord> auditSink,
+                            Consumer<BoundaryEvent> eventSink) {
         this.store = Objects.requireNonNull(store, "store");
         this.readPolicy = readPolicy != null ? readPolicy : RedactionPolicy.rawPlusMasked(SecretMasker.withDefaults());
         this.auditSink = auditSink != null ? auditSink : r -> { };
+        this.eventSink = eventSink != null ? eventSink : e -> { };
+    }
+
+    /** Side-channel emission: telemetry must never break the access. */
+    private void emit(BoundaryEvent event) {
+        try {
+            eventSink.accept(event);
+        } catch (RuntimeException e) {
+            java.util.logging.Logger.getLogger(MemoryGovernance.class.getName())
+                    .warning("[MemoryGovernance] event sink failed (side channel, swallowed): " + e);
+        }
     }
 
     // ============ Scope derivation (identity-bound) ============
@@ -106,13 +136,26 @@ public class MemoryGovernance {
      */
     public MemoryReadResult query(MemoryQuery query, RunContext ctx, String purpose) {
         Objects.requireNonNull(query, "query");
-        requirePurpose(purpose);
+        try {
+            requirePurpose(purpose);
+        } catch (IllegalArgumentException e) {
+            emit(new BoundaryEvent.MemoryAccessFailed("query", e.getMessage(), Instant.now()));
+            throw e;
+        }
         List<String> scopes = scopesFor(ctx);
         if (scopes.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "RunContext carries no identity (no tenant/user/channel/agent): governed memory is not visible");
+            String reason = "RunContext carries no identity (no tenant/user/channel/agent): governed memory is not visible";
+            emit(new BoundaryEvent.MemoryAccessFailed("query", reason, Instant.now()));
+            throw new IllegalArgumentException(reason);
         }
-        MemoryQuery scoped = restrictScopes(query, scopes);
+        MemoryQuery scoped;
+        try {
+            scoped = restrictScopes(query, scopes);
+        } catch (IllegalArgumentException e) {
+            emit(new BoundaryEvent.MemoryAccessFailed("query", e.getMessage(), Instant.now()));
+            throw e;
+        }
+        long start = System.currentTimeMillis();
         List<MemoryEntry> raw = store.query(scoped);
         List<MemoryEntry> redacted = raw.stream()
                 .map(this::redactEntry)
@@ -121,6 +164,8 @@ public class MemoryGovernance {
         auditSink.accept(MemoryAccessAuditRecord.read(
                 ctx.tenantId(), ctx.userId(), ctx.runId(),
                 scopes, purpose, raw.size(), masked, Instant.now()));
+        emit(new BoundaryEvent.MemoryAccessed("query", purpose, raw.size(), masked,
+                System.currentTimeMillis() - start, Instant.now()));
         return new MemoryReadResult(redacted, masked, scopes);
         }
 
@@ -148,20 +193,30 @@ public class MemoryGovernance {
      */
     public MemoryEntry write(MemoryEntry entry, RunContext ctx, String purpose) {
         Objects.requireNonNull(entry, "entry");
-        requirePurpose(purpose);
+        try {
+            requirePurpose(purpose);
+        } catch (IllegalArgumentException e) {
+            emit(new BoundaryEvent.MemoryAccessFailed("write", e.getMessage(), Instant.now()));
+            throw e;
+        }
         List<String> scopes = scopesFor(ctx);
         if (scopes.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "RunContext carries no identity: governed writes require one");
+            String reason = "RunContext carries no identity: governed writes require one";
+            emit(new BoundaryEvent.MemoryAccessFailed("write", reason, Instant.now()));
+            throw new IllegalArgumentException(reason);
         }
         if (entry.scope() == null || !scopes.contains(entry.scope())) {
-            throw new IllegalArgumentException(
-                    "Entry scope " + entry.scope() + " is outside the caller's scope whitelist " + scopes);
+            String reason = "Entry scope " + entry.scope() + " is outside the caller's scope whitelist " + scopes;
+            emit(new BoundaryEvent.MemoryAccessFailed("write", reason, Instant.now()));
+            throw new IllegalArgumentException(reason);
         }
+        long start = System.currentTimeMillis();
         MemoryEntry stored = store.write(entry);
         auditSink.accept(MemoryAccessAuditRecord.write(
                 ctx.tenantId(), ctx.userId(), ctx.runId(),
                 scopes, purpose, 1, Instant.now()));
+        emit(new BoundaryEvent.MemoryAccessed("write", purpose, 1, false,
+                System.currentTimeMillis() - start, Instant.now()));
         return stored;
     }
 

@@ -88,6 +88,14 @@ public class SandboxEscalator implements Sandbox {
     /** Fallback ledger for unattributed specs (no runId): the pre-fix instance-level behavior. */
     private final AtomicInteger unattributedEscalations = new AtomicInteger();
 
+    /**
+     * Boundary telemetry sink (harness 4.4): one
+     * {@link io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxBoundaryEvent}
+     * per execution outcome — executed / escalated / refused. Side channel
+     * by contract: a throwing sink is swallowed, never breaks execution.
+     */
+    private final java.util.function.Consumer<io.github.qwzhang01.agent.core.event.BoundaryEvent> eventSink;
+
     // ============ Constructors ============
 
     /**
@@ -121,12 +129,41 @@ public class SandboxEscalator implements Sandbox {
                             SandboxPolicy policy,
                             boolean multiTenant,
                             int escalationBudget) {
+        this(fastSandbox, strongSandbox, riskLevel, policy, multiTenant,
+                escalationBudget, null);
+    }
+
+    /**
+     * Full constructor with budget and the boundary telemetry sink
+     * (harness 4.4). Events are side-channel: a throwing sink is swallowed
+     * with a counted warn; execution semantics are identical with and
+     * without the sink.
+     *
+     * @param eventSink consumer of sandbox boundary events (null = none)
+     */
+    public SandboxEscalator(Sandbox fastSandbox,
+                            Sandbox strongSandbox,
+                            SandboxRiskLevel riskLevel,
+                            SandboxPolicy policy,
+                            boolean multiTenant,
+                            int escalationBudget,
+                            java.util.function.Consumer<io.github.qwzhang01.agent.core.event.BoundaryEvent> eventSink) {
         this.fastSandbox = Objects.requireNonNull(fastSandbox, "fastSandbox must not be null");
         this.strongSandbox = Objects.requireNonNull(strongSandbox, "strongSandbox must not be null");
         this.riskLevel = Objects.requireNonNull(riskLevel, "riskLevel must not be null");
         this.policy = Objects.requireNonNull(policy, "policy must not be null");
         this.multiTenant = multiTenant;
         this.escalationBudget = escalationBudget;
+        this.eventSink = eventSink != null ? eventSink : e -> { };
+    }
+
+    /** Side-channel emission: telemetry must never break execution. */
+    private void emit(io.github.qwzhang01.agent.core.event.BoundaryEvent event) {
+        try {
+            eventSink.accept(event);
+        } catch (RuntimeException e) {
+            log.warn("[SandboxEscalator] event sink failed (side channel, swallowed): {}", e.toString());
+        }
     }
 
     // ============ Factory helpers ============
@@ -189,9 +226,13 @@ public class SandboxEscalator implements Sandbox {
      * falls back to the shared instance-level counter.
      */
     private SandboxResult optimisticExecute(String className, String code, SandboxSpec spec) {
+        long fastStart = System.currentTimeMillis();
         SandboxResult fast = fastSandbox.execute(className, code, spec);
         if (fast.success()) {
             log.debug("[SandboxEscalator] Fast tier succeeded for '{}'", className);
+            emit(new io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxExecuted(
+                    "CLASSLOADER", className, true,
+                    System.currentTimeMillis() - fastStart, java.time.Instant.now()));
             return fast;
         }
         if (isBlocked(fast)) {
@@ -204,13 +245,23 @@ public class SandboxEscalator implements Sandbox {
                         escalationBudget, className,
                         tenantId != null ? tenantId : "<none>",
                         runId != null ? runId : "<instance>");
+                emit(new io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxRefused(
+                        "BUDGET_SPENT", className, java.time.Instant.now()));
                 return fast;
             }
             log.warn("[SandboxEscalator] Fast tier blocked '{}' ({}); escalating (used {}/{} for tenant={}, key={})",
                     className, fast.error(), usedFor(tenantId, runId), escalationBudget,
                     tenantId != null ? tenantId : "<none>",
                     runId != null ? runId : "<instance>");
+            emit(new io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxEscalated(
+                    className,
+                    tenantId != null && !tenantId.isBlank() ? tenantId : (runId != null ? runId : "<instance>"),
+                    java.time.Instant.now()));
+            long strongStart = System.currentTimeMillis();
             SandboxResult escalated = strongSandbox.execute(className, code, spec);
+            emit(new io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxExecuted(
+                    "PROCESS", className, escalated.success(),
+                    System.currentTimeMillis() - strongStart, java.time.Instant.now()));
             log.debug("[SandboxEscalator] Strong tier result for '{}': success={}",
                     className, escalated.success());
             return escalated;
@@ -274,13 +325,18 @@ public class SandboxEscalator implements Sandbox {
         SandboxTier tier = policy.tierFor(riskLevel, multiTenant);
         log.debug("[SandboxEscalator] Direct execution via {} for risk={}, multiTenant={}",
                 tier, riskLevel, multiTenant);
-        return switch (tier) {
+        long start = System.currentTimeMillis();
+        SandboxResult result = switch (tier) {
             case CLASSLOADER -> fastSandbox.execute(className, code, spec);
             case PROCESS -> strongSandbox.execute(className, code, spec);
             default -> throw new UnsupportedOperationException(
                     "Sandbox tier " + tier + " is not implemented in v1. "
                             + "See SandboxTier javadoc for upgrade triggers.");
         };
+        emit(new io.github.qwzhang01.agent.core.event.BoundaryEvent.SandboxExecuted(
+                tier.name(), className, result.success(),
+                System.currentTimeMillis() - start, java.time.Instant.now()));
+        return result;
     }
 
     // ============ Helpers ============

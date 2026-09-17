@@ -144,7 +144,7 @@
 ### 1.3 统一生命周期事件
 
 - [x] 建立 `RunStarted`、`StepStarted`、`StepCompleted`、`RunPaused`、`RunResumed`、`RunCanceled`、`RunFailed`、`RunCompleted` 事件。（RunEvent sealed 接口 + 8 个 record）
-- [ ] 为 Model、Tool、Memory、Approval、Sandbox 增加开始/结束/失败事件。（Tool 侧已有 ToolStarted/ToolFinished 遥测；Model/Memory/Approval/Sandbox 的事件接线推迟到 Stage 5 遥测统一时一并做，避免重复管线）
+- [x] 为 Model、Tool、Memory、Approval、Sandbox 增加开始/结束/失败事件。（harness 4.4 2026-09-17：`agent-core` 新 `BoundaryEvent` sealed 四族——MemoryAccessed/Failed、ApprovalDecided/Refused、SandboxExecuted/Escalated/Refused、ModelServingStarted/Finished；接线：MemoryGovernance 4 参构造器 eventSink、SandboxEscalator 7 参构造器五发射点、ObservingApprovalStore 装饰器；旁路遥测红线（throwing sink 吞掉计数）+ 结构属性红线（无 memory 内容/approval payload/沙箱代码）双测试锚定）
 - [x] 每个事件包含 `runId`、`stepId`、`attempt`、时间、耗时和失败分类。（RunEventTest 验证关联字段与 FailureKind；attempt 在 StepStarted/StepCompleted 上）
 - [x] 明确事件是事实事件还是旁路遥测，禁止把指标对象当成执行真相。（RunEvent javadoc 声明：事实事件描述 Run 状态机转移，遥测走 AgentEvent/metrics 管线，两者不混用）
 - [x] 增加事件版本号，为后续持久化和跨进程消费留接口。（SCHEMA_VERSION=1，每事件携带 schemaVersion 字段）
@@ -308,7 +308,7 @@
 - [x] Scheduler 只调度持久化 Run，不以 JVM 内存 active map 作为唯一真相。（TaskScheduler.restoreDurableRuns 从 RunStore 候选扫描，recoverySweepUsesRunStoreNotMemory 锚定）
 - [x] 启动扫描 WAITING/RUNNING 恢复候选。（restoreDurableRuns：RUNNING/PAUSED/WAITING_APPROVAL，本进程 activeRuns 已有者跳过）
 - [-] 增加任务 Lease、租约过期和抢占规则。（状态更新 2026-09-17：任务级 lease 原语已于 Stage 8.1 落地——`JdbcTaskQueue.claimNext` guarded UPDATE 单赢家、`requeueOrphaned` stale-RUNNING 接管、`RunLeases.renew` 心跳续约（LeaseHeartbeatTest 3/3）。真缺：`requeueOrphaned` 无周期调用者、任务级无独立 heartbeat（claim 后仅靠 grace period））
-- [ ] 事件恢复具备幂等消费和重复消息去重。（gap：事件总线仍是 fire-and-forget，lastEventSeq 已落 RunRecord 但无消费去重，记入 Stage 8）
+- [x] 事件恢复具备幂等消费和重复消息去重。（harness 4.4 2026-09-17：`OpsEventDeduplicator` 消费侧结构键去重——kind|severity|runId|stepId|toolName|providerName|versionCombination 七元坐标，5min 窗口 + 10k LRU 容量 fail-open（驱逐的重复重投，真实事件永不丢），delivered/duplicatesSuppressed 诚实计数器；OpsEventDeduplicatorTest 6 测试锚定重复抑制/严重度分事实/窗口过期/容量驱逐）
 - [x] 异步队列满时有 backpressure 和明确拒绝事件。（AsyncTaskQueue 容量 + [QUEUE_FULL] QueueFullException + totalRejected 计数，fullQueueRejectsWithClassifiedEvent 锚定）
 
 ## 验收测试
@@ -506,7 +506,7 @@
 ### 7.1 Trace 标准化
 
 - [x] 增加 OpenTelemetry Span Adapter。（新模块 `agent-otel-export`：OtelRunEventSpanAdapter/OtelMetricsSpanAdapter，OTel SDK 仅 test scope，D9 兑现）
-- [ ] Model、Tool、Workflow、Memory、Sandbox、MCP、A2A 都创建有层级关系的 Span。（**gap**：已做 run/step/model/tool 四层；Workflow/Memory/Sandbox/MCP/A2A span 未做，7.1 之外记入 Stage 8 债务）
+- [x] Model、Tool、Workflow、Memory、Sandbox、MCP、A2A 都创建有层级关系的 Span。（harness 4.4 2026-09-17：新增 `OtelBoundaryEventSpanAdapter` 消费 BoundaryEvent——agent.memory/agent.sandbox（含 escalate/refuse 变体）/agent.approval/agent.model.serving 四面 + OtelRunEventSpanAdapter 的 agent.run/agent.step（Workflow 面）+ OtelMetricsSpanAdapter 的 agent.model/agent.tool，共十种 span；MCP/A2A 面：上游无发射器，随 Batch 3 MCP 能力协商与 Batch 4 A2A 可信来源接线时落地，不在 span 适配器里伪造）
 - [x] 使用显式 Context Propagation，ThreadLocal 只作为兼容便利层。（RunContext.eventSink 显式传播 + deriveChild 继承，MetricsCollector 的 ThreadLocal 仅为兼容层）
 - [x] 对 prompt、tool args、tool result 默认脱敏或只记录 Hash/摘要。（span/metrics/JSONL 只挂结构属性：ids/kinds/counts/durations，内容红线测试断言）
 - [x] 记录 model/tool/prompt/workflow/sandbox 版本。（RunRecord 三元组 PROMPT/MODEL/TOOL + PersistentRunRegistry 持久化；sandbox 版本未接入 span——诚实 gap）
