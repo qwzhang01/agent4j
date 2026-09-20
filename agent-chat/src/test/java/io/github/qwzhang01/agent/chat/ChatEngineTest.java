@@ -239,6 +239,25 @@ class ChatEngineTest {
     }
 
     @Test
+    void throwingHostListenerDoesNotFailTheTurn() {
+        RecordingModelClient model = recording(MockModelClient.scripted().respondText("hello there"));
+        ChatEngine engine = soloEngine(model);
+        List<AgentEvent> events = new ArrayList<>();
+
+        engine.stream("hi", event -> {
+            events.add(event);
+            if (event instanceof AgentEvent.ContentDelta) {
+                throw new IllegalStateException("ResponseBodyEmitter has already completed");
+            }
+        });
+
+        assertTrue(events.stream().anyMatch(e -> e instanceof AgentEvent.Done));
+        assertTrue(events.stream().noneMatch(e -> e instanceof AgentEvent.Error));
+        assertEquals(2, engine.room().history().size());
+        assertEquals("hello there", engine.room().history().get(1).content());
+    }
+
+    @Test
     void listenerExceptionDoesNotBlockHistoryOrOthers() {
         AtomicInteger second = new AtomicInteger();
         ChatEngine engine = ChatEngine.builder()

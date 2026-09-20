@@ -159,6 +159,16 @@ public class ReActAgentLoop implements AgentLoop {
      */
     private void runLoop(AgentConfig config, AgentState state, Consumer<AgentEvent> sink,
                          RunContext ctx, CtxModelInvoker invoker) {
+        // Host sinks (SSE, UI) may throw after the client is gone. That is
+        // not a model failure — isolate it so the loop can finish the turn.
+        Consumer<AgentEvent> hostSink = sink != null ? sink : e -> { };
+        sink = event -> {
+            try {
+                hostSink.accept(event);
+            } catch (RuntimeException e) {
+                log.warn("host event sink failed (not a model failure): {}", e.toString());
+            }
+        };
         AgentConfig currentConfig = resolver.resolve(config, state.getLastActiveAgentName());
         AgentConfig handoffFrom = null;
         HandoffInputFilter activeInputFilter = HandoffInputFilter.IDENTITY;

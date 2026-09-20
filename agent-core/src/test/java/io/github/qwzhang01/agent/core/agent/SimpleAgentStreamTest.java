@@ -128,6 +128,27 @@ class SimpleAgentStreamTest {
     }
 
     @Test
+    void throwingHostSinkDoesNotMarkModelFailed() {
+        var client = SimpleAgentTest.InlineMock.scripted()
+                .addResponse(ModelResponse.text("Hello"));
+        Agent agent = new SimpleAgent(new AgentConfig("test", "system", client, null, 5));
+        AgentState state = new AgentState();
+        List<AgentEvent> events = new ArrayList<>();
+
+        agent.stream("Hi", state, event -> {
+            events.add(event);
+            if (event instanceof AgentEvent.ContentDelta) {
+                throw new IllegalStateException("ResponseBodyEmitter has already completed");
+            }
+        });
+
+        assertEquals(AgentState.Status.DONE, state.getStatus());
+        assertTrue(events.stream().anyMatch(e -> e instanceof AgentEvent.Done));
+        assertTrue(events.stream().noneMatch(e -> e instanceof AgentEvent.Error),
+                "a gone host sink must not be reported as a model failure");
+    }
+
+    @Test
     void streamErrorFromModelEmitsErrorAndSetsState() {
         Agent agent = new SimpleAgent(new AgentConfig("test", "system", new ErrorStreamMock(), null, 5));
         AgentState state = new AgentState();

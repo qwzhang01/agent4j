@@ -175,16 +175,16 @@ public final class ChatEngine {
                         // Done is NOT forwarded here; emitted once at the end of all retries.
                     } else if (event instanceof AgentEvent.Error err) {
                         fireError(speaker, inputText, err.message(), err.cause());
-                        listener.accept(event);
                         errorOccurred[0] = true;
+                        emitHost(listener, event);
                     } else {
-                        listener.accept(event);  // ContentDelta etc. stream through normally
+                        emitHost(listener, event);
                     }
                 });
             } catch (RuntimeException e) {
                 log.error("chat stream failed in room '{}': {}", room.roomId(), e.getMessage());
                 fireError(speaker, inputText, e.getMessage(), e);
-                listener.accept(new AgentEvent.Error(
+                emitHost(listener, new AgentEvent.Error(
                         e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), e));
                 return;
             }
@@ -210,17 +210,26 @@ public final class ChatEngine {
                     retriesDone, retryPolicy.maxAttempts(), room.roomId());
             // Tell listeners to discard whatever ContentDelta the just-finished attempt
             // streamed: the next ContentDelta belongs to a brand-new attempt.
-            listener.accept(new AgentEvent.RetryStarted(
+            emitHost(listener, new AgentEvent.RetryStarted(
                     finalReply, retriesDone + 1, retryPolicy.maxAttempts()));
         }
 
         // Emit TurnTrace (before Done), update room history, fire listeners, emit Done.
         long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        listener.accept(buildTurnTrace(speaker, finalPrefix, finalReply, latencyMs));
+        emitHost(listener, buildTurnTrace(speaker, finalPrefix, finalReply, latencyMs));
         room.append(RoomMessage.assistant(speaker.personaId(), finalReply));
         checkConsistency(speaker, userText, finalReply);
         fireReplied(speaker, userText, finalReply);
-        listener.accept(new AgentEvent.Done(finalReply, finalState));
+        emitHost(listener, new AgentEvent.Done(finalReply, finalState));
+    }
+
+    /** Host listener is a side channel: a gone SSE client must not fail the turn. */
+    static void emitHost(Consumer<AgentEvent> listener, AgentEvent event) {
+        try {
+            listener.accept(event);
+        } catch (RuntimeException e) {
+            log.warn("host listener failed: {}", e.toString());
+        }
     }
 
     /**

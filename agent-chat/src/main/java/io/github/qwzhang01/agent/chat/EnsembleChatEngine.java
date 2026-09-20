@@ -118,7 +118,7 @@ public final class EnsembleChatEngine {
         // at the end of the whole turn. Everything else streams through.
         Consumer<AgentEvent> sink = event -> {
             if (!(event instanceof AgentEvent.Done)) {
-                listener.accept(event);
+                ChatEngine.emitHost(listener, event);
             }
         };
 
@@ -151,7 +151,7 @@ public final class EnsembleChatEngine {
             }
             ChatPersona beatSpeaker = next.get();
 
-            listener.accept(new AgentEvent.BeatStarted(beatSpeaker.personaId(), beat));
+            ChatEngine.emitHost(listener, new AgentEvent.BeatStarted(beatSpeaker.personaId(), beat));
             int before = engine.room().history().size();
             engine.streamForced(beatSpeaker, userText,
                     stageDirection(beatSpeaker), sink);
@@ -161,7 +161,7 @@ public final class EnsembleChatEngine {
         }
 
         RoomMessage last = trailingAssistant(engine.room().history());
-        listener.accept(new AgentEvent.Done(
+        ChatEngine.emitHost(listener, new AgentEvent.Done(
                 last == null ? "" : last.content(), null));
     }
 
