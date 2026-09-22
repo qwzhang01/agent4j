@@ -152,7 +152,7 @@ jobs:
           # module's report covers the full dependency tree.
           cp seven-agent-bom/target/bom.json sbom-out/aggregate-bom.json
       - name: Anchore grype scan of the aggregate SBOM
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         with:
           sbom-artifact: sbom-out/aggregate-bom.json
           fail-build: true
