@@ -25,7 +25,7 @@ jobs:
 
       - name: Upload SBOM artifact
         if: matrix.java == 21
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-cyclonedx
           path: |
@@ -159,7 +159,7 @@ jobs:
           severity-cutoff: high
       - name: Upload grype report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: grype-report
           path: ${{ github.workspace }}/grype-scan-report.json
