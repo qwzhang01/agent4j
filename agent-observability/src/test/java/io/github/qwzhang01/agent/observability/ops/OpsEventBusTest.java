@@ -87,8 +87,6 @@ class OpsEventBusTest {
         assertEquals(3, page.severity());
     }
 
-    // ============ Helpers ============
-
     private static OpsEventBus.OpsEvent event(OpsEventBus.Kind kind, String runId, String message) {
         return new OpsEventBus.OpsEvent(
                 kind, 3, Instant.now(), runId, "step-1", "search", "gpt-4o",

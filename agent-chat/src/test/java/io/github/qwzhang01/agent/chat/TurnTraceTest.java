@@ -34,7 +34,7 @@ class TurnTraceTest {
     private static final ChatPersona LUNA = ChatPersona.of("luna", "You are Luna.");
     private static final Instant T0 = Instant.parse("2026-08-01T00:00:00Z");
 
-    // ============ Ordering ============
+    // Ordering
 
     @Test
     void turnTrace_isEmittedBeforeDone() {
@@ -73,7 +73,7 @@ class TurnTraceTest {
         assertTrue(deltaIdx < traceIdx, "ContentDelta must precede TurnTrace");
     }
 
-    // ============ recalledSubjects ============
+    // recalledSubjects
 
     @Test
     void withMemorySource_recalledSubjectsMatchInjected() {
@@ -114,7 +114,7 @@ class TurnTraceTest {
                 "no MemorySource → recalledSubjects must be empty");
     }
 
-    // ============ extraTextBytes ============
+    // extraTextBytes
 
     @Test
     void withExtraTextSource_extraBytesReflectsActualOutput() {
@@ -150,7 +150,7 @@ class TurnTraceTest {
         assertEquals(0, trace.extraTextBytes(), "no ExtraTextSource → extraTextBytes must be 0");
     }
 
-    // ============ personaVersion ============
+    // personaVersion
 
     @Test
     void withoutVersion_personaVersionIsNull() {
@@ -182,7 +182,7 @@ class TurnTraceTest {
                 "personaVersion must carry through spec → ChatPersona → TurnTrace");
     }
 
-    // ============ timing & token approximation ============
+    // timing & token approximation
 
     @Test
     void latencyMs_isNonNegative() {
@@ -212,8 +212,6 @@ class TurnTraceTest {
         assertTrue(trace.completionTokens() > 0,
                 "completionTokens (char count) must be > 0 when reply is non-empty");
     }
-
-    // ============ Helpers ============
 
     private static AgentEvent.TurnTrace captureTrace(ChatRoom room, String userText) {
         List<AgentEvent> events = new ArrayList<>();

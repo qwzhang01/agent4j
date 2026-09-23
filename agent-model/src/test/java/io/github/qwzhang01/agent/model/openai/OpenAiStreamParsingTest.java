@@ -47,8 +47,6 @@ class OpenAiStreamParsingTest {
         api.close();
     }
 
-    // ============ Helpers ============
-
     private static String chunk(String json) {
         return "data: " + json + "\n\n";
     }
@@ -87,7 +85,7 @@ class OpenAiStreamParsingTest {
                 Duration.ofSeconds(30), flavor, reasoning, null);
     }
 
-    // ============ Ark (Volcengine) ============
+    // Ark (Volcengine)
 
     @Test
     void arkFinalChunkWithEmptyContentAndFinishReasonStillEmitsDone() {
@@ -140,7 +138,7 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("thinking"), "AUTO must not send any reasoning switch");
     }
 
-    // ============ OpenAI classic ============
+    // OpenAI classic
 
     @Test
     void openaiClassicShapeStillWorks() {
@@ -171,7 +169,7 @@ class OpenAiStreamParsingTest {
         assertEquals("high", body.path("reasoning_effort").asText());
     }
 
-    // ============ Degenerate streams ============
+    // Degenerate streams
 
     @Test
     void streamWithoutFinishReasonSynthesizesDone() {
@@ -216,7 +214,7 @@ class OpenAiStreamParsingTest {
         assertEquals(0, countOf(events, StreamEvent.Done.class));
     }
 
-    // ============ Endpoint flavor detection ============
+    // Endpoint flavor detection
 
     @Test
     void flavorAutoDetectedFromBaseUrl() {
@@ -269,7 +267,7 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("reasoning"));
     }
 
-    // ============ Reasoning channel tolerance ============
+    // Reasoning channel tolerance
 
     @Test
     void reasoningParsedFromEveryKnownFieldName() {
@@ -308,7 +306,7 @@ class OpenAiStreamParsingTest {
         assertEquals("answer", singleDone(drain(client, chat("hi"))).finalResponse().content());
     }
 
-    // ============ extraBody escape hatch ============
+    // extraBody escape hatch
 
     @Test
     void extraBodyMergesVendorSpecificFields() throws Exception {
@@ -348,7 +346,7 @@ class OpenAiStreamParsingTest {
         assertTrue(body.path("stream").asBoolean(), "extraBody must not override the stream flag");
     }
 
-    // ============ Non-streaming ============
+    // Non-streaming
 
     @Test
     void nonStreamingReasoningStaysOutOfContent() {
@@ -403,7 +401,7 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("thinking"), "request-level AUTO must override client default");
     }
 
-    // ============ Tool calls across chunks ============
+    // Tool calls across chunks
 
     @Test
     void streamedToolCallArgumentsMergedByIndex() {

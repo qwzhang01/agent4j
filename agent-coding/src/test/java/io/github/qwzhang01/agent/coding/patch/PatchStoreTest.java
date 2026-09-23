@@ -44,7 +44,7 @@ class PatchStoreTest {
         store = new PatchStore(workspace);
     }
 
-    // ============ Staging: never touches the disk ============
+    // Staging: never touches the disk
 
     @Test
     @DisplayName("staging N times (incl. re-staging) leaves the disk byte-identical")
@@ -108,7 +108,7 @@ class PatchStoreTest {
         assertTrue(e.getMessage().contains("symbolic"), e.getMessage());
     }
 
-    // ============ Apply: the single write point ============
+    // Apply: the single write point
 
     @Test
     @DisplayName("apply round-trip: CREATE writes, MODIFY overwrites, DELETE removes - as one batch")
@@ -154,7 +154,7 @@ class PatchStoreTest {
         assertEquals(Patch.PatchStatus.DRAFT, second.status());
     }
 
-    // ============ Drift detection (TOCTOU) ============
+    // Drift detection (TOCTOU)
 
     @Test
     @DisplayName("drift: file hand-edited between staging and apply -> whole-patch rejection, disk keeps the edit")
@@ -216,7 +216,7 @@ class PatchStoreTest {
                 ((ApplyResult.DriftRejected) result).reason());
     }
 
-    // ============ State machine ============
+    // State machine
 
     @Test
     @DisplayName("discard: disk untouched, terminal state DISCARDED, store reopens fresh")
@@ -284,7 +284,7 @@ class PatchStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.discard());
     }
 
-    // ============ Materialize / revert (blueprint T3's hidden premise) ============
+    // Materialize / revert (blueprint T3's hidden premise)
 
     @Test
     @DisplayName("materialize writes the staged changes so a test command can see them")
@@ -363,8 +363,6 @@ class PatchStoreTest {
         assertThrows(IllegalStateException.class, () -> store.revert());
         assertEquals("human edit", Files.readString(root.resolve("App.java")));
     }
-
-    // ============ Helpers ============
 
     private Map<Path, byte[]> diskSnapshot() throws IOException {
         Map<Path, byte[]> snapshot = new java.util.LinkedHashMap<>();

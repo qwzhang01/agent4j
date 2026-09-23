@@ -98,7 +98,6 @@ public final class OpsEventBus {
         }
     }
 
-    /** Subscribe (idempotent per instance). */
     public void subscribe(Subscriber subscriber) {
         Objects.requireNonNull(subscriber, "subscriber");
         subscribers.add(subscriber);

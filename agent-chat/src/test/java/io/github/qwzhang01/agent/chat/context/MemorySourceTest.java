@@ -180,7 +180,7 @@ class MemorySourceTest {
         assertTrue(joined(model.requests.get(0).messages()).contains("oat latte"));
     }
 
-    // ============ SUMMARY pool isolation ============
+    // SUMMARY pool isolation
 
     /**
      * A high-importance SUMMARY must occupy at most 1 slot and must NOT displace
@@ -245,8 +245,6 @@ class MemorySourceTest {
                 "FACT budget must be exactly 0 when limit is fully consumed by SUMMARY, "
                         + "not unlimited");
     }
-
-    // ============ Helpers ============
 
     private static void write(InMemoryMemoryStore store, String scope, String subject,
                               String content, double importance) {

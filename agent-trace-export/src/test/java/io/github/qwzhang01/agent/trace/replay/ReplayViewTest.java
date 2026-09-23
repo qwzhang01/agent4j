@@ -125,8 +125,6 @@ class ReplayViewTest {
         assertTrue(error.getMessage().contains(":1"), "line number must be reported: " + error.getMessage());
     }
 
-    // ============ helpers ============
-
     private static void assertRejected(Trajectory good, int position,
                                        TrajectoryStep replacedStep, String expectedFragment) {
         List<TrajectoryStep> steps = new ArrayList<>(good.steps());

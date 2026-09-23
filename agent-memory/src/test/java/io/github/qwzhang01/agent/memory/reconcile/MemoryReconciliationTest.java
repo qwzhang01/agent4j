@@ -52,7 +52,7 @@ class MemoryReconciliationTest {
                 prov, MemoryStatus.ACTIVE, Instant.parse("2026-08-01T00:00:00Z"), null));
     }
 
-    // ============ Flagship: reconciled supersede with bi-temporal stamps ============
+    // Flagship: reconciled supersede with bi-temporal stamps
 
     @Test
     void reconciledEvolve_closesOldEntryOnBothAxes() {
@@ -98,7 +98,7 @@ class MemoryReconciliationTest {
         assertEquals(active.get(0).id(), d.newEntryId());
     }
 
-    // ============ Evidence feeds the prompt (read side feeds write side) ============
+    // Evidence feeds the prompt (read side feeds write side)
 
     @Test
     void evidenceAppearsInExtractionPrompt() {
@@ -119,7 +119,7 @@ class MemoryReconciliationTest {
                 "old account visible to the extractor");
     }
 
-    // ============ Soft failure: recall failure never breaks the write ============
+    // Soft failure: recall failure never breaks the write
 
     @Test
     void recallFailure_degradesToPlainExtraction() {
@@ -147,7 +147,7 @@ class MemoryReconciliationTest {
         assertEquals(1, stored, "write proceeds without evidence (soft failure)");
     }
 
-    // ============ Scope isolation: evidence never crosses scopes ============
+    // Scope isolation: evidence never crosses scopes
 
     @Test
     void evidenceNeverCrossesScopes() {
@@ -160,7 +160,7 @@ class MemoryReconciliationTest {
         assertTrue(evidence.isEmpty(), "other user's old accounts are invisible");
     }
 
-    // ============ History query sees the closed line ============
+    // History query sees the closed line
 
     @Test
     void historyQuerySeesClosedEntry() {
@@ -186,8 +186,6 @@ class MemoryReconciliationTest {
         assertTrue(history.stream().anyMatch(e -> e.id().equals(shenzhen.id())),
                 "history query recovers the closed line");
     }
-
-    // ============ Helpers ============
 
     private static final class RecordingListener implements MemoryDecisionListener {
         private final List<MemoryDecision> sink;

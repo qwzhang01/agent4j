@@ -42,8 +42,6 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
     private final String defaultModel;
     private final Duration requestTimeout;
 
-    // ============ Constructors ============
-
     public OpenAiEmbeddingClient(String apiKey) {
         this("https://api.openai.com/v1", apiKey, "text-embedding-3-small");
     }
@@ -70,7 +68,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
         log.debug("OpenAiEmbeddingClient initialized: baseUrl={}, model={}", this.baseUrl, defaultModel);
     }
 
-    // ============ EmbeddingClient ============
+    // EmbeddingClient
 
     @Override
     public float[] embed(String text) {
@@ -91,7 +89,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
         return List.of(results);
     }
 
-    // ============ Internals ============
+    // Internals
 
     private static void validateText(String text) {
         if (text == null || text.isBlank()) {

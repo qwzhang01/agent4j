@@ -28,7 +28,7 @@ public class MockModelClient implements ModelClient {
     private final Queue<ModelResponse> scriptedResponses = new LinkedBlockingQueue<>();
     private boolean ruleBasedMode = false;
 
-    // ============ Builder ============
+    // Builder
 
     public static MockModelClient scripted() {
         return new MockModelClient();
@@ -40,7 +40,7 @@ public class MockModelClient implements ModelClient {
         return client;
     }
 
-    // ============ Configuration ============
+    // Configuration
 
     /**
      * Add a scripted response (consumed in order).
@@ -66,7 +66,7 @@ public class MockModelClient implements ModelClient {
         return this;
     }
 
-    // ============ ModelClient ============
+    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -95,7 +95,7 @@ public class MockModelClient implements ModelClient {
         );
     }
 
-    // ============ Rule-based Logic ============
+    // Rule-based Logic
 
     private ModelResponse ruleBasedResponse(ModelRequest request) {
         // Get last user message (text content, or text parts for multimodal messages)
@@ -122,8 +122,6 @@ public class MockModelClient implements ModelClient {
         // Default: echo the user input
         return ModelResponse.text("Mock response to: \"" + userInput + "\"");
     }
-
-    // ============ Helpers ============
 
     /**
      * Extracts displayable text from a message: plain content, or the text

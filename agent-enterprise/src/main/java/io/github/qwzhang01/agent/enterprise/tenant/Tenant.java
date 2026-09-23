@@ -46,7 +46,7 @@ public record Tenant(
         Objects.requireNonNull(status, "status must not be null");
     }
 
-    // ============ Factory Methods ============
+    // Factory Methods
 
     /**
      * An active tenant with unlimited budget.
@@ -55,7 +55,7 @@ public record Tenant(
         return new Tenant(tenantId, displayName, TenantStatus.ACTIVE, UNLIMITED_BUDGET);
     }
 
-    // ============ Accessors ============
+    // Accessors
 
     /**
      * Whether the tenant is currently active (registration and login allowed).
@@ -77,8 +77,6 @@ public record Tenant(
     public Tenant suspended() {
         return new Tenant(tenantId, displayName, TenantStatus.SUSPENDED, monthlyTokenBudget);
     }
-
-    // ============ Helpers ============
 
     private static void requireText(String value, String field) {
         Objects.requireNonNull(value, field + " must not be null");

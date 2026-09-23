@@ -41,8 +41,6 @@ public class OpenAiImageClient implements ImageGenerationClient {
     private final String apiKey;
     private final String defaultModel;
 
-    // ============ Constructors ============
-
     public OpenAiImageClient(String apiKey) {
         this("https://api.openai.com/v1", apiKey, "gpt-image-1");
     }
@@ -60,7 +58,7 @@ public class OpenAiImageClient implements ImageGenerationClient {
                 .build();
     }
 
-    // ============ ImageGenerationClient ============
+    // ImageGenerationClient
 
     @Override
     public ImageResult generate(ImageGenRequest request) {
@@ -90,7 +88,7 @@ public class OpenAiImageClient implements ImageGenerationClient {
         }
     }
 
-    // ============ Request Building ============
+    // Request Building
 
     private ObjectNode buildRequestBody(ImageGenRequest request, String model) {
         ObjectNode body = mapper.createObjectNode();
@@ -122,7 +120,7 @@ public class OpenAiImageClient implements ImageGenerationClient {
         return body;
     }
 
-    // ============ Response Parsing ============
+    // Response Parsing
 
     private ImageResult parseResponse(String responseBody, String model) {
         try {
@@ -151,7 +149,7 @@ public class OpenAiImageClient implements ImageGenerationClient {
         }
     }
 
-    // ============ Error Handling ============
+    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

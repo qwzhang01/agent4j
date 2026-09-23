@@ -138,8 +138,6 @@ class RunTestsToolTest {
                 .findFirst().orElse(null), "no parameters: the referee takes no arguments");
     }
 
-    // ============ Helpers ============
-
     private RunTestsTool tool(List<String> testCommand) {
         return new RunTestsTool(testCommand,
                 CommandWhitelist.builder().rule("echo").rule("ls").rule("sleep").build(),

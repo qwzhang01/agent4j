@@ -49,7 +49,7 @@ public abstract class ModelClientContract {
     /** The provider's name for audit/logging records. */
     protected abstract String providerName();
 
-    // ============ Sync happy path ============
+    // Sync happy path
 
     @Test
     @DisplayName("contract: sync text round-trip returns content + usage")
@@ -118,7 +118,7 @@ public abstract class ModelClientContract {
         }
     }
 
-    // ============ Error taxonomy ============
+    // Error taxonomy
 
     @Test
     @DisplayName("contract: 401 maps to AUTH_ERROR")
@@ -152,8 +152,6 @@ public abstract class ModelClientContract {
         assertEquals(ModelException.ErrorCode.MODEL_ERROR, ex.getCode());
     }
 
-    // ============ Helpers ============
-
     protected ModelRequest request() {
         return ModelRequest.builder()
                 .messages(List.of(ChatMessage.user("hello")))
@@ -163,7 +161,7 @@ public abstract class ModelClientContract {
     /** Build a client whose HTTP layer fails with this status/body. */
     protected abstract ModelClient clientForError(int status, String body);
 
-    // ============ Canned bodies (override per provider wire format) ============
+    // Canned bodies (override per provider wire format)
 
     /** Override: a successful sync response body in this provider's format. */
     protected abstract String syncBody();

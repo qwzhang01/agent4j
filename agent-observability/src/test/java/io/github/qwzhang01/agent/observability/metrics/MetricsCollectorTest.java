@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MetricsCollectorTest {
 
-    // ============ helpers ============
-
     private static ModelCallMetrics modelCall(int prompt, int completion, String error) {
         return new ModelCallMetrics("m", 1L, prompt, completion, prompt + completion,
                 error == null ? "stop" : null, error);
@@ -41,7 +39,7 @@ class MetricsCollectorTest {
         return c;
     }
 
-    // ============ aggregation ============
+    // aggregation
 
     @Test
     @DisplayName("endRun materializes the exact aggregate: counts, tokens summed, denied counted")
@@ -91,7 +89,7 @@ class MetricsCollectorTest {
                 () -> c.endRun(AgentState.Status.DONE, null));
     }
 
-    // ============ guards ============
+    // guards
 
     @Test
     @DisplayName("beginRun guards: blank ids rejected, nested run rejected, runId reuse rejected")
@@ -109,7 +107,7 @@ class MetricsCollectorTest {
                 "runIds are unique, reuse rejected");
     }
 
-    // ============ queries ============
+    // queries
 
     @Test
     @DisplayName("runMetrics: finished runs queryable, active/unknown return empty")
@@ -175,7 +173,7 @@ class MetricsCollectorTest {
         assertEquals(1, c.runMetrics("r1").orElseThrow().modelCallCount());
     }
 
-    // ============ end-to-end: real ReActAgentLoop, zero loop changes ============
+    // end-to-end: real ReActAgentLoop, zero loop changes
 
     @Test
     @DisplayName("end-to-end: SimpleAgent + both observing decorators + collector, one wiring line each")
@@ -238,7 +236,7 @@ class MetricsCollectorTest {
         assertEquals(1.0, stats.successRate(), 1e-9);
     }
 
-    // ============ M18.2 wiring: cost accounting ============
+    // M18.2 wiring: cost accounting
 
     @Test
     @DisplayName("M18.2 wiring: CostMeter injected -> RunMetrics.costMicros is the exact priced sum")

@@ -13,9 +13,6 @@ import java.util.List;
  */
 public interface AuditLogger {
 
-    /**
-     * Log an audit event.
-     */
     void log(AuditEvent event);
 
     /**

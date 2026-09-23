@@ -27,9 +27,7 @@ public class MockAgentExample {
     public static void main(String[] args) {
         System.out.println("=== Java Agent Framework - Mock Agent Example ===\n");
 
-        // --------------------------------------------
         // 1. Create a Mock ModelClient (no real LLM needed)
-        // --------------------------------------------
         // Scripted mode: we control exactly what the "model" says
         MockModelClient modelClient = MockModelClient.scripted()
                 .respondToolCalls(ToolCall.of("call_1", "get_current_time",
@@ -37,16 +35,12 @@ public class MockAgentExample {
                 .respondText("Based on the tool result, the current time has been retrieved. " +
                         "This is the final answer from the mock agent.");
 
-        // --------------------------------------------
         // 2. Register tools
-        // --------------------------------------------
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         registry.register(new CurrentTimeTool());
         registry.register(new EchoTool());
 
-        // --------------------------------------------
         // 3. Create Agent (secure assembly: deny-on-absence)
-        // --------------------------------------------
         Agent agent = SecureAgentBuilder.secure(
                         "mock-agent-v1",
                         modelClient,
@@ -55,9 +49,7 @@ public class MockAgentExample {
                 .maxSteps(10)
                 .build();
 
-        // --------------------------------------------
         // 4. Run the agent
-        // --------------------------------------------
         String userInput = "What time is it now?";
         System.out.println("User: " + userInput);
         System.out.println();
@@ -67,9 +59,7 @@ public class MockAgentExample {
         System.out.println("Agent: " + response);
         System.out.println();
 
-        // --------------------------------------------
         // 5. Rule-based mode demo (no scripting needed)
-        // --------------------------------------------
         System.out.println("=== Rule-based mode ===\n");
 
         MockModelClient ruleClient = MockModelClient.ruleBased();

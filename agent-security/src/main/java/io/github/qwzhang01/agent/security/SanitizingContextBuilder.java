@@ -98,9 +98,7 @@ public final class SanitizingContextBuilder implements ContextBuilder {
         return out;
     }
 
-    // --------------------------------------------
     // Hardening steps
-    // --------------------------------------------
 
     private ChatMessage harden(ChatMessage msg) {
         if (msg == null) {

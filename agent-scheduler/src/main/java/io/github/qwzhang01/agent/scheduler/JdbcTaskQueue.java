@@ -115,7 +115,6 @@ public final class JdbcTaskQueue {
         this.capacity = capacity;
     }
 
-    /** The configured capacity (0 = unbounded). */
     public int capacity() {
         return capacity;
     }
@@ -208,7 +207,7 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // ============ Enqueue / claim / complete ============
+    // Enqueue / claim / complete
 
     /** Enqueue a task row (status PENDING). Payload is an opaque host string. */
     public TaskRow enqueue(String parentRunId, String workflowName,
@@ -397,7 +396,7 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // ============ Crash recovery ============
+    // Crash recovery
 
     /**
      * Renew the lease of a claimed (RUNNING) task: stamp the lease clock
@@ -502,7 +501,7 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // ============ Inspection ============
+    // Inspection
 
     public java.util.Optional<TaskRow> get(String taskId) {
         String sql = selectAll() + " WHERE task_id = ?";
@@ -540,7 +539,7 @@ public final class JdbcTaskQueue {
         return listByStatus(status).size();
     }
 
-    // ============ Internal ============
+    // Internal
 
     private long nextSeq() {
         // Portable increment without IDENTITY: bump the counter row and

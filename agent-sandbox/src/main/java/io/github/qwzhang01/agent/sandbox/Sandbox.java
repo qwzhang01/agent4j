@@ -18,8 +18,5 @@ public interface Sandbox {
      */
     SandboxResult execute(String className, String code);
 
-    /**
-     * Execute with custom spec.
-     */
     SandboxResult execute(String className, String code, SandboxSpec spec);
 }

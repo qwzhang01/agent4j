@@ -38,7 +38,6 @@ public final class ScheduleResumeNode implements WorkflowNode {
         return new ScheduleResumeNode(id, delay, false);
     }
 
-    /** Recurring resume every interval. */
     public static ScheduleResumeNode recurring(String id, Duration interval) {
         return new ScheduleResumeNode(id, interval, true);
     }

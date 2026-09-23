@@ -79,7 +79,7 @@ public final class EnterpriseTaskManager {
                 "sharedApprovalBridge must not be null");
     }
 
-    // ============ Assembly Hook ============
+    // Assembly Hook
 
     /**
      * The ApprovalService to wire into {@link HumanApprovalNode}s of task
@@ -89,8 +89,6 @@ public final class EnterpriseTaskManager {
     public ApprovalService approvalService() {
         return approvalBridge;
     }
-
-    // ============ Lifecycle ============
 
     /**
      * Submit a business task: start the workflow run and project the outcome.
@@ -189,7 +187,7 @@ public final class EnterpriseTaskManager {
         return updated;
     }
 
-    // ============ Crash Recovery ============
+    // Crash Recovery
 
     /**
      * Recover a task after a process restart: re-register the snapshot and
@@ -220,7 +218,7 @@ public final class EnterpriseTaskManager {
         return recovered;
     }
 
-    // ============ Queries ============
+    // Queries
 
     /**
      * Look up a task by business id.
@@ -238,7 +236,7 @@ public final class EnterpriseTaskManager {
                 .toList();
     }
 
-    // ============ Internal ============
+    // Internal
 
     private BusinessTask requireWaitingApproval(String taskId) {
         requireText(taskId, "taskId");

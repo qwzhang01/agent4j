@@ -83,8 +83,6 @@ public class SseTransport implements McpTransport {
         this(descriptor, httpClient, null, null);
     }
 
-    // ============ Lifecycle ============
-
     @Override
     public synchronized void open() throws IOException {
         if (open) {
@@ -232,7 +230,7 @@ public class SseTransport implements McpTransport {
         log.debug("SSE transport closed for '{}'", descriptor.name());
     }
 
-    // ============ SSE frame parsing ============
+    // SSE frame parsing
 
     private static final String CLOSE_FRAME = "{\"jsonrpc\":\"2.0\","
             + "\"method\":\"connection/closed\",\"params\":{\"reason\":\"sse channel ended\"}}";

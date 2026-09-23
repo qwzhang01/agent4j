@@ -27,7 +27,7 @@ class ResilientModelClientTest {
         return ModelRequest.builder().build();
     }
 
-    // ============ Retry-After honoring ============
+    // Retry-After honoring
 
     @Test
     void retryAfter_hintIsHonoredOverExponentialGuess() {
@@ -67,7 +67,7 @@ class ResilientModelClientTest {
         assertTrue(waitedMs < 5_000, "cap must bound the 120s hint, waited " + waitedMs + "ms");
     }
 
-    // ============ Circuit breaker ============
+    // Circuit breaker
 
     @Test
     void breaker_opensAfterConsecutiveFailuresAndFailsFast() {
@@ -155,7 +155,7 @@ class ResilientModelClientTest {
         assertEquals(0, client.getConsecutiveFailures());
     }
 
-    // ============ Credential rotation ============
+    // Credential rotation
 
     @Test
     void rotation_authErrorRotatesAndRecovers() {
@@ -191,7 +191,7 @@ class ResilientModelClientTest {
         assertEquals(0, pool.applied.get());
     }
 
-    // ============ Legacy compatibility ============
+    // Legacy compatibility
 
     @Test
     void legacy_legacyModelExceptionIsUpgradedNotSwallowed() {
@@ -243,8 +243,6 @@ class ResilientModelClientTest {
                 () -> client.stream(anyRequest()).forEach(e -> { }));
         assertEquals(before, mock.calls.get());
     }
-
-    // ============ Helpers ============
 
     private static void awaitMillis(long ms) {
         try {

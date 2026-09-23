@@ -55,7 +55,7 @@ public record KnowledgeEntry(
         tags = tags == null ? Set.of() : Set.copyOf(tags);
     }
 
-    // ============ Convenience Factory ============
+    // Convenience Factory
 
     /**
      * A minimal entry: title + content, no source, no tags.
@@ -64,7 +64,7 @@ public record KnowledgeEntry(
         return new KnowledgeEntry(title, content, null, null);
     }
 
-    // ============ Storage Projection ============
+    // Storage Projection
 
     /**
      * Project this entry into its storage form under the given tenant scope.
@@ -99,8 +99,6 @@ public record KnowledgeEntry(
         Objects.requireNonNull(entry, "entry must not be null");
         return new KnowledgeEntry(entry.subject(), entry.content(), null, null);
     }
-
-    // ============ Helpers ============
 
     private static void requireText(String value, String field) {
         Objects.requireNonNull(value, field + " must not be null");

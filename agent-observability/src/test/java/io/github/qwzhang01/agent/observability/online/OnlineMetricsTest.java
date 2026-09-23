@@ -92,8 +92,6 @@ class OnlineMetricsTest {
         assertTrue(row.memoryHitRate() == null);
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics run(String runId, boolean done, long costMicros, long durationMs,
                                   int modelCalls, int modelErrors, int toolCalls, int deniedTools) {
         return new RunMetrics(

@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ReflectiveAgentTest {
 
-    // ============ Stubs ============
+    // Stubs
 
     /** Model client whose chat() returns scripted verdicts. */
     static final class VerdictScript implements ModelClient {
@@ -74,7 +74,7 @@ class ReflectiveAgentTest {
         }
     }
 
-    // ============ Bounded reflection ============
+    // Bounded reflection
 
     @Test
     @DisplayName("PASS on first critique: answer returned unchanged, zero regeneration")
@@ -130,7 +130,7 @@ class ReflectiveAgentTest {
                 && rf.cycle() == 2 && "GIVE_UP".equals(rf.verdict())));
     }
 
-    // ============ Output separation ============
+    // Output separation
 
     @Test
     @DisplayName("critique text never lands in user-visible output or delegate history")
@@ -162,7 +162,7 @@ class ReflectiveAgentTest {
         }
     }
 
-    // ============ Degradation ============
+    // Degradation
 
     @Test
     @DisplayName("critique infrastructure failure: pass-through, candidate stands")
@@ -214,7 +214,7 @@ String answer = streamCollect(agent, "q", new AgentState(), events);
                 () -> new ReflectiveAgent(delegate, new VerdictScript()).maxCycles(0));
     }
 
-    // ============ Delegate failure ============
+    // Delegate failure
 
     @Test
     @DisplayName("delegate failed: nothing to critique, failure state stands")
@@ -245,8 +245,6 @@ String answer = streamCollect(agent, "q", new AgentState(), events);
         assertEquals("boom", answer);
         assertEquals(0, critique.calls, "no critique on a failed delegate");
     }
-
-    // ============ helper ============
 
     // small local shim: run via stream() and collect the final answer
     // from the Done event (the interface's stream contract).

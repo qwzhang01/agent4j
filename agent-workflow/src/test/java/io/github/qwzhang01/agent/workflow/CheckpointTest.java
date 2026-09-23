@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class CheckpointTest {
 
-    // ============ M6.1: Core abstractions ============
+    // M6.1: Core abstractions
 
     @Test
     void runManagerStartReturnsSucceededForSimpleFlow() {
@@ -59,7 +59,7 @@ class CheckpointTest {
         assertTrue(store.listRunIds().isEmpty());
     }
 
-    // ============ M6.2: Pause-Resume ============
+    // M6.2: Pause-Resume
 
     @Test
     void humanApprovalPausesWhenUsingRunManager() {
@@ -173,7 +173,7 @@ class CheckpointTest {
         assertEquals("approval", cp.get().cursor());
     }
 
-    // ============ M6.3: Cancellation ============
+    // M6.3: Cancellation
 
     @Test
     void cancelStopsAtNextNodeBoundary() throws Exception {
@@ -310,8 +310,6 @@ class CheckpointTest {
         assertEquals(1, succeeded.get());
         assertEquals(1, rejected.get());
     }
-
-    // ============ Helpers ============
 
     private Workflow approvalWorkflow(MockApprovalService approval) {
         return Workflow.builder("approval-flow")

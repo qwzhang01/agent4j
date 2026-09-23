@@ -82,8 +82,6 @@ class VersionComparatorTest {
         assertEquals(1, VersionComparator.forAgent(rows, "support").size());
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics row(String runId, boolean done, long cost, long duration) {
         return new RunMetrics(runId, "support",
                 done ? AgentState.Status.DONE : AgentState.Status.ERROR,

@@ -41,8 +41,6 @@ public class ArkVideoClient implements VideoGenerationClient {
     private final String apiKey;
     private final String defaultModel;
 
-    // ============ Constructors ============
-
     public ArkVideoClient(String apiKey) {
         this(DEFAULT_BASE_URL, apiKey, "doubao-seedance-1-0-pro-250528");
     }
@@ -60,7 +58,7 @@ public class ArkVideoClient implements VideoGenerationClient {
                 .build();
     }
 
-    // ============ VideoGenerationClient ============
+    // VideoGenerationClient
 
     @Override
     public VideoTask submit(VideoGenRequest request) {
@@ -110,7 +108,7 @@ public class ArkVideoClient implements VideoGenerationClient {
         }
     }
 
-    // ============ Request Building ============
+    // Request Building
 
     private ObjectNode buildRequestBody(VideoGenRequest request, String model) {
         ObjectNode body = mapper.createObjectNode();
@@ -133,7 +131,7 @@ public class ArkVideoClient implements VideoGenerationClient {
         return body;
     }
 
-    // ============ Response Parsing ============
+    // Response Parsing
 
     /**
      * Parses an Ark task payload (submit response or status response).
@@ -184,7 +182,7 @@ public class ArkVideoClient implements VideoGenerationClient {
         };
     }
 
-    // ============ Error Handling ============
+    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

@@ -56,7 +56,7 @@ public final class HttpApiTool implements Tool {
                 .build();
     }
 
-    // ============ Tool surface ============
+    // Tool surface
 
     @Override
     public String getName() {
@@ -95,7 +95,7 @@ public final class HttpApiTool implements Tool {
         return schema.toString();
     }
 
-    // ============ Execution ============
+    // Execution
 
     @Override
     public String execute(JsonNode arguments) throws ToolException {
@@ -114,7 +114,7 @@ public final class HttpApiTool implements Tool {
     private String doExecute(JsonNode arguments) throws IOException, InterruptedException {
         validateRequiredParams(arguments);
 
-        // ---- 1. Split arguments by declared placement ----
+        // 1. Split arguments by declared placement
         StringBuilder query = new StringBuilder();
         ObjectNode body = MAPPER.createObjectNode();
         String url = decl.endpoint();
@@ -144,7 +144,7 @@ public final class HttpApiTool implements Tool {
             url += (url.contains("?") ? "&" : "?") + query;
         }
 
-        // ---- 2. Build and send the request ----
+        // 2. Build and send the request
         String method = decl.method() == null ? "GET" : decl.method();
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -164,7 +164,7 @@ public final class HttpApiTool implements Tool {
         HttpResponse<String> response =
                 httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
 
-        // ---- 3. Map the outcome ----
+        // 3. Map the outcome
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new ToolException("HTTP " + response.statusCode() + " from " + decl.name()
                     + ": " + truncate(response.body()));
@@ -172,9 +172,7 @@ public final class HttpApiTool implements Tool {
         return extract(response.body());
     }
 
-    // --------------------------------------------
     // Internals
-    // --------------------------------------------
 
     private void validateRequiredParams(JsonNode arguments) {
         for (var entry : decl.params().entrySet()) {

@@ -85,8 +85,6 @@ public class AmbientEngine {
         this.ownsExecutor = ownsExecutor;
     }
 
-    // ============ Lifecycle ============
-
     /**
      * Opt in (admin action). Arms all already-registered instructions;
      * instructions registered afterwards arm immediately.
@@ -146,7 +144,7 @@ public class AmbientEngine {
         log.info("[ambient] Shutdown");
     }
 
-    // ============ Event ingress ============
+    // Event ingress
 
     /**
      * Fire an external event: all instructions subscribed to the key run
@@ -173,7 +171,7 @@ public class AmbientEngine {
         }
     }
 
-    // ============ The pipeline ============
+    // The pipeline
 
     /**
      * One firing of one instruction: condition -> noise gates -> push.
@@ -237,7 +235,7 @@ public class AmbientEngine {
                 instruction.instructionId(), instruction.importance(), preview(content));
     }
 
-    // ============ Wiring ============
+    // Wiring
 
     /**
      * Register a push sink (chat bridge, webhook, test collector...).
@@ -273,7 +271,7 @@ public class AmbientEngine {
         return enabled;
     }
 
-    // ============ Internals ============
+    // Internals
 
     private void arm(AmbientInstruction instruction) {
         // NB: switch pattern matching is preview-only on JDK 17; if-instanceof it is.

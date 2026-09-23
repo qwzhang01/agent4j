@@ -78,7 +78,7 @@ class TenantOverlayBinderTest {
                 .withPromptManager(prompts);
     }
 
-    // ============ Model overlay ============
+    // Model overlay
 
     @Test
     void tenantModelOverlayReplacesPrimaryProvider() {
@@ -94,7 +94,7 @@ class TenantOverlayBinderTest {
         assertEquals("p", plain.run("hi"));
     }
 
-    // ============ Tool restriction ============
+    // Tool restriction
 
     @Test
     void tenantDisabledToolsShrinkTheSubset() {
@@ -112,7 +112,7 @@ class TenantOverlayBinderTest {
         assertEquals(2, full.getConfig().getToolRegistry().listTools().size());
     }
 
-    // ============ Prompt channel overlay ============
+    // Prompt channel overlay
 
     @Test
     void tenantPromptChannelOverlayRoutesToCanary() {
@@ -152,7 +152,7 @@ class TenantOverlayBinderTest {
         assertEquals("canary persona", capture.systemPrompt);
     }
 
-    // ============ Service account overlay (D7) ============
+    // Service account overlay (D7)
 
     @Test
     void tenantServiceAccountOverlayReplacesDerivedIdentity() {
@@ -216,7 +216,7 @@ class TenantOverlayBinderTest {
         assertTrue(e.getMessage().contains("ghost-account"), e.getMessage());
     }
 
-    // ============ Channel binding (ambient, M13.5 acceptance) ============
+    // Channel binding (ambient, M13.5 acceptance)
 
     @Test
     void yamlDefinitionBindsChannelAgentWithAmbientInstructions() {
@@ -285,8 +285,6 @@ class TenantOverlayBinderTest {
         assertInstanceOf(io.github.qwzhang01.agent.channel.ambient.AmbientInstruction.Scheduled.class,
                 heartbeat.trigger());
     }
-
-    // ============ Helpers ============
 
     private io.github.qwzhang01.agent.core.agent.Agent bindValidated(String yaml, ProductContext ctx) {
         AgentDefinition def = parser.parse(yaml);

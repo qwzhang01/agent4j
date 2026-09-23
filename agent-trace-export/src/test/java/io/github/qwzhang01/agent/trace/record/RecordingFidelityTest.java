@@ -35,8 +35,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class RecordingFidelityTest {
 
-    // ============ Helpers ============
-
     private static ToolCall call(String id, String input) {
         return ToolCall.of(id, "echo", "{\"input\":\"" + input + "\"}");
     }
@@ -59,7 +57,7 @@ class RecordingFidelityTest {
         }
     }
 
-    // ============ D1: compression fidelity (the core test) ============
+    // D1: compression fidelity (the core test)
 
     @Test
     void compressionFidelityStateIsModelSeenNotFullHistory() {
@@ -140,7 +138,7 @@ class RecordingFidelityTest {
         assertTrue(trajectory.metadata().durationMs() >= 0);
     }
 
-    // ============ D3: one step per model call, parallel tools in one step ============
+    // D3: one step per model call, parallel tools in one step
 
     @Test
     void parallelToolCallsBelongToOneStep() {
@@ -165,7 +163,7 @@ class RecordingFidelityTest {
         assertTrue(trajectory.steps().get(0).observations().stream().allMatch(o -> o.success()));
     }
 
-    // ============ terminal capture ============
+    // terminal capture
 
     @Test
     void modelErrorBecomesTerminalErrorStep() {
@@ -230,7 +228,7 @@ class RecordingFidelityTest {
         assertEquals(1, only.observations().size());
     }
 
-    // ============ verbatim observations (D1: record what the model saw) ============
+    // verbatim observations (D1: record what the model saw)
 
     @Test
     void toolErrorTextRecordedVerbatimAsSuccessfulObservation() {

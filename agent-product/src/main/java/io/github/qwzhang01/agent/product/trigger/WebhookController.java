@@ -146,9 +146,7 @@ public final class WebhookController {
                 + route.agentName() + "' asynchronously");
     }
 
-    // --------------------------------------------
     // Internals
-    // --------------------------------------------
 
     private static String hmacSha256(String data, String secret) {
         try {
@@ -167,7 +165,7 @@ public final class WebhookController {
         return s.length() > 80 ? s.substring(0, 80) + "..." : s;
     }
 
-    // ============ Builder ============
+    // Builder
 
     /**
      * Assembles a controller: routes in, agent registry and executor in.

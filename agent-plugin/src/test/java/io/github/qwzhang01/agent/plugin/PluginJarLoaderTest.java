@@ -140,8 +140,6 @@ class PluginJarLoaderTest {
         assertNull(manifest.sha256());
     }
 
-    // ============ Helpers ============
-
     /** Marker resources that locate the roots the fixture must compile against. */
     private static final String[] CLASSPATH_MARKERS = {
             "io/github/qwzhang01/agent/plugin/ToolPlugin.class",   // this module

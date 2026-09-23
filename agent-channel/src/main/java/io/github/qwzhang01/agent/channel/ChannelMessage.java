@@ -39,7 +39,7 @@ public record ChannelMessage(
         }
     }
 
-    // ============ Factory Methods ============
+    // Factory Methods
 
     /**
      * A plain (non-mention) message: human-to-human talk, history only.
@@ -71,8 +71,6 @@ public record ChannelMessage(
                 && (text.length() == prefix.length() || isSeparator(text.charAt(prefix.length())));
         return new ChannelMessage(channelId, userId, text, mentions, Instant.now());
     }
-
-    // ============ Helpers ============
 
     private static boolean isSeparator(char c) {
         return c == ' ' || c == ':' || c == '，' || c == '　';

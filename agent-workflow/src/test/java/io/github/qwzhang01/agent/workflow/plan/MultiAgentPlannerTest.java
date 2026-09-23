@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class MultiAgentPlannerTest {
 
-    // ============ Stubs ============
+    // Stubs
 
     /**
      * Agent stub that records the (instruction, state, ctx) it was run
@@ -93,7 +93,7 @@ class MultiAgentPlannerTest {
         }
     }
 
-    // ============ Isolation ============
+    // Isolation
 
     @Test
     @DisplayName("each subtask runs on its own fresh state; siblings invisible by construction")
@@ -117,7 +117,7 @@ class MultiAgentPlannerTest {
         assertFalse(b.seenStates.get(0).getMessages().toString().contains("do A"));
     }
 
-    // ============ Budget propagation ============
+    // Budget propagation
 
     @Test
     @DisplayName("parent ctx propagates: same traceId, distinct runIds, parentRunId back-link")
@@ -152,7 +152,7 @@ class MultiAgentPlannerTest {
         assertNull(a.seenContexts.get(0));
     }
 
-    // ============ Result dedup ============
+    // Result dedup
 
     @Test
     @DisplayName("identical outputs collapse to one canonical entry; first-seen order kept")
@@ -178,7 +178,7 @@ class MultiAgentPlannerTest {
         assertEquals(3, result.successCount());
     }
 
-    // ============ Failure classification reuse ============
+    // Failure classification reuse
 
     @Test
     @DisplayName("failed subtask classified from AgentState status/lastError, not a new taxonomy")
@@ -213,8 +213,6 @@ class MultiAgentPlannerTest {
         assertTrue(result.subtasks().get(0).error().contains("no agent registered"));
         assertTrue(result.subtasks().get(1).success());
     }
-
-    // ============ helpers ============
 
     private static Agent fixedAgent(String name, String output) {
         return new Agent() {

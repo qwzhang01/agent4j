@@ -37,7 +37,6 @@ import java.util.function.Consumer;
  */
 public final class OpsEventDeduplicator implements Consumer<OpsEventBus.OpsEvent> {
 
-    /** Default dedup window: 5 minutes. */
     public static final Duration DEFAULT_WINDOW = Duration.ofMinutes(5);
 
     /** Default capacity: enough entries for a busy multi-tenant sweep. */

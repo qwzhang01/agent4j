@@ -97,7 +97,7 @@ public final class PrometheusTextSink implements MetricsSink {
         counters.merge("agent4j_orphan_events_total", 1L, Long::sum);
     }
 
-    // ============ Latency quantiles (P50/P95/P99 per label set) ============
+    // Latency quantiles (P50/P95/P99 per label set)
 
     private final Map<String, java.util.List<Long>> latencies = new TreeMap<>();
 
@@ -131,8 +131,6 @@ public final class PrometheusTextSink implements MetricsSink {
                 : series + "{quantile=\"" + quantile + "\"}";
         return labeled + " " + value + "\n";
     }
-
-    // ============ Helpers ============
 
     private void bump(String family, String labelValue, String... extraPairs) {
         String labels = buildLabels(labelValue, extraPairs);

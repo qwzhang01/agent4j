@@ -41,9 +41,7 @@ public final class TemperatureModelClient implements ModelClient {
         return delegate.stream(applyDefault(request));
     }
 
-    // --------------------------------------------
     // Internals
-    // --------------------------------------------
 
     private ModelRequest applyDefault(ModelRequest request) {
         if (request.temperature() != null) {

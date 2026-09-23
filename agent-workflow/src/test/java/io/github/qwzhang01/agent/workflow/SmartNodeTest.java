@@ -77,8 +77,6 @@ class SmartNodeTest {
         assertEquals("ticket#42: status=OPEN", result.output());
     }
 
-    // ============ Helpers ============
-
     @Test
     void toolNodeExecutesDeterministicToolWithArgs() {
         Tool greet = new Tool() {

@@ -53,8 +53,6 @@ class WorkflowDagCodecTest {
                 .build();
     }
 
-    // ============ Export ============
-
     @Test
     void exportsNodesEdgesAndConditionNames() {
         DagSpec dag = codec.toDag(sampleWorkflow(), conditions);
@@ -102,7 +100,7 @@ class WorkflowDagCodecTest {
         assertEquals(dag, parsed);   // record equality through JSON
     }
 
-    // ============ Round-trip ============
+    // Round-trip
 
     @Test
     void roundTripRebuildsEquivalentWorkflow() {
@@ -184,7 +182,7 @@ class WorkflowDagCodecTest {
                 () -> codec.fromDag(dag, id -> null, conditions));
     }
 
-    // ============ Registry discipline ============
+    // Registry discipline
 
     @Test
     void conditionRegistryRejectsDuplicates() {
@@ -197,7 +195,7 @@ class WorkflowDagCodecTest {
         assertNull(conditions.predicateOf("ghost"));
     }
 
-    // ============ Test doubles ============
+    // Test doubles
 
     private record FakeTool(String name) implements Tool {
         @Override

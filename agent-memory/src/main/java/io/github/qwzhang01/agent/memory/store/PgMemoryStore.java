@@ -104,7 +104,6 @@ public class PgMemoryStore implements MemoryStore {
     /** Table names are interpolated into SQL strings; only plain identifiers pass. */
     private static final Pattern VALID_TABLE = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
-    /** Default ledger table name. */
     public static final String DEFAULT_TABLE = "agent_memory_entries";
 
     private static final String SELECT_COLUMNS =
@@ -139,7 +138,7 @@ public class PgMemoryStore implements MemoryStore {
         }
     }
 
-    // ============ Port methods ============
+    // Port methods
 
     @Override
     public MemoryEntry write(MemoryEntry entry) {
@@ -339,7 +338,7 @@ public class PgMemoryStore implements MemoryStore {
         }
     }
 
-    // ============ Internals ============
+    // Internals
 
     private void ensureSchema() {
         String ddl = """

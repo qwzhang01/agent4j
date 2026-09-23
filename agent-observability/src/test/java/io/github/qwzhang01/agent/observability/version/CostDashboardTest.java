@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CostDashboardTest {
 
-    // ============ booking ============
+    // booking
 
     @Test
     @DisplayName("record/costOf: amounts merge per key; each dimension keeps its own keys")
@@ -86,8 +86,6 @@ class CostDashboardTest {
         assertEquals(java.util.List.of("zoe", "amy"), dashboard.keysOf(BudgetDimension.USER));
     }
 
-    // ============ exports ============
-
     @Test
     @DisplayName("exportCsv: header + one row per key, insertion order")
     void csvExport() throws IOException {
@@ -116,7 +114,7 @@ class CostDashboardTest {
         Files.deleteIfExists(file);
     }
 
-    // ============ attribution sink wiring ============
+    // attribution sink wiring
 
     @Test
     @DisplayName("attributionSink: prices each model call, books all dimensions - one account, four angles")

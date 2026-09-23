@@ -42,7 +42,7 @@ public record User(
         roles = roles == null ? Set.of() : Set.copyOf(roles);
     }
 
-    // ============ Accessors ============
+    // Accessors
 
     /**
      * Whether this user holds the given role.
@@ -50,8 +50,6 @@ public record User(
     public boolean hasRole(String role) {
         return roles.contains(role);
     }
-
-    // ============ Helpers ============
 
     private static void requireText(String value, String field) {
         Objects.requireNonNull(value, field + " must not be null");

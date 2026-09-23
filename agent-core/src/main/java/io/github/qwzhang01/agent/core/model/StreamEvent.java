@@ -30,9 +30,6 @@ public sealed interface StreamEvent {
     record Done(ModelResponse finalResponse) implements StreamEvent {
     }
 
-    /**
-     * Error during streaming.
-     */
     record Error(String message, Throwable cause) implements StreamEvent {
     }
 }

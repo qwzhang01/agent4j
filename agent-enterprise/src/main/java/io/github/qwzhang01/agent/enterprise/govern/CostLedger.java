@@ -55,7 +55,7 @@ public final class CostLedger {
         return new CostLedger(Map.of());
     }
 
-    // ============ Pre-Gate ============
+    // Pre-Gate
 
     /**
      * The request-entry budget gate. Fail-closed: exhausted tenant OR user
@@ -89,7 +89,7 @@ public final class CostLedger {
         }
     }
 
-    // ============ Post-Recording ============
+    // Post-Recording
 
     /**
      * Record a finished request's token usage into both dimensions.
@@ -108,7 +108,7 @@ public final class CostLedger {
         counter(userCounters, ctx.userId()).addAndGet(total);
     }
 
-    // ============ Queries ============
+    // Queries
 
     /**
      * Total tokens recorded for a tenant (the bill).
@@ -125,8 +125,6 @@ public final class CostLedger {
         Objects.requireNonNull(userId, "userId must not be null");
         return counter(userCounters, userId).get();
     }
-
-    // ============ Helpers ============
 
     private static AtomicLong counter(Map<String, AtomicLong> map, String key) {
         return map.computeIfAbsent(key, k -> new AtomicLong());

@@ -43,7 +43,7 @@ public record EnterpriseAuditEvent(
         requireText(agentName, "agentName");
     }
 
-    // ============ Convenience Delegation ============
+    // Convenience Delegation
 
     /**
      * The tool that was called (delegates to the wrapped fact).
@@ -65,8 +65,6 @@ public record EnterpriseAuditEvent(
     public String runId() {
         return event.runId();
     }
-
-    // ============ Helpers ============
 
     private static void requireText(String value, String field) {
         Objects.requireNonNull(value, field + " must not be null");

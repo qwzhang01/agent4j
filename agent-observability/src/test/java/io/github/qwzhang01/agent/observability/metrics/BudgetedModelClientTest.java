@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class BudgetedModelClientTest {
 
-    // ============ chat: the five-dimension gate ============
+    // chat: the five-dimension gate
 
     @Test
     void chatDeniesBeforeCallingTheModelWhenProjectionExceedsTenantBudget() {
@@ -128,7 +128,7 @@ class BudgetedModelClientTest {
                 io.github.qwzhang01.agent.observability.cost.BudgetDimension.RUN, "run-1"));
     }
 
-    // ============ stream: terminal-event accounting ============
+    // stream: terminal-event accounting
 
     @Test
     void streamDoneRecordsActualUsageExactlyOnce() {
@@ -177,7 +177,7 @@ class BudgetedModelClientTest {
                 () -> client.stream(request(400, null), ctx("acme", "alice", "run-x")));
     }
 
-    // ============ estimate formula ============
+    // estimate formula
 
     @Test
     void estimateIsCharsDividedByFourPlusMaxTokensHeadroom() {
@@ -186,8 +186,6 @@ class BudgetedModelClientTest {
         assertEquals(0, BudgetedModelClient.estimateTokens(request(0, null)));
         assertEquals(7, BudgetedModelClient.estimateTokens(request(30, null)));  // 30/4 = 7
     }
-
-    // ============ Helpers ============
 
     private static ModelRequest request(int promptChars, Integer maxTokens) {
         return new ModelRequest.Builder()

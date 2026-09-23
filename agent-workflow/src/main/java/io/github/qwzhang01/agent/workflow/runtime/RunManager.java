@@ -54,8 +54,6 @@ public class RunManager {
     /** Per-run single-flight: at most one execute() in flight for a given runId. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    // ============ Constructors ============
-
     /** Default: InMemory checkpoint store. */
     public RunManager() {
         this(new GraphRuntime(), new InMemoryCheckpointStore());
@@ -79,8 +77,6 @@ public class RunManager {
     public void setRuntime(GraphRuntime runtime) {
         this.runtime = runtime;
     }
-
-    // ============ Lifecycle ============
 
     /**
      * Start a new workflow run.
@@ -274,7 +270,7 @@ public class RunManager {
         return store;
     }
 
-    // ============ Internal ============
+    // Internal
 
     /**
      * Reject a second concurrent execute for the same runId. Does not wait:

@@ -96,8 +96,6 @@ public class SandboxEscalator implements Sandbox {
      */
     private final java.util.function.Consumer<io.github.qwzhang01.agent.core.event.BoundaryEvent> eventSink;
 
-    // ============ Constructors ============
-
     /**
      * Full constructor (source-compatible shape, widened to the
      * {@link Sandbox} interface so tests can inject scripted tiers).
@@ -166,7 +164,7 @@ public class SandboxEscalator implements Sandbox {
         }
     }
 
-    // ============ Factory helpers ============
+    // Factory helpers
 
     /**
      * Create an escalator with default sandboxes and default policy.
@@ -193,7 +191,7 @@ public class SandboxEscalator implements Sandbox {
         );
     }
 
-    // ============ Sandbox interface ============
+    // Sandbox interface
 
     @Override
     public SandboxResult execute(String className, String code) {
@@ -208,7 +206,7 @@ public class SandboxEscalator implements Sandbox {
         return directExecute(className, code, spec);
     }
 
-    // ============ Execution strategies ============
+    // Execution strategies
 
     /**
      * Optimistic: try the fast tier; escalate to the strong tier on a
@@ -270,7 +268,7 @@ public class SandboxEscalator implements Sandbox {
         return fast;
     }
 
-    // ============ Budget ledger ============
+    // Budget ledger
 
     /**
      * Reserve one escalation slot. Attribution order (harness 4.x):
@@ -339,8 +337,6 @@ public class SandboxEscalator implements Sandbox {
         return result;
     }
 
-    // ============ Helpers ============
-
     /**
      * Returns {@code true} if the result represents a fast-tier block event.
      * <p>
@@ -358,7 +354,7 @@ public class SandboxEscalator implements Sandbox {
                 && result.error().startsWith("Blocked:");
     }
 
-    // ============ Accessors ============
+    // Accessors
 
     public SandboxRiskLevel getRiskLevel() {
         return riskLevel;

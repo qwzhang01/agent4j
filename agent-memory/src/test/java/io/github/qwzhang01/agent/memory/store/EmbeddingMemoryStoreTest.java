@@ -46,7 +46,7 @@ class EmbeddingMemoryStoreTest {
         }
     }
 
-    // ============ Vectorize on write ============
+    // Vectorize on write
 
     @Test
     void write_embedsCanonicalSubjectPlusContent() {
@@ -98,7 +98,7 @@ class EmbeddingMemoryStoreTest {
         assertEquals(1, store.listByScope("user:u1").size(), "entry is in the ledger");
     }
 
-    // ============ update path ============
+    // update path
 
     @Test
     void update_withStatus_keepsExistingVector_noReEmbed() {
@@ -131,7 +131,7 @@ class EmbeddingMemoryStoreTest {
                 store.findById(stored.id()).orElseThrow().embedding(), 1e-6f);
     }
 
-    // ============ Delegation ============
+    // Delegation
 
     @Test
     void query_scopeIsolation_delegateUntouched() {
@@ -162,8 +162,6 @@ class EmbeddingMemoryStoreTest {
         var active = store.findActiveBySubject("user:u1", "home-city");
         assertEquals("moved to Shanghai", active.orElseThrow().content());
     }
-
-    // ============ helpers ============
 
     private static MemoryEntry entry(String subject, String content) {
         return entry("user:u1", subject, content);

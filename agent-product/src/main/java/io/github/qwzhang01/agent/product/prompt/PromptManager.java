@@ -56,7 +56,7 @@ public final class PromptManager {
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
     }
 
-    // ============ Publish ============
+    // Publish
 
     /**
      * Publish a new version to the stable channel.
@@ -90,7 +90,7 @@ public final class PromptManager {
         }
     }
 
-    // ============ Resolve (routing point) ============
+    // Resolve (routing point)
 
     /**
      * Which version does this caller see right now?
@@ -127,7 +127,7 @@ public final class PromptManager {
         return declaredChannel == null ? PromptChannel.STABLE : declaredChannel;
     }
 
-    // ============ Tenant routing (canary) ============
+    // Tenant routing (canary)
 
     /**
      * Route ONE tenant's prompt to a specific channel (the canary knob).
@@ -153,7 +153,7 @@ public final class PromptManager {
         return this;
     }
 
-    // ============ Rollback ============
+    // Rollback
 
     /**
      * Move the stable pointer one step back (to the previous version that was
@@ -183,7 +183,7 @@ public final class PromptManager {
         }
     }
 
-    // ============ Inspection ============
+    // Inspection
 
     /**
      * Immutable view of the version history (append-only audit trail).
@@ -202,9 +202,7 @@ public final class PromptManager {
         return new HashSet<>(prompts.keySet());
     }
 
-    // --------------------------------------------
     // Internals
-    // --------------------------------------------
 
     private static final class PromptRecord {
         final List<PromptVersion> versions = new ArrayList<>();

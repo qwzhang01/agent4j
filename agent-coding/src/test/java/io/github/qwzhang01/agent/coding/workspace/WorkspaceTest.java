@@ -43,7 +43,7 @@ class WorkspaceTest {
         workspace = Workspace.open(root);
     }
 
-    // ============ open ============
+    // open
 
     @Test
     @DisplayName("open rejects a non-existent root and a root that is a regular file")
@@ -57,7 +57,7 @@ class WorkspaceTest {
         assertThrows(NullPointerException.class, () -> Workspace.open(root, null));
     }
 
-    // ============ resolve: the three escape forms (highest priority) ============
+    // resolve: the three escape forms (highest priority)
 
     @Test
     @DisplayName("resolve: normal paths round-trip under the root, redundant segments normalize")
@@ -93,7 +93,7 @@ class WorkspaceTest {
         assertThrows(IllegalArgumentException.class, () -> workspace.resolve("a/../../.."));
     }
 
-    // ============ readFile: deny policy (reading is a privilege) ============
+    // readFile: deny policy (reading is a privilege)
 
     @Test
     @DisplayName("readFile: default deny set blocks .git internals, .env secrets and keys")
@@ -153,7 +153,7 @@ class WorkspaceTest {
         assertTrue(e.getMessage().contains("symbolic link escapes"), e.getMessage());
     }
 
-    // ============ listTree: deterministic, policy-filtered, budgeted ============
+    // listTree: deterministic, policy-filtered, budgeted
 
     @Test
     @DisplayName("listTree: sorted one-path-per-line output, directories suffixed with '/'")
@@ -242,8 +242,6 @@ class WorkspaceTest {
         assertThrows(IllegalArgumentException.class, () -> workspace.listTree("pom.xml", 1));
         assertThrows(IllegalArgumentException.class, () -> workspace.listTree(".git", 1));
     }
-
-    // ============ helpers ============
 
     private void assertDenied(String path) {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,

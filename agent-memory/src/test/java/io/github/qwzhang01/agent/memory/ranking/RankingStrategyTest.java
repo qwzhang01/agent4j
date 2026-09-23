@@ -39,7 +39,7 @@ class RankingStrategyTest {
         store = new InMemoryMemoryStore();
     }
 
-    // ============ ImportanceRankingStrategy ============
+    // ImportanceRankingStrategy
 
     @Test
     void importanceStrategy_noQuery_ranksByImportanceThenRecency() {
@@ -88,7 +88,7 @@ class RankingStrategyTest {
         assertTrue(ranked.isEmpty());
     }
 
-    // ============ HybridRankingStrategy (production since step 1) ============
+    // HybridRankingStrategy (production since step 1)
 
     /**
      * The former stub-delegation test is obsolete: HybridRankingStrategy now
@@ -112,7 +112,7 @@ class RankingStrategyTest {
                 "no-query hybrid must produce identical results to ImportanceRankingStrategy");
     }
 
-    // ============ RankingStrategy.defaults() factory ============
+    // RankingStrategy.defaults() factory
 
     @Test
     void defaults_factoryReturnsWorkingStrategy() {
@@ -126,7 +126,7 @@ class RankingStrategyTest {
         assertEquals("low",  ranked.get(1).content());
     }
 
-    // ============ MemoryRetriever custom strategy injection ============
+    // MemoryRetriever custom strategy injection
 
     /**
      * A strategy that reverses importance order (lowest first) — used to prove
@@ -177,8 +177,6 @@ class RankingStrategyTest {
         assertEquals("one", result.get(0).content());
         assertEquals("two", result.get(1).content());
     }
-
-    // ============ Helpers ============
 
     private void write(String scope, String subject, String content,
                        double importance, Instant createdAt) {

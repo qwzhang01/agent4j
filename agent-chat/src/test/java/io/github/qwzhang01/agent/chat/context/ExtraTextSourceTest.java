@@ -17,7 +17,7 @@ class ExtraTextSourceTest {
     private static final ChatPersona LUNA = ChatPersona.of("luna", "You are Luna.");
     private static final Room ROOM = new Room("r", List.of(LUNA));
 
-    // ============ No-budget (backward-compat) ============
+    // No-budget (backward-compat)
 
     @Test
     void noLimit_returnsFullText() {
@@ -32,7 +32,7 @@ class ExtraTextSourceTest {
         assertTrue(new ExtraTextSource(null).contribute(ROOM, LUNA, "hi").isEmpty());
     }
 
-    // ============ Budget enforced ============
+    // Budget enforced
 
     /**
      * With 10 000-char input and maxTokens=500, the result must:
@@ -100,8 +100,6 @@ class ExtraTextSourceTest {
         assertThrows(IllegalArgumentException.class, () -> new ExtraTextSource("x", 0));
         assertThrows(IllegalArgumentException.class, () -> new ExtraTextSource("x", -2));
     }
-
-    // ============ Helpers ============
 
     private static String content(ExtraTextSource source) {
         List<ChatMessage> msgs = source.contribute(ROOM, LUNA, "hi");

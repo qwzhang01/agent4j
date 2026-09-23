@@ -69,8 +69,6 @@ public class AnthropicModelClient implements ModelClient {
     private final ReasoningConfig defaultReasoning;
     private final Map<String, Object> extraBody;
 
-    // ============ Constructors ============
-
     public AnthropicModelClient(String apiKey) {
         this(DEFAULT_BASE_URL, apiKey, DEFAULT_API_VERSION, "claude-sonnet-4-20250514", DEFAULT_MAX_TOKENS);
     }
@@ -157,7 +155,7 @@ public class AnthropicModelClient implements ModelClient {
         return defaultReasoning != null ? defaultReasoning : ReasoningConfig.auto();
     }
 
-    // ============ ModelClient ============
+    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -220,7 +218,7 @@ public class AnthropicModelClient implements ModelClient {
         }
     }
 
-    // ============ Request Building ============
+    // Request Building
 
     private ObjectNode buildRequestBody(ModelRequest request, String model, boolean stream) {
         ObjectNode body = mapper.createObjectNode();
@@ -396,7 +394,7 @@ public class AnthropicModelClient implements ModelClient {
         });
     }
 
-    // ============ Response Parsing ============
+    // Response Parsing
 
     private ModelResponse parseResponse(String responseBody) {
         try {
@@ -471,7 +469,7 @@ public class AnthropicModelClient implements ModelClient {
         }
     }
 
-    // ============ SSE Streaming Parsing ============
+    // SSE Streaming Parsing
     //
     // Anthropic SSE event types:
     //   event: message_start       -> message metadata
@@ -635,7 +633,7 @@ public class AnthropicModelClient implements ModelClient {
                 .filter(event -> event != null);
     }
 
-    // ============ Error Handling ============
+    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {
@@ -660,8 +658,6 @@ public class AnthropicModelClient implements ModelClient {
         };
     }
 
-    // ============ Helpers ============
-
     /**
      * Map Anthropic stop_reason to our internal finishReason.
      * <p>
@@ -681,7 +677,7 @@ public class AnthropicModelClient implements ModelClient {
         };
     }
 
-    // ============ Stage 6.1 streaming tool-use accumulation ============
+    // Stage 6.1 streaming tool-use accumulation
 
     /** Per-block accumulator for streaming tool calls, keyed by SSE index. */
     private record ToolBlockAcc(String id, String name, StringBuilder json) {

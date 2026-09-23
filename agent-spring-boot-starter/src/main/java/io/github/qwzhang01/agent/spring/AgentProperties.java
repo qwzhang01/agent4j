@@ -78,9 +78,6 @@ public class AgentProperties {
      */
     private final Approval approval = new Approval();
 
-    /**
-     * Graceful shutdown settings (Stage 8.2).
-     */
     private final Shutdown shutdown = new Shutdown();
 
     /**

@@ -23,7 +23,7 @@ class RetryPolicyTest {
 
     private static final ChatPersona LUNA = ChatPersona.of("luna", "You are Luna.");
 
-    // ============ RetryPolicy.never() contract ============
+    // RetryPolicy.never() contract
 
     @Test
     void neverPolicy_neverRetries() {
@@ -56,7 +56,7 @@ class RetryPolicyTest {
         assertEquals("normal reply", done.finalAnswer());
     }
 
-    // ============ Retry triggered — second attempt accepted ============
+    // Retry triggered — second attempt accepted
 
     @Test
     void policy_hit_triggersSecondGeneration() {
@@ -146,7 +146,7 @@ class RetryPolicyTest {
         assertTrue(secondHasExtra, "retry attempt must contain retryExtraText");
     }
 
-    // ============ RetryStarted event ============
+    // RetryStarted event
 
     @Test
     void retryStarted_notEmittedWhenNoRetryHappens() {
@@ -242,7 +242,7 @@ class RetryPolicyTest {
         assertEquals(1, retryStartedCount, "maxAttempts=1 caps retries, so only 1 RetryStarted");
     }
 
-    // ============ TurnTrace.promptTokens accuracy on retry ============
+    // TurnTrace.promptTokens accuracy on retry
 
     /**
      * TurnTrace.promptTokens must reflect the exact prefix sent for the *accepted*
@@ -302,7 +302,7 @@ class RetryPolicyTest {
                         + "accepted attempt, not just the pre-retry basePrefix");
     }
 
-    // ============ maxAttempts cap — no infinite loop ============
+    // maxAttempts cap — no infinite loop
 
     @Test
     void maxAttempts_cap_preventsInfiniteLoop() {
@@ -360,7 +360,7 @@ class RetryPolicyTest {
         assertEquals("only once", room.say("hi"));
     }
 
-    // ============ room history consistency ============
+    // room history consistency
 
     @Test
     void finalReply_writtenToRoomHistory_notRetryAttempts() {
@@ -388,8 +388,6 @@ class RetryPolicyTest {
         assertEquals("hello", room.room().history().get(0).content());
         assertEquals("accepted", room.room().history().get(1).content());
     }
-
-    // ============ Helpers ============
 
     private static <T extends AgentEvent> int indexOfFirst(List<AgentEvent> events, Class<T> type) {
         for (int i = 0; i < events.size(); i++) {

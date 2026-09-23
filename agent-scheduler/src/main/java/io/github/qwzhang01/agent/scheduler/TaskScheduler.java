@@ -53,8 +53,6 @@ public class TaskScheduler {
 
     private volatile boolean running = false;
 
-    // ============ Constructors ============
-
     public TaskScheduler(RunManager runManager) {
         this(runManager, Executors.newScheduledThreadPool(2, r -> {
             Thread t = new Thread(r, "agent-scheduler");
@@ -70,8 +68,6 @@ public class TaskScheduler {
         this.taskQueue = new AsyncTaskQueue();
     }
 
-    // ============ Lifecycle ============
-
     public TaskScheduler start() {
         running = true;
         log.info("[scheduler] Started");
@@ -86,7 +82,7 @@ public class TaskScheduler {
         log.info("[scheduler] Shut down");
     }
 
-    // ============ Scheduled Resume ============
+    // Scheduled Resume
 
     /**
      * Schedule a one-time resume after a delay.
@@ -164,7 +160,7 @@ public class TaskScheduler {
         }
     }
 
-    // ============ Event-Driven Resume ============
+    // Event-Driven Resume
 
     /**
      * Register a run to wait for an event. When {@link #fireEvent(String)}
@@ -306,7 +302,7 @@ public class TaskScheduler {
         return n;
     }
 
-    // ============ Async Task Queue ============
+    // Async Task Queue
 
     /** Enqueue an async task produced by an Agent. */
     public AsyncTask enqueueTask(AsyncTask task) {
@@ -323,7 +319,7 @@ public class TaskScheduler {
         return taskQueue.peekAll();
     }
 
-    // ============ Token Budget ============
+    // Token Budget
 
     /** Set a token budget for a run. */
     public TokenBudget setBudget(String runId, long tokenLimit) {
@@ -349,7 +345,7 @@ public class TaskScheduler {
         return runBudgets.get(runId);
     }
 
-    // ============ Inspection ============
+    // Inspection
 
     public Map<String, ScheduledResume> getScheduledResumes() {
         return Map.copyOf(scheduledResumes);

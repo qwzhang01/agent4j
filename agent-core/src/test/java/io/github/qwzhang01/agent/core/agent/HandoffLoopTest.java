@@ -38,7 +38,7 @@ class HandoffLoopTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ============ Mock ============
+    // Mock
 
     /**
      * Scripted mock that also records every request it saw, so tests can
@@ -76,8 +76,6 @@ class HandoffLoopTest {
         return java.util.stream.Stream.of(new StreamEvent.Done(r));
     }
 
-    // ============ Helpers ============
-
     private AgentConfig config(String name, String persona, ModelClient client) {
         return new AgentConfig(name, persona, client, null, 10);
     }
@@ -90,7 +88,7 @@ class HandoffLoopTest {
         return ToolCall.of(id, "transfer_to_" + targetName, (com.fasterxml.jackson.databind.JsonNode) null);
     }
 
-    // ============ Tests ============
+    // Tests
 
     @Test
     void shouldTransferThroughAbcChainAndKeepStatePersonaClean() {

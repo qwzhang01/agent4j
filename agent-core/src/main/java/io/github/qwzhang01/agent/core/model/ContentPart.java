@@ -28,7 +28,7 @@ import java.util.Objects;
 })
 public sealed interface ContentPart {
 
-    // ============ Part Types ============
+    // Part Types
 
     /**
      * A chunk of text.
@@ -61,11 +61,8 @@ public sealed interface ContentPart {
         }
     }
 
-    // ============ Factory Methods ============
+    // Factory Methods
 
-    /**
-     * Creates a text part.
-     */
     static ContentPart text(String text) {
         return new TextPart(text);
     }

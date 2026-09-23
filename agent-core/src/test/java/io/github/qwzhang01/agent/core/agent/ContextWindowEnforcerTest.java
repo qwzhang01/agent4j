@@ -28,7 +28,7 @@ class ContextWindowEnforcerTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ============ Fast path: within budget ============
+    // Fast path: within budget
 
     @Test
     @DisplayName("history within budget is returned unchanged")
@@ -46,7 +46,7 @@ class ContextWindowEnforcerTest {
         assertEquals(2, result.size(), "all messages returned when within budget");
     }
 
-    // ============ Truncation: over budget ============
+    // Truncation: over budget
 
     @Test
     @DisplayName("oldest messages are dropped first when history exceeds budget")
@@ -86,7 +86,7 @@ class ContextWindowEnforcerTest {
         assertEquals("last", result.get(result.size() - 1).content(), "last message survives");
     }
 
-    // ============ Tool-call pair invariant ============
+    // Tool-call pair invariant
 
     @Test
     @DisplayName("assistant-with-tool-calls and tool result are dropped as a pair")
@@ -122,7 +122,7 @@ class ContextWindowEnforcerTest {
         }
     }
 
-    // ============ Delegate wiring ============
+    // Delegate wiring
 
     @Test
     @DisplayName("with delegate: delegate output is enforced, not raw state")
@@ -143,7 +143,7 @@ class ContextWindowEnforcerTest {
         assertEquals("short", result.get(0).content());
     }
 
-    // ============ Token estimation static helper ============
+    // Token estimation static helper
 
     @Test
     @DisplayName("estimateTokens: chars/4 heuristic")
@@ -165,7 +165,7 @@ class ContextWindowEnforcerTest {
         assertEquals(0, ContextWindowEnforcer.estimateTokens((String) null));
     }
 
-    // ============ Accessors ============
+    // Accessors
 
     @Test
     @DisplayName("getBudget returns the configured budget")
@@ -181,8 +181,6 @@ class ContextWindowEnforcerTest {
         ContextWindowEnforcer enforcer = new ContextWindowEnforcer(ContextWindowBudget.window8k());
         assertNull(enforcer.getDelegate());
     }
-
-    // ============ Helpers ============
 
     private static AgentState stateWithMessages(ChatMessage... messages) {
         AgentState state = new AgentState();

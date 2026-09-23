@@ -71,7 +71,7 @@ public record BusinessTask(
         Objects.requireNonNull(updatedAt, "updatedAt must not be null");
     }
 
-    // ============ Derived Accessors ============
+    // Derived Accessors
 
     /**
      * The run currently driving this task (last of the history), or null
@@ -88,7 +88,7 @@ public record BusinessTask(
         return status.isTerminal();
     }
 
-    // ============ Wither Derivations ============
+    // Wither Derivations
 
     BusinessTask withRun(String runId) {
         return new BusinessTask(taskId, tenantId, submitterId, description,
@@ -104,8 +104,6 @@ public record BusinessTask(
         return new BusinessTask(taskId, tenantId, submitterId, description,
                 status, runIds, append(approvals, record), createdAt, Instant.now());
     }
-
-    // ============ Helpers ============
 
     private static <T> List<T> append(List<T> list, T item) {
         java.util.ArrayList<T> out = new java.util.ArrayList<>(list);

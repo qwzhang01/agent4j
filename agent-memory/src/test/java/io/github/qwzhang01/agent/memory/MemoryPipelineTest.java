@@ -39,7 +39,7 @@ class MemoryPipelineTest {
         retriever = new MemoryRetriever(store);
     }
 
-    // ============ MemoryRetriever ============
+    // MemoryRetriever
 
     @Test
     void retriever_recallReturnsOnlyActive() {
@@ -73,7 +73,7 @@ class MemoryPipelineTest {
         assertEquals(2, retriever.recallForContext(List.of("user:u1"), 2).size());
     }
 
-    // ============ MemoryPolicy ============
+    // MemoryPolicy
 
     @Test
     void policy_rejectsLowImportance() {
@@ -106,7 +106,7 @@ class MemoryPipelineTest {
         assertTrue(policy.shouldSupersede(corrected, store));
     }
 
-    // ============ EVOLVE vs CONFLICT (lifecycle-aware supersede) ============
+    // EVOLVE vs CONFLICT (lifecycle-aware supersede)
 
     @Test
     void extractWrite_evolveMarksOldAsHistorical_notSuperseded() {
@@ -190,7 +190,7 @@ class MemoryPipelineTest {
         assertTrue(policy.shouldStore(explicit, store));
     }
 
-    // ============ MemoryExtractor ============
+    // MemoryExtractor
 
     @Test
     void extractor_findsPreferenceInUserMessage() {
@@ -280,7 +280,7 @@ class MemoryPipelineTest {
         assertEquals(1, store.listByScope("user:u1").size(), "identical content not re-stored");
     }
 
-    // ============ ChatSession ============
+    // ChatSession
 
     @Test
     void chatSession_roundTrip() {
@@ -301,7 +301,7 @@ class MemoryPipelineTest {
         assertEquals("how can I help?", session.getHistory().get(2).content());
     }
 
-    // ============ MemoryContextBuilder ============
+    // MemoryContextBuilder
 
     @Test
     void contextBuilder_prependsMemoriesWithoutPersistingThem() {
@@ -361,7 +361,7 @@ class MemoryPipelineTest {
         assertTrue(result.get(1).content().contains("summary"), "compaction summary present");
     }
 
-    // ============ End-to-End Multi-Turn Memory Loop ============
+    // End-to-End Multi-Turn Memory Loop
 
     @Test
     void e2e_multiTurnMemory_rememberedAcrossRuns() {
@@ -374,7 +374,7 @@ class MemoryPipelineTest {
 
         ChatSession session = new ChatSession("s1");
 
-        // --- Turn 1: user states a preference ---
+        // Turn 1: user states a preference
         session.addUser("记住我对花生过敏");
         AgentState state1 = session.toAgentState();
         AgentConfig config1 = new AgentConfig("test", "you are helpful", mc, null, 5, ctxBuilder);
@@ -392,7 +392,7 @@ class MemoryPipelineTest {
 
         assertEquals(1, store.listByScope("user:u1").size(), "preference stored after turn 1");
 
-        // --- Turn 2: user asks a question, memory should be injected ---
+        // Turn 2: user asks a question, memory should be injected
         session.addUser("帮我推荐午餐");
         AgentState state2 = session.toAgentState();
 
@@ -412,8 +412,6 @@ class MemoryPipelineTest {
         assertFalse(ctx1Text.contains("花生过敏") && ctx1Text.contains("Known memories"),
                 "turn 1 context should not have memories (not stored yet)");
     }
-
-    // ============ Helpers ============
 
     private MemoryEntry entry(String scope, String subject, String content, double importance) {
         return new MemoryEntry(null, scope, MemoryType.PREFERENCE, subject, content, importance,

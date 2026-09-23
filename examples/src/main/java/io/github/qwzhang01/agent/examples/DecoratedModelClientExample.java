@@ -36,9 +36,7 @@ public class DecoratedModelClientExample {
     public static void main(String[] args) {
         System.out.println("=== Decorated ModelClient Example ===\n");
 
-        // --------------------------------------------
         // 1. Create the base ModelClient
-        // --------------------------------------------
         var apiKey = System.getenv("OPENAI_API_KEY");
         var baseURL = System.getenv("OPENAI_BASE_URL");
 
@@ -56,9 +54,7 @@ public class DecoratedModelClientExample {
             System.out.println("Using Mock client (set OPENAI_API_KEY for real LLM)");
         }
 
-        // --------------------------------------------
         // 2. Stack decorators: Retry -> Timeout -> Fallback -> StructuredOutput
-        // --------------------------------------------
         var retryClient = new RetryModelClient(baseClient, 3,
                 Duration.ofMillis(500), 2.0);
 
@@ -70,9 +66,7 @@ public class DecoratedModelClientExample {
 
         var decoratedClient = new StructuredOutputModelClient(fallbackClient);
 
-        // --------------------------------------------
         // 3. Create Agent with decorated client
-        // --------------------------------------------
         var registry = new InMemoryToolRegistry();
         registry.register(new EchoTool());
 
@@ -86,18 +80,14 @@ public class DecoratedModelClientExample {
 
         Agent agent = new SimpleAgent(config);
 
-        // --------------------------------------------
         // 4. Run the agent
-        // --------------------------------------------
         String userInput = "Hello, who are you?";
         System.out.println("\nUser: " + userInput);
 
         String response = agent.run(userInput);
         System.out.println("Agent: " + response);
 
-        // --------------------------------------------
         // 5. Structured output example
-        // --------------------------------------------
         System.out.println("\n=== Structured Output Example ===\n");
 
         var structuredRequest = ModelRequest.builder()

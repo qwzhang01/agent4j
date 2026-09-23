@@ -34,7 +34,7 @@ class AgentDefinitionBinderTest {
     private final AgentDefinitionParser parser = new AgentDefinitionParser();
     private final DefinitionValidator validator = new DefinitionValidator();
 
-    // ============ Test doubles ============
+    // Test doubles
 
     /**
      * Captures every ModelRequest the agent actually sends (the boundary where
@@ -92,8 +92,6 @@ class AgentDefinitionBinderTest {
         }
     }
 
-    // ============ Helpers ============
-
     private ProductContext context(ModelClient primary, ModelClient fallback) {
         ProductContext ctx = new ProductContext().registerModel("primary", primary);
         if (fallback != null) {
@@ -109,7 +107,7 @@ class AgentDefinitionBinderTest {
         return new AgentDefinitionBinder(ctx).bind(def);
     }
 
-    // ============ Acceptance: a definition binds into a runnable agent ============
+    // Acceptance: a definition binds into a runnable agent
 
     @Test
     void boundAgentRunsAndCarriesPersona() {
@@ -240,7 +238,7 @@ class AgentDefinitionBinderTest {
         assertEquals(0.7, backupRequests.get(0).temperature());
     }
 
-    // ============ Tool subset semantics ============
+    // Tool subset semantics
 
     @Test
     void toolsSectionSelectsASubsetOfTheRegistry() {
@@ -268,7 +266,7 @@ class AgentDefinitionBinderTest {
         assertEquals("order-query", config.getToolRegistry().listTools().get(0).getName());
     }
 
-    // ============ Memory wiring ============
+    // Memory wiring
 
     @Test
     void shortTermWindowBindsWindowContextBuilder() {
@@ -331,7 +329,7 @@ class AgentDefinitionBinderTest {
         assertNull(agent.getConfig().getContextBuilder());
     }
 
-    // ============ M13.4: promptRef + D4 pin ============
+    // M13.4: promptRef + D4 pin
 
     private ProductContext contextWithPrompts(
             io.github.qwzhang01.agent.product.prompt.PromptManager prompts,
@@ -450,7 +448,7 @@ class AgentDefinitionBinderTest {
                 () -> new AgentDefinitionBinder(ctx).bind(def));
     }
 
-    // ============ Defensive ============
+    // Defensive
 
     @Test
     void bindingUnvalidatedDanglingReferenceFailsFast() {
@@ -471,7 +469,7 @@ class AgentDefinitionBinderTest {
                 () -> new AgentDefinitionBinder(ctx).bind(dangling));
     }
 
-    // ============ M13.3: inline http tools bind and run ============
+    // M13.3: inline http tools bind and run
 
     @Test
     void httpToolFromDefinitionRunsAgainstRealEndpoint() {
@@ -511,7 +509,7 @@ class AgentDefinitionBinderTest {
         }
     }
 
-    // ============ Local test server (M13.3) ============
+    // Local test server (M13.3)
 
     /** Starts a trivial 200/JSON server on a random port; try-with-resources. */
     private static final class LocalServer implements AutoCloseable {

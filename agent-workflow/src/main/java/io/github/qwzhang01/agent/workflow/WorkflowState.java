@@ -21,13 +21,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class WorkflowState {
 
-    // ============ Fields ============
-
     private final Object input;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private final List<StepRecord> trace = new CopyOnWriteArrayList<>();
-
-    // ============ Constructors ============
 
     public WorkflowState(Object input) {
         this.input = input;
@@ -52,13 +48,13 @@ public class WorkflowState {
         return state;
     }
 
-    // ============ Input Zone ============
+    // Input Zone
 
     public Object getInput() {
         return input;
     }
 
-    // ============ Variables Zone (blackboard) ============
+    // Variables Zone (blackboard)
 
     public Object get(String key) {
         return variables.get(key);
@@ -72,7 +68,7 @@ public class WorkflowState {
         return Map.copyOf(variables);
     }
 
-    // ============ Trace Zone ============
+    // Trace Zone
 
     /**
      * Append one trace entry. The record's {@code visitOrdinal} is assigned

@@ -100,8 +100,6 @@ public final class CostDashboard {
         return java.util.List.copyOf(breakdown.getOrDefault(dimension, new LinkedHashMap<>()).keySet());
     }
 
-    // ============ Exports ============
-
     /**
      * CSV export of one dimension: header {@code key,cost_micros} plus one
      * row per key, insertion order. Parent directories are created.
@@ -140,7 +138,7 @@ public final class CostDashboard {
         Files.writeString(file, content, StandardCharsets.UTF_8);
     }
 
-    // ============ One-line sink wiring ============
+    // One-line sink wiring
 
     /**
      * A {@link MetricsSink} that prices every model call and books the

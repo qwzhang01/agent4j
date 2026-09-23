@@ -38,7 +38,6 @@ public record McpAuthConfig(String headerName, Supplier<String> valueSupplier) {
         Objects.requireNonNull(valueSupplier, "valueSupplier must not be null");
     }
 
-    /** Fixed bearer token. */
     public static McpAuthConfig bearer(Supplier<String> tokenSupplier) {
         return new McpAuthConfig("Authorization", () -> {
             String token = tokenSupplier.get();

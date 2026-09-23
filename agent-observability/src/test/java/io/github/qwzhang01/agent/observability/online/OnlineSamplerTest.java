@@ -81,8 +81,6 @@ class OnlineSamplerTest {
         assertThrows(IllegalArgumentException.class, () -> new OnlineSampler(1, 0));
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics done(String runId) {
         return new RunMetrics(runId, "support", AgentState.Status.DONE, null, 100,
                 1, 0, 0, 0, new ModelResponse.TokenUsage(10, 5, 15, 0), 50);

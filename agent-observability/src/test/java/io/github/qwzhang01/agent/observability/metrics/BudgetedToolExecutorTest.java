@@ -83,8 +83,6 @@ class BudgetedToolExecutorTest {
         assertEquals(1, delegate.executions.get());
     }
 
-    // ============ Helpers ============
-
     private static ToolCall call(String id) {
         return ToolCall.of(id, "search", "{}");
     }

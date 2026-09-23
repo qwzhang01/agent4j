@@ -27,7 +27,6 @@ public enum A2ATaskStatus {
     INPUT_REQUIRED("input-required"),
     /** Done; artifacts carry the result. */
     COMPLETED("completed"),
-    /** Agent ran and failed. */
     FAILED("failed"),
     /** Caller (or server policy) canceled the task. */
     CANCELED("canceled"),

@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class EventReplayerTest {
 
-    // ============ Fold: plain text run ============
+    // Fold: plain text run
 
     @Test
     @DisplayName("text-only history: deltas fold into the final assistant answer")
@@ -39,7 +39,7 @@ class EventReplayerTest {
         assertEquals(3, replay.state().getCurrentStep());
     }
 
-    // ============ Recorded-result replay: tools never execute ============
+    // Recorded-result replay: tools never execute
 
     @Test
     @DisplayName("tool results replay from history: no execution, history reconstructed")
@@ -67,7 +67,7 @@ class EventReplayerTest {
         assertEquals("42 hits found", history.get(1).content());
     }
 
-    // ============ Anomalies ============
+    // Anomalies
 
     @Test
     @DisplayName("history without Done: partial replay flagged, status stays IDLE")
@@ -119,7 +119,7 @@ class EventReplayerTest {
         assertEquals("fallback answer", EventReplayer.finalAnswerOf(replay.state()));
     }
 
-    // ============ Observability facts are skipped, not errors ============
+    // Observability facts are skipped, not errors
 
     @Test
     @DisplayName("Handoff/TurnTrace/Reflection events are skipped as observability facts")
@@ -137,7 +137,7 @@ class EventReplayerTest {
         assertEquals("after retry", EventReplayer.finalAnswerOf(replay.state()));
     }
 
-    // ============ finalAnswerOf ============
+    // finalAnswerOf
 
     @Test
     @DisplayName("finalAnswerOf: last assistant message, null when none")
@@ -154,7 +154,7 @@ class EventReplayerTest {
         assertEquals("final", EventReplayer.finalAnswerOf(state));
     }
 
-    // ============ Prefix replay: interactive time travel (Gap 4) ============
+    // Prefix replay: interactive time travel (Gap 4)
 
     @Test
     @DisplayName("empty prefix: empty world, IDLE, no anomalies")
@@ -279,8 +279,6 @@ class EventReplayerTest {
         assertThrows(IndexOutOfBoundsException.class,
                 () -> replayer.replayPrefix(events, 10, -1));
     }
-
-    // ============ helpers ============
 
     private static AgentState doneState(int step) {
         AgentState s = new AgentState();

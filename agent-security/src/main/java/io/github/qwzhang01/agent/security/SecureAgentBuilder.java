@@ -138,7 +138,6 @@ public class SecureAgentBuilder {
                 guardrails == null ? GuardrailChain.none() : guardrails, stack);
     }
 
-    /** Build the governed Agent. */
     public Agent build() {
         AgentConfig config = buildConfig();
         if (agentLoop != null) {

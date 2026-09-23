@@ -94,7 +94,7 @@ public class ReActAgentLoop implements AgentLoop {
         runLoop(config, state, sink, ReActAgentLoop::invokeStream);
     }
 
-    // ============ Stage 1.2: ctx-aware execution ============
+    // Stage 1.2: ctx-aware execution
 
     /**
      * Execute with a {@link RunContext}: cancellation and deadline are
@@ -223,9 +223,7 @@ public class ReActAgentLoop implements AgentLoop {
             }
             long stepStartNanos = System.nanoTime();
 
-            // --------------------------------------------
             // 1. Build model request from current state
-            // --------------------------------------------
             ModelRequest request = buildRequest(currentConfig, state, handoffFrom, activeInputFilter, ctx);
             request = applyInputGuardrails(currentConfig, state, request, sink);
             if (state.getStatus() == AgentState.Status.ERROR) {
@@ -239,9 +237,7 @@ public class ReActAgentLoop implements AgentLoop {
                 return;
             }
 
-            // --------------------------------------------
             // 2. Call the model (via the CURRENT config's client)
-            // --------------------------------------------
             ModelResponse response;
             // Stage 9: model-boundary facts. One Started/Finished pair per
             // model call, emitted around the invoker regardless of outcome.
@@ -299,9 +295,7 @@ public class ReActAgentLoop implements AgentLoop {
                     request.model(), elapsedMs(modelCallStart),
                     response.hasToolCalls() ? response.toolCalls().size() : 0, false));
 
-            // --------------------------------------------
             // 3. Handle response: tool calls or final answer
-            // --------------------------------------------
             if (response.hasToolCalls()) {
                 // Add assistant message with tool calls to history
                 state.addMessage(ChatMessage.assistantWithTools(
@@ -446,9 +440,7 @@ public class ReActAgentLoop implements AgentLoop {
             }
         }
 
-        // --------------------------------------------
         // 4. Max steps exceeded
-        // --------------------------------------------
         if (!state.hasStepsRemaining()) {
             log.warn("[{}] Max steps ({}) exceeded", currentConfig.getName(), state.getMaxSteps());
             state.setStatus(AgentState.Status.MAX_STEPS_EXCEEDED);
@@ -726,7 +718,7 @@ public class ReActAgentLoop implements AgentLoop {
         return response;
     }
 
-    // ============ Private Helpers ============
+    // Private Helpers
 
     private ModelRequest buildRequest(AgentConfig config, AgentState state,
                                       AgentConfig handoffFrom, HandoffInputFilter inputFilter,

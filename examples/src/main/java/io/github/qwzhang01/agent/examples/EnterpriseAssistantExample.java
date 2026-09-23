@@ -52,9 +52,7 @@ public final class EnterpriseAssistantExample {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Stage 15: Enterprise Agent Profile - Full Script ===\n");
 
-        // --------------------------------------------
         // T0: assembly (admin, once)
-        // --------------------------------------------
         TenantRegistry registry = new TenantRegistry();
         registry.registerTenant(new Tenant("acme", "Acme Corp",
                 Tenant.TenantStatus.ACTIVE, 100_000));   // tenant budget: 100k tokens
@@ -104,9 +102,7 @@ public final class EnterpriseAssistantExample {
                 .agentName("support-bot")
                 .build();
 
-        // --------------------------------------------
         // T1: login identification
-        // --------------------------------------------
         System.out.println("--- T1: 登录识别 ---");
         RequestContext alice = registry.login("acme", "u-alice", "key-alice");
         System.out.println("alice 登录成功: tenant=" + alice.tenantId()
@@ -114,9 +110,7 @@ public final class EnterpriseAssistantExample {
         RequestContext bob = registry.login("acme", "u-bob", "key-bob");
         RequestContext carol = registry.login("globex", "u-carol", "key-carol");
 
-        // --------------------------------------------
         // T2: RAG answer (knowledge -> attributed audit -> billed)
-        // --------------------------------------------
         System.out.println("\n--- T2: RAG 问答（知识检索 + 归属审计 + 记账） ---");
         String answer = assistant.ask(alice, "退货政策是什么？");
         System.out.println("答: " + answer);
@@ -124,9 +118,7 @@ public final class EnterpriseAssistantExample {
         System.out.println("账单: acme 已用 " + assistant.costLedger().tenantUsed("acme")
                 + " tokens, alice 个人 " + assistant.costLedger().userUsed("u-alice"));
 
-        // --------------------------------------------
         // T3: tool-level approval rides along
-        // --------------------------------------------
         System.out.println("\n--- T3: 工具级审批搭车（CSR 触发 refund_order → REQUIRES_APPROVAL） ---");
         EnterpriseAssistant refundAssistant = EnterpriseAgentFactory.builder()
                 .modelClient(MockModelClient.scripted()
@@ -147,9 +139,7 @@ public final class EnterpriseAssistantExample {
         System.out.println("答: " + refundAssistant.ask(alice, "帮我把订单 8842 退款"));
         System.out.println("审计(含审批事件): " + describe(refundAssistant.auditTrail().byUser("u-alice")));
 
-        // --------------------------------------------
         // T4: task-level approval with checkpoint resume
-        // --------------------------------------------
         System.out.println("\n--- T4: 任务级审批（暂停→批准→断点恢复） ---");
         Workflow refundFlow = Workflow.builder("refund-flow")
                 .node(ActionNode.of("prepare", ctx -> "prepared"))
@@ -168,9 +158,7 @@ public final class EnterpriseAssistantExample {
                 + " 审批留痕=" + done.approvals().get(0).decision()
                 + " by " + done.approvals().get(0).approverId());
 
-        // --------------------------------------------
         // T5: cross-tenant isolation + honest budget rejection
-        // --------------------------------------------
         System.out.println("\n--- T5: 租户隔离 + 预算诚实拒绝 ---");
         EnterpriseAssistant globexAssistant = EnterpriseAgentFactory.builder()
                 .modelClient(MockModelClient.scripted()
@@ -222,7 +210,7 @@ public final class EnterpriseAssistantExample {
         System.out.println("\n=== 剧终：每个请求有主人，每个租户有边界，每次回答有出处，每分钱有归属 ===");
     }
 
-    // ============ Demo Tools ============
+    // Demo Tools
 
     private static Tool orderQueryTool() {
         return new Tool() {

@@ -159,8 +159,6 @@ public class HttpA2AServer implements AutoCloseable {
                 : A2ACardIdentity.keyIdOf(cardSigningKeys.getPublic());
     }
 
-    // ============ Lifecycle ============
-
     /** Start and return the bound port (useful when constructed with port 0). */
     public synchronized int start() throws IOException {
         if (started) {
@@ -201,7 +199,7 @@ public class HttpA2AServer implements AutoCloseable {
         return started ? server.getAddress().getPort() : requestedPort;
     }
 
-    // ============ HTTP routing ============
+    // HTTP routing
 
     private void handle(HttpExchange exchange) throws IOException {
         try {
@@ -303,7 +301,7 @@ public class HttpA2AServer implements AutoCloseable {
         respondJson(exchange, A2AJson.rpcResult(id, result));
     }
 
-    // ============ message/send ============
+    // message/send
 
     private ObjectNode handleSend(JsonNode params) {
         A2ATaskStore.StoredA2ATask stored = acceptAndRun(params, null);
@@ -540,7 +538,7 @@ public class HttpA2AServer implements AutoCloseable {
                 card.endpoint(), card.version(), card.url(), A2ACapabilities.v2());
     }
 
-    // ============ tasks/get ============
+    // tasks/get
 
     private ObjectNode handleGet(JsonNode params) {
         JsonNode idNode = params.get("id");
@@ -555,7 +553,7 @@ public class HttpA2AServer implements AutoCloseable {
                 task.statusMessage(), task.artifacts());
     }
 
-    // ============ Internal ============
+    // Internal
 
     /**
      * AgentState is a plain Jackson POJO (no static toJson/fromJson) — the

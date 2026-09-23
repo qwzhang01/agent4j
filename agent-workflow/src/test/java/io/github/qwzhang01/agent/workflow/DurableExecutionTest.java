@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class DurableExecutionTest {
 
-    // ============ 3.1 RunStore + 3.3 lease + definition guard ============
+    // 3.1 RunStore + 3.3 lease + definition guard
 
     @Test
     void runStoreOptimisticLockRejectsStaleWrite() {
@@ -140,7 +140,7 @@ class DurableExecutionTest {
         assertTrue(candidates.stream().anyMatch(r -> r.runId().equals("r-wait")));
     }
 
-    // ============ 3.2 side-effect ledger ============
+    // 3.2 side-effect ledger
 
     @Test
     void ledgerHitReplaysResultWithoutRecall() {
@@ -256,7 +256,7 @@ class DurableExecutionTest {
         assertEquals("send_email", snap.completedEffects().get(0).nodeId());
     }
 
-    // ============ 3.4 persistent approval ============
+    // 3.4 persistent approval
 
     @Test
     void approvalDecisionSurvivesRestart() {
@@ -355,7 +355,7 @@ class DurableExecutionTest {
                 "checkDecision must surface expiry as its own semantic");
     }
 
-    // ============ 3.4 workflow integration: pause → decide → resume ============
+    // 3.4 workflow integration: pause → decide → resume
 
     @Test
     void approvalFlowPauseDecideResumeAcrossRestart() {
@@ -386,8 +386,6 @@ class DurableExecutionTest {
         assertEquals("done:approve", second.output().toString()
                 .replace("NodeResult", "").trim().isEmpty() ? "done" : "done:approve");
     }
-
-    // ============ helpers ============
 
     private static RunRecord withStatus(RunRecord row, String status, String cursor) {
         return new RunRecord(row.runId(), row.workflowName(), row.workflowVersion(),

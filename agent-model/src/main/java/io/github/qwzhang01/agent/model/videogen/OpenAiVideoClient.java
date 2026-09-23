@@ -37,8 +37,6 @@ public class OpenAiVideoClient implements VideoGenerationClient {
     private final String apiKey;
     private final String defaultModel;
 
-    // ============ Constructors ============
-
     public OpenAiVideoClient(String apiKey) {
         this("https://api.openai.com/v1", apiKey, "sora-2");
     }
@@ -56,7 +54,7 @@ public class OpenAiVideoClient implements VideoGenerationClient {
                 .build();
     }
 
-    // ============ VideoGenerationClient ============
+    // VideoGenerationClient
 
     @Override
     public VideoTask submit(VideoGenRequest request) {
@@ -129,7 +127,7 @@ public class OpenAiVideoClient implements VideoGenerationClient {
         }
     }
 
-    // ============ Request Building ============
+    // Request Building
 
     private ObjectNode buildRequestBody(VideoGenRequest request, String model) {
         ObjectNode body = mapper.createObjectNode();
@@ -146,7 +144,7 @@ public class OpenAiVideoClient implements VideoGenerationClient {
         return body;
     }
 
-    // ============ Response Parsing ============
+    // Response Parsing
 
     /**
      * Parses an OpenAI video task payload (submit response or status response).
@@ -195,7 +193,7 @@ public class OpenAiVideoClient implements VideoGenerationClient {
         };
     }
 
-    // ============ Error Handling ============
+    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

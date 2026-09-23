@@ -43,7 +43,7 @@ class LayeredInjectionTest {
         retriever = new MemoryRetriever(store);
     }
 
-    // ============ Flagship: two tiers, different physics ============
+    // Flagship: two tiers, different physics
 
     @Test
     @DisplayName("flagship: core resident at head, archival beside the turn, ranked by query")
@@ -110,7 +110,7 @@ class LayeredInjectionTest {
         assertEquals("Which keyboard should I buy next?", built.get(3).content());
     }
 
-    // ============ Token budget ============
+    // Token budget
 
     @Test
     @DisplayName("token budget trims archival, never core")
@@ -144,7 +144,7 @@ class LayeredInjectionTest {
                 "the episode exceeds the remaining budget and is dropped");
     }
 
-    // ============ Soft failure ============
+    // Soft failure
 
     @Test
     @DisplayName("recall failure degrades to no injection, never breaks the turn")
@@ -168,7 +168,7 @@ class LayeredInjectionTest {
         assertEquals("hello", built.get(0).content());
     }
 
-    // ============ Legacy path bit-for-bit ============
+    // Legacy path bit-for-bit
 
     @Test
     @DisplayName("six-arg constructor keeps the legacy single-block behaviour")
@@ -194,8 +194,6 @@ class LayeredInjectionTest {
                 m.content() != null && m.content().contains("[Core memories]")));
         assertEquals("What should I eat?", built.get(1).content());
     }
-
-    // ============ Helpers ============
 
     private static MemoryEntry entry(String scope, MemoryType type, String subject,
                                      String content, double importance) {

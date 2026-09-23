@@ -42,7 +42,7 @@ public record IdentityScope(
         dataClassifications = immutableCopy(dataClassifications, "dataClassifications");
     }
 
-    // ============ Factory Methods ============
+    // Factory Methods
 
     /**
      * A scope granting only capabilities (no memory / classification access).
@@ -58,7 +58,7 @@ public record IdentityScope(
         return new IdentityScope(Set.of(), Set.of(), Set.of());
     }
 
-    // ============ Predicates ============
+    // Predicates
 
     /**
      * Whether this scope grants the given capability.
@@ -75,7 +75,7 @@ public record IdentityScope(
         return scope != null && memoryScopes.contains(scope);
     }
 
-    // ============ Combination ============
+    // Combination
 
     /**
      * Element-wise intersection of all three sets.
@@ -98,8 +98,6 @@ public record IdentityScope(
     public boolean isEmpty() {
         return capabilities.isEmpty() && memoryScopes.isEmpty() && dataClassifications.isEmpty();
     }
-
-    // ============ Helpers ============
 
     private static Set<String> intersect(Set<String> a, Set<String> b) {
         return a.stream().filter(b::contains).collect(Collectors.toUnmodifiableSet());

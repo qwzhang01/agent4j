@@ -72,8 +72,6 @@ class AnomalyLocalizerTest {
                 "the absence of a version record is itself a finding");
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics done(String runId) {
         return new RunMetrics(runId, "support", AgentState.Status.DONE, null, 100,
                 1, 0, 0, 0, new ModelResponse.TokenUsage(1, 1, 2, 0), 0);

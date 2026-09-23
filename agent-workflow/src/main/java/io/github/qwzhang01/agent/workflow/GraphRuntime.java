@@ -60,7 +60,7 @@ public class GraphRuntime {
         return s.length() > 120 ? s.substring(0, 117) + "..." : s;
     }
 
-    // ============ Configuration ============
+    // Configuration
 
     public GraphRuntime maxSteps(int maxSteps) {
         this.maxSteps = maxSteps;
@@ -79,7 +79,7 @@ public class GraphRuntime {
         return this;
     }
 
-    // ============ Stage 5 Compat (no pause/cancel) ============
+    // Stage 5 Compat (no pause/cancel)
 
     /**
      * Run with a fresh WorkflowState. Delegates to {@link #execute(Run)}
@@ -97,7 +97,7 @@ public class GraphRuntime {
         return run(workflow, WorkflowState.of(input));
     }
 
-    // ============ Stage 6: Execute with Run (pause/cancel/resume) ============
+    // Stage 6: Execute with Run (pause/cancel/resume)
 
     /**
      * Execute (or resume) a Run. This is the main entry point for
@@ -116,7 +116,7 @@ public class GraphRuntime {
         }
     }
 
-    // ============ Main Loop ============
+    // Main Loop
 
     private ExecutionResult doExecute(Run run) throws Exception {
         Workflow workflow = run.getWorkflow();
@@ -140,9 +140,7 @@ public class GraphRuntime {
         RunContext runCtx = run.getRunContext();
 
         while (!Workflow.END.equals(cursor)) {
-            // --------------------------------------------
             // [Stage 6] Cancel check (cooperative)
-            // --------------------------------------------
             if (run.isCancelled()) {
                 state.record(StepRecord.cancelled(cursor));
                 run.setStatus(RunState.CANCELLED);
@@ -168,9 +166,7 @@ public class GraphRuntime {
                 return timedOut;
             }
 
-            // --------------------------------------------
             // Max steps guard (preserved from Stage 5)
-            // --------------------------------------------
             if (++steps > maxSteps) {
                 String msg = "Max steps (" + maxSteps + ") exceeded at node '" + cursor
                         + "' - possible cycle in the graph";
@@ -187,9 +183,7 @@ public class GraphRuntime {
                 return ExecutionResult.failed(msg, state);
             }
 
-            // --------------------------------------------
             // Ledger hit: replay instead of re-executing
-            // --------------------------------------------
             String runId = run.getRunId();
             if (ledger != null && runId != null && !runId.isBlank()) {
                 java.util.Optional<SideEffectLedger.Effect> hit = ledger.lookup(runId, cursor);
@@ -211,9 +205,7 @@ public class GraphRuntime {
                 }
             }
 
-            // --------------------------------------------
             // Execute node (with retry, catch pause)
-            // --------------------------------------------
             NodeContext ctx = NodeContext.of(state, lastOutput, run.getRunId(), resuming,
                     scheduler, run.getRunContext());
             resuming = false;  // only the first node (resume target) gets isResuming=true
@@ -241,9 +233,7 @@ public class GraphRuntime {
                 return ExecutionResult.failed(te.getMessage(), state);
             }
 
-            // --------------------------------------------
             // Failure handling (preserved from Stage 5)
-            // --------------------------------------------
             if (outcome.failure() != null) {
                 state.record(StepRecord.failed(node.id(), outcome.durationMs(),
                         outcome.attempts(), outcome.failure().getMessage(),
@@ -267,9 +257,7 @@ public class GraphRuntime {
                 return ExecutionResult.failed(msg, state);
             }
 
-            // --------------------------------------------
             // Success: write blackboard, record trace, advance
-            // --------------------------------------------
             NodeResult result = outcome.result();
             state.put(node.id(), result.output());
             state.record(StepRecord.success(node.id(), outcome.durationMs(),
@@ -315,7 +303,7 @@ public class GraphRuntime {
                 rendered, System.currentTimeMillis()));
     }
 
-    // ============ Node Execution (retry wrapper) ============
+    // Node Execution (retry wrapper)
 
     private ExecOutcome executeWithRetry(Workflow workflow, WorkflowNode node, NodeContext ctx,
                                          TimeoutPolicy timeout) throws PauseException {
@@ -400,7 +388,7 @@ public class GraphRuntime {
         }
     }
 
-    // ============ Routing (preserved from Stage 5) ============
+    // Routing (preserved from Stage 5)
 
     private String route(Workflow workflow, String from, String explicitNext, WorkflowState state) {
         // 1. Explicit jump takes priority
@@ -439,8 +427,6 @@ public class GraphRuntime {
 
         throw new WorkflowException("Dead end from '" + from + "': no edge matched the current state");
     }
-
-    // ============ Helpers ============
 
     private void sleepQuietly(long ms) {
         if (ms <= 0) {

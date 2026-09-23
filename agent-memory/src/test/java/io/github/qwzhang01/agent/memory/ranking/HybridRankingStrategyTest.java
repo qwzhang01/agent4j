@@ -45,7 +45,7 @@ class HybridRankingStrategyTest {
         }
     }
 
-    // ============ Flagship: semantic drift ============
+    // Flagship: semantic drift
 
     /**
      * Query "relocation plans" vs entries:
@@ -91,7 +91,7 @@ class HybridRankingStrategyTest {
         assertEquals("latte with oat milk", ranked.get(0).content());
     }
 
-    // ============ Degradation chain ============
+    // Degradation chain
 
     /** No query: pure importance-then-recency, identical to the default strategy. */
     @Test
@@ -165,7 +165,7 @@ class HybridRankingStrategyTest {
                 "with α=0 for the mismatched entry, γ importance decides");
     }
 
-    // ============ End-to-end through the retriever ============
+    // End-to-end through the retriever
 
     @Test
     void retriever_endToEnd_semanticRecallThroughRecallForContext() {
@@ -186,8 +186,6 @@ class HybridRankingStrategyTest {
         assertEquals("lives in Shenzhen", top1.get(0).content(),
                 "end-to-end: semantic recall surfaces Shenzhen for a relocation question");
     }
-
-    // ============ helpers ============
 
     private static MemoryEntry entry(String subject, String content, double importance) {
         return new MemoryEntry(null, "user:u1", MemoryType.FACT, subject, content, importance,

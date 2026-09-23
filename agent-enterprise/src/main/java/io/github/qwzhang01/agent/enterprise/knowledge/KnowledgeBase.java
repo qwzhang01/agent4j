@@ -33,7 +33,7 @@ public final class KnowledgeBase {
         this.store = Objects.requireNonNull(store, "store must not be null");
     }
 
-    // ============ Ingest ============
+    // Ingest
 
     /**
      * Bulk-import knowledge entries for a tenant (admin operation).
@@ -57,7 +57,7 @@ public final class KnowledgeBase {
         }
     }
 
-    // ============ Search ============
+    // Search
 
     /**
      * Keyword-search the tenant's knowledge (v1 retrieval: case-insensitive
@@ -84,7 +84,7 @@ public final class KnowledgeBase {
                 .toList();
     }
 
-    // ============ Introspection ============
+    // Introspection
 
     /**
      * Number of knowledge entries currently stored for the tenant (admin
@@ -99,8 +99,6 @@ public final class KnowledgeBase {
                         .build())
                 .size();
     }
-
-    // ============ Helpers ============
 
     private static void requireTenantId(String tenantId) {
         Objects.requireNonNull(tenantId, "tenantId must not be null");

@@ -127,8 +127,6 @@ class OpsEventFactoriesTest {
         assertEquals(OpsEventBus.Kind.A2A_REFUSED, events.get(1).kind());
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics metrics(String runId, String lastError, int modelErrors, int denied) {
         return new RunMetrics(runId, "support", AgentState.Status.ERROR, lastError, 500,
                 3, modelErrors, 2, denied, new ModelResponse.TokenUsage(10, 5, 15, 0), 100);

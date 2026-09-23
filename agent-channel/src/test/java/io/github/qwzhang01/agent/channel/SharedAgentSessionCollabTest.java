@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SharedAgentSessionCollabTest {
 
-    // ============ Test doubles ============
+    // Test doubles
 
     private static final class RecordingModelClient implements ModelClient {
         private final ModelClient delegate;
@@ -61,7 +61,7 @@ class SharedAgentSessionCollabTest {
         }
     }
 
-    // ============ Fixtures ============
+    // Fixtures
 
     private static final String CHANNEL = "team-eng";
     private static final String AGENT_ID = "eng-bot";
@@ -79,7 +79,7 @@ class SharedAgentSessionCollabTest {
                 null);
     }
 
-    // ============ Task lifecycle on the board ============
+    // Task lifecycle on the board
 
     @Test
     @DisplayName("startTask puts a RUNNING task on the board owned by the member")
@@ -132,7 +132,7 @@ class SharedAgentSessionCollabTest {
         assertThrows(IllegalArgumentException.class, () -> session.completeTask("ghost", "y"));
     }
 
-    // ============ Handoff: the three-part handover (design D5) ============
+    // Handoff: the three-part handover (design D5)
 
     @Test
     @DisplayName("handoff: board owner moves, audit record kept, baton note injected into state")
@@ -200,7 +200,7 @@ class SharedAgentSessionCollabTest {
                 "terminal tasks cannot be handed off");
     }
 
-    // ============ Visibility stream (design D6) ============
+    // Visibility stream (design D6)
 
     @Test
     @DisplayName("subscribers receive events in order: task + agent replies + handoff")
@@ -261,7 +261,7 @@ class SharedAgentSessionCollabTest {
                 "the board (also a subscriber) still got the event");
     }
 
-    // ============ Concurrency guard (review finding) ============
+    // Concurrency guard (review finding)
 
     @Test
     @DisplayName("concurrent speaks are serialized: no exception, no lost turn")
@@ -293,8 +293,6 @@ class SharedAgentSessionCollabTest {
                 .filter(m -> m.role() == ChatRole.USER).count();
         assertEquals(8, userTurns, "every concurrent turn must land - serialized, none lost");
     }
-
-    // ============ Helpers ============
 
     private static String flatten(List<ChatMessage> messages) {
         StringBuilder sb = new StringBuilder();

@@ -41,8 +41,6 @@ public record TaskApprovalRecord(
         Objects.requireNonNull(at, "at must not be null");
     }
 
-    // ============ Helpers ============
-
     private static void requireText(String value, String field) {
         Objects.requireNonNull(value, field + " must not be null");
         if (value.isBlank()) {

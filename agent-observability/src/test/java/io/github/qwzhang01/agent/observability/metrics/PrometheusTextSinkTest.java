@@ -108,8 +108,6 @@ class PrometheusTextSinkTest {
         assertTrue(scrape.contains("name=\"weird\\\"model\\\\name\""), scrape);
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics runMetrics(String runId, AgentStatusForTest status, long durationMs) {
         return new RunMetrics(
                 runId,

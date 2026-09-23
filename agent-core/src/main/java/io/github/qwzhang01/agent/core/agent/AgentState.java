@@ -36,11 +36,10 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AgentState {
 
-    // ============ Status ============
+    // Status
 
     private final List<ChatMessage> messages = new ArrayList<>();
 
-    // ============ Fields ============
     private int currentStep = 0;
     private int maxSteps = 10;
     private Status status = Status.IDLE;
@@ -48,8 +47,6 @@ public class AgentState {
     private String lastActiveAgentName;
     public AgentState() {
     }
-
-    // ============ Constructors ============
 
     /** Create conversation history with one user message, without agent instructions. */
     public AgentState(String userInput) {
@@ -89,8 +86,6 @@ public class AgentState {
     public void setCurrentStep(int currentStep) {
         this.currentStep = currentStep;
     }
-
-    // ============ Methods ============
 
     public void addMessage(ChatMessage message) {
         messages.add(message);
@@ -165,7 +160,7 @@ public class AgentState {
         return copy;
     }
 
-    // ============ Snapshot (for stage 6 Checkpoint) ============
+    // Snapshot (for stage 6 Checkpoint)
 
     public enum Status {
         /**

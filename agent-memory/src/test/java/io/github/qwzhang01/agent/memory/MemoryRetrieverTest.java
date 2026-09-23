@@ -25,7 +25,7 @@ class MemoryRetrieverTest {
         retriever = new MemoryRetriever(store);
     }
 
-    // ============ No-query (backward-compat) ============
+    // No-query (backward-compat)
 
     @Test
     void recallForContext_ranksByImportanceNotRecency() {
@@ -67,7 +67,7 @@ class MemoryRetrieverTest {
         assertEquals("low", result.get(1).content());
     }
 
-    // ============ Query-aware ============
+    // Query-aware
 
     /**
      * A lower-importance entry that matches the query should rank above a
@@ -120,8 +120,6 @@ class MemoryRetrieverTest {
         assertTrue(result.stream().allMatch(e -> e.content().contains("coffee")),
                 "top-2 should both match the query; unrelated entry should be displaced");
     }
-
-    // ============ Helpers ============
 
     private void write(String scope, String subject, String content,
                        double importance, Instant createdAt) {

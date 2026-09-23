@@ -15,9 +15,6 @@ import java.util.Optional;
  */
 public interface ToolRegistry {
 
-    /**
-     * Register a tool.
-     */
     void register(Tool tool);
 
     /**
@@ -30,9 +27,6 @@ public interface ToolRegistry {
      */
     Optional<Tool> getTool(String name);
 
-    /**
-     * List all registered tools.
-     */
     List<Tool> listTools();
 
     /**

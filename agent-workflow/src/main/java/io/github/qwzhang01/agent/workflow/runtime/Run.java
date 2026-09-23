@@ -23,11 +23,11 @@ import io.github.qwzhang01.agent.workflow.WorkflowState;
  */
 public class Run {
 
-    // ============ Identity ============
+    // Identity
     private final String runId;
     private final Workflow workflow;
 
-    // ============ Mutable State ============
+    // Mutable State
     private WorkflowState state;
     // Stage 3 hardening: status/errorMessage are read cross-thread by
     // observers (scheduler timers, recovery sweeps, tests). volatile +
@@ -41,18 +41,16 @@ public class Run {
     /** Stage 3.1: event/checkpoint sequence anchor for resume consistency. */
     private long lastEventSeq;
 
-    // ============ Control ============
+    // Control
     private volatile boolean cancelled = false;
     private final long startTime;
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.none();
 
-    // ============ Stage 1 (harness roadmap) ============
+    // Stage 1 (harness roadmap)
     /** Unified run context; null = legacy path (no context bound). */
     private RunContext runContext;
     /** Backs the context's token so RunManager.cancel flips both. */
     private final CancellationSource cancellationSource = new CancellationSource();
-
-    // ============ Constructors ============
 
     /** Fresh start. */
     public Run(String runId, Workflow workflow, WorkflowState state) {
@@ -96,8 +94,6 @@ public class Run {
         return run;
     }
 
-    // ============ Getters ============
-
     public String getRunId() { return runId; }
     public Workflow getWorkflow() { return workflow; }
     public WorkflowState getState() { return state; }
@@ -117,7 +113,7 @@ public class Run {
         this.timeoutPolicy = timeoutPolicy == null ? TimeoutPolicy.none() : timeoutPolicy;
     }
 
-    // ============ Setters (used by GraphRuntime across packages) ============
+    // Setters (used by GraphRuntime across packages)
 
     public void setState(WorkflowState state) { this.state = state; }
     public void setStatus(RunState status) { this.status = status; }
@@ -126,7 +122,7 @@ public class Run {
     public void setStepsExecuted(int steps) { this.stepsExecuted = steps; }
     public void setErrorMessage(String msg) { this.errorMessage = msg; }
 
-    // ============ Cancellation ============
+    // Cancellation
 
     /**
      * Request cancellation. The run will stop at the next node boundary.
@@ -145,7 +141,7 @@ public class Run {
                         && runContext.cancellationToken().isCancelled());
     }
 
-    // ============ Checkpoint ============
+    // Checkpoint
 
     public Checkpoint toCheckpoint() {
         return Checkpoint.of(this);

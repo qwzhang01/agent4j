@@ -129,8 +129,6 @@ class PersistentRunRegistryTest {
                 "oldest first, append order preserved through the file");
     }
 
-    // ============ Helpers ============
-
     private static RunMetrics metrics(String runId, AgentState.Status status,
                                       long durationMs, long costMicros) {
         return new RunMetrics(

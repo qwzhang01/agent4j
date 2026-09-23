@@ -82,8 +82,6 @@ public class OpenAiModelClient implements ModelClient {
     private final ReasoningConfig defaultReasoning;
     private final Map<String, Object> extraBody;
 
-    // ============ Constructors ============
-
     public OpenAiModelClient(String apiKey) {
         this("https://api.openai.com/v1", apiKey, "gpt-4o-mini");
     }
@@ -149,7 +147,7 @@ public class OpenAiModelClient implements ModelClient {
                 this.baseUrl, this.flavor, defaultModel);
     }
 
-    // ============ ModelClient ============
+    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -222,7 +220,7 @@ public class OpenAiModelClient implements ModelClient {
         return defaultReasoning != null ? defaultReasoning : ReasoningConfig.auto();
     }
 
-    // ============ Request Building ============
+    // Request Building
 
     private ObjectNode buildRequestBody(ModelRequest request, String model, boolean stream) {
         ObjectNode body = mapper.createObjectNode();
@@ -362,7 +360,7 @@ public class OpenAiModelClient implements ModelClient {
         });
     }
 
-    // ============ Multimodal Content Building ============
+    // Multimodal Content Building
 
     /**
      * Builds the OpenAI multimodal content array:
@@ -400,7 +398,7 @@ public class OpenAiModelClient implements ModelClient {
         return "data:" + mime + ";base64," + ip.base64Data();
     }
 
-    // ============ Response Parsing ============
+    // Response Parsing
 
     private ModelResponse parseResponse(String responseBody) {
         try {
@@ -466,7 +464,7 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // ============ SSE Streaming Parsing ============
+    // SSE Streaming Parsing
 
     /**
      * Converts raw SSE lines into {@link StreamEvent}s.
@@ -688,7 +686,7 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // ============ Endpoint Flavor ============
+    // Endpoint Flavor
 
     /**
      * Which OpenAI-compatible service we are talking to.
@@ -746,7 +744,7 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // ============ Error Handling ============
+    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

@@ -33,9 +33,7 @@ class SanitizingContextBuilderTest {
         return (cfg, state) -> messages;
     }
 
-    // --------------------------------------------
     // Sanitization (TOOL-role content)
-    // --------------------------------------------
 
     @Test
     void toolResultWithInjectionIsSanitizedBeforeTheModelSeesIt() {
@@ -85,9 +83,7 @@ class SanitizingContextBuilderTest {
         assertTrue(content.endsWith(SanitizingContextBuilder.UNTRUSTED_CLOSE));
     }
 
-    // --------------------------------------------
     // Spotlighting (framing)
-    // --------------------------------------------
 
     @Test
     void spotlightingPrependsFramingNoticeAndWrapsUntrustedMessages() {
@@ -132,9 +128,7 @@ class SanitizingContextBuilderTest {
         assertEquals("hello", out.get(0).content(), "no wrapping when spotlighting is off");
     }
 
-    // --------------------------------------------
     // State discipline (Decision 12)
-    // --------------------------------------------
 
     @Test
     void agentStateKeepsOriginalBytesAfterBuild() {
@@ -161,9 +155,7 @@ class SanitizingContextBuilderTest {
                 "AgentState must keep original bytes - sanitized views for the model, raw records for forensics");
     }
 
-    // --------------------------------------------
     // Prefix stability (E3 / decision 26)
-    // --------------------------------------------
 
     @Test
     void outputIsByteStableAcrossCallsForTheSameHistory() {
@@ -183,9 +175,7 @@ class SanitizingContextBuilderTest {
         }
     }
 
-    // --------------------------------------------
     // Shape preservation
-    // --------------------------------------------
 
     @Test
     void assistantToolCallsAndIdentitySurviveTheRebuild() {

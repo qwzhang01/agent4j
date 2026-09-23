@@ -60,8 +60,6 @@ class AgentHealthIndicatorTest {
         assertThat(AgentHealthIndicator.asMap(report)).containsEntry("overall", "UP");
     }
 
-    // ---- helpers ----
-
     private static AgentHealthIndicator healthy(String face) {
         return indicator(face, () -> true);
     }

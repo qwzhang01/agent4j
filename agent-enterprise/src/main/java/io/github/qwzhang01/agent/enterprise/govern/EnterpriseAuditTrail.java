@@ -35,7 +35,7 @@ public final class EnterpriseAuditTrail {
 
     private final List<EnterpriseAuditEvent> ledger = new CopyOnWriteArrayList<>();
 
-    // ============ Request-Scoped View ============
+    // Request-Scoped View
 
     /**
      * Create the request-scoped {@link AuditLogger} bound to one context.
@@ -54,7 +54,7 @@ public final class EnterpriseAuditTrail {
         return new RequestAuditLogger(ctx, agentName);
     }
 
-    // ============ Ledger Queries ============
+    // Ledger Queries
 
     /**
      * All attributed events, oldest first.
@@ -93,8 +93,6 @@ public final class EnterpriseAuditTrail {
     public int size() {
         return ledger.size();
     }
-
-    // ============ Helpers ============
 
     private List<EnterpriseAuditEvent> filter(java.util.function.Predicate<EnterpriseAuditEvent> p) {
         List<EnterpriseAuditEvent> out = new ArrayList<>();
