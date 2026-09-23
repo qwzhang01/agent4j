@@ -11,9 +11,9 @@ import java.util.Map;
  * does not score, clamp, or interpret product vocabularies (tiers, intimacy
  * formulas, tavern matrices stay with the host).
  *
- * @param stage  optional phase label; blank omitted
- * @param slots  optional gauges / labels; null values dropped
- * @param note   optional prose already rendered by the host
+ * @param stage optional phase label; blank omitted
+ * @param slots optional gauges / labels; null values dropped
+ * @param note optional prose already rendered by the host
  */
 public record RelationSnapshot(String stage, Map<String, String> slots, String note) {
 

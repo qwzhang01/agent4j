@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Multi-dimensional budget ledger (Stage 18 M18.2): pre-flight gate + honest
- * post-hoc accounting, the five-dimension generalization of the Stage 15
+ * Multi-dimensional budget ledger : pre-flight gate + honest
+ * post-hoc accounting, the five-dimension generalization of the
  * CostLedger pattern (blueprint D4: observability is the layer UNDER the
  * enterprise domain - the enterprise CostLedger stays untouched).
  * <p>
@@ -26,12 +26,12 @@ import java.util.Objects;
  * </ul>
  * <p>
  * Unconfigured (dimension, key) pairs are UNLIMITED: requireBudget returns Ok
- * and {@link #limitOf} reports -1 (the same placeholder convention as Stage 12
+ * and {@link #limitOf} reports -1 (the same placeholder convention as
  * {@code ServiceAccount.UNLIMITED_BUDGET}); usage is still counted for them so
  * the dashboard can show spend before a cap is decided.
  * <p>
  * Warn alarms are emitted EVERY time the warning line is crossed - v1 has no
- * rate limiting (the Stage 12 NoisePolicy lesson applies to notification
+ * rate limiting (the NoisePolicy lesson applies to notification
  * fan-out, which is the alarm sink's concern, not the ledger's).
  */
 public final class BudgetBook {

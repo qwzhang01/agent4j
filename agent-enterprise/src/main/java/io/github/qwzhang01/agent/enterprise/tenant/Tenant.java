@@ -4,22 +4,22 @@ import java.util.Objects;
 
 /**
  * A tenant entity - the top-level isolation boundary of the Enterprise Agent
- * Profile (Stage 15 M15.1).
+ * Profile .
  * <p>
  * Tenants answer "whose data is this": knowledge entries, user preferences,
  * audit trails and cost accounting are all partitioned by tenant. The isolation
- * mechanism itself is the Stage 8 scope whitelist ({@code tenant:{id}} scopes);
+ * mechanism itself is the scope whitelist ({@code tenant:{id}} scopes);
  * this record is the domain entity the registry keys on.
  * <p>
  * v1 honest boundary: {@code monthlyTokenBudget} is declared here and enforced
  * by the CostLedger (M15.3). Full cost governance (time windows, model routing,
- * dashboards) is Stage 18 scope.
+ * dashboards) is scope.
  *
- * @param tenantId           unique tenant identifier (e.g. "acme")
- * @param displayName        human-readable name (e.g. "Acme Corp")
- * @param status             ACTIVE or SUSPENDED - suspended tenants fail closed
+ * @param tenantId unique tenant identifier (e.g. "acme"
+ * @param displayName human-readable name (e.g. "Acme Corp"
+ * @param status ACTIVE or SUSPENDED - suspended tenants fail closed
  * @param monthlyTokenBudget token budget per month; negative = unlimited
- *                           (convention shared with Stage 12 ServiceAccount)
+ *                           (convention shared with ServiceAccount)
  */
 public record Tenant(
         String tenantId,

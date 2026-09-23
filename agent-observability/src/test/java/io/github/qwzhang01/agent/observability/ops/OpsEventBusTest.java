@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.4 acceptance for the ops event bus: one stream for budget,
+ * acceptance for the ops event bus: one stream for budget,
  * sandbox, guardrail and A2A signals; every event carries coordinates and
  * a recommended action; broken subscribers never break publishers.
  */

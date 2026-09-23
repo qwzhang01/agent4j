@@ -7,11 +7,11 @@ import io.github.qwzhang01.agent.core.tool.ToolException;
 import java.util.Objects;
 
 /**
- * {@code write_file} - the Coding Agent's write handle (Stage 17 M17.2, blueprint D1).
+ * {@code write_file} - the Coding Agent's write handle (, blueprint D1).
  * <p>
  * This tool <b>does not write to disk</b>: it stages a {@link FileChange} in the
- * {@link PatchStore}. The confirmation text says so explicitly ("Nothing written to disk
- * yet") so the model knows applying is a separate, approved action. Re-staging the same
+ * {@link PatchStore}. The confirmation text says so explicitly "Nothing written to disk
+ * yet" so the model knows applying is a separate, approved action. Re-staging the same
  * path replaces the previous staged content - the natural shape of a fix loop.
  * <p>
  * Governance note (blueprint D8): staging has no real disk side effect, so this tool is

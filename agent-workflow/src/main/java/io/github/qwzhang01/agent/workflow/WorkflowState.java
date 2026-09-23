@@ -10,12 +10,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p>
  * Design decision (D3 in notes/architecture-stage-5.md): blackboard over
  * message passing because it is simple to inspect, snapshot-friendly
- * (Stage 6 Checkpoint = serialize this object) and observable.
+ * (Checkpoint = serialize this object) and observable.
  * <p>
  * Zones:
- * - input: written once at run() time (read-only by convention)
+ * - input: written once at run time (read-only by convention)
  * - variables: node outputs stored under node id; routing conditions read here
- * - trace: one StepRecord per executed node (Stage 14 trajectory source)
+ * - trace: one StepRecord per executed node (trajectory source)
  * <p>
  * Thread-safe: parallel branches write under distinct keys.
  */

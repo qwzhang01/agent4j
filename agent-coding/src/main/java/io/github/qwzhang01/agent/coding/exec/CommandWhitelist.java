@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The argv whitelist - gate 2 of the three-gate command defense (Stage 17 M17.3,
- * blueprint D2: "the first line of defense is that there is no shell").
+ * The argv whitelist - gate 2 of the three-gate command defense (,
+ * blueprint D2: "the first line of defense is that there is no shell".
  * <p>
  * Matching is <b>prefix-based on argv</b>, not string matching on a command line:
  * rule {@code [mvn, test]} allows {@code mvn test -q} and denies {@code mvn clean}.
@@ -22,7 +22,7 @@ public final class CommandWhitelist {
 
     /** Verdict of {@link #check(List)}: a reason is present iff denied. */
     public record CheckResult(boolean allowed, String reason) {
-        /** Factory for a granted command (the component accessor is named {@code allowed()}). */
+        /** Factory for a granted command (the component accessor is named {@code allowed}). */
         public static CheckResult granted() {
             return new CheckResult(true, null);
         }
@@ -106,7 +106,7 @@ public final class CommandWhitelist {
     public static final class Builder {
         private final List<List<String>> rules = new ArrayList<>();
 
-        /** Grant a command prefix, e.g. {@code rule("mvn", "test")} or {@code rule("java")}. */
+        /** Grant a command prefix, e.g. {@code rule"mvn", "test"} or {@code rule"java"}. */
         public Builder rule(String... argvPrefix) {
             Objects.requireNonNull(argvPrefix, "argvPrefix must not be null");
             rules.add(List.of(argvPrefix));

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.2 acceptance for the Prometheus text-exposition sink:
+ * acceptance for the Prometheus text-exposition sink:
  * every scraped line must be a parsable 0.0.0.4 exposition line, and
  * the quantile rendering must carry {@code quantile="..."} labels
  * (the format bug batch 2 wrote this test to catch).

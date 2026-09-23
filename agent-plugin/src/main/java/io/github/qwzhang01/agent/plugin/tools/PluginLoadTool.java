@@ -10,7 +10,7 @@ import io.github.qwzhang01.agent.plugin.PluginManager;
  * Tool that lets the model load a plugin by name.
  * <p>
  * The model calls this to gain a new capability at runtime.
- * For example: "I need to search the web" -> load("search-tool").
+ * For example: "I need to search the web" -> load"search-tool".
  * <p>
  * Arguments:
  * name: string - the plugin name to load

@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Read-side of the memory pipeline (Stage 8).
+ * Read-side of the memory pipeline .
  *
  * <p>Retrieves ACTIVE memories from the store, bounded by the given scopes.
  * Only ACTIVE (non-expired, non-pending) entries are returned — the store
  * enforces this invariant.
  *
- * <p>The ranking algorithm is pluggable via {@link RankingStrategy}.  The default
+ * <p>The ranking algorithm is pluggable via {@link RankingStrategy}. The default
  * strategy ({@link ImportanceRankingStrategy}) preserves the token-overlap +
  * importance-weighted behaviour that existed before A8; no call site changes are
  * required for existing code.
@@ -22,7 +22,7 @@ import java.util.Objects;
  * <p>Custom strategies (e.g. embedding-cosine hybrid) can be injected through the
  * two-argument constructor:
  * <pre>{@code
- * MemoryRetriever retriever = new MemoryRetriever(store, new HybridRankingStrategy());
+ * MemoryRetriever retriever = new MemoryRetriever(store, new HybridRankingStrategy);
  * }</pre>
  *
  * <p>Subclasses may override {@link #recallForContext(List, int, String)} to apply
@@ -52,7 +52,7 @@ public class MemoryRetriever {
     /**
      * Constructs a retriever with a custom ranking strategy.
      *
-     * @param store    the memory store to query (must not be null)
+     * @param store the memory store to query (must not be null)
      * @param strategy the ranking strategy applied in {@link #recallForContext} (must not be null)
      */
     public MemoryRetriever(MemoryStore store, RankingStrategy strategy) {
@@ -78,7 +78,7 @@ public class MemoryRetriever {
      * Recall all SUMMARY entries for the given scopes, ranked by importance then recency.
      *
      * <p>Summaries are produced by the context compressor and represent a digest of prior
-     * conversation.  They occupy a dedicated slot in context assembly (see
+     * conversation. They occupy a dedicated slot in context assembly (see
      * {@link io.github.qwzhang01.agent.chat.context.MemorySource}) so that high-importance
      * summaries never crowd out specific FACT / EPISODE / PREFERENCE entries.
      *
@@ -131,7 +131,7 @@ public class MemoryRetriever {
      * Delegates to {@link #recallForContext(List, int, String)} with no query.
      *
      * @param scopes visible memory scopes
-     * @param limit  max entries; {@code <= 0} means no cut-off
+     * @param limit max entries; {@code <= 0} means no cut-off
      */
     public List<MemoryEntry> recallForContext(List<String> scopes, int limit) {
         return recallForContext(scopes, limit, null);
@@ -144,15 +144,15 @@ public class MemoryRetriever {
      * <p>The ranking is fully delegated to the injected {@link RankingStrategy}.
      * The default strategy ({@link ImportanceRankingStrategy}) applies:
      * <pre>
-     *   score(e) = e.importance() + QUERY_BOOST_WEIGHT * tokenOverlap(e, query)
+     *   score(e) = e.importance + QUERY_BOOST_WEIGHT * tokenOverlap(e, query)
      * </pre>
      * When {@code query} is {@code null} or blank the strategy degrades gracefully
      * to importance-then-recency, preserving backward compatibility with all
      * existing 2-arg callers.
      *
      * @param scopes visible memory scopes
-     * @param limit  max entries; {@code <= 0} means no cut-off
-     * @param query  optional free-text hint (e.g. current user message); {@code null} = no boost
+     * @param limit max entries; {@code <= 0} means no cut-off
+     * @param query optional free-text hint (e.g. current user message); {@code null} = no boost
      */
     public List<MemoryEntry> recallForContext(List<String> scopes, int limit, String query) {
         List<MemoryEntry> all = store.query(MemoryQuery.builder().scopes(scopes).build());

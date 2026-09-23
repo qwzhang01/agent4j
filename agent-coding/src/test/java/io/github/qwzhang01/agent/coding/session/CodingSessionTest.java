@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.4: the governance shell - fix-loop counting (FAILED only), the [LIMIT]
+ *  the governance shell - fix-loop counting (FAILED only), the [LIMIT]
  * veto, passing-is-leaving-the-loop (VALIDATED), and the full patch state machine
  * through the human gates (DRAFT -> VALIDATED -> APPLIED / REJECTED / DISCARDED).
  * <p>

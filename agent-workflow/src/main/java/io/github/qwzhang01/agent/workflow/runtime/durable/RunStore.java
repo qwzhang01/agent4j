@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Durable run registry (Stage 3.1, harness roadmap).
+ * Durable run registry (, harness roadmap).
  * <p>
  * "Scheduler only schedules persistent Runs, JVM memory is not the only
  * truth": every state transition lands here with an optimistic version,
- * and recovery candidates come from {@link #listRecoveryCandidates()}, not
+ * and recovery candidates come from {@link #listRecoveryCandidates}, not
  * from an activeRuns map.
  */
 public interface RunStore {

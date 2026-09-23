@@ -7,12 +7,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Objects;
 
 /**
- * JSON-RPC 2.0 request (Stage 10 D3).
+ * JSON-RPC 2.0 request (D3).
  * <p>
  * Every request has an id that the server echoes back in the response for correlation.
  * Method names follow MCP convention: "initialize" / "tools/list" / "tools/call" / "shutdown".
  *
- * @param id     client-assigned id (matches response id)
+ * @param id client-assigned id (matches response id)
  * @param method MCP method name
  * @param params method-specific parameters (nullable for parameterless calls)
  */

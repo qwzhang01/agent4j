@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 10 M10.2 tests: McpClient protocol operations with MockMcpTransport.
+ * tests: McpClient protocol operations with MockMcpTransport.
  */
 class McpClientTest {
 
@@ -66,7 +66,7 @@ class McpClientTest {
         closedTransport.registerResponse("initialize",
                 "{\"jsonrpc\":\"2.0\",\"id\":0,\"result\":{}}");
         McpClient c = new McpClient(desc, closedTransport);
-        // connect() calls transport.open() which sets open=true, then sends initialize
+        // connect calls transport.open which sets open=true, then sends initialize
         c.connect();
         assertTrue(c.isConnected());
         c.disconnect();

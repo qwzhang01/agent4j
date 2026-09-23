@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Stage 6.3: pluggable persistence for A2A tasks.
+ *  pluggable persistence for A2A tasks.
  * <p>
  * Roadmap: "Task Store 从内存升级为可持久化接口" + "Task Lease、续跑、取消、
  * 过期、去重" + "跨实例恢复 A2A Task". The {@code HttpA2AServer} used to hold
@@ -88,8 +88,8 @@ public interface A2ATaskStore {
      * the winner runs the task, losers see it as claimed). A lease held by
      * a DEAD instance self-releases after its TTL — the sweep's job.
      *
-     * @param holderId identifies the claiming instance (e.g. "host-1")
-     * @param ttl      how long the claim is valid
+     * @param holderId identifies the claiming instance (e.g. "host-1"
+     * @param ttl how long the claim is valid
      * @return true if this caller now holds the lease
      */
     boolean acquireLease(String taskId, String holderId, java.time.Duration ttl);

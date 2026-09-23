@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * JSON-RPC dialect to any A2A endpoint -- {@code message/send} for task
  * delegation, {@code tasks/get} for status, {@code /.well-known/agent.json}
  * for discovery. Same interface as {@link InProcessA2AClient}; what changed
- * is only the transport, exactly the swap Stage 11's D6 promised.
+ * is only the transport, exactly the swap 's D6 promised.
  * <p>
  * Identity note: in the spec the SERVER assigns task ids. This client keeps
  * a local-to-remote id map per instance, so {@link #getTaskStatus} answers
@@ -359,7 +359,7 @@ public class HttpA2AClient implements A2AClient {
     /**
      * v1: not supported over HTTP. The spec has no fire-and-forget message
      * method -- mapping this onto message/send would silently CREATE a task
-     * on the peer, which is not what the caller asked for. Loud refusal
+     * on the peer, which is not what the caller asked . Loud refusal
      * instead of a quiet lie.
      */
     @Override

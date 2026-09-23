@@ -98,7 +98,7 @@ public final class ChatEngine {
      * <p>
      * When a {@link RetryPolicy} is configured, replies that trigger
      * {@link RetryPolicy#shouldRetry} are regenerated (up to
-     * {@link RetryPolicy#maxAttempts()} times). Each attempt streams its
+     * {@link RetryPolicy#maxAttempts} times). Each attempt streams its
      * {@link AgentEvent.ContentDelta}s through {@code listener}; before a discarded
      * attempt is retried, an {@link AgentEvent.RetryStarted} event is emitted so
      * the host can reset any partial rendering. Only the accepted reply's TurnTrace and
@@ -373,7 +373,7 @@ public final class ChatEngine {
         }
 
         /**
-         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop()}.
+         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop}.
          */
         public Builder consistencyGuard(ConsistencyGuard consistencyGuard) {
             this.consistencyGuard = consistencyGuard == null
@@ -384,7 +384,7 @@ public final class ChatEngine {
 
         /**
          * Optional retry policy for hard-label violations detected post-completion.
-         * {@code null} defaults to {@link RetryPolicy#never()} (no retries).
+         * {@code null} defaults to {@link RetryPolicy#never} (no retries).
          */
         public Builder retryPolicy(RetryPolicy retryPolicy) {
             this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;

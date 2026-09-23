@@ -7,7 +7,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import java.util.List;
 
 /**
- * Injects the speaker's {@link ChatPersona#systemPrompt()} verbatim.
+ * Injects the speaker's {@link ChatPersona#systemPrompt} verbatim.
  * Blank prompts contribute nothing.
  */
 public final class PersonaSource implements ContextSource {

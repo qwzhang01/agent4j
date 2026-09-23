@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Stage 6.2: remote-server trust model — an allowlist plus three levels.
+ *  remote-server trust model — an allowlist plus three levels.
  * <p>
  * Roadmap: "远程 MCP Server allowlist 和信任等级". The rule the framework
  * enforces: a remote server must be EXPLICITLY allowed before any
@@ -15,7 +15,7 @@ import java.util.Objects;
  * <ul>
  *   <li>{@code TRUSTED} — full tool surface; tools still flow through the
  *       governance layers (approval/audit/sanitization), trust is about the
- *       SOURCE, not a bypass of Stage 9 governance</li>
+ *       SOURCE, not a bypass of governance</li>
  *   <li>{@code RESTRICTED} — connect allowed, but every tool call requires
  *       explicit approval (the governance layer's approval mode is forced
  *       on; unattended runs get nothing from this server)</li>

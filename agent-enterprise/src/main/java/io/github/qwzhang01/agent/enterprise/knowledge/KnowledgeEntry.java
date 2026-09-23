@@ -11,32 +11,32 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * One knowledge item of a tenant's knowledge base (Stage 15 M15.2, D5
- * "knowledge is memory").
+ * One knowledge item of a tenant's knowledge base (, D5
+ * "knowledge is memory".
  * <p>
  * Knowledge is the business INPUT of the enterprise answer flow: admin-curated
  * policy documents, FAQs and product facts that the model must retrieve before
- * answering (RAG). This differs from conversation-derived memories (Stage 8),
+ * answering (RAG). This differs from conversation-derived memories ,
  * which are the SEDIMENT of interactions.
  * <p>
  * Storage projection: a KnowledgeEntry persists as a
  * {@code MemoryEntry(type=KNOWLEDGE, scope=tenant:{tid})} - the same store,
  * the same scope-whitelist isolation, one mechanism instead of two systems
- * (third application of the "same mechanism" philosophy, after Stage 12
- * channel-shared memory and the Stage 14 workflow trajectory adapter).
+ * (third application of the "same mechanism" philosophy, after
+ * channel-shared memory and the workflow trajectory adapter).
  * <p>
  * Honest v1 boundary: {@code source} and {@code tags} are import-side audit
  * metadata only. {@code MemoryEntry} has no free-metadata slot, so they are
  * NOT persisted and are NOT reconstructed on retrieval
  * ({@link #fromMemoryEntry} returns empty) - missing rather than fabricated,
- * per the Stage 14 D5 discipline. They join the store when MemoryEntry grows
+ * per the D5 discipline. They join the store when MemoryEntry grows
  * a custom field (v2).
  *
- * @param title   human-readable title; stored as the MemoryEntry subject
+ * @param title human-readable title; stored as the MemoryEntry subject
  * @param content the knowledge text; the retrieval corpus (keyword-matched)
- * @param source  where this item came from (e.g. "policy.pdf", "FAQ#12");
+ * @param source where this item came from (e.g. "policy.pdf", "FAQ#12";
  *                import-side metadata, not persisted in v1
- * @param tags    optional categorization labels; import-side metadata,
+ * @param tags optional categorization labels; import-side metadata,
  *                not persisted in v1
  */
 public record KnowledgeEntry(
@@ -72,7 +72,7 @@ public record KnowledgeEntry(
      * review already happened when the admin chose to ingest.
      *
      * @param tenantId the tenant this knowledge belongs to (isolation boundary)
-     * @param adminId  who performed the ingest (provenance actor)
+     * @param adminId who performed the ingest (provenance actor)
      */
     public MemoryEntry toMemoryEntry(String tenantId, String adminId) {
         return new MemoryEntry(

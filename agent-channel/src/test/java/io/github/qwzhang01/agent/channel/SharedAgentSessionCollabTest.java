@@ -30,11 +30,11 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end collab tests for {@link SharedAgentSession} (Stage 12 M12.3).
+ * End-to-end collab tests for {@link SharedAgentSession} .
  * <p>
  * Acceptance mapping (architecture note §10):
- * - "handoff 后 B 的首轮对话能引用 A 阶段的结论"      -> handoff_contextIsContinuous
- * - "TaskBoard owner 变更 / handoff 记录可查"          -> handoff_boardAndAuditTrail
+ * - "handoff 后 B 的首轮对话能引用 A 阶段的结论" -> handoff_contextIsContinuous
+ * - "TaskBoard owner 变更 / handoff 记录可查" -> handoff_boardAndAuditTrail
  * - "订阅者按序收到事件；看板与事件流一致（同一事实源）" -> events_inOrder / boardMatchesStream
  */
 class SharedAgentSessionCollabTest {

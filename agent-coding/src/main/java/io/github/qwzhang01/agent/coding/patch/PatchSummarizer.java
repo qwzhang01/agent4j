@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Renders a {@link Patch} for human review (Stage 17 M17.2): a unified-diff-style block
+ * Renders a {@link Patch} for human review : a unified-diff-style block
  * per file plus a one-line summary - this is what the reviewer reads before approving
- * {@link PatchStore#apply()}.
+ * {@link PatchStore#apply}.
  * <p>
  * Diff algorithm (v1 honest boundary): common-prefix / common-suffix trim, the middle
  * is one remove-block + one add-block. This is NOT a minimal edit script (Myers diff
@@ -141,8 +141,8 @@ public final class PatchSummarizer {
             return List.of();
         }
         List<String> result = new ArrayList<>(List.of(content.split("\n", -1)));
-        // "a\nb\n".split("\n", -1) == [a, b, ""] - drop the phantom trailing empty line,
-        // but keep interior empty lines ("a\n\nb\n" stays [a, "", b])
+        // "a\nb\n".split"\n", -1) == [a, b, ""] - drop the phantom trailing empty line,
+        // but keep interior empty lines "a\n\nb\n" stays [a, "", b])
         if (result.size() > 1 && result.get(result.size() - 1).isEmpty()) {
             result.remove(result.size() - 1);
         }

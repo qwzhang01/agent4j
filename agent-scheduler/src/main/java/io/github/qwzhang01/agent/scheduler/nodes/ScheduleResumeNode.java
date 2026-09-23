@@ -18,7 +18,7 @@ import java.time.Duration;
  * <p>
  * Usage:
  * <pre>{@code
- * .node(ScheduleResumeNode.of("check-later", Duration.ofHours(2)))
+ * .node(ScheduleResumeNode.of"check-later", Duration.ofHours(2)))
  * }</pre>
  */
 public final class ScheduleResumeNode implements WorkflowNode {

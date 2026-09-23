@@ -14,12 +14,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 10 process management tests: {@link ManagedMcpClient} auto-restart behavior.
+ * process management tests: {@link ManagedMcpClient} auto-restart behavior.
  * <p>
  * Uses {@link CrashyTransport}, a scripted fake whose "generations" can be told
  * to die on their first tools/call -- simulating a crashed server subprocess.
  * The transport factory builds a fresh generation per (re)connection, exactly
- * like {@code () -> new StdioTransport(command)} in production.
+ * like {@code -> new StdioTransport(command)} in production.
  */
 class ManagedMcpClientTest {
 

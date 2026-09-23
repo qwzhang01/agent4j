@@ -15,7 +15,7 @@ import io.github.qwzhang01.agent.workflow.nodes.AgentNode;
 import io.github.qwzhang01.agent.workflow.runtime.RunManager;
 
 /**
- * Stage 7 acceptance example: agent-driven scheduling.
+ * acceptance example: agent-driven scheduling.
  * <p>
  * Unlike SchedulerExample (developer-chosen static parameters), this demo
  * shows the LLM deciding the scheduling parameters at runtime:

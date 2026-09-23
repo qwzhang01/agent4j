@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * Design decision (D6): v1 is a simple per-Run cumulative counter. If the
  * total exceeds the limit, the Run should be FAILED. Complex per-user /
- * per-model / time-window limiting is Stage 18 scope.
+ * per-model / time-window limiting is scope.
  */
 public class TokenBudget {
 

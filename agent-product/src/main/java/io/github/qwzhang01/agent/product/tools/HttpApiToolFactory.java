@@ -9,11 +9,11 @@ import java.util.regex.Pattern;
 
 /**
  * Builds {@link HttpApiTool}s from declarations, resolving secret references
- * (Stage 13 M13.3).
+ * .
  * <p>
  * Secrets never live in YAML: an {@code auth.token} of {@code ${env:NAME}} is
  * resolved against the environment at BUILD time, and a missing variable
- * refuses to load the tool (fail-fast, Stage 9 discipline) rather than shipping
+ * refuses to load the tool (fail-fast, discipline) rather than shipping
  * a literal "${env:...}" string as a bearer token. A literal token passes
  * through unchanged for tests - production discipline is env references.
  */

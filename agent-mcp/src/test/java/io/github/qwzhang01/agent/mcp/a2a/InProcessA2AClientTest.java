@@ -11,7 +11,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.4 tests: the in-process A2A client (protocol data model
+ * tests: the in-process A2A client (protocol data model
  * round-trip, no real transport). Status labels are the spec dialect
  * (working/completed/failed) since the enum unification.
  */

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Stage 6.3: in-memory {@link A2ATaskStore} — the default, and the reference
+ *  in-memory {@link A2ATaskStore} — the default, and the reference
  * semantics for real implementations.
  * <p>
  * Same data as the old hard-coded map, but behind the interface: the server

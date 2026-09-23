@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * M13.3 acceptance: a config-declared HTTP tool dropped into a ToolRegistry is
- * governed for free (D3) - same transparency McpToolAdapter proved in Stage 10.
+ * governed for free (D3) - same transparency McpToolAdapter proved in .
  * A DENY policy must block the call BEFORE the HTTP request fires and must
  * leave an audit trail.
  */

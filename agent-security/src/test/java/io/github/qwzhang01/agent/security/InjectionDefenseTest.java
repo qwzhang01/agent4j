@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 M9.4 tests: injection pattern detection and result sanitization.
+ * tests: injection pattern detection and result sanitization.
  */
 class InjectionDefenseTest {
 

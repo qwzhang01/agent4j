@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.1: the workspace view + boundary.
+ *  the workspace view + boundary.
  * <p>
  * Path safety has the highest priority (blueprint test strategy): the three escape
  * forms (blank / absolute / {@code ../} chain) must all fail, and a symlink must not

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Batch replay over a dataset (Stage 18 D7): for each case, run the subject,
+ * Batch replay over a dataset (D7): for each case, run the subject,
  * judge deterministically, aggregate into the {@link EvalReport} the release
  * gate consumes.
  * <p>
@@ -56,9 +56,9 @@ public final class EvaluationRunner {
     /**
      * Evaluate the whole dataset.
      *
-     * @param dataset     cases to replay, in dataset order (report preserves it)
-     * @param subject     the system under evaluation
-     * @param baseline    previous report to gate against, null when none yet
+     * @param dataset cases to replay, in dataset order (report preserves it)
+     * @param subject the system under evaluation
+     * @param baseline previous report to gate against, null when none yet
      *                    (first run ESTABLISHES the baseline - verdict will
      *                    honestly say {@code BASELINE_ABSENT})
      * @param minPassRate gate threshold in (0.0, 1.0]

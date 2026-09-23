@@ -9,7 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the {@link TaskBoard} projection (Stage 12 M12.3).
+ * Unit tests for the {@link TaskBoard} projection .
  * The board is fed events directly - proving it is a pure materialized
  * view of the visibility stream (design D6).
  */

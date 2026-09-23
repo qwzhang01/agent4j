@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.2: the world tool is a pure instruction submitter.
+ *  the world tool is a pure instruction submitter.
  * <p>
  * Blueprint D3 under test: the tool never applies an effect - it submits one
  * to the engine-provided sink. A collecting sink makes the whole contract

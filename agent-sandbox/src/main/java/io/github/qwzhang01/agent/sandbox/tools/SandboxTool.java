@@ -14,7 +14,7 @@ import io.github.qwzhang01.agent.sandbox.SandboxResult;
  * The model calls this tool to run Java code in the sandbox:
  * {
  * "class_name": "Generated",
- * "code": "public class Generated { public static String run() { return \"hello\"; } }"
+ * "code": "public class Generated { public static String run { return \"hello\"; } }"
  * }
  * <p>
  * Returns the execution result (stdout / error / blocked).
@@ -71,7 +71,7 @@ public class SandboxTool implements Tool {
     }
 
     /**
-     * Stage 1.2 (harness roadmap): sandbox execution is context aware.
+     * (harness roadmap): sandbox execution is context aware.
      * <ul>
      *   <li>Refuses to start when the run is already cancelled.</li>
      *   <li>Clamps the sandbox timeout to the run's remaining deadline,

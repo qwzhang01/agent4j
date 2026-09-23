@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Drift detection with threshold alarms (Stage 7.3): compare the current
+ * Drift detection with threshold alarms : compare the current
  * online window against a baseline row and fire when a metric crosses its
  * configured line. Detection is threshold-based, not statistical - the
  * honest v1: no fancy distribution tests without the traffic volume to

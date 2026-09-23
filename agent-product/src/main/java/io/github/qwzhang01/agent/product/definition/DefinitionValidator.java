@@ -10,12 +10,12 @@ import java.util.Set;
 
 /**
  * Semantic validation of an {@link AgentDefinition} against a {@link ProductContext}
- * (Stage 13 M13.1).
+ * .
  * <p>
  * Two validation layers:
  * <ol>
  *   <li>Structure (definition-internal): required sections, value ranges, mutual exclusion</li>
- *   <li>References (D1 "names -&gt; registry"): every name must resolve in the context,
+ *   <li>References (D1 "names -&gt; registry": every name must resolve in the context,
  *       and reference errors list what IS available (typo-friendly)</li>
  * </ol>
  * Returns ALL errors in one pass so the author fixes everything at once. Does not

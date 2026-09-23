@@ -98,9 +98,9 @@ public class PluginSelfModificationExample {
      * <p>
      * Turn 1: inspect -> see what I have
      * Turn 2: list -> discover available plugins
-     * Turn 3: load("search-tool") -> gain search capability
-     * Turn 4: search_web("Beijing weather") -> actually use the tool
-     * Turn 5: unload("search-tool") -> clean up
+     * Turn 3: load"search-tool" -> gain search capability
+     * Turn 4: search_web"Beijing weather" -> actually use the tool
+     * Turn 5: unload"search-tool" -> clean up
      * Turn 6: final answer
      */
     private static ModelClient createSelfEvolvingMock() {

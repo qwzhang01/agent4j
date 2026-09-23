@@ -17,7 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8 M8.2 tests: ContextBudget, ContextCompressor, CompressingContextBuilder,
+ * tests: ContextBudget, ContextCompressor, CompressingContextBuilder,
  * and backward compatibility of AgentConfig/ReActAgentLoop.
  */
 class ContextCompressorTest {

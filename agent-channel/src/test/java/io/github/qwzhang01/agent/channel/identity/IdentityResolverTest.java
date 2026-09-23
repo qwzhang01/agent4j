@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link IdentityResolver} (Stage 12 M12.1).
+ * Unit tests for {@link IdentityResolver} .
  * <p>
  * Covers the three-party resolution contract:
  * effective capabilities = granted INTERSECT role, fail-closed on five

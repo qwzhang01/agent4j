@@ -7,7 +7,7 @@ package io.github.qwzhang01.agent.workflow.runtime;
  * The node does its side effect (e.g. send approval request), then throws
  * this exception. The runtime catches it, saves a checkpoint, and returns
  * a PAUSED result. On resume, the same node is re-executed with
- * {@code ctx.isResuming() == true} so it can take the resume path.
+ * {@code ctx.isResuming == true} so it can take the resume path.
  * <p>
  * PauseException is NOT retried by RetryPolicy (it's not a failure).
  */

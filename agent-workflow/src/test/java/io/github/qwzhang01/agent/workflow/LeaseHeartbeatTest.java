@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1 heartbeat fix (the real bug this stage started with): a resume
+ * heartbeat fix (the real bug this stage started with): a resume
  * holding a 60s-TTL lease never renewed it, so a legitimately long resume
  * looked like a crashed holder — another worker took over mid-flight and
  * BOTH executed. The fix: a daemon heartbeat thread renews every TTL/3
@@ -82,7 +82,7 @@ class LeaseHeartbeatTest {
 
     /**
      * Two-phase slow node: first execution pauses (Phase 1); the resume
-     * execution (Phase 2, {@code ctx.isResuming()}) signals entry then
+     * execution (Phase 2, {@code ctx.isResuming}) signals entry then
      * blocks on the latch — holding the resume in-flight well past any
      * test TTL, exactly the "legitimately long resume" the bug targeted.
      */

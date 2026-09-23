@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * One event bus for operations (Stage 7.4): budget exhaustion, sandbox
+ * One event bus for operations : budget exhaustion, sandbox
  * escalations, guardrail hits and A2A refusals land on the SAME bus - not
  * four scattered logs an on-call engineer has to grep by hand.
  * <p>
@@ -51,18 +51,18 @@ public final class OpsEventBus {
     /**
      * One operations event.
      *
-     * @param kind              which signal
-     * @param severity          1 = info line, 2 = attention, 3 = page-worthy
-     * @param occurredAt        wall clock
-     * @param runId             the run it happened in (null only for
+     * @param kind which signal
+     * @param severity 1 = info line, 2 = attention, 3 = page-worthy
+     * @param occurredAt wall clock
+     * @param runId the run it happened in (null only for
      *                          assembly-level events like a tenant budget)
-     * @param stepId            the step, when known
-     * @param toolName          the tool, when the event is tool-scoped
-     * @param providerName      the provider/model, when the event is
+     * @param stepId the step, when known
+     * @param toolName the tool, when the event is tool-scoped
+     * @param providerName the provider/model, when the event is
      *                          model-scoped
      * @param versionCombination which prompt/model/tool combination was
-     *                          serving (RunRecord.combination(), null unknown)
-     * @param message           one-line description
+     *                          serving (RunRecord.combination, null unknown)
+     * @param message one-line description
      * @param recommendedAction what the on-call should do, never blank
      */
     public record OpsEvent(

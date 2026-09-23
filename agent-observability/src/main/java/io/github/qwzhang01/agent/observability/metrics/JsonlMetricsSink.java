@@ -13,8 +13,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 /**
- * JSONL persistence sink (Stage 7.2): appends every boundary event as one
- * JSON line - the durable "Metrics Sink" half of roadmap 7.2's "persisted
+ * JSONL persistence sink : appends every boundary event as one
+ * JSON line - the durable "Metrics Sink" half of 's "persisted
  * Run Registry and Metrics Sink".
  * <p>
  * Schema discipline: one line per event, {@code type} discriminator, all

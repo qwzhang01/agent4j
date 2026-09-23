@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 /**
  * The turn pipeline: routing -&gt; context injection -&gt; character run -&gt;
- * event settlement -&gt; logging (Stage 16, blueprint D8: a fixed sequence,
+ * event settlement -&gt; logging (, blueprint D8: a fixed sequence,
  * not a graph).
  * <p>
  * Pipeline in full (M16.3):
@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  *       without advancing the turn count, without logging</li>
  *   <li>world advances one turn; the input is prefixed with {@code [world]} (and
  *       {@code [relationship]} - derived from the matrix unless overridden) -
- *       the same sticky-note technique as Stage 12's {@code [from userId]}</li>
+ *       the same sticky-note technique as 's {@code [from userId]}</li>
  *   <li>the speaking character's Agent runs with its held AgentState; game tools
  *       submit world effects to the engine's single apply point; relationship
  *       adjustments go through the matrix's per-turn limiter; manual event
@@ -137,12 +137,12 @@ public final class TurnEngine {
      * New game: the log's beginning and the current world are the same place,
      * and the log starts empty.
      *
-     * @param agentFactory          translates cards into runnable Agents
-     * @param cards                 the game's character roster (non-empty)
-     * @param gameId                session scope id for character memory
-     * @param initialWorld          the world at game start
-     * @param relationships         relationship matrix (null = no relationship tool)
-     * @param eventEvaluator        event rules (null = no event tool, no settlement)
+     * @param agentFactory translates cards into runnable Agents
+     * @param cards the game's character roster (non-empty)
+     * @param gameId session scope id for character memory
+     * @param initialWorld the world at game start
+     * @param relationships relationship matrix (null = no relationship tool)
+     * @param eventEvaluator event rules (null = no event tool, no settlement)
      * @param relationshipDescriber optional override for the [relationship] note
      */
     public TurnEngine(CharacterAgentFactory agentFactory, List<CharacterCard> cards,
@@ -159,14 +159,14 @@ public final class TurnEngine {
      * Resume a saved game (M16.5): the engine carries the game's WHOLE history -
      * the log's true beginning (initial world + initial relationships), the
      * saved endpoint as the current world, and the previously settled turns
-     * pre-filled into the log. A resumed engine's save() therefore writes a
-     * consecutive log from turn 1, and its in-memory replay() covers every
+     * pre-filled into the log. A resumed engine's save therefore writes a
+     * consecutive log from turn 1, and its in-memory replay covers every
      * turn ever played.
      *
-     * @param gameInitialWorld         the log's line-1 world (from the previous log)
+     * @param gameInitialWorld the log's line-1 world (from the previous log)
      * @param gameInitialRelationships the log's line-1 relationships
-     * @param currentWorld             the saved endpoint (play continues from here)
-     * @param previousTurns            the settled turns from the previous log
+     * @param currentWorld the saved endpoint (play continues from here)
+     * @param previousTurns the settled turns from the previous log
      */
     public static TurnEngine resume(CharacterAgentFactory agentFactory, List<CharacterCard> cards,
                                     String gameId,
@@ -380,9 +380,9 @@ public final class TurnEngine {
 
     /**
      * First {@code @id} token that matches a registered character.
-     * Stage 12 autoDetect semantics: an id must be followed by a separator
+     * autoDetect semantics: an id must be followed by a separator
      * (the regex stops at anything outside [A-Za-z0-9_-], so {@code @marcus,}
-     * matches "marcus" while {@code @marcusville} does not match "marcus").
+     * matches "marcus" while {@code @marcusville} does not match "marcus".
      */
     private String resolveMention(String input) {
         Matcher m = MENTION.matcher(input);

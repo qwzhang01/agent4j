@@ -12,7 +12,7 @@ import java.util.Set;
  *
  * <p>When a {@code query} is provided the effective sort key is:
  * <pre>
- *   score(e) = e.importance() + QUERY_BOOST_WEIGHT * queryRelevance(e, query)
+ *   score(e) = e.importance + QUERY_BOOST_WEIGHT * queryRelevance(e, query)
  * </pre>
  * A full token match (relevance = 1.0) can promote a low-importance entry above a
  * mid-importance non-matching one, but cannot displace entries whose importance exceeds
@@ -45,7 +45,7 @@ public final class ImportanceRankingStrategy implements RankingStrategy {
      * Relevance of a memory entry to a user query, in {@code [0.0, 1.0]}.
      *
      * <p>Default: token-based overlap between the query and the entry's
-     * {@code subject + content}.  Tokens are split on whitespace and common
+     * {@code subject + content}. Tokens are split on whitespace and common
      * punctuation; CJK bigrams are also generated so that short Chinese phrases
      * match partial content.
      *

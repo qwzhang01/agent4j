@@ -11,18 +11,18 @@ package io.github.qwzhang01.agent.plugin;
  * <pre>{@code
  * public class SearchToolPlugin implements ToolPlugin {
  *     @Override
- *     public PluginDescriptor descriptor() {
- *         return new PluginDescriptor("search-tool", "1.0.0", "Web search");
+ *     public PluginDescriptor descriptor {
+ *         return new PluginDescriptor"search-tool", "1.0.0", "Web search";
  *     }
  *
  *     @Override
  *     public void onLoad(PluginContext context) {
- *         context.getToolRegistry().register(new SearchTool());
+ *         context.getToolRegistry.register(new SearchTool);
  *     }
  *
  *     @Override
  *     public void onUnload(PluginContext context) {
- *         context.getToolRegistry().unregister("search_web");
+ *         context.getToolRegistry.unregister"search_web";
  *     }
  * }
  * }</pre>

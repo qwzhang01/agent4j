@@ -10,7 +10,7 @@ import java.util.Objects;
  * differently but the shape is identical:
  * <pre>
  *   cost(prompt) = uncachedTokens * inputMicrosPerMillion
- *                + cachedTokens  * cacheReadMicrosPerMillion
+ *                + cachedTokens * cacheReadMicrosPerMillion
  *                + cacheWriteTokens * cacheWriteMicrosPerMillion
  * </pre>
  * <p>
@@ -31,8 +31,8 @@ import java.util.Objects;
  * All values are integer microUSD per one million tokens, same discipline as
  * {@code PricingTable}: no floating point in the accounting path.
  *
- * @param inputMicrosPerMillion      base prompt price (uncached tokens)
- * @param cacheReadMicrosPerMillion  price of a token served from cache
+ * @param inputMicrosPerMillion base prompt price (uncached tokens)
+ * @param cacheReadMicrosPerMillion price of a token served from cache
  * @param cacheWriteMicrosPerMillion price of a token written INTO the cache;
  *                                   0 for providers with free implicit writes
  */
@@ -82,11 +82,11 @@ public record CachePricing(
      * (uncached, unwritten input at the full price).
      * <pre>
      *   prompt = cached + written + base
-     *   cost   = cached*read + written*write + base*input
+     *   cost = cached*read + written*write + base*input
      * </pre>
      *
-     * @param promptTokens  full billed prompt (cached + written + base)
-     * @param cachedTokens  portion served from cache (read discount)
+     * @param promptTokens full billed prompt (cached + written + base)
+     * @param cachedTokens portion served from cache (read discount)
      * @param writtenTokens portion written INTO the cache this call (write
      *                      premium replaces base input for these tokens);
      *                      0 for providers with free implicit writes

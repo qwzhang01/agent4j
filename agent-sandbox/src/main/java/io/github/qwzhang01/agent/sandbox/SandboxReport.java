@@ -11,7 +11,7 @@ import java.util.Objects;
  * This is the downstream translator the spectrum table promised: v1
  * had the knowledge (the tier javadoc's escape-surface column) but
  * only in prose — a consumer wanting "did my CLASSLOADER run really
- * isolate anything?" had to already know the spectrum. {@code report()}
+ * isolate anything?" had to already know the spectrum. {@code report}
  * turns the same knowledge into data, so logs and callers see the
  * honest boundary of every execution WITHOUT reading javadoc.
  * <p>
@@ -24,11 +24,11 @@ import java.util.Objects;
  * v1 knowledge base (mirrors {@link SandboxTier} javadoc exactly —
  * when the tier docs change, this table must change with them):
  * <pre>
- *   CLASSLOADER guarantees:   in-process execution, output capture, timeout
- *   CLASSLOADER does NOT:    security boundary (reflection/Unsafe/JNI escape)
- *   PROCESS guarantees:      process address space isolation, forcible kill
- *   PROCESS does NOT:        network isolation, FS whitelist (same OS user)
- *   DOCKER/MICROVM/WASM:     documented placeholders, no v1 implementation
+ *   CLASSLOADER guarantees: in-process execution, output capture, timeout
+ *   CLASSLOADER does NOT: security boundary (reflection/Unsafe/JNI escape)
+ *   PROCESS guarantees: process address space isolation, forcible kill
+ *   PROCESS does NOT: network isolation, FS whitelist (same OS user)
+ *   DOCKER/MICROVM/WASM: documented placeholders, no v1 implementation
  * </pre>
  */
 public final class SandboxReport {
@@ -37,9 +37,9 @@ public final class SandboxReport {
      * What one execution actually delivered, in the tier's own honest
      * terms.
      *
-     * @param tier        the tier that executed the code
-     * @param outcome     the raw result (success / failure kind)
-     * @param guarantees  what this tier structurally guarantees for THIS
+     * @param tier the tier that executed the code
+     * @param outcome the raw result (success / failure kind)
+     * @param guarantees what this tier structurally guarantees for THIS
      *                    outcome
      * @param notGuaranteed what this tier structurally does NOT guarantee
      *                    (the escape surface that remains open)

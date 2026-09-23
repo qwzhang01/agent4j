@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <pre>{@code
  * // Default: optimistic for SEMI_TRUSTED single-tenant
  * Sandbox sandbox = SandboxEscalator.forRisk(SandboxRiskLevel.SEMI_TRUSTED);
- * SandboxResult result = sandbox.execute("Generated", code);
+ * SandboxResult result = sandbox.execute"Generated", code);
  *
  * // Multi-tenant coding agent: straight to Process
  * Sandbox sandbox = SandboxEscalator.forRisk(SandboxRiskLevel.UNTRUSTED);
@@ -100,11 +100,11 @@ public class SandboxEscalator implements Sandbox {
      * Full constructor (source-compatible shape, widened to the
      * {@link Sandbox} interface so tests can inject scripted tiers).
      *
-     * @param fastSandbox   the fast tier (typically {@link ClassLoaderSandbox})
+     * @param fastSandbox the fast tier (typically {@link ClassLoaderSandbox})
      * @param strongSandbox the strong tier (typically {@link ProcessSandbox})
-     * @param riskLevel     caller's risk assessment of the code to execute
-     * @param policy        tier-selection policy
-     * @param multiTenant   whether multiple untrusted users share this escalator
+     * @param riskLevel caller's risk assessment of the code to execute
+     * @param policy tier-selection policy
+     * @param multiTenant whether multiple untrusted users share this escalator
      */
     public SandboxEscalator(Sandbox fastSandbox,
                             Sandbox strongSandbox,
@@ -177,7 +177,7 @@ public class SandboxEscalator implements Sandbox {
     /**
      * Create an escalator with default sandboxes and default policy, with tenancy control.
      *
-     * @param riskLevel   risk level of the code
+     * @param riskLevel risk level of the code
      * @param multiTenant {@code true} when multiple untrusted users share this instance
      */
     public static SandboxEscalator forRisk(SandboxRiskLevel riskLevel, boolean multiTenant) {
@@ -216,7 +216,7 @@ public class SandboxEscalator implements Sandbox {
      * Other failures (timeout, error, success) are returned as-is —
      * they are not escalation signals.
      * <p>
-     * Budget accounting is keyed by {@code spec.getRunId()} (debt-2 fix):
+     * Budget accounting is keyed by {@code spec.getRunId} (debt-2 fix):
      * an attributed run burns only its own budget; an unattributed spec
      * falls back to the shared instance-level counter.
      */

@@ -4,21 +4,21 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Task-level approval evidence (Stage 15 M15.4, D6 "the node keeps the
- * process").
+ * Task-level approval evidence (, D6 "the node keeps the
+ * process".
  * <p>
  * The SSOT of "who green-lit this business action": approver, decision,
  * reason, time. Task-level approval answers "may this business proceed"
- * (the supervisor's judgment); tool-level approval (Stage 9) answers "may
+ * (the supervisor's judgment); tool-level approval answers "may
  * this call be executed" (the governance gate). Both layers appear in the
  * same enterprise scenario - that is defense in depth, not redundancy.
  *
- * @param taskId    the task being decided on
+ * @param taskId the task being decided on
  * @param approverId who decided (must be a user with supervisor powers in
  *                  real deployments; v1 enforcement lives in the caller)
- * @param decision  APPROVED or REJECTED
- * @param reason    free-text justification (the audit evidence)
- * @param at        decision time
+ * @param decision APPROVED or REJECTED
+ * @param reason free-text justification (the audit evidence)
+ * @param at decision time
  */
 public record TaskApprovalRecord(
         String taskId,

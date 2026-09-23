@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.2 core test: the turn pipeline end to end.
+ * core test: the turn pipeline end to end.
  * <p>
  * Blueprint M16.2 acceptance under test:
  * mention routing (hit / miss), [world] (+[relationship]) sticky-note

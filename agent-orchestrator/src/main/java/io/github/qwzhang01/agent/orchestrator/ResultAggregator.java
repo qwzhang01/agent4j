@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Strategy for merging multiple {@link WorkerResult}s into one final output
- * (Stage 11 M11.2).
+ * .
  * <p>
  * Aggregation is the ONLY place where parallel worker outputs meet (D3:
  * message passing -- merge happens at a single point, single-threaded).

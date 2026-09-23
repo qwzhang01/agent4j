@@ -11,24 +11,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The enterprise audit trail: a shared ledger plus per-request attribution
- * views (Stage 15 M15.3, D4).
+ * views (, D4).
  * <p>
  * Two roles in one class, mirroring {@code KnowledgeBase}'s tenant binding:
  * <ul>
  *   <li><b>Assembly-level ledger</b> (this instance): accumulates
  *       {@link EnterpriseAuditEvent}s across all requests; answers enterprise
- *       questions - byTenant, byUser ("what did this employee make the Agent
- *       do"), byTool, all</li>
+ *       questions - byTenant, byUser "what did this employee make the Agent
+ *       do", byTool, all</li>
  *   <li><b>Request-scoped view</b> ({@link #forRequest}): an
  *       {@link AuditLogger} bound to one {@link RequestContext} that the
  *       {@code GovernedToolExecutor} calls back into; each raw
  *       {@link AuditEvent} gets attribution completed (tenant + user +
  *       agentName) before it enters the ledger. The existing governance chain
- *       is unchanged - it still emits plain Stage 9 events; attribution is
+ *       is unchanged - it still emits plain events; attribution is
  *       added where the enterprise layer can see it</li>
  * </ul>
  * Denials are recorded exactly like executions - "who was blocked trying
- * what" is a security signal (Stage 9 D6), and with attribution it becomes
+ * what" is a security signal (D6), and with attribution it becomes
  * "which tenant's which user was blocked".
  */
 public final class EnterpriseAuditTrail {
@@ -41,7 +41,7 @@ public final class EnterpriseAuditTrail {
      * Wire it into {@code GovernedToolExecutor.Builder.auditLogger(...)} -
      * the governance chain then produces attributed events with zero changes.
      *
-     * @param ctx       the request context providing tenant/user attribution
+     * @param ctx the request context providing tenant/user attribution
      * @param agentName the executing agent's assembly name (recorded on every
      *                  event of this request)
      */
@@ -63,7 +63,7 @@ public final class EnterpriseAuditTrail {
 
     /**
      * Every event attributed to a tenant - the compliance cut
-     * ("show me everything that happened inside acme this month").
+     * "show me everything that happened inside acme this month".
      */
     public List<EnterpriseAuditEvent> byTenant(String tenantId) {
         return filter(e -> e.tenantId().equals(tenantId));
@@ -71,7 +71,7 @@ public final class EnterpriseAuditTrail {
 
     /**
      * Every event a user triggered (or was denied) - the HR cut
-     * ("what did this employee make the Agent do").
+     * "what did this employee make the Agent do".
      */
     public List<EnterpriseAuditEvent> byUser(String userId) {
         return filter(e -> e.userId().equals(userId));
@@ -79,7 +79,7 @@ public final class EnterpriseAuditTrail {
 
     /**
      * Every event involving one tool - the incident cut
-     * ("who called refund_order, and what happened").
+     * "who called refund_order, and what happened".
      */
     public List<EnterpriseAuditEvent> byTool(String toolName) {
         return filter(e -> e.toolName().equals(toolName));

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Stage 5.2: audit record for one governed memory access.
+ *  audit record for one governed memory access.
  * <p>
  * Answers the roadmap question "谁何时查了什么 scope、返回了多少条":
  * every read/write through {@link MemoryGovernance} emits one record.
@@ -14,15 +14,15 @@ import java.util.Objects;
  * copy of sensitive data. Records are immutable facts for audit sinks
  * (host appends them to its own log store); this class does no I/O.
  *
- * @param operation    READ or WRITE, the governed operation performed
- * @param tenantId     tenant the acting identity belongs to (may be null: unauthenticated contexts)
- * @param userId       acting user id (null for system actors)
- * @param runId        the run that performed the access, for trace correlation
- * @param scopes       scope whitelist actually used for the access (never null)
- * @param purpose      declared purpose of the access (never null/blank)
- * @param resultCount  how many entries the query returned (WRITE: entries written)
- * @param masked       whether the consumer received masked content (RedactionPolicy applied)
- * @param at           when the access happened
+ * @param operation READ or WRITE, the governed operation performed
+ * @param tenantId tenant the acting identity belongs to (may be null: unauthenticated contexts)
+ * @param userId acting user id (null for system actors)
+ * @param runId the run that performed the access, for trace correlation
+ * @param scopes scope whitelist actually used for the access (never null)
+ * @param purpose declared purpose of the access (never null/blank)
+ * @param resultCount how many entries the query returned (WRITE: entries written)
+ * @param masked whether the consumer received masked content (RedactionPolicy applied)
+ * @param at when the access happened
  */
 public record MemoryAccessAuditRecord(
         Operation operation,

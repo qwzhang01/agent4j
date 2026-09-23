@@ -12,16 +12,16 @@ import java.util.UUID;
  * <p>
  * Each task carries enough to start a new Workflow run independently.
  *
- * @param taskId        unique id
- * @param parentRunId   the Run that produced this task (for tracing)
- * @param input         task input (passed to the new Run)
- * @param priority      queue consumption order
- * @param status        current lifecycle state
- * @param workflowName  which Workflow to run for this task
- * @param createdAt     when the task was enqueued
- * @param startedAt     when a consumer started it
- * @param completedAt   when it reached a terminal state
- * @param result        task output (null until SUCCEEDED)
+ * @param taskId unique id
+ * @param parentRunId the Run that produced this task (for tracing)
+ * @param input task input (passed to the new Run)
+ * @param priority queue consumption order
+ * @param status current lifecycle state
+ * @param workflowName which Workflow to run for this task
+ * @param createdAt when the task was enqueued
+ * @param startedAt when a consumer started it
+ * @param completedAt when it reached a terminal state
+ * @param result task output (null until SUCCEEDED)
  */
 public record AsyncTask(
         String taskId,

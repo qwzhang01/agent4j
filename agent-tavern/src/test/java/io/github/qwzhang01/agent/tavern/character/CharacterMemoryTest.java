@@ -23,18 +23,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.1 core test: the character memory whitelist.
+ * core test: the character memory whitelist.
  * <p>
  * The blueprint's claims under test (D1/D2): sharing is a scope value, not a
  * separate system. The two-scene whitelist [agent:{charId}, session:{gameId}]
  * must give exactly:
  * <ul>
- *   <li>cross-game character memory visible (a character "remembers you"),</li>
+ *   <li>cross-game character memory visible (a character "remembers you",</li>
  *   <li>this game's plot visible,</li>
  *   <li>another game's plot invisible (cross-game isolation),</li>
  *   <li>another character's private memory invisible (cross-character isolation).</li>
  * </ul>
- * Same store, same retriever, no new scope kinds - the Stage 8 mechanism carries
+ * Same store, same retriever, no new scope kinds - the mechanism carries
  * the whole game memory semantics. This is the M15.1 TenantIsolationTest pattern
  * applied to the second Profile.
  */

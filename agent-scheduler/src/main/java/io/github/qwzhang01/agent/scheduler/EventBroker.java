@@ -14,16 +14,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * In-process event bus for event-driven resume.
  * <p>
  * Design decision (D3): process-local Map, not a message queue. The bus
- * maintains {@code eventKey -> List<trigger>} subscriptions. When fire() is
+ * maintains {@code eventKey -> List<trigger>} subscriptions. When fire is
  * called, all subscribed runs are resumed via RunManager.
  * <p>
  * Bug fixes over the first version:
- * - hasFired() now tracks fired keys independently of payloads, so
+ * - hasFired now tracks fired keys independently of payloads, so
  *   {@code fire(key)} without a payload is still visible to resumed nodes.
- * - fire() marks each trigger as fired, so timeout watchers can skip the
+ * - fire marks each trigger as fired, so timeout watchers can skip the
  *   racy second resume.
  * <p>
- * Cross-process events (Kafka/RabbitMQ) are Stage 11 scope.
+ * Cross-process events (Kafka/RabbitMQ) are scope.
  */
 public class EventBroker {
 

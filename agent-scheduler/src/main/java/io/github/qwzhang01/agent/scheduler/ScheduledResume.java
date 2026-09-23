@@ -7,14 +7,14 @@ import java.util.UUID;
  * A scheduled resume: automatically resume a paused Run after a delay.
  * <p>
  * Registered by a node (e.g. ScheduleResumeNode) via
- * {@code ctx.scheduler().scheduleResume(runId, delay)}.
+ * {@code ctx.scheduler.scheduleResume(runId, delay)}.
  * The scheduler fires {@code RunManager.resume(runId)} when the delay elapses.
  *
- * @param resumeId   unique id
- * @param runId      the Run to resume
- * @param fireAt     when to trigger the resume
- * @param recurring  whether this is a recurring schedule (e.g. check every 2h)
- * @param interval   recurring interval (null if not recurring)
+ * @param resumeId unique id
+ * @param runId the Run to resume
+ * @param fireAt when to trigger the resume
+ * @param recurring whether this is a recurring schedule (e.g. check every 2h)
+ * @param interval recurring interval (null if not recurring)
  */
 public record ScheduledResume(
         String resumeId,

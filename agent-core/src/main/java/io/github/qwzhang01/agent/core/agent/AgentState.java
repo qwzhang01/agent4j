@@ -17,17 +17,17 @@ import java.util.List;
  * - Current step count (for max-step enforcement)
  * - Status (where the loop currently is)
  * <p>
- * Agent instructions belong to {@link AgentConfig#getSystemPrompt()} and are
+ * Agent instructions belong to {@link AgentConfig#getSystemPrompt} and are
  * injected by the loop at the model boundary. Old checkpoints must explicitly
  * migrate their leading persona with {@link #migrateLegacySystemPrompt(String)}.
  * <p>
- * Stage 6: Jackson-serializable so {@code AgentNode} can park a snapshot
+ *  Jackson-serializable so {@code AgentNode} can park a snapshot
  * on the workflow blackboard ({@code agentState:{nodeId}}) and restore
- * it after a process restart. Stage 14 records trajectory at the model
+ * it after a process restart. records trajectory at the model
  * boundary instead of dumping this object.
  * <p>
- * Stage 19 / P3: identity is still configuration, not history — this object
- * stores only the last active <em>name</em> ({@link #getLastActiveAgentName()}),
+ * / P3: identity is still configuration, not history — this object
+ * stores only the last active <em>name</em> ({@link #getLastActiveAgentName}),
  * never an {@link AgentConfig} reference. The loop resolves that name through
  * {@link HandoffTargetResolver} on resume. Old checkpoints without the field
  * stay on the entry persona (Jackson {@code ignoreUnknown}).
@@ -186,7 +186,7 @@ public class AgentState {
          */
         ERROR,
         /**
-         * Stage 1.4: the run was cancelled via RunContext before reaching a
+         *  the run was cancelled via RunContext before reaching a
          * terminal state. Control-flow outcome, not a business failure -
          * distinct from ERROR so cancellation is never recorded as failure.
          */

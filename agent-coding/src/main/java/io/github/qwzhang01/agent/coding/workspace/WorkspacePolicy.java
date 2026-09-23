@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Path boundary SSOT for a {@link Workspace} (Stage 17 M17.1, blueprint: "reading is a
- * privilege too").
+ * Path boundary SSOT for a {@link Workspace} (, blueprint: "reading is a
+ * privilege too".
  * <p>
  * Owns three limits that keep a Coding Agent's context budget and safety surface sane:
  * <ul>
@@ -23,10 +23,10 @@ import java.util.Objects;
  * </ul>
  * <p>
  * Fail-fast construction: glob patterns are compiled to {@link PathMatcher}s in
- * {@link Builder#build()}; a malformed pattern throws immediately rather than failing
+ * {@link Builder#build}; a malformed pattern throws immediately rather than failing
  * (or silently passing) at match time.
  * <p>
- * Immutable; {@link #denyGlobs()} returns a defensive copy.
+ * Immutable; {@link #denyGlobs} returns a defensive copy.
  */
 public final class WorkspacePolicy {
 

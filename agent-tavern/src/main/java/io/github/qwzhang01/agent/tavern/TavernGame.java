@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * One game of the tavern: the assembly facade over the whole Stage 16 stack
+ * One game of the tavern: the assembly facade over the whole stack
  * (M16.5).
  * <p>
  * Everything a game needs in one place: characters, world, relationships,
@@ -46,8 +46,8 @@ import java.util.function.Function;
  * translation - which is the point: the second domain Profile assembles the
  * same Runtime, changing nothing (blueprint D1).
  * <p>
- * The builder defines a GAME (cards, rules, policy, model); {@link #save()}
- * and {@link Builder#load()} move the GAME STATE. A load uses the same
+ * The builder defines a GAME (cards, rules, policy, model); {@link #save}
+ * and {@link Builder#load} move the GAME STATE. A load uses the same
  * assembly with the saved state - the blueprint's "load(dir, blueprint)"
  * sketch, with the blueprint being the builder itself.
  */
@@ -101,8 +101,8 @@ public final class TavernGame {
 
     /**
      * In-memory replay of THIS instance's turns. A game reloaded with
-     * {@link Builder#load()} replays its post-load turns; for the full
-     * history across sessions use {@link #replayFromDisk()}.
+     * {@link Builder#load} replays its post-load turns; for the full
+     * history across sessions use {@link #replayFromDisk}.
      */
     public GameReplay replay() {
         return GameReplay.of(engine.initialWorld(), engine.initialRelationships(),
@@ -131,8 +131,8 @@ public final class TavernGame {
     /**
      * Assembles a game: model + memory + roster + world + policy + rules +
      * governance + store. All optional pieces have sensible defaults; the
-     * same builder instance can {@link #build()} a fresh game or
-     * {@link #load()} a saved one.
+     * same builder instance can {@link #build} a fresh game or
+     * {@link #load} a saved one.
      */
     public static final class Builder {
 
@@ -193,7 +193,7 @@ public final class TavernGame {
 
         /**
          * The GM backend (blueprint D4): all game tools run AUTO under a
-         * Stage 9 governance chain with full audit into the given logger.
+         * governance chain with full audit into the given logger.
          */
         public Builder governance(AuditLogger auditLogger) {
             Objects.requireNonNull(auditLogger, "auditLogger must not be null");
@@ -221,7 +221,7 @@ public final class TavernGame {
         /**
          * Resume a saved game: same assembly (cards, rules, policy, model),
          * saved state (world, relationships, histories, fired events) - and
-         * the game's WHOLE turn history, so a resumed game's own save() still
+         * the game's WHOLE turn history, so a resumed game's own save still
          * writes a consecutive log from turn 1.
          *
          * @throws java.nio.file.NoSuchFileException when nothing was saved for this game

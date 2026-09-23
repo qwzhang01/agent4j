@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * Flow:
  * 1. Compile Java source code in-memory (InMemoryCompiler)
  * 2. Load compiled bytecode with SandboxClassLoader (blocks dangerous classes)
- * 3. Find and invoke the "run()" method
+ * 3. Find and invoke the "run" method
  * 4. Capture stdout on the sandbox thread via a ThreadLocal router
  *    (does not swap System.out/err per execute — concurrent runs stay isolated)
  * 5. Enforce timeout via Future + ExecutorService
@@ -41,7 +41,7 @@ public class ClassLoaderSandbox implements Sandbox {
         ORIGINAL_OUT = System.out;
         ORIGINAL_ERR = System.err;
         // One-time router: sandbox threads bind a buffer; everyone else hits the original stream.
-        // execute() never calls System.setOut/setErr, so concurrent runs cannot clobber each other.
+        // execute never calls System.setOut/setErr, so concurrent runs cannot clobber each other.
         System.setOut(new PrintStream(new RoutingOutputStream(LOCAL_OUT, ORIGINAL_OUT), true));
         System.setErr(new PrintStream(new RoutingOutputStream(LOCAL_ERR, ORIGINAL_ERR), true));
     }

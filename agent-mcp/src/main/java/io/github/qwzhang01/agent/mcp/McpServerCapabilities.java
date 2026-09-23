@@ -8,10 +8,10 @@ import java.util.StringJoiner;
  * The server's declared capabilities, parsed from the initialize handshake
  * result (harness batch 3: capability negotiation).
  * <p>
- * Typed record behind {@link McpClient#serverCapabilities()}: the assembly
+ * Typed record behind {@link McpClient#serverCapabilities}: the assembly
  * can now SEE what a server declared (tools/resources/prompts/logging)
  * instead of silently ignoring the declaration, and
- * {@link McpClient#supportsTools()} can guard the tool path against servers
+ * {@link McpClient#supportsTools} can guard the tool path against servers
  * that scoped themselves to non-tool capabilities.
  * <p>
  * Parsing semantics (2024-11-05 optional-field era, the one this framework
@@ -33,10 +33,10 @@ import java.util.StringJoiner;
  * with a clear message; a non-declaration (null) is honored as the
  * tools-only era the framework has always served.
  *
- * @param tools     server declared the tools capability (field present)
+ * @param tools server declared the tools capability (field present)
  * @param resources server declared the resources capability
- * @param prompts   server declared the prompts capability
- * @param logging   server declared the logging capability (field present)
+ * @param prompts server declared the prompts capability
+ * @param logging server declared the logging capability (field present)
  */
 public record McpServerCapabilities(
         boolean tools,

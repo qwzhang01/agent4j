@@ -20,20 +20,20 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The governance shell of one coding task (Stage 17 M17.4) - the domain host of the
+ * The governance shell of one coding task - the domain host of the
  * blueprint's 8-step flow: it owns the patch store, the fix-loop budget, the human
  * gates, and the review summary. The Agent assembly (model + systemPrompt + governance
  * chain) is {@code CodingAgentFactory}'s job in M17.5 - this class provides the parts.
  * <p>
- * Fix loop (blueprint D4): the boundary lives here (a veto in {@link #runTestsTool()}
+ * Fix loop (blueprint D4): the boundary lives here (a veto in {@link #runTestsTool}
  * - once the failed-run budget is exhausted the tool answers {@code [LIMIT]} and never
  * executes again), the rhythm lives in the model (the failure excerpt naturally pulls
  * it into read -> fix -> re-test). A passing run transitions the staged patch to
  * VALIDATED - passing IS leaving the loop.
  * <p>
- * Human gates: {@link #reviewPatch()} is what the reviewer reads (unified diff +
- * stats); {@link #approveAndApply()} is the only real disk write; {@link #rejectPatch()}
- * and {@link #discardPatch()} both leave the disk untouched. On {@code [LIMIT]} the
+ * Human gates: {@link #reviewPatch} is what the reviewer reads (unified diff +
+ * stats); {@link #approveAndApply} is the only real disk write; {@link #rejectPatch}
+ * and {@link #discardPatch} both leave the disk untouched. On {@code [LIMIT]} the
  * staged patch is deliberately <b>kept</b> (not auto-discarded) - it is the evidence
  * of what was attempted; discarding is an explicit decision (an honest refinement of
  * blueprint F3: destroy nothing automatically).
@@ -115,7 +115,7 @@ public final class CodingSession {
 
     /**
      * Explicit throwaway: patch -> DISCARDED, disk restored (same semantics as
-     * {@link #rejectPatch()}; NOT auto-invoked on [LIMIT] - the evidence stays).
+     * {@link #rejectPatch}; NOT auto-invoked on [LIMIT] - the evidence stays).
      */
     public Patch discardPatch() {
         revertMaterializedBestEffort();
@@ -231,7 +231,7 @@ public final class CodingSession {
             return this;
         }
 
-        /** The fixed referee, e.g. {@code List.of("mvn", "test")}. Must be whitelisted. */
+        /** The fixed referee, e.g. {@code List.of"mvn", "test"}. Must be whitelisted. */
         public Builder testCommand(List<String> testCommand) {
             this.testCommand = testCommand;
             return this;

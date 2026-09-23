@@ -12,12 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * JSONL file plumbing for trajectories (Stage 14 D8): one trajectory per
+ * JSONL file plumbing for trajectories (D8): one trajectory per
  * line, append-only, one file per exporter directory.
  * <p>
  * Failure semantics: IO problems and malformed lines throw (fail loud) - a
  * silently dropped or silently skipped trajectory is worse than an exception
- * the caller can see (D4, same lesson as the Stage 13 webhook idempotency
+ * the caller can see (D4, same lesson as the webhook idempotency
  * fix: silent loss is the worst outcome).
  */
 public final class JsonlTrajectoryWriter {

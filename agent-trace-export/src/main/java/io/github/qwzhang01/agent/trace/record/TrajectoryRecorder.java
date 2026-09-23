@@ -10,21 +10,21 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Session manager and completed-trajectory holder (Stage 14 M14.1).
+ * Session manager and completed-trajectory holder .
  * <p>
  * Wiring (the "assembly three-piece", architecture note §3.1):
  * <pre>{@code
- * TrajectoryRecorder recorder = new TrajectoryRecorder();
- * ModelClient model = RecordingModelClient.wrap(innerMost..., recorder);   // OUTERMOST
+ * TrajectoryRecorder recorder = new TrajectoryRecorder;
+ * ModelClient model = RecordingModelClient.wrap(innerMost..., recorder); // OUTERMOST
  * ToolExecutor exec = RecordingToolExecutor.wrap(rawExecutor, recorder);
  * Agent agent = RecordingAgent.wrap(new SimpleAgent(cfg(model), new ReActAgentLoop(exec)), recorder);
- * agent.run("...");                       // -> recorder.completed() has one Trajectory
+ * agent.run"..."; // -> recorder.completed has one Trajectory
  * }</pre>
  * <p>
  * Thread model (v1): sessions are thread-bound (ThreadLocal). One recorder
  * serves sequential runs on one thread; concurrent runs on different threads
  * need one recorder each (documented honest boundary - the shared-state race
- * lesson from Stage 12 §13 is not repeatable here).
+ * lesson from §13 is not repeatable here).
  */
 public final class TrajectoryRecorder {
 

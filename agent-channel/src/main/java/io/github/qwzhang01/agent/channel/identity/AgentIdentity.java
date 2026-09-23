@@ -3,10 +3,10 @@ package io.github.qwzhang01.agent.channel.identity;
 import java.util.Objects;
 
 /**
- * An agent's organizational service identity (Stage 12 D4).
+ * An agent's organizational service identity (D4).
  * <p>
  * The agent acts under THIS identity, never under the invoking user's
- * account. Identity borrowing ("on-behalf-of") is the anti-pattern this
+ * account. Identity borrowing "on-behalf-of" is the anti-pattern this
  * class exists to prevent: when an agent uses a user's token, its audit
  * trail says "the user did it", and its permissions silently become the
  * user's permissions (privilege creep).
@@ -15,9 +15,9 @@ import java.util.Objects;
  * a sales agent and an engineering agent never share an account, so their
  * reachable resources and memories never leak to each other.
  *
- * @param agentId     stable identifier, e.g. "eng-bot" (also the routing key in IdentityResolver)
+ * @param agentId stable identifier, e.g. "eng-bot" (also the routing key in IdentityResolver)
  * @param displayName human-readable name shown in the channel, e.g. "Engineering Bot"
- * @param ownerId     who is responsible for this agent (team/on-call), e.g. "team-eng-leads"
+ * @param ownerId who is responsible for this agent (team/on-call), e.g. "team-eng-leads"
  */
 public record AgentIdentity(String agentId, String displayName, String ownerId) {
 

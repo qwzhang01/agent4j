@@ -18,11 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Usage:
  * <pre>{@code
- * try (MockApiServer api = new MockApiServer()) {
- *     api.enqueue("/chat/completions", 200, "{\"choices\":[...]}");
- *     var client = new OpenAiModelClient(api.baseUrl(), "test-key", "gpt-4o-mini");
+ * try (MockApiServer api = new MockApiServer) {
+ *     api.enqueue"/chat/completions", 200, "{\"choices\":[...]}";
+ *     var client = new OpenAiModelClient(api.baseUrl, "test-key", "gpt-4o-mini";
  *     client.chat(request);
- *     String bodySent = api.capturedBody("/chat/completions");
+ *     String bodySent = api.capturedBody"/chat/completions";
  *     // ... assert on the wire format
  * }
  * }</pre>

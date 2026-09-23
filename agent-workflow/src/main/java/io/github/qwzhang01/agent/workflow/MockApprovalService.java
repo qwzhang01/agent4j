@@ -7,8 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Test-friendly ApprovalService supporting both sync (Stage 5) and
- * async (Stage 6) modes.
+ * Test-friendly ApprovalService supporting both sync and
+ * async modes.
  * <p>
  * Sync mode: returns a fixed decision immediately.
  * Async mode: records requests, returns decisions set via {@link #setDecision}.

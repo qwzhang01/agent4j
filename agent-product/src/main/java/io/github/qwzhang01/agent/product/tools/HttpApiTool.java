@@ -20,11 +20,11 @@ import java.util.List;
 
 /**
  * An ordinary {@link Tool} backed by a REST endpoint declared in YAML
- * (Stage 13 M13.3, D3).
+ * (, D3).
  * <p>
  * It is deliberately NOT special: registering it in a {@code ToolRegistry}
- * makes Stage 9 governance (permissions / approval / audit / sanitization)
- * wrap it for free - the same transparency McpToolAdapter proved in Stage 10.
+ * makes governance (permissions / approval / audit / sanitization)
+ * wrap it for free - the same transparency McpToolAdapter proved in .
  * <p>
  * Error contract: every failure (missing required param, HTTP error status,
  * timeout, IO) surfaces as {@link ToolException}, which the default executor
@@ -45,7 +45,7 @@ public final class HttpApiTool implements Tool {
     /**
      * Prefer {@link HttpApiToolFactory#create} (it resolves ${env:} secrets).
      *
-     * @param decl          the tool declaration
+     * @param decl the tool declaration
      * @param resolvedToken bearer token after env resolution, null = anonymous
      */
     HttpApiTool(HttpApiDecl decl, String resolvedToken) {

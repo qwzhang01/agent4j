@@ -5,23 +5,23 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * One execution-visibility event (Stage 12 M12.3, design D6).
+ * One execution-visibility event (, design D6).
  * <p>
  * Every milestone of the channel agent's work is published as an event:
  * task lifecycle, handoffs, agent replies. Channel members (humans or
  * frontends) subscribe to the stream instead of polling, and the
  * {@link TaskBoard} is a MATERIALIZED VIEW of this same stream - one
- * source of truth for visibility (and a bridge target for Stage 9
+ * source of truth for visibility (and a bridge target for
  * auditing, since events carry full attribution).
  *
- * @param eventId   unique event id
+ * @param eventId unique event id
  * @param channelId the channel this event belongs to
- * @param type      what happened
- * @param taskId    the task involved (null for conversation-level events)
- * @param actor     who did it: a userId, or the agentId for agent actions
- * @param target    structural counterpart (e.g. handoff's toUser, the thing
+ * @param type what happened
+ * @param taskId the task involved (null for conversation-level events)
+ * @param actor who did it: a userId, or the agentId for agent actions
+ * @param target structural counterpart (e.g. handoff's toUser, the thing
  *                  waited on); null when not applicable
- * @param detail    human-readable summary
+ * @param detail human-readable summary
  * @param timestamp when it happened
  */
 public record VisibilityEvent(

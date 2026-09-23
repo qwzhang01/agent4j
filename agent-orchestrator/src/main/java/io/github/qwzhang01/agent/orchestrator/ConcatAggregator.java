@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Default aggregation: concatenate every worker's output, failures marked inline
- * (Stage 11 M11.2). Report-style -- every voice is heard.
+ * . Report-style -- every voice is heard.
  * <p>
  * Output shape:
  * <pre>

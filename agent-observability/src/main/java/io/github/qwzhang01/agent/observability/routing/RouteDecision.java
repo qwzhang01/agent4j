@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.observability.routing;
 
 /**
- * One routing verdict (Stage 18 D6): which model serves this call, and why.
+ * One routing verdict (D6): which model serves this call, and why.
  * <p>
  * {@code reason} is REQUIRED at the type level (blank is rejected) because a
  * decision without a reason is an unauditable decision:
@@ -11,14 +11,14 @@ package io.github.qwzhang01.agent.observability.routing;
  *       makes every line item explainable</li>
  *   <li>post-hoc attribution: a batch of bad answers traced back to a routing
  *       switch is reproducible history; without reasons it is occult</li>
- *   <li>the Stage 12 IdentityDecision / Stage 9 AuditEvent tradition:
+ *   <li>the IdentityDecision / Stage 9 AuditEvent tradition:
  *       decisions leave a trail - denied and routed are both intelligence</li>
  * </ul>
  *
  * @param modelId key of the chosen candidate in the RoutingModelClient map
  *                (NOT necessarily the provider model string - it addresses
- *                the assembled candidate, e.g. "premium" / "cheap")
- * @param reason  human-readable, non-blank explanation; SHOULD contain the
+ *                the assembled candidate, e.g. "premium" / "cheap"
+ * @param reason human-readable, non-blank explanation; SHOULD contain the
  *                numbers that drove the decision (remaining percent,
  *                threshold) for audit
  */

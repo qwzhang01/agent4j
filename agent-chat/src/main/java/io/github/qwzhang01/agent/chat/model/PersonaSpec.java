@@ -10,13 +10,13 @@ import java.util.Map;
  * {@link ChatPersona#render} reads the optional {@code systemPrompt} attribute
  * as already-rendered text — that is a fallback, not a product word list.
  *
- * @param personaId    stable id (required)
- * @param displayName  shown name (blank defaults to personaId)
- * @param version      opaque version tag for the persona definition; null when unset.
+ * @param personaId stable id (required)
+ * @param displayName shown name (blank defaults to personaId)
+ * @param version opaque version tag for the persona definition; null when unset.
  *                     Populated by the host (e.g. "v2.1.0" or an ISO timestamp) and
  *                     forwarded to {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace}
  *                     so that replies can be correlated to a specific persona revision.
- * @param attributes   product-owned fields; null values dropped
+ * @param attributes product-owned fields; null values dropped
  */
 public record PersonaSpec(String personaId, String displayName, String version, Map<String, String> attributes) {
 

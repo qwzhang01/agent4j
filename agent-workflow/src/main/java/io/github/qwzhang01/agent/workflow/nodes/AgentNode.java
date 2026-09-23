@@ -21,8 +21,8 @@ import java.util.function.Function;
  * Conversation state lives in two places:
  * <ul>
  *   <li>Instance field — same {@code AgentNode} across in-process runs
- *       (Stage 5 behaviour, kept).</li>
- *   <li>Blackboard key {@code agentState:{nodeId}} — Stage 6 D5. Written
+ *       (behaviour, kept).</li>
+ *   <li>Blackboard key {@code agentState:{nodeId}} — D5. Written
  *       after every execute so a FileCheckpointStore snapshot can restore
  *       a <em>new</em> AgentNode after process restart.</li>
  * </ul>
@@ -50,7 +50,7 @@ public final class AgentNode implements WorkflowNode {
     }
 
     /**
-     * Input defaults to String.valueOf(ctx.input()).
+     * Input defaults to String.valueOf(ctx.input).
      */
     public static AgentNode of(String id, Agent agent) {
         return new AgentNode(id, agent, null);

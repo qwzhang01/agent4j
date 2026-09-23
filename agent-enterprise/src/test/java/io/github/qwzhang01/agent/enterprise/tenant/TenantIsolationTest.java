@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.1 core test: tenant isolation via the scope whitelist.
+ * core test: tenant isolation via the scope whitelist.
  * <p>
  * The blueprint's claim under test (D3): "isolation is mechanism, not
  * convention". Cross-tenant leakage is the most severe enterprise security
  * accident - this test proves it cannot happen at the store level, using the
- * same {@code tenant:*} scopes that {@link RequestContext#memoryScopes()}
+ * same {@code tenant:*} scopes that {@link RequestContext#memoryScopes}
  * emits. Knowledge retrieval (M15.2) will sit on exactly this guarantee.
  */
 class TenantIsolationTest {
@@ -75,7 +75,7 @@ class TenantIsolationTest {
     @Test
     @DisplayName("globex cannot retrieve acme's tenant-scoped entries (and vice versa)")
     void crossTenantZeroLeakage() {
-        // both contents mention the same searchable keyword ("policy") so the
+        // both contents mention the same searchable keyword "policy" so the
         // only thing that can differ between the two retrievals is the scope
         store.write(knowledge("tenant:acme", "return-policy", "Acme policy: 30-day no-question returns"));
         store.write(knowledge("tenant:globex", "return-policy", "Globex policy: all sales final"));

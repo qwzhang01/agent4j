@@ -14,9 +14,9 @@ import java.util.Objects;
  * This is the OpenAI Agents SDK {@code input_filter} shape: three carry strategies,
  * of which v1 ships two plus identity.
  * <pre>
- *   IDENTITY     — full history (Decision 24 P1 default)
- *   keepWithin   — drop oldest units until the target's history budget fits
- *   lastTurn     — from the last USER message inclusive (task, not the whole call)
+ *   IDENTITY — full history (Decision 24 P1 default)
+ *   keepWithin — drop oldest units until the target's history budget fits
+ *   lastTurn — from the last USER message inclusive (task, not the whole call)
  * </pre>
  * Summary-carry (the third KP1 strategy) is not a filter: it needs a compressor
  * that writes a frozen summary. Compose that as a {@link ContextBuilder} on the
@@ -30,15 +30,15 @@ public interface HandoffInputFilter {
 
     /**
      * @param history conversation so far (persona already excluded)
-     * @param from    config that initiated the transfer; {@code null} only if
+     * @param from config that initiated the transfer; {@code null} only if
      *                a host calls the filter outside a handoff
-     * @param to      config that will run the next step
+     * @param to config that will run the next step
      * @return messages the next model request should carry; must not be null
      */
     List<ChatMessage> filter(List<ChatMessage> history, AgentConfig from, AgentConfig to);
 
     /**
-     * Trim to {@code budget.historyBudget()} with the same pair-preserving
+     * Trim to {@code budget.historyBudget} with the same pair-preserving
      * rule as {@link ContextWindowEnforcer}.
      */
     static HandoffInputFilter keepWithin(ContextWindowBudget budget) {

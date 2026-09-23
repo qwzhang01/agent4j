@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * The set of staged changes for one task - the <b>transaction unit</b> of a coding
- * change (Stage 17 M17.2, blueprint D1): applied as a whole or discarded as a whole,
+ * change (, blueprint D1): applied as a whole or discarded as a whole,
  * never half-applied.
  * <p>
  * Status machine: {@code DRAFT -> VALIDATED -> APPLIED} with terminal exits
@@ -15,16 +15,16 @@ import java.util.List;
  * (that is {@code CodingSession}'s job in M17.4).
  * <p>
  * Immutable record with wither methods ({@link #withStatus}/{@link #withChanges}) -
- * the same discipline as {@code RewardResult.applyTo} (Stage 14): transitions produce a
+ * the same discipline as {@code RewardResult.applyTo} : transitions produce a
  * new instance, the old one stays as an audit fact.
  * <p>
  * The blueprint lists a {@code summary} field; it is deliberately NOT a field - the
  * summary is derived on demand by {@link PatchSummarizer} (single source of truth, no
  * stale copy to keep in sync).
  *
- * @param patchId   session-scoped id, e.g. "P-1" (deterministic, test-friendly)
- * @param changes   staged changes, insertion-ordered by first staging (defensive copy)
- * @param status    current state in the machine above
+ * @param patchId session-scoped id, e.g. "P-1" (deterministic, test-friendly)
+ * @param changes staged changes, insertion-ordered by first staging (defensive copy)
+ * @param status current state in the machine above
  * @param createdAt when this patch was opened
  */
 public record Patch(String patchId, List<FileChange> changes, PatchStatus status, Instant createdAt) {

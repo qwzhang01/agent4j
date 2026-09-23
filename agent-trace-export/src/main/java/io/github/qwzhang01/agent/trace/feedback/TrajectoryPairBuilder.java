@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Validates and supports same-prompt pairing (Stage 14 D6).
+ * Validates and supports same-prompt pairing (D6).
  * <p>
  * "Prompt" is the shared prefix of both logical conversations up to and
  * including the FIRST user message (system prompt + user task). Two

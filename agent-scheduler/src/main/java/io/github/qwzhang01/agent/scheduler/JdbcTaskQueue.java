@@ -12,8 +12,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * JDBC-backed persistent task table (Stage 8.1: "Scheduler uses an
- * external queue or a persistent task table"). Tasks survive process
+ * JDBC-backed persistent task table "Scheduler uses an
+ * external queue or a persistent task table". Tasks survive process
  * crashes and are shareable across runtime instances: one row per {@link
  * AsyncTask}, claim by guarded UPDATE (PENDING→RUNNING under this
  * worker), terminal completion, explicit cancel.

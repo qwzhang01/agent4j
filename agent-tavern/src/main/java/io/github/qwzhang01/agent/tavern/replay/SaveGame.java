@@ -9,21 +9,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A game's full state snapshot - the save file's in-memory form (Stage 16
+ * A game's full state snapshot - the save file's in-memory form (
  * M16.4, blueprint D6: a game snapshot, NOT a run checkpoint).
  * <p>
- * Contrast of the near-twins: a Stage 6 checkpoint is a single workflow run's
+ * Contrast of the near-twins: a checkpoint is a single workflow run's
  * pause state (cursor + blackboard, indexed by runId); a SaveGame is the
  * WHOLE game's domain state (world + relationships + every character's
  * dialogue history + event bookkeeping, indexed by gameId). Similar shape,
  * different lifetime - forcing one onto the other drags runId semantics
  * where they do not belong.
  *
- * @param gameId              which game this save belongs to
- * @param world               the world at save time (the replay endpoint check)
- * @param relationships       tracked relationships at save time
- * @param characterHistories  each character's dialogue history (AgentState messages)
- * @param firedEventIds       once-bookkeeping for story events (restored into the
+ * @param gameId which game this save belongs to
+ * @param world the world at save time (the replay endpoint check)
+ * @param relationships tracked relationships at save time
+ * @param characterHistories each character's dialogue history (AgentState messages)
+ * @param firedEventIds once-bookkeeping for story events (restored into the
  *                            EventEvaluator on load)
  */
 public record SaveGame(

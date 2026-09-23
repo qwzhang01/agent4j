@@ -9,13 +9,13 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Append-only registry of {@link RunRecord}s (Stage 18 D8) - the time-travel
+ * Append-only registry of {@link RunRecord}s (D8) - the time-travel
  * query target: "last night's wrong answer ran on WHAT combination" stops
  * being archaeology and becomes {@link #byRunId}.
  * <p>
  * Append-only means exactly that: no updates, no deletes, duplicate runIds
  * rejected (a rewritten history is a fabricated history - the same
- * discipline as Stage 13 prompt versions and Stage 14 trajectories).
+ * discipline as prompt versions and Stage 14 trajectories).
  * Persistence (JSONL) is a v2 concern; v1 is the in-memory registry the
  * assembly keeps for the process lifetime.
  */

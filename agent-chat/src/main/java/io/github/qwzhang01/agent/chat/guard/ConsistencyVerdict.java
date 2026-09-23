@@ -7,7 +7,7 @@ package io.github.qwzhang01.agent.chat.guard;
  * engine keeps the original assistant line and notifies the host.
  *
  * @param consistent {@code true} when the turn looks consistent to the host
- * @param warning    optional host message; blank when consistent
+ * @param warning optional host message; blank when consistent
  */
 public record ConsistencyVerdict(boolean consistent, String warning) {
 

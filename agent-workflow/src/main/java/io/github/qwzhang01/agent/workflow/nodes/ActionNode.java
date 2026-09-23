@@ -7,7 +7,7 @@ import io.github.qwzhang01.agent.workflow.WorkflowNode;
 /**
  * Deterministic Java-logic node: a lambda is a node.
  * <pre>{@code
- * ActionNode.of("handoff", ctx -> "transferred to human agent")
+ * ActionNode.of"handoff", ctx -> "transferred to human agent"
  * }</pre>
  */
 public final class ActionNode implements WorkflowNode {

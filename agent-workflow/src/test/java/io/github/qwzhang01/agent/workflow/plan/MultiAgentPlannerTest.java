@@ -15,7 +15,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Multi-Agent Plan contract tests: state isolation, budget
+ * Multi-Agent Plan contract tests: state isolation, budget
  * propagation via deriveChild, result dedup, failure classification reuse.
  */
 class MultiAgentPlannerTest {
@@ -36,7 +36,7 @@ class MultiAgentPlannerTest {
             this.name = name;
         }
 
-        // name() must be usable in the field initializer above
+        // name must be usable in the field initializer above
         String name() {
             return name;
         }

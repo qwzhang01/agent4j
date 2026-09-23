@@ -6,16 +6,16 @@ import io.github.qwzhang01.agent.core.run.RunContext;
  * Execution context handed to a node.
  * <p>
  * Provides:
- * - {@link #state()}: the shared blackboard (whole-workflow state)
- * - {@link #input()}: the output of the previously executed node
+ * - {@link #state}: the shared blackboard (whole-workflow state)
+ * - {@link #input}: the output of the previously executed node
  *   (or the workflow input for the first node)
  * <p>
- * Stage 6 additions:
- * - {@link #runId()}: the Run identifier (null when called without RunManager)
- * - {@link #isResuming()}: true only for the first node on resume
+ * additions:
+ * - {@link #runId}: the Run identifier (null when called without RunManager)
+ * - {@link #isResuming}: true only for the first node on resume
  *   (lets nodes like HumanApprovalNode take a different code path on resume)
  * <p>
- * Stage 1.2 (harness roadmap): {@link #runContext()} exposes the unified
+ * (harness roadmap): {@link #runContext} exposes the unified
  * run context when the run was started with one. Nodes read tenant/user
  * identity, deadline and cancellation from it instead of free strings.
  */
@@ -34,7 +34,7 @@ public interface NodeContext {
 
     /**
      * The Run identifier. Non-null when executed via RunManager;
-     * null when executed via GraphRuntime.run() directly.
+     * null when executed via GraphRuntime.run directly.
      */
     default String runId() {
         return null;
@@ -50,8 +50,8 @@ public interface NodeContext {
     }
 
     /**
-     * Stage 7: the TaskScheduler, if available. Null when not using
-     * agent-scheduler module (Stage 5-6 compat).
+     *  the TaskScheduler, if available. Null when not using
+     * agent-scheduler module (-6 compat).
      * <p>
      * Returns Object to avoid a circular dependency (agent-scheduler
      * depends on agent-workflow, not vice versa). Nodes cast to their
@@ -62,17 +62,17 @@ public interface NodeContext {
     }
 
     /**
-     * Stage 1.2 (harness roadmap): the unified run context, when the run
+     * (harness roadmap): the unified run context, when the run
      * was started with one. Null on the legacy path (no context bound).
      * Nodes read identity/tenant/deadline/cancellation from here; the
-     * free-string {@link #runId()} stays for old consumers.
+     * free-string {@link #runId} stays for old consumers.
      */
     default RunContext runContext() {
         return null;
     }
 
     /**
-     * Typed view of {@link #input()}. Casts when possible, converts
+     * Typed view of {@link #input}. Casts when possible, converts
      * via Jackson otherwise (e.g. Map -> POJO, record -> Map).
      */
     default <T> T inputAs(Class<T> type) {

@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.core.redact;
 import java.util.Objects;
 
 /**
- * Redaction policy for a governed surface (Stage 5.3).
+ * Redaction policy for a governed surface .
  * <p>
  * Answers one question per surface: when this surface is about to persist
  * or return text, which of the four representations does it keep?
@@ -16,7 +16,7 @@ import java.util.Objects;
  * A surface can keep several representations at once (raw in the forensic
  * store + masked in exports + hash in logs) - the policy is a set of flags,
  * not a single choice. What a policy forbids is what the surface must NOT
- * write anywhere: {@link #keepsRaw()} false means the raw text never hits
+ * write anywhere: {@link #keepsRaw} false means the raw text never hits
  * disk on that surface, including "debug" side files.
  * <p>
  * The default masker is {@code null} = no masking (passthrough) so that

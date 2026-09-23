@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.core.model;
 
 /**
- * Provider-neutral reasoning ("thinking") intent.
+ * Provider-neutral reasoning "thinking" intent.
  * <p>
  * Reasoning models emit their chain-of-thought in a channel separate from the
  * answer. Every vendor spells the request switch differently, so this type
@@ -33,9 +33,9 @@ package io.github.qwzhang01.agent.core.model;
  * <p>
  * Reasoning output is always parsed and kept out of the answer, regardless of
  * these settings: a model that thinks without being asked must not corrupt
- * {@link ModelResponse#content()}.
+ * {@link ModelResponse#content}.
  *
- * @param mode   whether to ask the provider to think
+ * @param mode whether to ask the provider to think
  * @param effort effort hint ({@code "low"} / {@code "medium"} / {@code "high"});
  *               {@code null} for provider default. Honored only by providers
  *               that accept an effort level — others log a warning.

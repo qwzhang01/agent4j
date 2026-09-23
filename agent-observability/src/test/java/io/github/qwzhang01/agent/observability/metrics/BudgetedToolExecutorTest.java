@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.2 acceptance for {@link BudgetedToolExecutor}: the tool boundary
+ * acceptance for {@link BudgetedToolExecutor}: the tool boundary
  * enforces the RUN dimension's tool-call circuit breaker - denial surfaces
  * as {@code [DENIED] ...} text the model can relay, never an exception.
  */

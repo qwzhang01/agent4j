@@ -11,8 +11,8 @@ import java.util.function.Predicate;
  * Error edges (see WorkflowBuilder#onError) are stored separately in
  * the Workflow; this record only models normal routing.
  *
- * @param from      source node id (or Workflow.START)
- * @param to        target node id (or Workflow.END)
+ * @param from source node id (or Workflow.START)
+ * @param to target node id (or Workflow.END)
  * @param condition optional predicate over the blackboard; null = unconditional
  */
 public record Edge(String from, String to, Predicate<WorkflowState> condition) {

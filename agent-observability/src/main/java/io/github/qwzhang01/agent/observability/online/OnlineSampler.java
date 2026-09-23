@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Online-traffic sampler (Stage 7.3 "线上采样，不默认保存所有敏感内容"):
+ * Online-traffic sampler "线上采样，不默认保存所有敏感内容":
  * keep a bounded, sampled window of run rows for online evaluation, with
  * prompt/answer TEXT dropped by default - only structural fields ride in
  * (RunMetrics already is structural: counts, durations, versions ride in
@@ -38,7 +38,7 @@ public final class OnlineSampler {
     private long sampledSuccesses;
 
     /**
-     * @param oneInN  sample every n-th run (1 = keep everything)
+     * @param oneInN sample every n-th run (1 = keep everything)
      * @param maxRows bounded window size
      */
     public OnlineSampler(int oneInN, int maxRows) {

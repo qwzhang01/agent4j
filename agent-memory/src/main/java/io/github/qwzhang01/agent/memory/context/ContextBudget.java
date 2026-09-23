@@ -5,7 +5,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import java.util.List;
 
 /**
- * Token budget estimation (Stage 8 D4).
+ * Token budget estimation (D4).
  * <p>
  * v1 uses a simple chars/4 heuristic (no tokenizer dependency).
  * This is intentionally approximate - the goal is to trigger compaction

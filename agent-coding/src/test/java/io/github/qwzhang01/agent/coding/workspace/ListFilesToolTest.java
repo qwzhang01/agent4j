@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.1: the list tool - defaults, depth validation against the policy
+ *  the list tool - defaults, depth validation against the policy
  * limit, and policy-filtered deterministic output.
  */
 class ListFilesToolTest {

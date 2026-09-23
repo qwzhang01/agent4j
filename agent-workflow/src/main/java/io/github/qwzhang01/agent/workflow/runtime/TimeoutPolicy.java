@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Per-run timeout policy: a cap on one node, and a cap on one execute attempt.
  * <p>
- * {@link Duration#ZERO} (or {@link #none()}) means unlimited on that axis.
+ * {@link Duration#ZERO} (or {@link #none}) means unlimited on that axis.
  * Negative durations are rejected at construction.
  * <p>
  * Run timeout is measured from the start of the current
@@ -18,7 +18,7 @@ import java.util.Objects;
  * keep running after the wait expires (cooperative, same limit as cancel).
  *
  * @param nodeTimeout max wait for a single node; {@link Duration#ZERO} = none
- * @param runTimeout  max wall time of one execute attempt; {@link Duration#ZERO} = none
+ * @param runTimeout max wall time of one execute attempt; {@link Duration#ZERO} = none
  */
 public record TimeoutPolicy(Duration nodeTimeout, Duration runTimeout) {
 
@@ -55,7 +55,7 @@ public record TimeoutPolicy(Duration nodeTimeout, Duration runTimeout) {
     }
 
     /**
-     * @param executeStartedMs {@code System.currentTimeMillis()} at the start
+     * @param executeStartedMs {@code System.currentTimeMillis} at the start
      *                         of this execute attempt
      */
     public boolean isRunTimedOut(long executeStartedMs) {

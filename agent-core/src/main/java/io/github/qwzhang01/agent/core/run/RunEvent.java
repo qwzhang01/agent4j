@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.core.run;
 import java.time.Instant;
 
 /**
- * Unified lifecycle events (Stage 1.3 of the harness roadmap).
+ * Unified lifecycle events (of the harness roadmap).
  * <p>
  * One sealed interface for run-level facts: RunStarted / StepStarted /
  * StepCompleted / RunPaused / RunResumed / RunCanceled / RunFailed /
@@ -11,11 +11,11 @@ import java.time.Instant;
  * step-scoped), attempt (when retry-scoped), timestamp and duration.
  * These are <b>fact events</b> (execution truth), not telemetry: they
  * describe what the runtime actually did, and are the persistence
- * boundary for Stage 3's event-sourced recovery. Metric objects
+ * boundary for 's event-sourced recovery. Metric objects
  * (agent-observability HealthPipeline) are separate concerns and must
  * never be conflated with these facts.
  * <p>
- * Event schema version 1 (roadmap 1.3: version field for future
+ * Event schema version 1 version field for future
  * persistence and cross-process consumers).
  * <p>
  * Dispatch model (v1): push to a {@code Consumer<RunEvent>} sink handed

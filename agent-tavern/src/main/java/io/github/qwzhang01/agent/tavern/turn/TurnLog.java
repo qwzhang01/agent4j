@@ -5,13 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Append-only turn ledger (Stage 16 M16.2).
+ * Append-only turn ledger .
  * <p>
  * In-memory for now: appended turns are immutable records and the view is
  * unmodifiable - "append-only" as a memory-level contract (a settled turn can
  * never be edited). The JSONL file form (first line = initial world snapshot
  * envelope, one line per turn, byte-stable after write) lands in M16.4 with
- * {@code GameStore} - the same discipline as Stage 14's sidecar rule: the
+ * {@code GameStore} - the same discipline as 's sidecar rule: the
  * record is written once and never rewritten.
  */
 public final class TurnLog {

@@ -5,15 +5,15 @@ import java.time.Instant;
 /**
  * Provenance of a memory entry - answers "who said it / where did it come from".
  * <p>
- * This is the backbone of memory governance (Stage 8 D2):
+ * This is the backbone of memory governance (D2):
  * - Admin can trace any entry back to its origin
  * - Conflict resolution knows which source to trust
  * - Audit log can reconstruct what happened
  *
  * @param sourceType how this memory was produced
- * @param actor      who/what produced it (userId, tool name, or model id)
- * @param runId      the run that extracted this memory (null for admin edits)
- * @param at         when it was recorded
+ * @param actor who/what produced it (userId, tool name, or model id)
+ * @param runId the run that extracted this memory (null for admin edits)
+ * @param at when it was recorded
  */
 public record MemoryProvenance(
         SourceType sourceType,

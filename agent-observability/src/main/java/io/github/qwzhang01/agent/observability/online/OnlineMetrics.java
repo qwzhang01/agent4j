@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The online window's five-plus-one metrics (Stage 7.3): computed from real
+ * The online window's five-plus-one metrics : computed from real
  * {@link RunMetrics} rows - not synthetic probes, the production traffic
  * itself. This is the "deploy and measure" half the architecture-design
  * ladder was missing.
@@ -26,9 +26,9 @@ import java.util.Objects;
  *   <li>{@code fallbackRate} - model errors / model calls; the closest proxy
  *       RunMetrics carries today. Honest note: which cascade tier actually
  *       served a recovered call is CascadeModelClient's own metric, not yet
- *       projected into the run row (Stage 7.3 gap)</li>
+ *       projected into the run row (gap)</li>
  *   <li>{@code memoryHitRate} - NULL = unreported. The memory boundary
- *       emits no metrics yet (Stage 7.3 honest gap); a zero here would be a
+ *       emits no metrics yet (honest gap); a zero here would be a
  *       fabricated "never hit", the null says "cannot know yet"</li>
  * </ul>
  * An empty window is rejected: an average over nothing is not an honest

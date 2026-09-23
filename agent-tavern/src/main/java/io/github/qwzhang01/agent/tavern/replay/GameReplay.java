@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Step-through replay view of one game's turn log (Stage 16 M16.4,
+ * Step-through replay view of one game's turn log (,
  * blueprint D7: replay the recording, never re-run the model).
  * <p>
  * {@code stateAt(n)} rebuilds the world and relationships AS THEY WERE at the
  * end of turn n, by re-applying the recorded effects and relationship changes
  * - a pure data-flow re-derivation. No model calls, no rule re-evaluation:
- * the record IS the truth. This is the same discipline as Stage 14's
+ * the record IS the truth. This is the same discipline as 's
  * ReplayView (walk the log), at turn granularity instead of model-step
  * granularity.
  * <p>
@@ -40,7 +40,7 @@ public final class GameReplay {
 
     /**
      * Public factory: assemble a replay view from in-memory parts. Used by
-     * {@code TavernGame.replay()} for the current instance's turns.
+     * {@code TavernGame.replay} for the current instance's turns.
      */
     public static GameReplay of(WorldState initialWorld,
                                 Map<String, Relationship> initialRelationships,

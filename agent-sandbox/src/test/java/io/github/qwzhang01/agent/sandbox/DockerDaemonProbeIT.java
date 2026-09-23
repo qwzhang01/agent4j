@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8.3 container Sandbox Integration Profile.
+ * container Sandbox Integration Profile.
  *
  * <p>v1 scope decision (see {@link SandboxTier#DOCKER}): the DOCKER tier is a
  * documented placeholder -- no adapter implementation exists, and a

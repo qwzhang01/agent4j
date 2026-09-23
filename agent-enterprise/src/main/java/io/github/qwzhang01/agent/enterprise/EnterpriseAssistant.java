@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The enterprise entry point (Stage 15 M15.5): one facade over the whole
+ * The enterprise entry point : one facade over the whole
  * request chain.
  * <p>
  * {@link #ask} is the synchronous path:
@@ -25,7 +25,7 @@ import java.util.Optional;
  * {@link EnterpriseTaskManager} (approval pauses, checkpoint resume - M15.4)
  * after passing the same budget gate.
  * <p>
- * Build via {@link EnterpriseAgentFactory#builder()}.
+ * Build via {@link EnterpriseAgentFactory#builder}.
  */
 public final class EnterpriseAssistant {
 
@@ -44,7 +44,7 @@ public final class EnterpriseAssistant {
     /**
      * Ask a question as an authenticated user.
      *
-     * @param ctx      the request context (must come from TenantRegistry.login)
+     * @param ctx the request context (must come from TenantRegistry.login)
      * @param question the user's question
      * @return the assistant's final answer
      * @throws io.github.qwzhang01.agent.enterprise.govern.BudgetExceededException

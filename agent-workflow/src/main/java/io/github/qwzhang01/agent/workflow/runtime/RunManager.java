@@ -21,27 +21,27 @@ import java.util.function.Supplier;
 /**
  * Lifecycle manager for workflow Runs: start / pause / resume / cancel.
  * <p>
- * This is the Stage 6 entry point. It wraps {@link GraphRuntime} with
+ * This is the entry point. It wraps {@link GraphRuntime} with
  * checkpoint persistence and run tracking.
  * <p>
  * Usage:
  * <pre>{@code
- * RunManager mgr = new RunManager();
+ * RunManager mgr = new RunManager;
  *
  * // Start -> runs until END, PAUSED, FAILED, or CANCELLED
- * ExecutionResult r1 = mgr.start(workflow, "user input");
+ * ExecutionResult r1 = mgr.start(workflow, "user input";
  *
- * if (r1.isPaused()) {
- *     ResumeToken token = r1.resumeToken();
+ * if (r1.isPaused) {
+ *     ResumeToken token = r1.resumeToken;
  *     // ... human approval happens ...
- *     ExecutionResult r2 = mgr.resume(token.runId());
+ *     ExecutionResult r2 = mgr.resume(token.runId);
  * }
  * }</pre>
  * <p>
  * For crash recovery (process restart), use {@link #resume(String, Workflow)}:
  * <pre>{@code
  * RunManager mgr = new RunManager(new FileCheckpointStore(checkpointDir));
- * ExecutionResult r = mgr.resume(runId, workflow);  // loads from disk
+ * ExecutionResult r = mgr.resume(runId, workflow); // loads from disk
  * }</pre>
  */
 public class RunManager {
@@ -51,7 +51,7 @@ public class RunManager {
     private GraphRuntime runtime;
     private final CheckpointStore store;
     private final Map<String, Run> activeRuns = new ConcurrentHashMap<>();
-    /** Per-run single-flight: at most one execute() in flight for a given runId. */
+    /** Per-run single-flight: at most one execute in flight for a given runId. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
     /** Default: InMemory checkpoint store. */
@@ -88,7 +88,7 @@ public class RunManager {
 
     /**
      * Start a new workflow run with a timeout policy.
-     * {@link TimeoutPolicy#none()} is unlimited on both axes.
+     * {@link TimeoutPolicy#none} is unlimited on both axes.
      */
     public ExecutionResult start(Workflow workflow, Object input, TimeoutPolicy timeout) {
         String runId = UUID.randomUUID().toString();
@@ -100,7 +100,7 @@ public class RunManager {
     }
 
     /**
-     * Stage 1 (harness roadmap): start a run bound to a unified
+     * (harness roadmap): start a run bound to a unified
      * {@link RunContext}. The context's cancellation token backs
      * {@link #cancel(String)}; the context rides NodeContext into every
      * node. The context's own runId (when non-null) becomes the run id.
@@ -119,7 +119,7 @@ public class RunManager {
      * <p>
      * Guard: only PAUSED runs can be resumed. Resuming a terminal run
      * (SUCCEEDED/FAILED/CANCELLED) would re-execute nodes - a duplicate
-     * execution bug (found in Stage 7 code review).
+     * execution bug (found in code review).
      *
      * @return ExecutionResult (SUCCEEDED / FAILED / PAUSED / CANCELLED)
      */
@@ -144,7 +144,7 @@ public class RunManager {
      * Resume a paused run from checkpoint (crash recovery).
      * Loads the checkpoint from the store and re-creates the Run.
      *
-     * @param runId    the paused Run's id
+     * @param runId the paused Run's id
      * @param workflow the Workflow definition (not stored in checkpoint)
      * @return ExecutionResult
      */
@@ -164,7 +164,7 @@ public class RunManager {
                 // NEW definition against the OLD blackboard). A non-legacy
                 // version that differs from the provided workflow is a
                 // DEFINITION_VERSION_MISMATCH failure, never a silent
-                // resume. Legacy checkpoints ("" version) never trip this.
+                // resume. Legacy checkpoints "" version) never trip this.
                 String cpVersion = loaded.workflowVersion();
                 if (!cpVersion.isEmpty() && !cpVersion.equals(workflow.version())) {
                     String msg = "[DEFINITION_VERSION_MISMATCH] Run '" + runId + "' started under '"
@@ -212,8 +212,8 @@ public class RunManager {
 
     /**
      * Snapshot of currently tracked runs. Needed so a caller can cancel a
-     * still-running start() (runId is generated internally and otherwise
-     * only returned when start() completes).
+     * still-running start (runId is generated internally and otherwise
+     * only returned when start completes).
      */
     public List<Run> listRuns() {
         return List.copyOf(activeRuns.values());
@@ -247,7 +247,7 @@ public class RunManager {
 
     /**
      * Force a run into FAILED without executing further nodes.
-     * Used by Stage 7 token-budget enforcement on a paused run.
+     * Used by token-budget enforcement on a paused run.
      *
      * @return true if the run was found and moved to FAILED
      */

@@ -9,11 +9,11 @@ import io.github.qwzhang01.agent.core.run.RunContext;
  * Separated from ToolRegistry because execution concerns are different:
  * - Timeout enforcement
  * - Error wrapping (tool errors must become text for the model, not exceptions)
- * - Audit logging (stage 9)
- * - Policy checks (stage 9)
- * - Sandbox execution (stage 4)
+ * - Audit logging
+ * - Policy checks
+ * - Sandbox execution
  * <p>
- * Stage 1.2: the ctx-aware overload carries identity, budget and idempotency
+ *  the ctx-aware overload carries identity, budget and idempotency
  * scope to the tool boundary. Legacy single-arg execution stays frozen.
  */
 public interface ToolExecutor {
@@ -27,14 +27,14 @@ public interface ToolExecutor {
     String execute(ToolCall toolCall);
 
     /**
-     * Execute a tool call with the run context (Stage 1.2).
+     * Execute a tool call with the run context .
      * <p>
      * Default: delegate to the legacy method (context not consumed). The
      * context gives governance decorators access to runId/tenant/identity/
      * budget/idempotency scope; a bare executor may ignore it.
      *
      * @param toolCall the tool call from the model
-     * @param ctx      the run context (may be null on the legacy path)
+     * @param ctx the run context (may be null on the legacy path)
      * @return result text (sent back to the model)
      */
     default String execute(ToolCall toolCall, RunContext ctx) {

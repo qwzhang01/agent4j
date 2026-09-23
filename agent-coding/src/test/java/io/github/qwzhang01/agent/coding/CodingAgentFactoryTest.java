@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.5: the assembly - five tools from the session, the D8 permission
+ *  the assembly - five tools from the session, the D8 permission
  * tiers, the coding system prompt, and a governed ReAct loop producing a runnable
  * Agent with zero changes to any existing module.
  */

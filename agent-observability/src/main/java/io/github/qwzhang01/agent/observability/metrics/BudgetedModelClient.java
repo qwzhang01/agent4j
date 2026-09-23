@@ -18,13 +18,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 /**
- * Model boundary with the budget wired in (Stage 7.2: "Model and Tool
+ * Model boundary with the budget wired in "Model and Tool
  * boundary automatically enforce budgets, no business-side
- * requireBudget call") - the roadmap's completion bar: budget overrun
+ * requireBudget call" - the roadmap's completion bar: budget overrun
  * BLOCKS, not logs.
  * <p>
  * Identity comes from the {@link RunContext} the loop already propagates
- * (Stage 1.2 plumbing cashed in): tenant/user/agent/channel keys ride in
+ * (plumbing cashed in): tenant/user/agent/channel keys ride in
  * the context, the decorator derives the four ledger dimensions from it
  * plus RUN. A business that never constructed a BudgetBook sees zero
  * behavior change (no book = no gates = legacy semantics); a business

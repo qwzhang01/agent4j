@@ -47,10 +47,10 @@ public interface Tool {
     String getParametersSchema();
 
     /**
-     * Structured contract (Stage 2.1, harness roadmap).
+     * Structured contract (, harness roadmap).
      * <p>
      * Default: a legacy-adapted definition (side-effect UNKNOWN, version
-     * "legacy", schema from {@link #getParametersSchema()}). Override to
+     * "legacy", schema from {@link #getParametersSchema}). Override to
      * declare the real contract — schemas, version, side-effect level,
      * required capabilities and size/timeout budgets. The validation
      * chain and secure assemblies read this, never the loose accessors.
@@ -69,7 +69,7 @@ public interface Tool {
     String execute(JsonNode arguments) throws ToolException;
 
     /**
-     * Execute with the run context (Stage 1.2 of the harness roadmap).
+     * Execute with the run context (of the harness roadmap).
      * <p>
      * Default: legacy path. Context-aware tools read identity (tenant/user),
      * deadline and cancellation from {@code ctx} instead of free strings;
@@ -77,7 +77,7 @@ public interface Tool {
      * A tool that needs neither keeps the single-arg method only.
      *
      * @param arguments parsed JSON arguments from the model (may be null)
-     * @param ctx       the run context (null on the legacy path)
+     * @param ctx the run context (null on the legacy path)
      * @return result as text
      * @throws ToolException if execution fails
      */

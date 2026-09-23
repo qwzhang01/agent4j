@@ -13,7 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8 M8.4 tests: channel-scope pending review, MemoryAdmin governance,
+ * tests: channel-scope pending review, MemoryAdmin governance,
  * supersede correction, TTL.
  */
 class MemoryAdminTest {

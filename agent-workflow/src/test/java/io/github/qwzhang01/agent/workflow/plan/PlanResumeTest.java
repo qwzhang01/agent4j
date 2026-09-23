@@ -20,7 +20,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 gap closure: plan-level resume on the durable stack. The gap
+ * gap closure: plan-level resume on the durable stack. The gap
  * record said "plan-level checkpoint/resume is limited to
  * {@code completedFrom} blackboard inspection (no partial-plan cursor
  * persistence)" — that was HALF wrong: {@link PlanExecutor} lowers a plan

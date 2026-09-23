@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Stage 8 acceptance example 2: context compaction (pi-style).
+ * acceptance example 2: context compaction (pi-style).
  * <p>
  * Demonstrates:
  * - A long conversation exceeding the token budget

@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Reference in-memory {@link ApprovalStore} (Stage 3.4).
+ * Reference in-memory {@link ApprovalStore} .
  * <p>
  * Semantics identical to the future production backend — that is the whole
  * test strategy: prove the protocol here, port the SQL later. Not durable
@@ -52,7 +52,6 @@ public final class InMemoryApprovalStore implements ApprovalStore {
                     "Stale decision version " + decision.version() + " for approval '"
                             + stored.approvalId() + "' (current " + stored.version() + ")", stored);
         }
-        // The decide() overload without targetStatus treats the decision as
         // an approval only when the caller says so; this method is the raw
         // transition — the typed facade (approve/reject) lives on the
         // service layer that wraps this store.

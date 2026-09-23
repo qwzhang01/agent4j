@@ -74,7 +74,7 @@ class MemoryRetrieverTest {
      * <p>
      * Math (QUERY_BOOST_WEIGHT = 0.5):
      * coffee: 0.3 + 0.5 * 0.5 (partial token overlap) = 0.55
-     * interview: 0.5 + 0.5 * 0.0 = 0.50  → coffee wins
+     * interview: 0.5 + 0.5 * 0.0 = 0.50 → coffee wins
      */
     @Test
     void recallForContext_withQuery_boostsMatchingEntry() {

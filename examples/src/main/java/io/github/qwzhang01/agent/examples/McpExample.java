@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Stage 10 acceptance example: connect MCP server + discover tools + governed execution.
+ * acceptance example: connect MCP server + discover tools + governed execution.
  * <p>
  * Demonstrates:
  * - McpClient connecting to a mock MCP server (inline, no external subprocess needed)

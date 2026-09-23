@@ -18,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Stage 6.2: HTTP/SSE transport adapter for remote MCP servers.
+ *  HTTP/SSE transport adapter for remote MCP servers.
  * <p>
  * The stdio transport talks to a local subprocess — fine for dev, wrong for
  * production: real deployments front MCP servers over HTTP. The older SSE
- * dialect (protocol rev "2024-11-05") works like this:
+ * dialect (protocol rev "2024-11-05" works like this:
  * <ol>
  *   <li>Client GETs the SSE endpoint; the server answers with an endpoint
  *       event (the channel for server-to-client messages)</li>
@@ -33,10 +33,10 @@ import java.util.function.Supplier;
  * <p>
  * Concurrency design (the part that bites): the drain thread reads the RAW
  * response InputStream and splits SSE lines itself — never wrapped in a
- * BufferedReader/InputStreamReader. A blocking {@code readLine()} on a
+ * BufferedReader/InputStreamReader. A blocking {@code readLine} on a
  * wrapped reader holds the wrapper's monitor while parked on the socket,
- * and {@code close()} from another thread then deadlocks on that monitor.
- * Reading the raw stream keeps {@code close()} lock-free: it closes the
+ * and {@code close} from another thread then deadlocks on that monitor.
+ * Reading the raw stream keeps {@code close} lock-free: it closes the
  * underlying stream (the HTTP layer cancels the subscription and the
  * blocked read wakes with EOF/error), and if that ever lags the drain
  * thread is a daemon and dies with the JVM.
@@ -60,9 +60,9 @@ public class SseTransport implements McpTransport {
     private volatile boolean open = false;
 
     /**
-     * @param descriptor        must be an SSE descriptor ({@code url} set)
-     * @param httpClient        the HTTP layer (injectable for tests)
-     * @param connectTimeout    timeout for the initial GET and the endpoint wait
+     * @param descriptor must be an SSE descriptor ({@code url} set)
+     * @param httpClient the HTTP layer (injectable for tests)
+     * @param connectTimeout timeout for the initial GET and the endpoint wait
      * @param authTokenSupplier supplies the auth header value for every
      *                          request (host-managed credentials); null = no auth
      */
@@ -126,7 +126,7 @@ public class SseTransport implements McpTransport {
         readerThread.start();
 
         // Step 3: the handshake is not done until the server told us where
-        // to POST. Without this, send() racing the reader fails on
+        // to POST. Without this, send racing the reader fails on
         // "no message endpoint yet".
         long deadline = System.currentTimeMillis() + connectTimeout.toMillis();
         while (messageEndpoint == null) {
@@ -280,7 +280,7 @@ public class SseTransport implements McpTransport {
 
     /**
      * The endpoint event carries the POST URL (path; resolved against the
-     * base URL). Data events are JSON-RPC messages bound for receive().
+     * base URL). Data events are JSON-RPC messages bound for receive.
      */
     void dispatchFrame(String event, String data) {
         if ("endpoint".equals(event)) {
@@ -291,7 +291,7 @@ public class SseTransport implements McpTransport {
             }
             return;
         }
-        // JSON-RPC message (response or notification) — queue for receive()
+        // JSON-RPC message (response or notification) — queue for receive
         inbound.offer(data);
     }
 

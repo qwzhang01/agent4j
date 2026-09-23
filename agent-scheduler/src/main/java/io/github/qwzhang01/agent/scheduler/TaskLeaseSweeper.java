@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The periodic caller {@link JdbcTaskQueue#requeueOrphaned(long)} was
- * missing (roadmap 3.5: "requeueOrphaned has no periodic caller") — a
+ * missing "requeueOrphaned has no periodic caller" — a
  * crashed worker's RUNNING rows only ever got requeued if a host
  * remembered to sweep by hand. This sweeper calls the sweep on a fixed
  * period, closing the crash-recovery loop: a dead holder's tasks return

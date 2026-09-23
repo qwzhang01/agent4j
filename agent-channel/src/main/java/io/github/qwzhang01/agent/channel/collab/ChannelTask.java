@@ -6,22 +6,22 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A task on the channel board (Stage 12 M12.3).
+ * A task on the channel board .
  * <p>
  * Deliberately a LIGHT view: taskId / description / owner / status. The
- * lifecycle state machine reuses Stage 7's {@link TaskStatus} verbatim
+ * lifecycle state machine reuses 's {@link TaskStatus} verbatim
  * (PENDING -> RUNNING -> WAITING_HUMAN -> ... -> SUCCEEDED/FAILED) - one
  * status vocabulary across the framework, no second enum to keep in sync.
  * <p>
  * Immutable: the only writer is {@link TaskBoard}, and only via
  * {@link VisibilityEvent}s (design D6 - one source of truth).
  *
- * @param taskId      unique task id
+ * @param taskId unique task id
  * @param description what the task is about
- * @param owner       current owning member
- * @param status      lifecycle status
- * @param createdAt   when the task appeared on the board
- * @param updatedAt   when it last changed
+ * @param owner current owning member
+ * @param status lifecycle status
+ * @param createdAt when the task appeared on the board
+ * @param updatedAt when it last changed
  */
 public record ChannelTask(
         String taskId,

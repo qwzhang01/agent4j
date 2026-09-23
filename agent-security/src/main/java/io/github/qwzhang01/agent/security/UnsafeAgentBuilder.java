@@ -9,13 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The explicit unsafe path (Stage 2.4, harness roadmap).
+ * The explicit unsafe path (, harness roadmap).
  * <p>
  * Governance exists as the default; the raw path survives for tests,
  * demos and benchmarks — but it must be asked for by <b>name</b>. The
  * class name carries "Unsafe" so an assembly reads as what it is:
  * <pre>
- *   UnsafeAgentBuilder.unsafe("demo", client, registry).build()
+ *   UnsafeAgentBuilder.unsafe"demo", client, registry).build
  * </pre>
  * Anyone reviewing a diff sees the risk at the call site; it cannot hide
  * inside a generic "AgentBuilder".

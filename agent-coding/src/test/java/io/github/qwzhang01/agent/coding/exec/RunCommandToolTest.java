@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.3: the command tool - whitelist gate, JSON result, and the D2 core
+ *  the command tool - whitelist gate, JSON result, and the D2 core
  * proof: injection syntax is inert because there is no shell to interpret it.
  */
 class RunCommandToolTest {

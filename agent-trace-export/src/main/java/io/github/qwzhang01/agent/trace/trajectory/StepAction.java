@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * The Action half of one trajectory step: what the model decided on one call
- * (Stage 14 D3 - one step = one model call).
+ * (D3 - one step = one model call).
  * <p>
  * Faithfully mirrors the {@link ModelResponse} the loop received, including
  * token usage and wall time, so consumers can compute cost-per-action.
@@ -16,11 +16,11 @@ import java.util.List;
  * {@code finishReason = "error"} and null content/toolCalls is recorded -
  * the failure itself is training data (D4: failed runs are assets).
  *
- * @param content      model text output (null if only tool calls / error)
- * @param toolCalls    tool calls requested by the model (null if none)
+ * @param content model text output (null if only tool calls / error)
+ * @param toolCalls tool calls requested by the model (null if none)
  * @param finishReason why the model stopped: "stop", "tool_calls", "length", "error"
- * @param usage        token usage of this call (null if provider did not report)
- * @param durationMs   wall time of the model call
+ * @param usage token usage of this call (null if provider did not report)
+ * @param durationMs wall time of the model call
  */
 public record StepAction(
         String content,

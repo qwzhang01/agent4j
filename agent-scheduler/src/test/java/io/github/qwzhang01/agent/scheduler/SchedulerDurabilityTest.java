@@ -8,7 +8,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 3.5 acceptance (harness roadmap): scheduler durability +
+ * acceptance (harness roadmap): scheduler durability +
  * backpressure.
  * <ul>
  *   <li>queue at capacity refuses with an explicit, classified event</li>

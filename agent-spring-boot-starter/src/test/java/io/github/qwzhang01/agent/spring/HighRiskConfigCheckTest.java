@@ -7,7 +7,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Stage 8.2 boot check: findings are graded, SECURE blocks only on the
+ * boot check: findings are graded, SECURE blocks only on the
  * objective contradiction, TEST never blocks.
  */
 class HighRiskConfigCheckTest {

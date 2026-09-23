@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link ChannelMessage} and {@link ChannelContext}
- * (Stage 12 M12.2).
+ * .
  */
 class ChannelMessageTest {
 

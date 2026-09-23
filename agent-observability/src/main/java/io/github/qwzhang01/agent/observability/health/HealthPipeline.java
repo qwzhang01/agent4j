@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  * shared. Evaluation turns out to be a FOURTH projection straddling the
  * numeric and content ones.
  * <p>
- * Drift discipline (v1 honest shape): {@link #snapshot()} is a
+ * Drift discipline (v1 honest shape): {@link #snapshot} is a
  * RECONCILIATION point, not a pure query - each snapshot compares the
  * current content window's average answer length against the previous
  * snapshot's window, then that window becomes the new baseline. A monitor

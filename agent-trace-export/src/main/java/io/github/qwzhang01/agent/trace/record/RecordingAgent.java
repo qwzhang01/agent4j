@@ -8,7 +8,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import java.util.Objects;
 
 /**
- * Agent decorator (Stage 14 M14.1, sugar): opens/finishes the recording
+ * Agent decorator (, sugar): opens/finishes the recording
  * session around each run and attaches the delegate's config for metadata,
  * so the assembling layer writes one line instead of try/finally plumbing.
  * <p>

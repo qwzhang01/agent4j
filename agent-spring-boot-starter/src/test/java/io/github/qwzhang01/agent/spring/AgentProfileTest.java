@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Stage 8.2 profile ladder: three named modes, each with the assembly
+ * profile ladder: three named modes, each with the assembly
  * it promises — no silent governance anywhere in the ladder.
  * <p>
  * The model stub plays a two-turn script: first turn emits a tool call,

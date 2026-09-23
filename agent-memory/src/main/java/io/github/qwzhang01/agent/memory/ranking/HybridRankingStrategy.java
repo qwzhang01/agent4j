@@ -15,9 +15,9 @@ import java.util.Objects;
  *
  * <p>Effective sort key when a query and query vector are available:
  * <pre>
- *   score(e) = α * cosineSim(queryVec, e.embedding)      // semantic path
- *            + β * tokenOverlap(e, query)                // lexical path
- *            + γ * e.importance                          // governance path
+ *   score(e) = α * cosineSim(queryVec, e.embedding) // semantic path
+ *            + β * tokenOverlap(e, query) // lexical path
+ *            + γ * e.importance // governance path
  * </pre>
  * Default weights α = 0.5, β = 0.3, γ = 0.2 put semantics first, keep a lexical
  * floor for exact-key lookups, and let governance importance break ties.
@@ -41,7 +41,7 @@ import java.util.Objects;
  *
  * <p>Usage:
  * <pre>{@code
- * EmbeddingMemoryStore store = new EmbeddingMemoryStore(new InMemoryMemoryStore(), embeddingClient);
+ * EmbeddingMemoryStore store = new EmbeddingMemoryStore(new InMemoryMemoryStore, embeddingClient);
  * MemoryRetriever retriever = new MemoryRetriever(store, new HybridRankingStrategy(embeddingClient));
  * }</pre>
  */
@@ -76,9 +76,9 @@ public final class HybridRankingStrategy implements RankingStrategy {
     }
 
     /**
-     * @param client           embedding provider port used to embed the query
-     * @param semanticWeight   α; clamped to [0, 1]
-     * @param lexicalWeight    β; clamped to [0, 1]
+     * @param client embedding provider port used to embed the query
+     * @param semanticWeight α; clamped to [0, 1]
+     * @param lexicalWeight β; clamped to [0, 1]
      * @param importanceWeight γ; clamped to [0, 1]
      */
     public HybridRankingStrategy(EmbeddingClient client,

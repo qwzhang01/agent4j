@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.1: the read tool is a thin, honest translator - workspace
+ *  the read tool is a thin, honest translator - workspace
  * {@link IllegalArgumentException}s become {@link ToolException}s the model can read
  * and recover from; content flows through verbatim.
  */

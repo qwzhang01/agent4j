@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.4: business tasks - the task/run projection, task-level
+ *  business tasks - the task/run projection, task-level
  * approval with checkpoint resume, and crash recovery.
  * <p>
  * The proof that matters most: completed nodes do NOT re-execute on resume

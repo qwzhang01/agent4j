@@ -24,7 +24,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * THE Stage 14 D1 core proof: trajectory State == what the model actually saw
+ * THE D1 core proof: trajectory State == what the model actually saw
  * (post-ContextBuilder), which under compression DIFFERS from AgentState's
  * full history. Also covers step splitting, terminal capture, token
  * aggregation and verbatim observations (M14.1 verification list).

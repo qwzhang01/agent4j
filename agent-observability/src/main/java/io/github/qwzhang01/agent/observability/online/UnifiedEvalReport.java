@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The unified evaluation report (Stage 7.3 last bar): golden set, online
+ * The unified evaluation report (last bar): golden set, online
  * metrics and red-team results in ONE document - the "one report" the
  * roadmap demands, assembled from the three evidence sources that until
  * now lived in three places.

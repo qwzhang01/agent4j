@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 /**
- * A declared template variable (Stage 13 M13.2).
+ * A declared template variable .
  * <p>
  * A variable is a named hole in the template's spec tree, written as
  * {@code ${name}}. At instantiate time every placeholder is replaced with the
@@ -13,11 +13,11 @@ import java.util.Objects;
  * what makes typos fail fast: a placeholder for an undeclared variable rejects
  * the template at load time, and an undeclared parameter rejects the call.
  *
- * @param name         variable name referenced as {@code ${name}}
- * @param required     whether instantiate must receive a value (or a default)
+ * @param name variable name referenced as {@code ${name}}
+ * @param required whether instantiate must receive a value (or a default)
  * @param defaultValue value used when the parameter is absent (implies optional)
- * @param description  human-readable hint for template authors
- * @param type         documentation-only in v1 (no type system yet)
+ * @param description human-readable hint for template authors
+ * @param type documentation-only in v1 (no type system yet)
  */
 public record VariableDecl(
         String name,

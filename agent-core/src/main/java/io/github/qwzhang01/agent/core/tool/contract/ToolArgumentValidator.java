@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Harness-wide JSON argument validator (Stage 2.2).
+ * Harness-wide JSON argument validator .
  * <p>
  * One validator, one dialect, applied identically to MCP tools, plugins
- * and built-ins — "the same validation chain for everything" (roadmap 2.2).
+ * and built-ins — "the same validation chain for everything" .
  * The supported schema dialect is the practical subset every tool in this
  * repo actually uses: {@code type}, {@code required}, {@code properties},
  * {@code enum}, {@code items}, {@code maxLength} / {@code maxItems} and
@@ -27,7 +27,7 @@ import java.util.List;
  *   <li>nesting depth vs {@link ToolDefinition#DEFAULT_MAX_DEPTH}</li>
  * </ul>
  * All failures classify as {@link FailureKind#INPUT_INVALID} — the caller
- * renders them as {@code [INVALID_TOOL_ARGUMENTS]} per roadmap 2.2.
+ * renders them as {@code [INVALID_TOOL_ARGUMENTS]} per .
  */
 public final class ToolArgumentValidator {
 

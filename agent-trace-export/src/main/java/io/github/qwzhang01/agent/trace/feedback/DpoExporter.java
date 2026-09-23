@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Materializes preference pairs into DPO training format (Stage 14 D6/D8):
+ * Materializes preference pairs into DPO training format (D6/D8):
  * one JSON line per pair with {prompt, chosen, rejected} message sequences -
  * the direct input shape of DPO trainers.
  * <p>

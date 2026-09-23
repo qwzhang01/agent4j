@@ -18,19 +18,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Context builder that enforces a token budget via pi-style compaction (Stage 8 D4/D5).
+ * Context builder that enforces a token budget via pi-style compaction (D4/D5).
  * <p>
  * Flow:
  * <ol>
- *   <li>Read {@code state.getMessages()}</li>
+ *   <li>Read {@code state.getMessages}</li>
  *   <li>If estimated tokens exceed budget -> {@link ContextCompressor} summarizes
  *       the oldest history into one summary, keeping recent K messages</li>
- *   <li>Rewrite {@code state.getMessages()} in place (checkpoint consistency)</li>
+ *   <li>Rewrite {@code state.getMessages} in place (checkpoint consistency)</li>
  *   <li>Archive the original compressed messages to {@link MemoryStore} as a
  *       {@link MemoryType#SUMMARY} entry (if store + scope configured)</li>
  * </ol>
  * <p>
- * Memory retrieval injection is added in Stage 8 M8.3.
+ * Memory retrieval injection is added in
  */
 public class CompressingContextBuilder implements ContextBuilder {
 
@@ -41,9 +41,9 @@ public class CompressingContextBuilder implements ContextBuilder {
     private final String archiveScope;
 
     /**
-     * @param modelClient  model used for summarization
+     * @param modelClient model used for summarization
      * @param budgetTokens history-only budget; reserve persona/tool/output tokens separately
-     * @param keepRecent   messages to keep verbatim at the tail
+     * @param keepRecent messages to keep verbatim at the tail
      * @param archiveStore optional store for archiving compressed originals (null = no archive)
      * @param archiveScope scope under which to archive summaries (null = no archive)
      */

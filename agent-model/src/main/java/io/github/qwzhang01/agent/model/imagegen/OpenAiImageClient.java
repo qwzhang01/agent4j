@@ -23,7 +23,7 @@ import java.util.List;
  * Works with:
  * - OpenAI Images API (gpt-image-1, dall-e-3): https://api.openai.com/v1
  * - Volcengine Ark Seedream: https://ark.cn-beijing.volces.com/api/v3
- *   (same /images/generations wire format, model e.g. "doubao-seedream-4-0-250828")
+ *   (same /images/generations wire format, model e.g. "doubao-seedream-4-0-250828"
  * <p>
  * Notes:
  * - gpt-image-1 always returns base64 and does not accept response_format

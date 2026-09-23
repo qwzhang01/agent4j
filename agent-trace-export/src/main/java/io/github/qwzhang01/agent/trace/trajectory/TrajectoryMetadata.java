@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Metadata of one trajectory (Stage 14): who ran, with what config,
+ * Metadata of one trajectory : who ran, with what config,
  * for how long, at what token cost.
  * <p>
  * Configuration identity is intentionally fingerprint-based (sha256 of the
- * system prompt) rather than a dependency on Stage 13 PromptManager - the
+ * system prompt) rather than a dependency on PromptManager - the
  * same scheme treats code-built agents and YAML-built agents equally.
  * PromptManager version names can be attached via {@code custom} by the
  * assembling layer.
@@ -24,16 +24,16 @@ import java.util.Map;
  * manually without {@link io.github.qwzhang01.agent.trace.record.RunSession#attach}
  * - absence of metadata is honest, fabricated metadata is not.
  *
- * @param agentName      agent name from config (null if not attached)
- * @param promptSha256   sha256 hex of the system prompt (null if none/unknown)
- * @param tools          registered tool names (empty if not attached)
- * @param maxSteps       configured max steps (null if not attached)
- * @param startedAt      session open time
- * @param finishedAt     session finish time
- * @param durationMs     wall time of the whole run
- * @param tokenUsage     aggregated usage over all model calls (never null; zeros when providers report nothing)
- * @param lastError      terminal error text (null on clean runs)
- * @param custom         free-form key-values for the assembling layer (never null)
+ * @param agentName agent name from config (null if not attached)
+ * @param promptSha256 sha256 hex of the system prompt (null if none/unknown)
+ * @param tools registered tool names (empty if not attached)
+ * @param maxSteps configured max steps (null if not attached)
+ * @param startedAt session open time
+ * @param finishedAt session finish time
+ * @param durationMs wall time of the whole run
+ * @param tokenUsage aggregated usage over all model calls (never null; zeros when providers report nothing)
+ * @param lastError terminal error text (null on clean runs)
+ * @param custom free-form key-values for the assembling layer (never null)
  */
 public record TrajectoryMetadata(
         String agentName,

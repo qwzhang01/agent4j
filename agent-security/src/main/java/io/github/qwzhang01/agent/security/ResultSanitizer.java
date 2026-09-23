@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.security;
 
 /**
- * Sanitizes tool execution results to defend against Prompt Injection (Stage 9 D5).
+ * Sanitizes tool execution results to defend against Prompt Injection (D5).
  * <p>
  * Scans for known injection patterns (role spoofing, instruction override,
  * sensitive exfiltration) and applies a sanitization strategy when detected.

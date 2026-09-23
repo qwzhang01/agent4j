@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * In-memory implementation of {@link AuditLogger} (Stage 9 v1).
+ * In-memory implementation of {@link AuditLogger} (v1).
  * <p>
  * Uses CopyOnWriteArrayList for thread-safe append + safe iteration.
  * Events are kept in insertion order. A secondary index by runId and

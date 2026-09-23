@@ -63,7 +63,7 @@ public final class ChatRoom {
 
     /**
      * Ensemble streaming: when a {@code BeatPolicy} is configured, one user
-     * line may produce several persona replies ("beats"). See
+     * line may produce several persona replies "beats". See
      * {@code EnsembleChatEngine}. Without a beat policy this behaves exactly
      * like {@link #stream}.
      */
@@ -163,7 +163,7 @@ public final class ChatRoom {
         }
 
         /**
-         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop()}.
+         * Optional drift check after Done. {@code null} is {@link ConsistencyGuard#noop}.
          */
         public Builder consistencyGuard(ConsistencyGuard consistencyGuard) {
             this.consistencyGuard = consistencyGuard == null
@@ -174,7 +174,7 @@ public final class ChatRoom {
 
         /**
          * Optional retry policy for hard-label violations detected post-completion.
-         * {@code null} defaults to {@link RetryPolicy#never()} (no retries, backward-compatible).
+         * {@code null} defaults to {@link RetryPolicy#never} (no retries, backward-compatible).
          */
         public Builder retryPolicy(RetryPolicy retryPolicy) {
             this.retryPolicy = retryPolicy == null ? RetryPolicy.never() : retryPolicy;

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Stage 16 M16.1: {@link CharacterCard} is pure domain data - validation only.
+ *  {@link CharacterCard} is pure domain data - validation only.
  */
 class CharacterCardTest {
 

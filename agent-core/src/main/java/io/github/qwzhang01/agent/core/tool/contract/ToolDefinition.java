@@ -11,16 +11,16 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Structured tool contract (Stage 2.1, harness roadmap).
+ * Structured tool contract (, harness roadmap).
  * <p>
  * A tool is no longer just "a JSON function the model may call" — it is a
  * runtime resource with a contract: schemas, a version, a side-effect level,
  * required capabilities and size/timeout budgets. The contract is what the
- * validation chain (Stage 2.2) enforces and what the secure assembly
- * (Stage 2.4) reads to derive default permissions.
+ * validation chain enforces and what the secure assembly
+ *  reads to derive default permissions.
  * <p>
  * Backward compatibility: every legacy {@link Tool} gets a definition for
- * free via {@link Tool#definition()} — the legacy adapter fills name /
+ * free via {@link Tool#definition} — the legacy adapter fills name /
  * description / inputSchema from the old accessors, marks
  * {@link SideEffectLevel#UNKNOWN} and {@code version=legacy}. Nobody is
  * forced to migrate; but secure assemblies treat UNKNOWN conservatively.
@@ -30,17 +30,17 @@ import java.util.Objects;
  * without storing the schema itself. Two calls with the same fingerprint
  * validated against the same contract shape.
  *
- * @param name                unique tool name (snake_case convention)
- * @param description         what the tool does, model-facing
- * @param inputSchema         JSON Schema for arguments (null = untyped legacy)
- * @param outputSchema        optional JSON Schema for results (null = unchecked)
- * @param version             contract version, free-form (default "1.0.0")
- * @param sideEffectLevel     how much external state this tool can touch
+ * @param name unique tool name (snake_case convention)
+ * @param description what the tool does, model-facing
+ * @param inputSchema JSON Schema for arguments (null = untyped legacy)
+ * @param outputSchema optional JSON Schema for results (null = unchecked)
+ * @param version contract version, free-form (default "1.0.0"
+ * @param sideEffectLevel how much external state this tool can touch
  * @param requiredCapabilities capability tokens the run context must carry
- * @param timeout             per-call execution budget (null = assembly default)
- * @param maxInputBytes       argument size cap (UNLIMITED = no cap)
- * @param maxOutputBytes      result size cap (UNLIMITED = no cap)
- * @param schemaFingerprint   SHA-256 prefix of inputSchema (auto-derived)
+ * @param timeout per-call execution budget (null = assembly default)
+ * @param maxInputBytes argument size cap (UNLIMITED = no cap)
+ * @param maxOutputBytes result size cap (UNLIMITED = no cap)
+ * @param schemaFingerprint SHA-256 prefix of inputSchema (auto-derived)
  */
 public record ToolDefinition(
         String name,

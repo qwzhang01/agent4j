@@ -1,13 +1,13 @@
 package io.github.qwzhang01.agent.tavern.relation;
 
 /**
- * The player's standing with one character (Stage 16, blueprint D4).
+ * The player's standing with one character (, blueprint D4).
  * <p>
  * A first-class domain value the Runtime does not have: {@code Relationship}
  * exists only in the Tavern Profile - that is what makes this a Profile
  * (domain semantics layered on mechanism).
  *
- * @param value           affection, 0-100 (50 = neutral first meeting)
+ * @param value affection, 0-100 (50 = neutral first meeting)
  * @param lastChangedTurn the turn it last changed (0 = never changed)
  */
 public record Relationship(int value, int lastChangedTurn) {

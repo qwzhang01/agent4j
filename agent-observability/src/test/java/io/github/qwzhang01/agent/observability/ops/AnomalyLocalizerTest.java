@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.4 acceptance for anomaly localization: a drifted window walks
+ * acceptance for anomaly localization: a drifted window walks
  * down to version combinations, denied tools and provider errors, ranked
  * by contribution.
  */

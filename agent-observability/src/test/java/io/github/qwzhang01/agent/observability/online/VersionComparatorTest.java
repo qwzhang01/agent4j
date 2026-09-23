@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.3 acceptance for version comparison: live vs shadow deltas under
+ * acceptance for version comparison: live vs shadow deltas under
  * identical metric definitions, and combination-grouped windows.
  */
 class VersionComparatorTest {

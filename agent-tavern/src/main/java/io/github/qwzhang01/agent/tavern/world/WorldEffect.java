@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.tavern.world;
 
 /**
- * A world-state change as an explicit instruction (Stage 16, blueprint D3).
+ * A world-state change as an explicit instruction (, blueprint D3).
  * <p>
  * The world never mutates through free-form setters; every change is one of
  * these enumerable, auditable, replayable values. The replay engine (M16.4)
@@ -9,7 +9,7 @@ package io.github.qwzhang01.agent.tavern.world;
  * records them verbatim; the audit trail sees them as the effect of a tool
  * call.
  * <p>
- * Same philosophy as the WorkflowState blackboard (Stage 5), in domain form:
+ * Same philosophy as the WorkflowState blackboard , in domain form:
  * shared mutable state is fine, but changes must be first-class values -
  * a {@code map.put} scattered across the codebase is neither auditable
  * nor replayable.

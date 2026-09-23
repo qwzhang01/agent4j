@@ -10,8 +10,8 @@ import java.util.Objects;
  * <p>
  * One recall, two tiers with different physics:
  * <ul>
- *   <li><b>Core tier</b> — {@code importance >= coreImportanceThreshold()}: the
- *       always-on working set ("who the user is"). Injected at the head of
+ *   <li><b>Core tier</b> — {@code importance >= coreImportanceThreshold}: the
+ *       always-on working set "who the user is". Injected at the head of
  *       context every turn, never ranked by the query, never dropped by the
  *       token budget. Identity facts must survive query drift.</li>
  *   <li><b>Archival tier</b> — everything else: paged in next to the current
@@ -21,14 +21,14 @@ import java.util.Objects;
  * field on {@code MemoryEntry} can replace this proxy later without changing
  * this contract or any call site.
  * <p>
- * Token budget: {@code memoryTokenBudget()} uses the chars/4 heuristic per
+ * Token budget: {@code memoryTokenBudget} uses the chars/4 heuristic per
  * rendered line (the {@link ContextBudget} spirit — approximate, good enough
  * to bound the block, not token-exact). Core entries count against the budget
  * first but are never dropped by it; a warn fires when core alone exceeds the
  * budget (hosts gate what enters the core tier at write time).
  *
  * @param coreImportanceThreshold importance floor for the core tier, in [0.0, 1.0]
- * @param memoryTokenBudget       max estimated tokens for the whole memory block;
+ * @param memoryTokenBudget max estimated tokens for the whole memory block;
  *                                {@code 0} = no budget
  */
 public record MemoryLayering(double coreImportanceThreshold, int memoryTokenBudget) {
@@ -66,7 +66,7 @@ public record MemoryLayering(double coreImportanceThreshold, int memoryTokenBudg
 
     /**
      * @param coreImportanceThreshold importance floor for the core tier, in [0.0, 1.0]
-     * @param memoryTokenBudget       max estimated tokens for the whole block; 0 = none
+     * @param memoryTokenBudget max estimated tokens for the whole block; 0 = none
      */
     public static MemoryLayering of(double coreImportanceThreshold, int memoryTokenBudget) {
         return new MemoryLayering(coreImportanceThreshold, memoryTokenBudget);

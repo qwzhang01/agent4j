@@ -3,11 +3,11 @@ package io.github.qwzhang01.agent.trace.reward;
 import io.github.qwzhang01.agent.trace.trajectory.Trajectory;
 
 /**
- * The outcome of scoring one trajectory (Stage 14 D5).
+ * The outcome of scoring one trajectory (D5).
  *
- * @param reward     the reward value (sign is the only contract v1: positive good, negative bad)
- * @param source     where it came from: "rule" / "human" / future "model"
- * @param explanation optional human-readable justification (null normalized to "")
+ * @param reward the reward value (sign is the only contract v1: positive good, negative bad)
+ * @param source where it came from: "rule" / "human" / future "model"
+ * @param explanation optional human-readable justification (null normalized to ""
  */
 public record RewardResult(double reward, String source, String explanation) {
 
@@ -25,7 +25,7 @@ public record RewardResult(double reward, String source, String explanation) {
     /**
      * Attach this result to a trajectory (immutable wither): returns a new
      * {@link Trajectory} carrying reward/rewardSource; the original is
-     * untouched (record immutability, same discipline as Stage 6 Checkpoint).
+     * untouched (record immutability, same discipline as Checkpoint).
      */
     public Trajectory applyTo(Trajectory trajectory) {
         return new Trajectory(trajectory.trajectoryId(), trajectory.runId(),

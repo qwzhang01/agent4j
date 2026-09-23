@@ -4,23 +4,23 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A user entity - the human behind a request (Stage 15 M15.1).
+ * A user entity - the human behind a request .
  * <p>
- * The Runtime (Stage 1-14) assumed the caller is a faceless program; the
+ * The Runtime (-14) assumed the caller is a faceless program; the
  * enterprise profile replaces that with a concrete employee: roles decide the
  * tool permission matrix (M15.3), tenant membership decides the isolation
  * boundary, and the userId becomes the audit attribution
- * ("who asked the Agent to do this").
+ * "who asked the Agent to do this".
  * <p>
  * Credentials are deliberately NOT part of this record: the api key lives in
  * the {@link TenantRegistry}'s credential table only. Identity and credential
- * are separate concerns - {@code toString()} of this record must never leak
+ * are separate concerns - {@code toString} of this record must never leak
  * login secrets.
  *
- * @param userId      unique user identifier (global, e.g. "u-alice")
- * @param tenantId    the tenant this user belongs to (immutable membership, v1)
+ * @param userId unique user identifier (global, e.g. "u-alice"
+ * @param tenantId the tenant this user belongs to (immutable membership, v1)
  * @param displayName human-readable name
- * @param roles       role names feeding the permission matrix
+ * @param roles role names feeding the permission matrix
  *                    (e.g. ["agent:csr", "supervisor"]); empty = no grants
  */
 public record User(

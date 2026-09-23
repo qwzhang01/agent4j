@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Stage 5.2: governed access facade over {@link MemoryStore}.
+ *  governed access facade over {@link MemoryStore}.
  * <p>
  * The raw store API trusts its caller completely: any code holding a
  * {@code MemoryStore} reference can query any scope with no identity, no
@@ -42,7 +42,7 @@ import java.util.function.Consumer;
  * stay on {@link MemoryAdmin} — this facade covers the runtime read/write
  * path that agents and tools actually sit on.
  * <p>
- * <b>Deletion propagation (roadmap 5.2).</b> {@link #purgeForUser} /
+ * <b>Deletion propagation .</b> {@link #purgeForUser} /
  * {@link #purgeForTenant} hard-delete every entry in the affected scopes
  * and return a {@link DeletionPropagation} describing exactly what was
  * removed — not just "row gone", but which scopes, how many entries, at
@@ -56,7 +56,7 @@ public class MemoryGovernance {
     private final Consumer<BoundaryEvent> eventSink;
 
     /**
-     * @param store     the underlying store (required)
+     * @param store the underlying store (required)
      * @param readPolicy redaction applied to consumer-visible content on reads
      *                  (null = {@link RedactionPolicy#rawPlusMasked} default)
      * @param auditSink consumer of audit records (null = no-op, tests only;
@@ -252,7 +252,7 @@ public class MemoryGovernance {
     }
 
     /**
-     * Stage 5.2 deletion propagation record: not just "row gone" but which
+     * deletion propagation record: not just "row gone" but which
      * scopes were swept, which entry ids were removed, and when — deletion
      * becomes verifiable instead of trusted.
      */

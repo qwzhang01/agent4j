@@ -9,7 +9,7 @@ import java.security.Permission;
 import java.util.PropertyPermission;
 
 /**
- * In-guest security policy executor (Stage 4.1/4.2).
+ * In-guest security policy executor (/4.2).
  * <p>
  * SOURCE-INJECTED, never on the host classpath: {@code ProcessSandbox} embeds
  * this class inside the guest source tree it compiles (its own package), so
@@ -87,7 +87,7 @@ public class SandboxGuard {
         public void checkPermission(Permission perm) {
             // Policy refusal, not a machinery crash: the caller pattern
             // (AccessController.doPrivileged not used by guest code) means
-            // every check that falls through to deny() IS a policy denial.
+            // every check that falls through to deny IS a policy denial.
             if (perm instanceof FilePermission fp) {
                 checkFile(fp);
             } else if (perm instanceof SocketPermission) {

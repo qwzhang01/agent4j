@@ -14,13 +14,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Reflection/Critique contract tests: bounded cycles, output
+ * Reflection/Critique contract tests: bounded cycles, output
  * separation, degradation semantics.
  */
 class ReflectiveAgentTest {
 
 
-    /** Model client whose chat() returns scripted verdicts. */
+    /** Model client whose chat returns scripted verdicts. */
     static final class VerdictScript implements ModelClient {
         final Queue<String> verdicts = new LinkedBlockingQueue<>();
         int calls;
@@ -241,7 +241,7 @@ String answer = streamCollect(agent, "q", new AgentState(), events);
         assertEquals(0, critique.calls, "no critique on a failed delegate");
     }
 
-    // small local shim: run via stream() and collect the final answer
+    // small local shim: run via stream and collect the final answer
     // from the Done event (the interface's stream contract).
     private String streamCollect(ReflectiveAgent agent, String input, AgentState state,
                                  List<AgentEvent> sink) {

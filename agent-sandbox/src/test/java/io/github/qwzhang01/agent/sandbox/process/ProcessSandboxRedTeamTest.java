@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Stage 4.4 red-team tests: every attack scenario in the roadmap gets an
+ * red-team tests: every attack scenario in the roadmap gets an
  * honest BLOCKED / NOT-BLOCKED / NOT-APPLICABLE verdict.
  * <p>
  * Each test is a real escape attempt against the hardened PROCESS tier

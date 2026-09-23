@@ -12,10 +12,10 @@ import java.util.stream.Stream;
 
 /**
  * A view of - and a boundary around - one directory tree on the real file system
- * (Stage 17 M17.1, blueprint D1: "the workspace is a view + boundary, not a copy").
+ * (, blueprint D1: "the workspace is a view + boundary, not a copy".
  * <p>
- * Unlike {@code WorldState} (Stage 16, engine-owned blackboard) or {@code MemoryStore}
- * (Stage 8, store-owned sediment), the workspace is <b>external pre-existing fact</b>:
+ * Unlike {@code WorldState} (, engine-owned blackboard) or {@code MemoryStore}
+ * (, store-owned sediment), the workspace is <b>external pre-existing fact</b>:
  * the files are already there, the Agent only reads them. Whoever owns the state owns
  * its change discipline - for the file system that discipline is the patch flow (M17.2).
  * <p>

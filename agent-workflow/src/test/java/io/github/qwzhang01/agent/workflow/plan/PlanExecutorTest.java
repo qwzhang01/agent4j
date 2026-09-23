@@ -14,7 +14,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Planner/Executor integration tests: a Plan lowers to the
+ * Planner/Executor integration tests: a Plan lowers to the
  * EXISTING workflow runtime — no new runtime, dependency order enforced
  * by the graph, resume frontier computed from the blackboard.
  */

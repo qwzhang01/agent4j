@@ -17,7 +17,7 @@ import java.util.List;
  * <p>
  * The "dynamic execution" is handled by AgentLoop.
  * <p>
- * Handoffs (Stage 19): an agent may declare which agents it can transfer
+ * Handoffs : an agent may declare which agents it can transfer
  * the conversation to. The loop exposes each declaration as a
  * {@code transfer_to_<name>} tool; calling it swaps the active config while
  * the shared AgentState survives untouched.
@@ -44,7 +44,7 @@ public class AgentConfig {
     }
 
     /**
-     * Full constructor with context builder (Stage 8).
+     * Full constructor with context builder .
      * Pass {@code null} for contextBuilder to use the default passthrough behavior.
      */
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
@@ -53,7 +53,7 @@ public class AgentConfig {
     }
 
     /**
-     * Full constructor with handoffs (Stage 19).
+     * Full constructor with handoffs .
      * <p>
      * Handoffs hold direct references to target configs, so circular graphs
      * (A can transfer to B and B back to A) assemble naturally — no
@@ -69,7 +69,7 @@ public class AgentConfig {
 
     /**
      * Full constructor with KP5 input/output guardrails.
-     * {@code null} guardrails means {@link GuardrailChain#none()}.
+     * {@code null} guardrails means {@link GuardrailChain#none}.
      */
     public AgentConfig(String name, String systemPrompt, ModelClient modelClient,
                        ToolRegistry toolRegistry, int maxSteps, ContextBuilder contextBuilder,
@@ -160,15 +160,15 @@ public class AgentConfig {
     }
 
     /**
-     * Context builder for memory/context management (Stage 8).
-     * Null means passthrough (Stage 1-7 behavior).
+     * Context builder for memory/context management .
+     * Null means passthrough (-7 behavior).
      */
     public ContextBuilder getContextBuilder() {
         return contextBuilder;
     }
 
     /**
-     * Declared handoff targets (Stage 19). Empty by default.
+     * Declared handoff targets . Empty by default.
      */
     public List<HandoffSpec> getHandoffs() {
         return handoffs;

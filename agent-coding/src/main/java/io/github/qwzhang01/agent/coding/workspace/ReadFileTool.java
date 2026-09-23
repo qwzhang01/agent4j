@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * {@code read_file} - the Coding Agent's read handle on the workspace
- * (Stage 17 M17.1, blueprint: "reading is a privilege too").
+ * (, blueprint: "reading is a privilege too".
  * <p>
  * A thin wrapper over {@link Workspace#readFile(String)}: the safety layers (path
  * escape, deny policy, symlink escape, byte budget) all live in the workspace; the tool
@@ -16,7 +16,7 @@ import java.util.Objects;
  * model receives a readable observation and can recover (pick another path, give up).
  * <p>
  * Governance note (blueprint D8): this tool is side-effect free and therefore a natural
- * {@code AUTO} candidate in the Stage 9 permission chain.
+ * {@code AUTO} candidate in the permission chain.
  */
 public final class ReadFileTool implements Tool {
 

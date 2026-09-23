@@ -4,25 +4,25 @@ import java.time.Instant;
 import java.util.Set;
 
 /**
- * The result of a successful identity resolution (Stage 12 D4).
+ * The result of a successful identity resolution (D4).
  * <p>
  * A resolved identity is what a channel run executes under. Its
- * {@link #effectiveCapabilities()} is the intersection of the agent's
+ * {@link #effectiveCapabilities} is the intersection of the agent's
  * granted capabilities and the invoking user's channel role capabilities -
  * never the union, never the user's full permission set.
  * <p>
  * Audit attribution: the actor of any action taken under this identity is
- * the service account ({@link #actor()}), with the invoking user recorded
+ * the service account ({@link #actor}), with the invoking user recorded
  * as context - "the agent did it, on behalf of user X, with capability Y".
  *
- * @param channelId             where the run happens
- * @param userId                who invoked the agent (context, NOT the actor)
- * @param identity              the agent identity (the actor)
- * @param serviceAccountId      the service account id
+ * @param channelId where the run happens
+ * @param userId who invoked the agent (context, NOT the actor)
+ * @param identity the agent identity (the actor)
+ * @param serviceAccountId the service account id
  * @param effectiveCapabilities granted INTERSECT role capabilities
- * @param grantedScope          the original granted scope (memory scopes and
+ * @param grantedScope the original granted scope (memory scopes and
  *                              data classifications are granted-only in v1)
- * @param resolvedAt            resolution timestamp
+ * @param resolvedAt resolution timestamp
  */
 public record ResolvedIdentity(
         String channelId,

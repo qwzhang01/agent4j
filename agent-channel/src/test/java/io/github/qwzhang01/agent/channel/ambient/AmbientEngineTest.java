@@ -23,7 +23,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end tests for {@link AmbientEngine} (Stage 12 M12.4).
+ * End-to-end tests for {@link AmbientEngine} .
  * <p>
  * The engine's NoisePolicy uses a degenerate quiet window (00:00-00:00 =
  * never quiet) so verdicts are time-of-day independent: INFO -> DIGEST,

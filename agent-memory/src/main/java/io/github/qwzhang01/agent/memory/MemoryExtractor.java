@@ -21,8 +21,8 @@ public interface MemoryExtractor {
     /**
      * Extract candidate entries. Not yet policy-gated or stored.
      *
-     * @param messages       conversation to scan
-     * @param scope          scope to store under
+     * @param messages conversation to scan
+     * @param scope scope to store under
      * @param baseProvenance provenance template (actor + runId + at)
      */
     List<MemoryEntry> extract(List<ChatMessage> messages, String scope,

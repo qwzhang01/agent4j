@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 5.1: trim records emitted by {@link ContextWindowEnforcer} through
+ *  trim records emitted by {@link ContextWindowEnforcer} through
  * the optional trim listener - the "who got cut / when / at what cost"
  * telemetry the roadmap demands.
  */

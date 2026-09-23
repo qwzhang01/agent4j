@@ -9,7 +9,7 @@ import java.util.Map;
  * <p>
  * Design decision (D1): the workflow is DATA, not code. Structure is
  * expressed as POJOs, separated from execution. This is the foundation
- * for Stage 13 (declarative YAML definitions) and DAG visualization.
+ * for (declarative YAML definitions) and DAG visualization.
  * <p>
  * A Workflow can be executed N times with fresh WorkflowStates.
  */
@@ -58,15 +58,15 @@ public final class Workflow {
     }
 
     /**
-     * Stage 3.1 (harness roadmap): definition version, free-form
-     * ("" = unversioned legacy definition).
+     * (harness roadmap): definition version, free-form
+     * "" = unversioned legacy definition).
      */
     public String version() {
         return version;
     }
 
     /**
-     * Stage 3.1: structural fingerprint — SHA-256 prefix over the sorted
+     *  structural fingerprint — SHA-256 prefix over the sorted
      * node ids, edge triples (from/condition?/to) and retry policies. Two
      * definitions with the same fingerprint walk identically; a changed
      * graph or retry policy changes the fingerprint, so a resume against

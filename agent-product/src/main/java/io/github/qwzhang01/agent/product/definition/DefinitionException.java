@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
  * Fail-fast rejection of a definition: either it could not be parsed (syntax/unknown
  * field, with cause) or it failed semantic validation (carries all errors).
  * <p>
- * Aligned with the framework's fail-closed philosophy (Stage 9/12): a broken
+ * Aligned with the framework's fail-closed philosophy (/12): a broken
  * definition refuses to start the platform rather than degrading silently.
- * Tests assert on {@link #getErrors()} / cause, not on message strings.
+ * Tests assert on {@link #getErrors} / cause, not on message strings.
  */
 public final class DefinitionException extends RuntimeException {
 

@@ -48,9 +48,9 @@ class SandboxEscalatorTest {
         // After escalation to ProcessSandbox, the code compiles and runs in the subprocess.
         // ProcessSandbox does NOT block at the ClassLoader level, so File access succeeds
         // in the subprocess (the isolation is process-boundary, not class-block).
-        // We use ClassLoaderSandbox's `run()` signature here because the escalator
-        // tries ClassLoader first; the escalated Process sandbox uses `main()`.
-        // To test the block+escalate path, we use File access code with `run()` signature.
+        // We use ClassLoaderSandbox's `run` signature here because the escalator
+        // tries ClassLoader first; the escalated Process sandbox uses `main`.
+        // To test the block+escalate path, we use File access code with `run` signature.
         String code = """
                 public class Generated {
                     public static String run() throws Exception {
@@ -62,12 +62,12 @@ class SandboxEscalatorTest {
 
         // ClassLoader will BLOCK java.io.File access → escalates to ProcessSandbox.
         // ProcessSandbox compiles the code and runs it. However, since ProcessSandbox
-        // expects a `main(String[] args)` entry point, not `run()`, it will fail at runtime.
+        // expects a `main(String[] args)` entry point, not `run`, it will fail at runtime.
         // What matters for this test: result should NOT be a ClassLoader-blocked result
         // (i.e., the escalator did something beyond just returning the block).
         SandboxResult result = escalator.execute("Generated", code);
         // The escalator should have tried ClassLoader (which blocks), then escalated to Process.
-        // ProcessSandbox result may succeed or fail depending on `run()` vs `main()` but it
+        // ProcessSandbox result may succeed or fail depending on `run` vs `main` but it
         // is NOT a ClassLoader-BLOCKED result — escalation happened.
         assertFalse(SandboxEscalator.isBlocked(result),
                 "after escalation to ProcessSandbox, result must not be a ClassLoader-blocked result");

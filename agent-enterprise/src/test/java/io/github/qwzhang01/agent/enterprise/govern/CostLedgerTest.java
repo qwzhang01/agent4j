@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.3: the two-level cost ledger - pre-gate fail-closed,
+ *  the two-level cost ledger - pre-gate fail-closed,
  * post-recording accumulate, dimensions independent.
  */
 class CostLedgerTest {

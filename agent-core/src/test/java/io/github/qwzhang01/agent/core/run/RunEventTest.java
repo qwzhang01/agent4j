@@ -7,7 +7,7 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 1.3 acceptance: lifecycle events carry correlation + version.
+ * acceptance: lifecycle events carry correlation + version.
  */
 class RunEventTest {
 

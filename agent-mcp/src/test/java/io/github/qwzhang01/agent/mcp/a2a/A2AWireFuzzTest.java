@@ -11,7 +11,7 @@ import java.util.SplittableRandom;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8.3: malformed-input fuzz and property tests for the A2A wire codec.
+ *  malformed-input fuzz and property tests for the A2A wire codec.
  * <p>
  * Roadmap: "协议 malformed input fuzz/property tests". The A2A side of the
  * protocol border: {@link A2AJson} parses peer JSON into our task model.
@@ -62,7 +62,7 @@ class A2AWireFuzzTest {
             A2ATask task = A2AJson.taskFrom(taskJson);
 
             // Whatever the peer said, we get a task object with a non-null
-            // id (codec defaults to "unknown"). Status follows the codec's
+            // id (codec defaults to "unknown". Status follows the codec's
             // v1 contract: known label -> enum, unknown/null -> null (the
             // caller decides fail-open vs fail-closed), never an exception.
             assertNotNull(task);

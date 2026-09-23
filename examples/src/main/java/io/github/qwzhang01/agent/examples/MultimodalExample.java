@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Multimodal capabilities wired onto Stage 9 governance and Stage 7 long tasks.
+ * Multimodal capabilities wired onto governance and Stage 7 long tasks.
  * <p>
  * Demo 1: vision + image gen go through GovernedToolExecutor (approval / rate-limit / audit).
  * Demo 2: video submit is non-blocking; GenerationTaskCoordinator polls and fires

@@ -24,8 +24,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Stage 14 acceptance demo #1: record -> reward -> sample -> export -> replay,
- * the whole left half of the execution-to-training-data loop in one main().
+ * acceptance demo #1: record -> reward -> sample -> export -> replay,
+ * the whole left half of the execution-to-training-data loop in one main.
  * <p>
  * Run:
  * <pre>

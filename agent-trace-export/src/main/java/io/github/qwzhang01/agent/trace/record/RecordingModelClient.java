@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * ModelClient boundary decorator (Stage 14 D1): captures (request, response)
+ * ModelClient boundary decorator (D1): captures (request, response)
  * = (State, Action) into the active recording session.
  * <p>
  * Why the ModelClient boundary: {@code ReActAgentLoop.buildRequest} applies

@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.trace.reward;
 import io.github.qwzhang01.agent.trace.trajectory.Trajectory;
 
 /**
- * Pluggable reward source (Stage 14 D5): how good was this run?
+ * Pluggable reward source (D5): how good was this run?
  * <p>
  * Three implementation slots by design:
  * <ul>

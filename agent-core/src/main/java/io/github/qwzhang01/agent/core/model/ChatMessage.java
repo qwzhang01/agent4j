@@ -72,8 +72,8 @@ public record ChatMessage(
      * Example:
      * <pre>{@code
      * ChatMessage.user(List.of(
-     *     ContentPart.text("Describe this image"),
-     *     ContentPart.imageByUrl("https://example.com/photo.jpg")));
+     *     ContentPart.text"Describe this image",
+     *     ContentPart.imageByUrl"https://example.com/photo.jpg"));
      * }</pre>
      *
      * @param parts content parts, must not be empty

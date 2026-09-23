@@ -10,11 +10,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * event fires.
  * <p>
  * Registered by a node (e.g. WaitEventNode) via
- * {@code ctx.scheduler().waitForEvent(runId, eventKey)}.
+ * {@code ctx.scheduler.waitForEvent(runId, eventKey)}.
  * When {@code EventBroker.fire(eventKey)} is called, the scheduler resumes the Run.
  * <p>
  * Mutable class (not a record): {@code firedAt} is set by EventBroker when the
- * event fires, so timeout watchers can check {@link #isFired()} to avoid a
+ * event fires, so timeout watchers can check {@link #isFired} to avoid a
  * racy second resume.
  */
 public final class EventTrigger {
@@ -76,12 +76,12 @@ public final class EventTrigger {
         return false;
     }
 
-    /** Called by EventBroker when the event fires. Prefer {@link #tryMarkFired()}. */
+    /** Called by EventBroker when the event fires. Prefer {@link #tryMarkFired}. */
     public void markFired() {
         tryMarkFired();
     }
 
-    /** Called by EventBroker when the wait times out without a fire. Prefer {@link #tryMarkTimedOut()}. */
+    /** Called by EventBroker when the wait times out without a fire. Prefer {@link #tryMarkTimedOut}. */
     public void markTimedOut() {
         tryMarkTimedOut();
     }

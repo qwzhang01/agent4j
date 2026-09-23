@@ -29,7 +29,7 @@ public class InMemoryCompiler {
     /**
      * Compile a single Java source file.
      *
-     * @param className  the fully-qualified class name (e.g. "Generated")
+     * @param className the fully-qualified class name (e.g. "Generated"
      * @param sourceCode the Java source code
      * @return Map of class name -> bytecode bytes
      * @throws CompilationException if compilation fails

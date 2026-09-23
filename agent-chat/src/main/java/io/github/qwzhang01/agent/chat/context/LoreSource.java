@@ -13,9 +13,9 @@ import java.util.Objects;
  * Optional worldbook slice: host-supplied entries fire when the current
  * user line matches a keyword or regex.
  * <p>
- * Not registered by {@link ContextAssembler#defaults()} or
+ * Not registered by {@link ContextAssembler#defaults} or
  * {@link io.github.qwzhang01.agent.chat.ChatRoom.Builder} unless the host
- * calls {@code .source(new LoreSource(...))}. Calling {@code .source()}
+ * calls {@code .source(new LoreSource(...))}. Calling {@code .source}
  * replaces the default Persona + History pair; register those explicitly
  * if they are still wanted.
  * <p>

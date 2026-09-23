@@ -66,7 +66,7 @@ import java.util.regex.Pattern;
  * in-process reference semantics: scope isolation in {@code query}, the
  * ACTIVE-only default view with explicit status opt-in, lazy TTL filtering at
  * retrieval time, newest-first ordering, store-assigned ids on write, and
- * {@code write()} with an existing id <b>upserts</b> ({@code INSERT ... ON
+ * {@code write} with an existing id <b>upserts</b> ({@code INSERT ... ON
  * CONFLICT (id) DO UPDATE}) exactly like a map put — which also lets the admin
  * approve transition (close old line + activate an existing PENDING row) ride
  * the same atomic {@link #supersede} verb.
@@ -87,7 +87,7 @@ import java.util.regex.Pattern;
  * The ledger never needs to change for that step.
  * <p>
  * Timestamps bind as {@code TIMESTAMPTZ} via {@link OffsetDateTime} (UTC);
- * PostgreSQL stores microsecond precision. Enums bind as their {@code name()}
+ * PostgreSQL stores microsecond precision. Enums bind as their {@code name}
  * strings and read back with strict {@code valueOf} — a renamed enum value on
  * old rows surfaces as a loud read error rather than silent data loss.
  */
@@ -122,8 +122,8 @@ public class PgMemoryStore implements MemoryStore {
     }
 
     /**
-     * @param dataSource  host-supplied pool (framework never opens connections itself)
-     * @param table       ledger table name (plain SQL identifier)
+     * @param dataSource host-supplied pool (framework never opens connections itself)
+     * @param table ledger table name (plain SQL identifier)
      * @param ensureSchema {@code true} = create table + indexes if absent (safe
      *                     to run concurrently); {@code false} = DBA-managed schema
      */

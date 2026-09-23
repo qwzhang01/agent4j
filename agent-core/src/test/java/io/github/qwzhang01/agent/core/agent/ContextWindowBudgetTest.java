@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ContextWindowBudgetTest {
 
-    // historyBudget() arithmetic
+    // historyBudget arithmetic
 
     @Test
     @DisplayName("historyBudget() = total - system - tools - output")
@@ -26,7 +26,7 @@ class ContextWindowBudgetTest {
         assertEquals(0, budget.historyBudget());
     }
 
-    // forWindow() preset
+    // forWindow preset
 
     @Test
     @DisplayName("forWindow(128_000): historyBudget is ~55% of total")

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Default result sanitizer with configurable strategy (Stage 9 D5).
+ * Default result sanitizer with configurable strategy (D5).
  * <p>
  * Scans tool output for {@link InjectionPattern} matches and applies one of
  * three sanitization strategies when detected:

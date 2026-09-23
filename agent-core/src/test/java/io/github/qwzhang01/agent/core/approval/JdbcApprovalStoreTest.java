@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1: {@link JdbcApprovalStore} contract — mirrors the in-memory
+ *  {@link JdbcApprovalStore} contract — mirrors the in-memory
  * reference suite: idempotent submit, optimistic one-shot decide,
  * APPROVED-only revoke, overdue expiry flip, pending scans.
  */

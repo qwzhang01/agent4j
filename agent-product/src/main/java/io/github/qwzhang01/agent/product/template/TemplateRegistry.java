@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Registry of {@link AgentTemplate}s (Stage 13 M13.2).
+ * Registry of {@link AgentTemplate}s .
  * <p>
  * Registration discipline follows {@code ProductContext}: duplicate names fail
  * fast. Upgrading a template is an EXPLICIT {@link #replace(AgentTemplate)} -
@@ -114,7 +114,7 @@ public final class TemplateRegistry {
     /**
      * Load every template file from a directory (.yaml / .yml / .json).
      *
-     * @throws UncheckedIOException   on IO failure
+     * @throws UncheckedIOException on IO failure
      * @throws io.github.qwzhang01.agent.product.definition.DefinitionException on parse failure
      */
     public TemplateRegistry loadDir(Path dir) {

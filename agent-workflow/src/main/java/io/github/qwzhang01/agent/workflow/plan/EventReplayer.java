@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Replay/Time Travel (Stage 9): reconstruct an agent's conversation from a
+ * Replay/Time Travel : reconstruct an agent's conversation from a
  * recorded event history WITHOUT re-executing real side effects.
  * <p>
  * What it does: folds a {@link AgentEvent} stream (the loop's own emitted
@@ -29,7 +29,7 @@ import java.util.List;
  * Honest limits (v1): events carry no token usage, so the reconstructed
  * state cannot re-derive cost; the fold trusts the event stream's order;
  * divergent histories (a Done that never came, interleaved deltas after a
- * Done) are folded best-effort and flagged via {@link #anomalies()}.
+ * Done) are folded best-effort and flagged via {@link #anomalies}.
  */
 public final class EventReplayer {
 
@@ -106,7 +106,7 @@ public final class EventReplayer {
     }
 
     /**
-     * Interactive time travel (Stage 9 gap closure): fold only the FIRST
+     * Interactive time travel (gap closure): fold only the FIRST
      * {@code uptoIndex} events (exclusive bound: index {@code uptoIndex}
      * itself is NOT folded) and return the world at that boundary — the
      * reconstructed state, whether the original run had already reached
@@ -127,10 +127,10 @@ public final class EventReplayer {
      * The fold logic is exactly {@link #replay(List, int)}'s — the same
      * recording is re-read at any depth without re-executing anything.
      *
-     * @param events   the recorded stream (in emission order)
+     * @param events the recorded stream (in emission order)
      * @param maxSteps the step ceiling stamped on the rebuilt state
      * @param uptoIndex exclusive bound on how many events to fold
-     *                  (0 = empty world, events.size() = full replay)
+     *                  (0 = empty world, events.size = full replay)
      */
     public PrefixReplay replayPrefix(List<AgentEvent> events, int maxSteps, int uptoIndex) {
         if (uptoIndex < 0 || uptoIndex > events.size()) {
@@ -139,13 +139,13 @@ public final class EventReplayer {
                             + events.size() + " events - time travel cannot step past the recording");
         }
         Replay replayed = replay(events.subList(0, uptoIndex), maxSteps);
-        // replay() only stamps DONE when a Done event was actually folded,
+        // replay only stamps DONE when a Done event was actually folded,
         // so the state's status IS the done-within-prefix answer; the
         // subList cut cannot hide a Done that was already inside.
         boolean doneWithinPrefix = replayed.state().getStatus() == AgentState.Status.DONE;
         List<String> anomalies = new ArrayList<>(replayed.anomalies());
         if (uptoIndex < events.size() && !anomalies.isEmpty()) {
-            // A prefix cut before Done always yields replay()'s "history
+            // A prefix cut before Done always yields replay's "history
             // ended without Done" anomaly — correct for a broken
             // recording, wrong for a deliberate prefix. Drop it.
             anomalies.removeIf(a -> a.startsWith("history ended without Done"));

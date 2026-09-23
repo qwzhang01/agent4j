@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 7 tests: scheduled resume, event-driven resume, async task queue, token budget.
+ * tests: scheduled resume, event-driven resume, async task queue, token budget.
  */
 class TaskSchedulerTest {
 
@@ -113,7 +113,7 @@ class TaskSchedulerTest {
     @Test
     void eventFiredWithoutPayloadStillResumes() throws Exception {
         // Regression (Bug 1): fire(key) with no payload must still be visible
-        // via hasEventFired(), otherwise the node re-pauses or times out.
+        // via hasEventFired, otherwise the node re-pauses or times out.
         Workflow wf = Workflow.builder("no-payload-flow")
                 .node(io.github.qwzhang01.agent.scheduler.nodes.WaitEventNode.of("wait", "signal-only"))
                 .node(ActionNode.of("after", ctx -> "signal received"))

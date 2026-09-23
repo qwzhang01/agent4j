@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.2: the tenant knowledge base (D5 "knowledge is memory").
+ *  the tenant knowledge base (D5 "knowledge is memory".
  */
 class KnowledgeBaseTest {
 

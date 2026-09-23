@@ -19,7 +19,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 7.1 acceptance: the adapter produces real SDK spans with the
+ * acceptance: the adapter produces real SDK spans with the
  * documented hierarchy/attributes, orphans are counted not fabricated,
  * and the side-channel discipline holds (sink failure never throws).
  */

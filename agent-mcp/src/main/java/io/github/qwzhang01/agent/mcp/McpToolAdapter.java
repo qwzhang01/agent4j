@@ -15,18 +15,18 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Adapts an MCP tool (remote, served by an MCP server) to our local {@link Tool} interface (Stage 10 D1).
+ * Adapts an MCP tool (remote, served by an MCP server) to our local {@link Tool} interface (D1).
  * <p>
  * This is the <b>key glue</b> that makes MCP tools transparently usable in the existing framework:
  * <ul>
  *   <li>Registered into {@code ToolRegistry} like any local tool
  *   <li>Executed by {@code DefaultToolExecutor} like any local tool
- *   <li>Wrapped by {@code GovernedToolExecutor} (Stage 9) like any local tool
+ *   <li>Wrapped by {@code GovernedToolExecutor} like any local tool
  *       -- permissions, approval, audit, sanitization all <b>automatically apply</b>
- *   <li>Attached to {@code ModelRequest.tools} (Stage 1) like any local tool
+ *   <li>Attached to {@code ModelRequest.tools} like any local tool
  * </ul>
  * <p>
- * The governance layer (Stage 9) doesn't know -- and doesn't need to know --
+ * The governance layer doesn't know -- and doesn't need to know --
  * that this tool is remote. The decorator pattern's reward: new connection
  * method = new Tool implementation, governance layer unchanged.
  */

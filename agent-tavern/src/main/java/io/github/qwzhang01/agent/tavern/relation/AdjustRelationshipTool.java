@@ -9,7 +9,7 @@ import java.util.function.IntSupplier;
 
 /**
  * {@code adjust_relationship} - the character's handle on the relationship
- * domain (Stage 16 M16.3, blueprint D4: "influence is a tool").
+ * domain (, blueprint D4: "influence is a tool".
  * <p>
  * Same submitter pattern as {@code SetWorldFlagTool}: the tool holds the
  * matrix and a turn supplier, not the engine. Numeric bounds (the per-turn
@@ -21,7 +21,7 @@ import java.util.function.IntSupplier;
  * A rejected adjustment is NOT an exception: the rejection text becomes the
  * tool result the model reads in the ReAct loop, and the model self-corrects
  * (continue the scene naturally instead of brute-forcing affection) - the
- * Stage 2 tool-error contract applied as game design.
+ * tool-error contract applied as game design.
  */
 public final class AdjustRelationshipTool implements Tool {
 
@@ -43,7 +43,7 @@ public final class AdjustRelationshipTool implements Tool {
     private final java.util.function.Consumer<RelationshipMatrix.ApplyResult.Applied> appliedSink;
 
     /**
-     * @param matrix      the game's relationship matrix (single write path)
+     * @param matrix the game's relationship matrix (single write path)
      * @param currentTurn supplies the turn number the engine is playing
      * @param appliedSink receives every ACCEPTED adjustment (the engine records
      *                    it into the turn for replay); rejected adjustments

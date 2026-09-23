@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Stage 6.2: the allowlist itself — evaluate a descriptor against the
+ *  the allowlist itself — evaluate a descriptor against the
  * configured trust entries before any connection is attempted.
  * <p>
  * Roadmap: "远程 MCP Server allowlist 和信任等级". The gatekeeper rule:
@@ -17,7 +17,7 @@ import java.util.Objects;
  * <p>
  * Matching is by exact server name OR URL prefix. The honest scope: no
  * wildcards, no TLS pinning, no signature verification of server
- * identities (that is credential-boundary territory, tracked as a Stage 6
+ * identities (that is credential-boundary territory, tracked as a
  * gap in notes/harness-gap).
  */
 public final class McpAllowlist {

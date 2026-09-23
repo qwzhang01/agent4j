@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * JSONL-persisted view over {@link RunRegistry} (Stage 7.2: "persisted Run
- * Registry"): every appended record also lands as one JSON line, and
+ * JSONL-persisted view over {@link RunRegistry} "persisted Run
+ * Registry": every appended record also lands as one JSON line, and
  * {@link #load} rebuilds a fresh registry from a file - restart survival
  * for the "what combination served last night's bad batch" query.
  * <p>

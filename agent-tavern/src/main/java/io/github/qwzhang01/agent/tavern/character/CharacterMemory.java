@@ -10,19 +10,19 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Character memory factory (Stage 16 M16.1): the scope whitelist is the whole design.
+ * Character memory factory : the scope whitelist is the whole design.
  * <p>
  * Two scopes per character-in-a-game:
  * <ul>
- *   <li>{@code agent:{characterId}} - the character's cross-game memory ("this player
- *       bought me a mead last time"). Survives across games: a character remembers
+ *   <li>{@code agent:{characterId}} - the character's cross-game memory "this player
+ *       bought me a mead last time". Survives across games: a character remembers
  *       you by memory, not by re-reading old chat transcripts (blueprint D2:
  *       memory, not history).</li>
  *   <li>{@code session:{gameId}} - this game's plot memory. A new game starts with
  *       a fresh session scope; last game's plot is invisible (cross-game isolation).</li>
  * </ul>
- * Sharing is a scope value, not a separate system (Stage 8 D3, the same trick as
- * Stage 12's {@code channelMemoryContext}). Cross-character isolation comes free:
+ * Sharing is a scope value, not a separate system (D3, the same trick as
+ * 's {@code channelMemoryContext}). Cross-character isolation comes free:
  * lyra's whitelist never lists {@code agent:marcus}.
  * <p>
  * Zero new scope kinds are introduced - AGENT and SESSION already exist in
@@ -73,7 +73,7 @@ public final class CharacterMemory {
      * <p>
      * Compaction is deliberately off (null compressor) - the blueprint's honest
      * boundary (D2): v1 keeps full in-game history; end-of-game summarization is
-     * a v2 refinement over Stage 8's ContextCompressor.
+     * a v2 refinement over 's ContextCompressor.
      */
     public ContextBuilder contextBuilder(String characterId, String gameId) {
         return new MemoryContextBuilder(

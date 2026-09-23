@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Publish-subscribe stream of {@link VisibilityEvent}s (Stage 12 M12.3,
+ * Publish-subscribe stream of {@link VisibilityEvent}s (,
  * design D6).
  * <p>
  * Push beats poll: members subscribe once and receive every milestone in

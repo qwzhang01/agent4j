@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.Base64;
 
 /**
- * Stage 6.3: HTTP authentication + push-notification integrity for A2A.
+ *  HTTP authentication + push-notification integrity for A2A.
  * <p>
  * Roadmap: "HTTP 请求认证、授权、签名验证" + "Push Notification 签名和重放保护".
  * The framework-level split: this class is the PRIMITIVE layer (constant-time

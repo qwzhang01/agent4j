@@ -8,7 +8,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.2 tests: the two default aggregation strategies.
+ * tests: the two default aggregation strategies.
  */
 class ResultAggregatorTest {
 

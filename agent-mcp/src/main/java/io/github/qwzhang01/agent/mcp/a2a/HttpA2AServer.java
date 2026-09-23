@@ -30,7 +30,7 @@ import java.util.function.UnaryOperator;
  * protocol endpoint -- the agent itself is untouched, what changes is how it
  * answers the phone. It is not a separate process or framework; in a Spring
  * Boot host you would start this next to your beans, in a plain host from
- * main().
+ * main.
  * <p>
  * Spec shape served:
  * <ul>
@@ -53,15 +53,15 @@ import java.util.function.UnaryOperator;
  * rejects the task outright (stored and returned as {@code rejected},
  * the agent never runs). The framework deliberately does not depend on
  * agent-security from this module (same boundary discipline as the mcp
- * client) -- plug Stage 9's sanitizer in at the assembly layer.
+ * client) -- plug 's sanitizer in at the assembly layer.
  * <p>
  * v2: {@code message/stream} (SSE), {@code tasks/pushNotification/set}
  * (webhook on terminal / input-required), and {@code message.taskId}
  * continues an {@code input-required} task. Text parts only, 127.0.0.1
  * binding. The advertised card always reports
- * {@link A2ACapabilities#v2()}.
+ * {@link A2ACapabilities#v2}.
  * <p>
- * Stage 6.3: tasks live in a pluggable {@link A2ATaskStore} (default
+ *  tasks live in a pluggable {@link A2ATaskStore} (default
  * in-memory; plug Redis/Postgres behind the same surface to survive
  * restarts — {@code beginTask} resumes from the stored serialized
  * {@link AgentState}). Optional bearer auth gates every route except the
@@ -98,8 +98,8 @@ public class HttpA2AServer implements AutoCloseable {
     }
 
     /**
-     * @param port               0 = ephemeral (pick a free port)
-     * @param inboundSanitizer   nullable; see class javadoc. A throwing
+     * @param port 0 = ephemeral (pick a free port)
+     * @param inboundSanitizer nullable; see class javadoc. A throwing
      *                           sanitizer rejects the task.
      */
     public HttpA2AServer(AgentCard card, Agent agent, int port,
@@ -109,10 +109,10 @@ public class HttpA2AServer implements AutoCloseable {
     }
 
     /**
-     * Stage 6.3 full form: pluggable task store + bearer auth + signed pushes.
+     * full form: pluggable task store + bearer auth + signed pushes.
      *
-     * @param taskStore       where tasks live (plug Redis/Postgres here)
-     * @param bearerToken     required Authorization token; null disables auth
+     * @param taskStore where tasks live (plug Redis/Postgres here)
+     * @param bearerToken required Authorization token; null disables auth
      * @param pushSharedSecret HMAC secret for push notifications; null sends
      *                        legacy unsigned pushes
      */
@@ -126,7 +126,7 @@ public class HttpA2AServer implements AutoCloseable {
     }
 
     /**
-     * Batch 4 full form: card identity signing on top of the Stage 6.3
+     * Batch 4 full form: card identity signing on top of the
      * form. When {@code cardSigningKeys} is set, every well-known card
      * response carries {@link A2ACardIdentity#CARD_SIGNATURE_HEADER} — a
      * signature over the card body bytes made with this server's private
@@ -194,7 +194,7 @@ public class HttpA2AServer implements AutoCloseable {
         stop();
     }
 
-    /** Bound port; the requested one (possibly 0) before start(). */
+    /** Bound port; the requested one (possibly 0) before start. */
     public synchronized int port() {
         return started ? server.getAddress().getPort() : requestedPort;
     }

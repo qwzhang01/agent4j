@@ -15,9 +15,9 @@ import java.util.function.UnaryOperator;
 
 /**
  * External worker: bridges the unified {@link AgentWorker} abstraction to an
- * A2A remote agent (Stage 11 M11.4, D1 + D5).
+ * A2A remote agent (, D1 + D5).
  * <p>
- * The "external" half of the unified abstraction: {@code execute()} translates
+ * The "external" half of the unified abstraction: {@code execute} translates
  * a {@link WorkerTask} into an {@link A2ATask} and delegates via
  * {@link A2AClient#sendTask} -- protocol-shaped delegation instead of a method
  * call. The supervisor, aggregation and failure policies treat it EXACTLY like
@@ -27,18 +27,18 @@ import java.util.function.UnaryOperator;
  * Wire a sanitizer via the constructor -- the framework deliberately does NOT
  * depend on agent-security from this module (same boundary discipline as
  * agent-mcp), so the sanitizer is a plain {@code UnaryOperator<String>} and the
- * assembly layer plugs in Stage 9's implementation:
+ * assembly layer plugs in 's implementation:
  * <pre>
  * // wiring example (in the assembly / examples layer):
- * ResultSanitizer stage9 = new DefaultResultSanitizer();
- * new ExternalAgentWorker("reviewer", a2aClient, card,
- *         output -&gt; stage9.sanitize(output).sanitized());
+ * ResultSanitizer = new DefaultResultSanitizer;
+ * new ExternalAgentWorker"reviewer", a2aClient, card,
+ *         output -&gt; .sanitize(output).sanitized);
  * </pre>
  * A sanitizer that wants to BLOCK the result entirely simply throws -- the
  * worker converts that into failure data, which is the correct semantic.
  * <p>
  * Cost attribution v1: durationMs is recorded per result; token accounting
- * waits for Stage 18 (the A2A result carries no token fields in v1).
+ * waits for (the A2A result carries no token fields in v1).
  */
 public class ExternalAgentWorker implements AgentWorker {
 

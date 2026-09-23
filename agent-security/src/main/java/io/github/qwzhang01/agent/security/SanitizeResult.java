@@ -1,11 +1,11 @@
 package io.github.qwzhang01.agent.security;
 
 /**
- * Result of sanitizing a tool's output (Stage 9 D5).
+ * Result of sanitizing a tool's output (D5).
  *
  * @param sanitized the sanitized text (same as input if not modified)
- * @param modified  whether any injection pattern was found and removed
- * @param reason    description of what was detected (null if not modified)
+ * @param modified whether any injection pattern was found and removed
+ * @param reason description of what was detected (null if not modified)
  */
 public record SanitizeResult(
         String sanitized,

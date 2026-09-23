@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Reflection/Critique wrapper (Stage 9): a decorator around any
+ * Reflection/Critique wrapper : a decorator around any
  * {@link Agent} that critiques each candidate answer and regenerates until
  * the critique passes or {@code maxCycles} is exhausted.
  * <p>
@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  * <pre>{@code
  * Agent reflective = new ReflectiveAgent(builtAgent, critiqueClient)
  *         .maxCycles(2)
- *         .critiquePrompt(ctx -> "...");
+ *         .critiquePrompt(ctx -> "...";
  * }</pre>
  * The critique model call is a plain model call (no tools) against the
  * SAME model client the loop uses — reflection is not a second agent with
@@ -69,7 +69,7 @@ public final class ReflectiveAgent implements Agent {
 
         /**
          * @param userQuestion the original user input
-         * @param candidate    the candidate answer to critique
+         * @param candidate the candidate answer to critique
          * @return critique instruction for the critique model
          */
         String critiqueInstruction(String userQuestion, String candidate);

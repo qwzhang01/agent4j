@@ -120,7 +120,7 @@ class EmbeddingMemoryStoreTest {
         EmbeddingMemoryStore store = new EmbeddingMemoryStore(new InMemoryMemoryStore(), client);
 
         MemoryEntry stored = store.write(entry("diet", "allergic to peanuts"));
-        // withContent() deliberately drops the embedding: edited text has a stale vector.
+        // withContent deliberately drops the embedding: edited text has a stale vector.
         store.update(stored.withContent("allergic to shellfish"));
 
         assertEquals(2, client.calls.get(), "content edit must re-embed the new text");

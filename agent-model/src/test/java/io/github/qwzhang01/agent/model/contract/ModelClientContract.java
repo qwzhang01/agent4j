@@ -21,13 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.1: the shared contract test every {@link ModelClient} provider
+ *  the shared contract test every {@link ModelClient} provider
  * implementation must pass.
  * <p>
  * A provider is not "done" when its happy path works against its own vendor
  * SDK. It is done when it passes THIS suite — the same behavioural bar for
  * every vendor: sync, streaming, tool calls, structured output, usage
- * accounting, error mapping, and the additive Stage 5/6 fields. New providers
+ * accounting, error mapping, and the additive /6 fields. New providers
  * plug in by implementing the two abstract hooks and running the suite.
  * <p>
  * The suite runs against an injectable fake HTTP layer, so it validates the
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * What each hook provides:
  * <ul>
  *   <li>{@link #clientFor(String)} — a client wired to the canned HTTP body</li>
- *   <li>{@link #providerName()} — expected name in audit records</li>
+ *   <li>{@link #providerName} — expected name in audit records</li>
  * </ul>
  */
 public abstract class ModelClientContract {

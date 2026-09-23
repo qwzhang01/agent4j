@@ -24,8 +24,8 @@ import java.util.List;
  * Topology (all loopback, all real JSON over HTTP):
  * <pre>
  *   supervisor (JVM A, the "caller" side)
- *   └── translator  EXTERNAL worker bridging HttpA2AClient
- *                    ↕  message/send + tasks/get + /.well-known/agent.json
+ *   └── translator EXTERNAL worker bridging HttpA2AClient
+ *                    ↕ message/send + tasks/get + /.well-known/agent.json
  *                   HttpA2AServer wrapping a SimpleAgent (the "remote" side)
  * </pre>
  * Demonstrates, in order:
@@ -36,7 +36,7 @@ import java.util.List;
  *   <li>task failure: the remote agent errors -> task failed, exception</li>
  *   <li>inbound defense: a sanitizer that blocks injection text rejects the
  *       task BEFORE the agent runs (REJECTED, not FAILED)</li>
- *   <li>outbound defense: Stage 9 sanitizer wired on the caller side (D5)</li>
+ *   <li>outbound defense: sanitizer wired on the caller side (D5)</li>
  *   <li>supervisor routing over HTTP: dispatchBySkill treats the remote agent
  *       exactly like a local worker</li>
  * </ol>

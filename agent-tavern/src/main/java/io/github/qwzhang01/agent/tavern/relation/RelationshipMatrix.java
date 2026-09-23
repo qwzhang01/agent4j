@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * All player-to-character relationships, with the turn-accumulated limiter
- * as the only write path (Stage 16, blueprint D4).
+ * as the only write path (, blueprint D4).
  * <p>
  * Fail-closed: an adjustment that would exceed the per-turn net-change budget
  * is REJECTED with a reason - rejection is a normal game flow (the model reads

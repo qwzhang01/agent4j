@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The single codec for the save/replay file formats (Stage 16 M16.4) -
- * the domain cousin of Stage 14's TrajectoryCodec.
+ * The single codec for the save/replay file formats -
+ * the domain cousin of 's TrajectoryCodec.
  * <p>
  * Hand-built JSON trees, not annotation magic: the file format is a contract,
  * and contracts live in exactly one place. {@code GameStore} writes through
@@ -29,16 +29,16 @@ import java.util.Map;
  * <p>
  * Formats:
  * <pre>
- * save.json      := { gameId, world{turnCount,location,flags{}},
+ * save.json := { gameId, world{turnCount,location,flags{}},
  *                     relationships{id{value,lastChangedTurn}},
  *                     character_histories{id[msg]},
  *                     fired_event_ids[] }
- * turn-log.jsonl := line 1  {"kind":"initial", world{}, relationships{}}
- *                   line n  {"kind":"turn", turnNo, playerInput,
+ * turn-log.jsonl := line 1 {"kind":"initial", world{}, relationships{}}
+ *                   line n {"kind":"turn", turnNo, playerInput,
  *                            speakingCharacterId, responses[], appliedEffects[],
  *                            relationshipChanges[], triggeredEventIds[], timestamp}
- * message        := { role, content, toolCalls?[{id,name,args}], toolCallId?, name? }
- * effect         := { type:"SetFlag",key,value } | { type:"ClearFlag",key }
+ * message := { role, content, toolCalls?[{id,name,args}], toolCallId?, name? }
+ * effect := { type:"SetFlag",key,value } | { type:"ClearFlag",key }
  *                  | { type:"SetLocation",location }
  * </pre>
  * v1 honest boundary: text-only saves. A message carrying multimodal parts

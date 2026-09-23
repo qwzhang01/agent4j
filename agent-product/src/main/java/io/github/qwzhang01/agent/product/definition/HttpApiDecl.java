@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Inline HTTP API tool declaration (Stage 13 M13.3, D3: a config-declared REST
+ * Inline HTTP API tool declaration (, D3: a config-declared REST
  * endpoint becomes a Tool without a single line of Java).
  * <pre>{@code
  * tools:
@@ -12,30 +12,30 @@ import java.util.Objects;
  *       name: weather-query
  *       description: 查询城市实时天气
  *       endpoint: https://api.weather.example/v1/now
- *       method: GET                      # default GET
+ *       method: GET # default GET
  *       params:
  *         city: { in: query, type: string, required: true }
  *         note: { in: body, type: string, required: false }
  *       response:
- *         extract: "$.data.temperature"  # dot path; absent = raw body
+ *         extract: "$.data.temperature" # dot path; absent = raw body
  *       auth:
  *         type: bearer
- *         token: "${env:WEATHER_TOKEN}"  # secrets NEVER literal in YAML
- *       timeoutSeconds: 3                # default 10
+ *         token: "${env:WEATHER_TOKEN}" # secrets NEVER literal in YAML
+ *       timeoutSeconds: 3 # default 10
  * }</pre>
  * <p>
- * This is the config-layer counterpart of MCP (Stage 10): MCP connects to
+ * This is the config-layer counterpart of MCP : MCP connects to
  * servers that implement the protocol (discovery for free); this connects to
  * plain REST APIs the author has to describe (no server-side cooperation).
  * Once registered, both are ordinary {@code Tool}s - identical governance.
  *
- * @param name           tool name (the registry key and the model-visible name)
- * @param description    what the tool does - clarity matters, the model reads it
- * @param endpoint       URL, may contain {@code {param}} path placeholders
- * @param method         HTTP method, null = GET
- * @param params         parameter declarations keyed by name, null = no params
- * @param response       response extraction, null = raw body
- * @param auth           auth wiring, null = anonymous
+ * @param name tool name (the registry key and the model-visible name)
+ * @param description what the tool does - clarity matters, the model reads it
+ * @param endpoint URL, may contain {@code {param}} path placeholders
+ * @param method HTTP method, null = GET
+ * @param params parameter declarations keyed by name, null = no params
+ * @param response response extraction, null = raw body
+ * @param auth auth wiring, null = anonymous
  * @param timeoutSeconds request timeout, null = 10
  */
 public record HttpApiDecl(
@@ -58,9 +58,9 @@ public record HttpApiDecl(
     /**
      * A single parameter declaration.
      *
-     * @param in          where the value goes: query | body | path
-     * @param type        documentation for the model (string/number/boolean)
-     * @param required    whether the model must supply it
+     * @param in where the value goes: query | body | path
+     * @param type documentation for the model (string/number/boolean)
+     * @param required whether the model must supply it
      * @param description parameter hint for the model
      */
     public record ParamDecl(String in, String type, boolean required, String description) {
@@ -83,7 +83,7 @@ public record HttpApiDecl(
      * discipline (the factory resolves references; literals pass through with
      * a javadoc warning here).
      *
-     * @param type  "bearer" (v1)
+     * @param type "bearer" (v1)
      * @param token token value or {@code ${env:NAME}} reference
      */
     public record AuthDecl(String type, String token) {

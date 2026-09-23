@@ -6,10 +6,10 @@ import java.util.Objects;
 
 /**
  * An enterprise business task: the business-level projection of workflow runs
- * (Stage 15 M15.4, D7).
+ * (, D7).
  * <p>
  * A task is NOT a run. Runs are technical executions indexed by runId; users
- * and supervisors index business work ("refund ticket T-0001"). One task maps
+ * and supervisors index business work "refund ticket T-0001". One task maps
  * to one or more runs (submit-run, resume of the same run, a retry run), the
  * current run being the last entry of {@code runIds}. Approvals hang on the
  * TASK, not the run - the supervisor approves the business, not the execution.
@@ -23,19 +23,19 @@ import java.util.Objects;
  * </pre>
  * v1 honest boundary: PAUSED is always interpreted as WAITING_APPROVAL - in
  * this profile the only thing that pauses a run is a human approval node
- * (Stage 7 fire/timer pauses have a different enterprise semantic, out of
+ * (fire/timer pauses have a different enterprise semantic, out of
  * scope). Immutable record + wither derivations; the
  * {@link EnterpriseTaskManager} owns all transitions.
  *
- * @param taskId      business identifier ("T-0001")
- * @param tenantId    owning tenant (isolation)
+ * @param taskId business identifier "T-0001"
+ * @param tenantId owning tenant (isolation)
  * @param submitterId who submitted the task (audit attribution)
  * @param description business description
- * @param status      current lifecycle status
- * @param runIds      run history, newest last; empty until the first run starts
- * @param approvals   approval records in order (the audit trail of decisions)
- * @param createdAt   submission time
- * @param updatedAt   last transition time
+ * @param status current lifecycle status
+ * @param runIds run history, newest last; empty until the first run starts
+ * @param approvals approval records in order (the audit trail of decisions)
+ * @param createdAt submission time
+ * @param updatedAt last transition time
  */
 public record BusinessTask(
         String taskId,

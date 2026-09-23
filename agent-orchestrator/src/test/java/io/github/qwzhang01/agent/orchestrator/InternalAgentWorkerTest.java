@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.1 tests: the unified worker abstraction + internal worker.
+ * tests: the unified worker abstraction + internal worker.
  */
 class InternalAgentWorkerTest {
 

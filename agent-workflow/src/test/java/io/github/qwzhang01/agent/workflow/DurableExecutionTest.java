@@ -26,7 +26,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 3 acceptance (harness roadmap): durable execution, idempotency
+ * acceptance (harness roadmap): durable execution, idempotency
  * and persistent approval.
  * <p>
  * Roadmap acceptance lines covered here:

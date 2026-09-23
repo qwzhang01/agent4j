@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.model.openai;
 import java.util.Set;
 
 /**
- * Stage 6.1: explicit capability declaration for OpenAI-compatible vendors.
+ *  explicit capability declaration for OpenAI-compatible vendors.
  * <p>
  * Roadmap: "对 OpenAI-compatible 的不同厂商 extra body 和响应差异做
  * capability 声明" — vendors behind one protocol still disagree on the

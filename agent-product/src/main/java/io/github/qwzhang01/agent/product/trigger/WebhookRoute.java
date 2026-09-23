@@ -3,13 +3,13 @@ package io.github.qwzhang01.agent.product.trigger;
 import java.util.Objects;
 
 /**
- * A webhook routing rule (Stage 13 M13.5, D8): which agent handles which
+ * A webhook routing rule (, D8): which agent handles which
  * external source, and how the payload becomes the agent's input.
  *
- * @param source          external source identifier (e.g. "github", "alerting")
- * @param agentName       target agent (looked up in the AgentRegistry)
+ * @param source external source identifier (e.g. "github", "alerting"
+ * @param agentName target agent (looked up in the AgentRegistry)
  * @param payloadTemplate optional {@code {$.path}} template; null = raw JSON
- * @param secret          HMAC-SHA256 signing secret (resolve ${env:...} in the
+ * @param secret HMAC-SHA256 signing secret (resolve ${env:...} in the
  *                        assembly layer BEFORE constructing the route)
  */
 public record WebhookRoute(String source, String agentName, String payloadTemplate, String secret) {

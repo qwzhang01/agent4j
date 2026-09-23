@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Auto-configures a {@link ModelClient}, a profile-aware
- * {@link AgentFactory} (Stage 8.2), the boot-time high-risk config check,
+ * {@link AgentFactory} , the boot-time high-risk config check,
  * the six-face health indicator, and the graceful shutdown coordinator.
  * <p>
  * Does not register an {@code Agent} bean — inject {@link AgentFactory}
@@ -66,7 +66,7 @@ public class AgentAutoConfiguration {
     }
 
     /**
-     * Stage 8.2 profile-aware factory. SECURE/TEST assemble governed
+     * profile-aware factory. SECURE/TEST assemble governed
      * agents via SecureAgentBuilder; UNSAFE is the explicit raw path.
      */
     @Bean
@@ -88,7 +88,7 @@ public class AgentAutoConfiguration {
      * single-argument {@link AgentFactory} constructor.
      *
      * @deprecated inject {@link AgentProperties} and use the two-argument
-     *             bean method (profile-aware since Stage 8.2)
+     *             bean method (profile-aware since )
      * @since 0.1.4
      */
     @Deprecated
@@ -97,7 +97,7 @@ public class AgentAutoConfiguration {
     }
 
     /**
-     * Six-face health indicator (Stage 8.2): model face probes the
+     * Six-face health indicator : model face probes the
      * client's presence; store/scheduler/mcp/a2a/sandbox faces are
      * contributed by their owning modules' beans when present (via
      * {@code AgentHealthIndicator} beans the app or module starters
@@ -119,7 +119,7 @@ public class AgentAutoConfiguration {
     }
 
     /**
-     * Graceful shutdown coordinator (Stage 8.2): gate + bounded drain +
+     * Graceful shutdown coordinator : gate + bounded drain +
      * straggler cancel. Apps bind it to their runtime's stop hooks.
      */
     @Bean
@@ -128,7 +128,7 @@ public class AgentAutoConfiguration {
     }
 
     /**
-     * Boot-time high-risk config check (Stage 8.2). Runs when the factory
+     * Boot-time high-risk config check . Runs when the factory
      * bean exists; SECURE blocks the boot on HIGH findings, TEST warns.
      * The check result is logged as one structured block either way.
      * <p>

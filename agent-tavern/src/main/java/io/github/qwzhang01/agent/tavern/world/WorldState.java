@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * The game world as an immutable domain blackboard (Stage 16, blueprint D3).
+ * The game world as an immutable domain blackboard (, blueprint D3).
  * <p>
  * Record-style: {@link #apply(WorldEffect)} returns a NEW state, the receiver
  * is never mutated. The single mutation point in a running game is the turn
@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
  * "Turn 8 in the great hall" is world state, not memory and not run state.
  *
  * @param turnCount how many turns have been entered (0 before the first turn)
- * @param location  where the scene takes place
- * @param flags     named world flags (immutable copy)
+ * @param location where the scene takes place
+ * @param flags named world flags (immutable copy)
  */
 public record WorldState(int turnCount, String location, Map<String, String> flags) {
 
@@ -28,7 +28,7 @@ public record WorldState(int turnCount, String location, Map<String, String> fla
         if (location == null || location.isBlank()) {
             throw new IllegalArgumentException("location must not be null or blank");
         }
-        // LinkedHashMap copy, not Map.copyOf: describe() renders flags in
+        // LinkedHashMap copy, not Map.copyOf: describe renders flags in
         // insertion order, and [world] notes + replay summaries must be stable
         flags = flags == null ? Map.of()
                 : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(flags));

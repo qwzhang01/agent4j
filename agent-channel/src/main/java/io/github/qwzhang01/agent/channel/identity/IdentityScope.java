@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The resource scope granted to a service identity (Stage 12 D4).
+ * The resource scope granted to a service identity (D4).
  * <p>
  * An agent never inherits the invoking user's permissions wholesale. Its
  * reachable resources are an explicitly granted minimal set, declared in
@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
  * data classifications are granted-only in v1 (the user side has no
  * corresponding input yet - documented honestly, not hidden).
  *
- * @param capabilities        granted capability strings (never null)
- * @param memoryScopes        granted memory namespaces (never null)
+ * @param capabilities granted capability strings (never null)
+ * @param memoryScopes granted memory namespaces (never null)
  * @param dataClassifications granted data classifications (never null)
  */
 public record IdentityScope(
@@ -67,7 +67,7 @@ public record IdentityScope(
 
     /**
      * Whether this scope may read the given memory namespace string
-     * (e.g. "channel:team-eng").
+     * (e.g. "channel:team-eng".
      */
     public boolean canReadMemoryScope(String scope) {
         return scope != null && memoryScopes.contains(scope);
@@ -77,7 +77,7 @@ public record IdentityScope(
     /**
      * Element-wise intersection of all three sets.
      * <p>
-     * This is the core of Stage 12 D4: effective permissions =
+     * This is the core of D4: effective permissions =
      * granted scope INTERSECT user role permissions. A capability present
      * on only one side does not survive.
      */

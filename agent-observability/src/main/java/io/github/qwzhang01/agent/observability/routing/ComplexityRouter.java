@@ -46,9 +46,9 @@ public final class ComplexityRouter implements ModelRouter {
     }
 
     /**
-     * @param premiumModel      candidate key for the premium tier
-     * @param cheapModel        candidate key for the cheap tier
-     * @param messageThreshold  route premium when the message count is >= this
+     * @param premiumModel candidate key for the premium tier
+     * @param cheapModel candidate key for the cheap tier
+     * @param messageThreshold route premium when the message count is >= this
      * @param complexityMarkers substrings in the last user message that force premium
      */
     public ComplexityRouter(String premiumModel, String cheapModel,

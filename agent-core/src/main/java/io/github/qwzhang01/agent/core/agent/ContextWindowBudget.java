@@ -9,10 +9,10 @@ package io.github.qwzhang01.agent.core.agent;
  * remain for conversation history.
  * <pre>
  *   totalWindowTokens
- *   ├── systemReserve      — system prompt (stable, does not grow with turns)
- *   ├── toolSchemaReserve  — tool / handoff definitions (stable per config)
- *   ├── outputHeadroom     — reserved for model output (never consumed by input)
- *   └── historyBudget()    — what is left: conversation history
+ *   ├── systemReserve — system prompt (stable, does not grow with turns)
+ *   ├── toolSchemaReserve — tool / handoff definitions (stable per config)
+ *   ├── outputHeadroom — reserved for model output (never consumed by input)
+ *   └── historyBudget — what is left: conversation history
  * </pre>
  * Design principle: the four-account split is an explicit product decision.
  * "Who to cut when over budget" is a product姿态:
@@ -23,7 +23,7 @@ package io.github.qwzhang01.agent.core.agent;
  *   <li>Refusing to serve → honest, but disrupts UX.</li>
  * </ul>
  * v1 default (implemented by {@link ContextWindowEnforcer}): drop oldest history
- * messages until the history estimate fits within {@link #historyBudget()}.
+ * messages until the history estimate fits within {@link #historyBudget}.
  * <p>
  * Token estimation uses the {@code chars / 4} heuristic throughout (no tokenizer
  * dependency; consistent with {@code ContextBudget} in agent-memory).
@@ -75,10 +75,10 @@ public record ContextWindowBudget(
     /**
      * Explicit four-slot constructor.
      *
-     * @param totalWindowTokens  model context window size (e.g. 128_000 for Claude Sonnet)
-     * @param systemReserve      tokens reserved for the system prompt
-     * @param toolSchemaReserve  tokens reserved for tool / handoff schemas
-     * @param outputHeadroom     tokens reserved for model output
+     * @param totalWindowTokens model context window size (e.g. 128_000 for Claude Sonnet)
+     * @param systemReserve tokens reserved for the system prompt
+     * @param toolSchemaReserve tokens reserved for tool / handoff schemas
+     * @param outputHeadroom tokens reserved for model output
      */
     public static ContextWindowBudget of(int totalWindowTokens,
                                          int systemReserve,

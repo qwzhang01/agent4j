@@ -27,10 +27,10 @@ import java.util.Objects;
 
 /**
  * Translates a validated {@link AgentDefinition} into a running {@link Agent}
- * (Stage 13 M13.1, D2: a translator, not a generator).
+ * (, D2: a translator, not a generator).
  * <p>
  * No code generation, no reflection: every section of the definition is mapped
- * onto the EXISTING Stage 1-12 construction path -
+ * onto the EXISTING -12 construction path -
  * <ul>
  *   <li>persona -&gt; {@code AgentConfig.systemPrompt} (+ temperature via decorator)</li>
  *   <li>model -&gt; registered clients, wired as {@code Temperature(Fallback(primary, fallbacks))}</li>
@@ -96,10 +96,10 @@ public final class AgentDefinitionBinder {
      * {@link #bind}, plus declarative ambient instructions built from
      * spec.ambient. Returns the session plus the instructions - wiring the
      * instructions into an AmbientEngine remains assembly-layer work
-     * (Stage 12's pattern: the product layer produces, the assembly composes).
+     * ('s pattern: the product layer produces, the assembly composes).
      *
      * @param definition validated definition (may carry spec.ambient)
-     * @param channel    channel metadata (id + members)
+     * @param channel channel metadata (id + members)
      * @return the bound session and its ambient instructions
      */
     public ChannelBinding bindChannel(AgentDefinition definition, ChannelContext channel) {
@@ -197,7 +197,7 @@ public final class AgentDefinitionBinder {
 
 
     /**
-     * Build Stage 12 {@link AmbientInstruction}s from declarative ambient
+     * Build {@link AmbientInstruction}s from declarative ambient
      * sections. The CONDITION stays a Java extension point: YAML declares
      * when to check (trigger) and what to say (template), never how to judge
      * - v1 default condition is "always worth checking" (payload -&gt; true).

@@ -59,7 +59,7 @@ public interface MemoryStore {
      * {@code (scope, subject) WHERE status = 'ACTIVE'} rely on this order.
      *
      * @param closedOld the old entry in its already-closed form
-     * @param newEntry  the replacement; the id / createdAt defaults of {@link #write} apply
+     * @param newEntry the replacement; the id / createdAt defaults of {@link #write} apply
      * @return the stored replacement (store-assigned id when the input had none)
      */
     default MemoryEntry supersede(MemoryEntry closedOld, MemoryEntry newEntry) {

@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.tavern.turn;
 import java.util.List;
 
 /**
- * Result of one {@code playTurn} call (Stage 16 M16.2).
+ * Result of one {@code playTurn} call .
  * <p>
  * Sealed because there are exactly two outcomes: the turn was played
  * (and logged), or routing failed before the model was ever invoked

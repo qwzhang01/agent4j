@@ -11,7 +11,7 @@ import java.time.Instant;
  * it carries type, subject (for conflict detection), provenance (for traceability),
  * status (for the review lifecycle) and importance (for write-gating).
  * <p>
- * Stage 8 D2: memory is structured entries, not raw messages.
+ * D2: memory is structured entries, not raw messages.
  * <p>
  * <b>Bi-temporal timestamps (reconciliation step 2)</b>: the entry carries two
  * axes of time. Business axis ({@code validFrom}/{@code validAt}) answers
@@ -24,37 +24,37 @@ import java.time.Instant;
  * must never share values, or interval queries answer "when did I move"
  * with the recording date.
  *
- * @param id          unique identifier
- * @param scope       namespace (e.g. "user:u1", "channel:c1")
- * @param type        what kind of memory this is
- * @param subject     topic key used for conflict detection / supersede (e.g. "dietary-restriction")
- * @param content     the actual memory text (e.g. "allergic to peanuts")
- * @param importance  0.0 ~ 1.0; write-gate threshold and context-recall rank
- * @param provenance  where this memory came from
- * @param status      lifecycle status
- * @param createdAt   when it was first written (system axis: recording time)
- * @param expireAt    TTL deadline (null = permanent); after this the entry is not retrievable
- * @param dueAt       optional due time with no built-in meaning (null = none).
+ * @param id unique identifier
+ * @param scope namespace (e.g. "user:u1", "channel:c1"
+ * @param type what kind of memory this is
+ * @param subject topic key used for conflict detection / supersede (e.g. "dietary-restriction"
+ * @param content the actual memory text (e.g. "allergic to peanuts"
+ * @param importance 0.0 ~ 1.0; write-gate threshold and context-recall rank
+ * @param provenance where this memory came from
+ * @param status lifecycle status
+ * @param createdAt when it was first written (system axis: recording time)
+ * @param expireAt TTL deadline (null = permanent); after this the entry is not retrievable
+ * @param dueAt optional due time with no built-in meaning (null = none).
  *                    Hosts use it for their own scans; this module does not schedule jobs.
- * @param lifecycle   how this entry relates to an older same-subject entry it replaces:
+ * @param lifecycle how this entry relates to an older same-subject entry it replaces:
  *                    {@link MemoryLifecycle#EVOLVE} (old content was once true, then changed)
  *                    or {@link MemoryLifecycle#CONFLICT} (old content was wrong from the start).
  *                    Null = not judged; the write path then treats it as CONFLICT.
- * @param embedding   optional semantic vector of {@code subject + content}, computed
+ * @param embedding optional semantic vector of {@code subject + content}, computed
  *                    on write by {@code EmbeddingMemoryStore} (read-side step 1).
  *                    Null on legacy entries; hybrid ranking degrades those to
  *                    token-overlap scoring instead of crashing.
- * @param validFrom   business axis: when this fact became true in the world (event time).
+ * @param validFrom business axis: when this fact became true in the world (event time).
  *                    Null = unknown; treat as "true since first recorded" for interval
  *                    queries. Parsed from the extractor's optional {@code validFrom}
  *                    output when the conversation states a business time (e.g. "I
- *                    moved last week"); null otherwise.
- * @param validAt     business axis: when this fact stopped being true in the world.
+ *                    moved last week"; null otherwise.
+ * @param validAt business axis: when this fact stopped being true in the world.
  *                    Null = still true. Set by the supersede path to the REPLACING
  *                    entry's {@code validFrom} (new fact's business start) — not to
  *                    wall-clock now, so "when did I move" answers with the business
  *                    date, and the old/new intervals on the business axis never overlap.
- * @param invalidAt   system axis: when the ledger closed this line (null = open line).
+ * @param invalidAt system axis: when the ledger closed this line (null = open line).
  *                    Set to now when a supersede/archive transition is applied. Audit
  *                    queries filter on this to answer "what did the system know at
  *                    time T" (createdAt ≤ T &lt; invalidAt).

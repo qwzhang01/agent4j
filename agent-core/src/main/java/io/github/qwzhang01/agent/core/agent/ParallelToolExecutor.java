@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Parallel tool-call execution for the ReAct loop (Stage 9 Tool
+ * Parallel tool-call execution for the ReAct loop (Tool
  * Parallelism): fan out a response's plain tool calls, join them back in
  * the response's declaration order.
  * <p>

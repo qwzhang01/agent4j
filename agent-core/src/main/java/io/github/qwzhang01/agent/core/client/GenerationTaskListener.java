@@ -14,9 +14,9 @@ public interface GenerationTaskListener {
     String KIND_VIDEO = "video";
 
     /**
-     * @param kind   {@link #KIND_IMAGE} or {@link #KIND_VIDEO}
+     * @param kind {@link #KIND_IMAGE} or {@link #KIND_VIDEO}
      * @param taskId provider task id (or a synthetic id for sync image gen)
-     * @param task   provider task handle (e.g. {@link VideoGenerationClient.VideoTask})
+     * @param task provider task handle (e.g. {@link VideoGenerationClient.VideoTask})
      */
     void onSubmitted(String kind, String taskId, Object task);
 }

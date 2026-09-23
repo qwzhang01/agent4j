@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.5: the assembly facade - one builder, one game, everything
+ *  the assembly facade - one builder, one game, everything
  * wired. The facade path always has a matrix and an evaluator (defaults),
  * governance plugs in with one line, and save/load round-trips through the
  * same assembly.

@@ -15,7 +15,7 @@ import java.util.List;
  * Completed nodes are NOT re-executed because their outputs are already
  * in the blackboard's variables zone, and the cursor starts past them.
  * <p>
- * Stage 3.1 (harness roadmap) additions:
+ * (harness roadmap) additions:
  * <ul>
  *   <li>{@code schemaVersion} — checkpoint format version, so a future
  *       format change is detectable instead of a silent misparse.</li>
@@ -26,25 +26,25 @@ import java.util.List;
  *   <li>{@code lastEventSeq} — the event/checkpoint sequence anchor, tying
  *       this checkpoint to the RunStore row's event position so a resume
  *       cannot re-apply consumed history.</li>
- *   <li>{@code trace} — the step history rides along (Stage 3.2:
+ *   <li>{@code trace} — the step history rides along
  *       visitOrdinal/attempt/result summaries), so recovery diagnostics do
  *       not need a separate event store in the teaching v1.</li>
  * </ul>
  *
- * @param schemaVersion    checkpoint format version (see SCHEMA_VERSION)
- * @param checkpointId     unique id of this snapshot
- * @param runId            the Run this checkpoint belongs to
- * @param workflowName     Workflow.name() this run started under
- * @param workflowVersion  Workflow.version() this run started under ("" = legacy)
- * @param workflowHash     Workflow.fingerprint() this run started under ("" = legacy)
- * @param status           RunState at checkpoint time (usually PAUSED)
- * @param cursor           next node to execute on resume (null = from START)
- * @param state            the complete blackboard snapshot
- * @param timestamp        when this checkpoint was created
- * @param stepsExecuted    total steps so far (for maxSteps across pause/resume)
- * @param pendingInput     input for the paused node on resume (its original input)
- * @param lastEventSeq     last applied event/checkpoint sequence (0 = none)
- * @param trace            step history at snapshot time (may be empty)
+ * @param schemaVersion checkpoint format version (see SCHEMA_VERSION)
+ * @param checkpointId unique id of this snapshot
+ * @param runId the Run this checkpoint belongs to
+ * @param workflowName Workflow.name this run started under
+ * @param workflowVersion Workflow.version this run started under "" = legacy)
+ * @param workflowHash Workflow.fingerprint this run started under "" = legacy)
+ * @param status RunState at checkpoint time (usually PAUSED)
+ * @param cursor next node to execute on resume (null = from START)
+ * @param state the complete blackboard snapshot
+ * @param timestamp when this checkpoint was created
+ * @param stepsExecuted total steps so far (for maxSteps across pause/resume)
+ * @param pendingInput input for the paused node on resume (its original input)
+ * @param lastEventSeq last applied event/checkpoint sequence (0 = none)
+ * @param trace step history at snapshot time (may be empty)
  */
 public record Checkpoint(
         int schemaVersion,
@@ -89,14 +89,14 @@ public record Checkpoint(
      * {@code DEFINITION_VERSION_MISMATCH} on resume. {@code lastEventSeq}
      * defaults to 0 (no event anchoring) and {@code trace} to empty.
      *
-     * @param checkpointId  unique id of this snapshot
-     * @param runId         the Run this checkpoint belongs to
-     * @param status        RunState at checkpoint time
-     * @param cursor        next node to execute on resume (null = from START)
-     * @param state         the complete blackboard snapshot
-     * @param timestamp     when this checkpoint was created
+     * @param checkpointId unique id of this snapshot
+     * @param runId the Run this checkpoint belongs to
+     * @param status RunState at checkpoint time
+     * @param cursor next node to execute on resume (null = from START)
+     * @param state the complete blackboard snapshot
+     * @param timestamp when this checkpoint was created
      * @param stepsExecuted total steps so far
-     * @param pendingInput  input for the paused node on resume
+     * @param pendingInput input for the paused node on resume
      * @deprecated use the canonical record constructor (or {@link #of(Run)}),
      *             which carries schema version and workflow identity
      * @since 0.1.4

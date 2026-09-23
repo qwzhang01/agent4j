@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Request-scoped assembly of the enterprise execution chain (Stage 15 M15.5,
+ * Request-scoped assembly of the enterprise execution chain (,
  * blueprint D2).
  * <p>
  * One factory per application holds the SHARED, stateless parts (model
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * the assistant reads after the run to bill the ledger.
  * <p>
  * Why explicit cloning instead of ThreadLocal: identity must be trackable on
- * the call stack ("why was this denied" has an answer in the code path, not
+ * the call stack "why was this denied" has an answer in the code path, not
  * in invisible thread state). The cost is a handful of small objects per
  * request - negligible next to one LLM call.
  */

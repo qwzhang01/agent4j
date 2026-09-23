@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.tavern.event;
 
 /**
- * A story event - a dramatic fact that happens in the game (Stage 16 M16.3,
+ * A story event - a dramatic fact that happens in the game (,
  * blueprint D5).
  * <p>
  * Boundary note (blueprint §1): a GameEvent is a PLOT FACT (data: what
@@ -10,8 +10,8 @@ package io.github.qwzhang01.agent.tavern.event;
  * (memory: remembering that something happened). Three same-named things,
  * three different layers.
  *
- * @param eventId            stable id, also the manual-trigger handle
- * @param description        what happens, phrased for the model to play out
+ * @param eventId stable id, also the manual-trigger handle
+ * @param description what happens, phrased for the model to play out
  * @param respondCharacterId optional: a character who reacts out loud when
  *                           this event fires (null = silent world change)
  */

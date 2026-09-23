@@ -8,15 +8,15 @@ import java.util.List;
 /**
  * Request sent to a model provider.
  *
- * @param model          model identifier (e.g. "gpt-4o", "doubao-pro")
- * @param messages       conversation messages
- * @param tools          available tool definitions (JSON schema), null if no tools
- * @param temperature    sampling temperature (0-2), null for provider default
- * @param maxTokens      max output tokens, null for provider default
- * @param stream         whether to stream the response
+ * @param model model identifier (e.g. "gpt-4o", "doubao-pro"
+ * @param messages conversation messages
+ * @param tools available tool definitions (JSON schema), null if no tools
+ * @param temperature sampling temperature (0-2), null for provider default
+ * @param maxTokens max output tokens, null for provider default
+ * @param stream whether to stream the response
  * @param responseFormat response format spec (e.g. JSON schema), null for free text
- * @param reasoning      reasoning ("thinking") control; null means
- *                       {@link ReasoningConfig#auto()} — inherit provider default
+ * @param reasoning reasoning "thinking" control; null means
+ *                       {@link ReasoningConfig#auto} — inherit provider default
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ModelRequest(
@@ -32,7 +32,7 @@ public record ModelRequest(
 
     /**
      * Seven-arg constructor kept for source compatibility with the
-     * pre-reasoning signature. Reasoning defaults to {@link ReasoningConfig#auto()}.
+     * pre-reasoning signature. Reasoning defaults to {@link ReasoningConfig#auto}.
      */
     public ModelRequest(String model, List<ChatMessage> messages, List<String> tools,
                         Double temperature, Integer maxTokens, boolean stream,
@@ -116,7 +116,7 @@ public record ModelRequest(
         }
 
         /**
-         * Sets reasoning ("thinking") control. Null inherits the provider default.
+         * Sets reasoning "thinking" control. Null inherits the provider default.
          */
         public Builder reasoning(ReasoningConfig reasoning) {
             this.reasoning = reasoning;

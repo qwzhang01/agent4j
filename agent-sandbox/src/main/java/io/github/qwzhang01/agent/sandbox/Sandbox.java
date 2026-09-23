@@ -13,7 +13,7 @@ public interface Sandbox {
      * Execute Java source code in the sandbox.
      *
      * @param className the class name (must match the public class in the code)
-     * @param code      the Java source code
+     * @param code the Java source code
      * @return execution result
      */
     SandboxResult execute(String className, String code);

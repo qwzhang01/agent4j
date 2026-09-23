@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.workflow.runtime.durable;
 
 /**
- * Optimistic-lock violation on {@link RunStore#update} (Stage 3.3): two
+ * Optimistic-lock violation on {@link RunStore#update} : two
  * workers raced on the same run, or a stale in-memory copy was written
  * back. Recovery: reload the row, re-apply the transition, retry once.
  */

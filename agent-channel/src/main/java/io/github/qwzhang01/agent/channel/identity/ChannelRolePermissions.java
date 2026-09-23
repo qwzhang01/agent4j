@@ -4,7 +4,7 @@ import java.util.Set;
 
 /**
  * Supplies the invoking user's role capabilities within a channel
- * (Stage 12 D4).
+ * (D4).
  * <p>
  * This is the "user side" input of the permission intersection. The
  * assembly layer backs it with real channel-membership and role data

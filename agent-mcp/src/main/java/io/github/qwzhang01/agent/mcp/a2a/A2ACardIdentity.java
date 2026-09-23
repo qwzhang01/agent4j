@@ -11,10 +11,10 @@ import java.security.Signature;
 import java.util.Base64;
 
 /**
- * Batch 4 (harness roadmap 6.3): cryptographic identity for the agent card.
+ * Batch 4 (harness ): cryptographic identity for the agent card.
  * <p>
  * The trust gap this closes: {@code /.well-known/agent.json} is a
- * SELF-REPORT. The bearer gate (Stage 6.3) covers the request boundary —
+ * SELF-REPORT. The bearer gate covers the request boundary —
  * but the CARD itself, the thing a caller uses to decide "who am I talking
  * to and what can they do", was plaintext. Anyone who can serve bytes on
  * that URL can claim any name, any skill list, any version.

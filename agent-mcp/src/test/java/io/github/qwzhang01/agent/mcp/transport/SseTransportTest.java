@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.2: SseTransport against a REAL HTTP server (JDK's built-in
+ *  SseTransport against a REAL HTTP server (JDK's built-in
  * HttpServer) speaking the SSE dialect — the closest thing to a third-party
  * interop test without depending on an external vendor: the transport must
  * handshake (endpoint event), POST requests, and deliver SSE data frames

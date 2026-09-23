@@ -8,13 +8,13 @@ package io.github.qwzhang01.agent.sandbox;
  * The right tier is determined by the risk / latency / escape-surface triangle,
  * not by "stronger is always better."
  * <pre>
- *   Tier          Startup     Escape surface              v1 status
+ *   Tier Startup Escape surface v1 status
  *   ──────────────────────────────────────────────────────────────
- *   CLASSLOADER   ~0 ms       reflection, Unsafe, JNI     ✅ ClassLoaderSandbox
- *   PROCESS       1–2 s       shared FS (if not restricted) ✅ ProcessSandbox
- *   DOCKER        2–5 s       kernel syscalls (without seccomp) ❌ out of v1 scope
- *   MICROVMM      50–200 ms   para-virtualized device side-channels ❌ out of v1 scope
- *   WASM          ~10 ms      WASM runtime bugs             ❌ out of v1 scope
+ *   CLASSLOADER ~0 ms reflection, Unsafe, JNI ✅ ClassLoaderSandbox
+ *   PROCESS 1–2 s shared FS (if not restricted) ✅ ProcessSandbox
+ *   DOCKER 2–5 s kernel syscalls (without seccomp) ❌ out of v1 scope
+ *   MICROVMM 50–200 ms para-virtualized device side-channels ❌ out of v1 scope
+ *   WASM ~10 ms WASM runtime bugs ❌ out of v1 scope
  * </pre>
  *
  * <h2>Upgrade triggers</h2>
@@ -45,7 +45,7 @@ public enum SandboxTier {
      * OS-level process isolation.
      * <p>
      * Subprocess cannot access the parent JVM's heap or file handles directly.
-     * Reliable timeout via {@code destroyForcibly()}. JVM startup cost: 1–2 s.
+     * Reliable timeout via {@code destroyForcibly}. JVM startup cost: 1–2 s.
      * Does not restrict filesystem access within the subprocess unless the OS
      * user is also restricted.
      * <p>

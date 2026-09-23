@@ -29,12 +29,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
- * A channel-scoped shared agent session (Stage 12 M12.2, design D1).
+ * A channel-scoped shared agent session (, design D1).
  * <p>
  * NOT a new Agent type: this is a CONTAINER that wraps any existing
  * {@link Agent} implementation (Mock / OpenAI / Anthropic / orchestrating)
  * - composition over inheritance, the same unification philosophy as
- * Stage 11's AgentWorker. Channel semantics (multi-user routing, shared
+ * 's AgentWorker. Channel semantics (multi-user routing, shared
  * context, membership gating, history) live entirely in this container
  * and never pollute the Agent interface.
  * <p>
@@ -45,7 +45,7 @@ import java.util.function.Consumer;
  * forwarded prompt.
  * <p>
  * Identity: every speak passes through {@link IdentityResolver}
- * (Stage 12 M12.1) - fail-closed before the agent runs. Membership is
+ *  - fail-closed before the agent runs. Membership is
  * sourced from {@link ChannelContext} (SSOT); role permissions come from
  * the injected provider.
  */
@@ -67,11 +67,11 @@ public class SharedAgentSession {
     private volatile ResolvedIdentity lastResolvedIdentity;
 
     /**
-     * @param agent           any Agent implementation (wrapped, never modified)
-     * @param account         the service account the agent acts under
-     * @param channel         channel metadata (membership SSOT)
+     * @param agent any Agent implementation (wrapped, never modified)
+     * @param account the service account the agent acts under
+     * @param channel channel metadata (membership SSOT)
      * @param rolePermissions member -> role capabilities (membership is checked first)
-     * @param auditSink       optional identity-decision sink; null = no auditing
+     * @param auditSink optional identity-decision sink; null = no auditing
      */
     public SharedAgentSession(Agent agent,
                               ServiceAccount account,
@@ -82,7 +82,7 @@ public class SharedAgentSession {
     }
 
     /**
-     * @param identityBinder  optional hook invoked with the resolved identity
+     * @param identityBinder optional hook invoked with the resolved identity
      *                        before the agent runs; assembly wires this to a
      *                        PermissionChecker (channel does not depend on security)
      */
@@ -99,8 +99,8 @@ public class SharedAgentSession {
         Objects.requireNonNull(rolePermissions, "rolePermissions must not be null");
 
         // Membership gate + role lookup, combined into the M12.1 contract:
-        //   non-member          -> null  (USER_NOT_IN_CHANNEL)
-        //   member, no roles    -> empty (EMPTY_PERMISSION_INTERSECTION - more precise)
+        //   non-member -> null (USER_NOT_IN_CHANNEL)
+        //   member, no roles -> empty (EMPTY_PERMISSION_INTERSECTION - more precise)
         ChannelRolePermissions gated = (ch, uid) -> {
             if (!channel.isMember(uid)) {
                 return null;
@@ -123,7 +123,7 @@ public class SharedAgentSession {
      * Only messages that mention the agent are forwarded to it:
      * <ul>
      *   <li>mention -> identity resolution (fail-closed), then
-     *       {@code agent.run("[from userId] text", sharedState)}, reply returned</li>
+     *       {@code agent.run"[from userId] text", sharedState)}, reply returned</li>
      *   <li>no mention -> returns {@code null}; the agent is not invoked
      *       (humans talking to humans is not the agent's business)</li>
      * </ul>
@@ -133,7 +133,7 @@ public class SharedAgentSession {
      *         invalid account...) - thrown for BOTH mention and plain messages:
      *         a stranger cannot even talk into the channel through the agent.
      * <p>Implementation note: synchronized because the shared AgentState is a
-     * plain ArrayList (agent-core contract, unchanged since Stage 1); concurrent
+     * plain ArrayList (agent-core contract, unchanged since ); concurrent
      * speaks from multiple members would race on it. Serializing turns ALSO
      * matches channel semantics: one conversation turn at a time, like a human
      * teammate who does not talk over people. Finer-grained state locking is
@@ -218,7 +218,7 @@ public class SharedAgentSession {
      * Put a task on the board (publishes TASK_STARTED; the board follows).
      *
      * @param description what the task is about
-     * @param ownerId     the owning member (must be a channel member)
+     * @param ownerId the owning member (must be a channel member)
      * @return the new task id
      */
     public String startTask(String description, String ownerId) {
@@ -272,7 +272,7 @@ public class SharedAgentSession {
     }
 
     /**
-     * Hand a task from one member to another (Stage 12 D5: the three-part
+     * Hand a task from one member to another (D5: the three-part
      * handoff - conversation state continues, working memory is shared via
      * scopes already, board ownership moves).
      * <p>
@@ -280,11 +280,11 @@ public class SharedAgentSession {
      * handoff is appended so the model knows the baton moved, and the next
      * owner's turns land in the same conversation.
      *
-     * @param taskId   an existing, non-terminal task
+     * @param taskId an existing, non-terminal task
      * @param fromUser must equal the current owner (cannot hand off
      *                 someone else's task)
-     * @param toUser   must be a channel member
-     * @param note     shown to the model and kept in the audit record
+     * @param toUser must be a channel member
+     * @param note shown to the model and kept in the audit record
      * <p>Implementation note: synchronized with {@link #speak}: both mutate
      * the shared AgentState (the baton note) and must not interleave with a
      * running conversation turn.
@@ -358,15 +358,15 @@ public class SharedAgentSession {
     /**
      * Convenience factory for the channel-scoped memory context: a
      * {@link MemoryContextBuilder} whose recall list is headed by the
-     * channel scope (plus optional extra scopes such as "agent:eng-bot").
+     * channel scope (plus optional extra scopes such as "agent:eng-bot".
      * <p>
-     * This is Stage 12 D2 in code: shared channel memory is NOT a new
-     * memory system - it is the Stage 8 channel scope plugged into the
+     * This is D2 in code: shared channel memory is NOT a new
+     * memory system - it is the channel scope plugged into the
      * recall list. Governance (PENDING_REVIEW, MemoryAdmin, provenance)
      * comes along for free because it lives in the store, not here.
      *
-     * @param store       the shared memory store
-     * @param channelId   the channel whose scope is shared
+     * @param store the shared memory store
+     * @param channelId the channel whose scope is shared
      * @param extraScopes additional scopes visible to this agent (optional)
      */
     public static ContextBuilder channelMemoryContext(MemoryStore store,

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Record of one context-trim decision (Stage 5.1).
+ * Record of one context-trim decision .
  * <p>
  * Every time {@link ContextWindowEnforcer} drops messages to fit the history
  * budget, one {@code ContextTrimRecord} is produced: which trim source fired

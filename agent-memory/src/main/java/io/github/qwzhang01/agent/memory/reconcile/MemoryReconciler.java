@@ -13,11 +13,11 @@ import java.util.Objects;
 
 /**
  * Reconciliation context provider: feeds the write side with read-side
- * recalled entries ("read side feeds the write side", memory route step 2).
+ * recalled entries "read side feeds the write side", memory route step 2).
  * <p>
  * Root cause it removes: the extractor is blind to old entries — it invents a
- * subject key from the conversation alone, so a drifted key ("moving" vs
- * "home-city") never matches the old entry and supersede never triggers. The
+ * subject key from the conversation alone, so a drifted key "moving" vs
+ * "home-city" never matches the old entry and supersede never triggers. The
  * reconciler recalls up to {@link #RECALL_LIMIT} entries relevant to the last
  * user message and hands the "subject: content" list to the extractor via the
  * {@link MemoryExtractor#extract(List, String, MemoryEntry...)} prompt.
@@ -41,7 +41,7 @@ public final class MemoryReconciler {
     private final MemoryRetriever retriever;
 
     /**
-     * @param store     the store old entries live in (scope isolation applies)
+     * @param store the store old entries live in (scope isolation applies)
      * @param retriever the retriever used for recall (ranking strategy included)
      */
     public MemoryReconciler(MemoryStore store, MemoryRetriever retriever) {

@@ -12,7 +12,7 @@ import java.time.Duration;
  * Tool wrapper around {@link VideoGenerationClient}.
  * <p>
  * Default is <strong>non-blocking</strong>: submit the task, notify
- * {@link GenerationTaskListener} (Stage 7 poller), return the task id.
+ * {@link GenerationTaskListener} (poller), return the task id.
  * Set {@code wait=true} only when a caller explicitly wants to block the
  * ReAct loop (bounded by {@code waitTimeout}).
  */

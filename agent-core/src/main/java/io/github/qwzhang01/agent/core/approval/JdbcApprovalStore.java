@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * JDBC-backed {@link ApprovalStore} (Stage 8.1): approval decisions live
+ * JDBC-backed {@link ApprovalStore} : approval decisions live
  * in the database so an approval landed on instance A is visible to the
  * run resumed on instance B. Contract identical to the in-memory
  * reference — idempotent submit, optimistic decide, holder-only revoke,

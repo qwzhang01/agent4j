@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A message spoken in a channel, attributed to a speaker (Stage 12 M12.2).
+ * A message spoken in a channel, attributed to a speaker .
  * <p>
  * Unlike a plain user input, a channel message carries WHO said it and
  * WHETHER the channel agent was addressed. Both matter for routing:
@@ -16,11 +16,11 @@ import java.util.Objects;
  * Mention detection convention: the text starts with {@code @<agentId>}
  * (optionally followed by a space, colon, or fullwidth comma).
  *
- * @param channelId     where the message was spoken
- * @param userId        who spoke
- * @param text          raw text (mention prefix kept; strip via {@link #textWithoutMention(String)})
+ * @param channelId where the message was spoken
+ * @param userId who spoke
+ * @param text raw text (mention prefix kept; strip via {@link #textWithoutMention(String)})
  * @param mentionsAgent whether the channel agent was addressed
- * @param timestamp     when the message was spoken
+ * @param timestamp when the message was spoken
  */
 public record ChannelMessage(
         String channelId,

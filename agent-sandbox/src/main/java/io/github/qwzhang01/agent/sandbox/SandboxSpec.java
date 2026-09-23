@@ -12,10 +12,10 @@ import java.util.Map;
  * - workingDirectory: where the code runs (process sandbox)
  * - environment: env vars injected into the process (overlay, see envAllowlist)
  * - envAllowlist: host env keys the guest may inherit (default minimal set;
- *   the full host environment is NEVER inherited by default - Stage 4.1)
- * - networkBlocked: guest network access denied (default true - Stage 4.2)
- * - fileAccess: guest filesystem access (default WORKSPACE_ONLY - Stage 4.2)
- * - outputLimitBytes: per-stream capture cap with truncation marker (Stage 4.1)
+ *   the full host environment is NEVER inherited by default - )
+ * - networkBlocked: guest network access denied (default true - )
+ * - fileAccess: guest filesystem access (default WORKSPACE_ONLY - )
+ * - outputLimitBytes: per-stream capture cap with truncation marker
  * - memoryLimitBytes: max memory (process sandbox only)
  * - blockedPackages: Java packages blocked by ClassLoader sandbox
  * - blockedClasses: specific fully-qualified class names blocked
@@ -25,7 +25,7 @@ import java.util.Map;
 public class SandboxSpec {
 
     /**
-     * Guest filesystem access policy (Stage 4.2).
+     * Guest filesystem access policy .
      * <ul>
      *   <li>{@code WORKSPACE_ONLY} - reads/writes confined to the sandbox
      *       working directory (in-guest SecurityManager enforcement at the
@@ -42,8 +42,8 @@ public class SandboxSpec {
 
     /**
      * Default host env keys the guest process may inherit. Everything else in
-     * the host environment is dropped before the guest starts (Stage 4.1:
-     * "environment uses an allowlist, never the full host environment").
+     * the host environment is dropped before the guest starts
+     * "environment uses an allowlist, never the full host environment".
      * {@code HOME} is deliberately absent: it leaks the host username/path and
      * guest code has no legitimate need for it.
      */
@@ -122,7 +122,7 @@ public class SandboxSpec {
     }
 
     /**
-     * Host env keys the guest may inherit. {@link #ENV_INHERIT_ALL} ("*")
+     * Host env keys the guest may inherit. {@link #ENV_INHERIT_ALL} "*"
      * restores the pre-Stage-4 full-inheritance behavior.
      */
     public List<String> getEnvAllowlist() {

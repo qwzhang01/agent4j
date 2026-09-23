@@ -8,20 +8,20 @@ import java.util.stream.Collectors;
 
 /**
  * "What combination served this run" - the single source of truth for the
- * reproducibility question (Stage 18 D8): the version triple plus the run's
+ * reproducibility question (D8): the version triple plus the run's
  * metrics summary row.
  * <p>
  * The {@link RunMetrics} summary already carries {@code costMicros} (the
  * M18.2 wiring prices it), so the record does not duplicate the field - two
  * copies of one number is how audits start lying. This is also the
- * operations-readable complement to Stage 14 {@code TrajectoryMetadata}
+ * operations-readable complement to {@code TrajectoryMetadata}
  * (which stores fingerprints for training consumers): trajectories store
  * hashes, RunRecords store human-readable versions.
  *
- * @param runId     run identifier
+ * @param runId run identifier
  * @param agentName agent name
- * @param versions  the PROMPT/MODEL/TOOL triple (any subset recorded)
- * @param metrics   the run's summary row (status/tokens/cost/duration)
+ * @param versions the PROMPT/MODEL/TOOL triple (any subset recorded)
+ * @param metrics the run's summary row (status/tokens/cost/duration)
  */
 public record RunRecord(String runId, String agentName, List<ComponentVersion> versions,
                         RunMetrics metrics) {

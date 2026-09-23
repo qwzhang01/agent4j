@@ -21,10 +21,10 @@ import java.time.Duration;
  * <p>
  * Pattern:
  * <pre>{@code
- * StructuredOutput   <- outermost: validate JSON
- *   └─ Fallback       <- if primary fails, try secondary
- *      └─ Timeout     <- enforce timeout
- *         └─ Retry    <- retry transient failures
+ * StructuredOutput <- outermost: validate JSON
+ *   └─ Fallback <- if primary fails, try secondary
+ *      └─ Timeout <- enforce timeout
+ *         └─ Retry <- retry transient failures
  *            └─ Real Client (OpenAI / Mock / ...)
  * }</pre>
  * <p>

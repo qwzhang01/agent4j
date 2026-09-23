@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 
 /**
  * A standing instruction: what the channel agent should keep watching,
- * when to check, and what is worth saying (Stage 12 M12.4, design D3).
+ * when to check, and what is worth saying (, design D3).
  * <p>
  * An instruction is AGENT semantics, not a dumb cron script: it carries a
  * condition (is it worth bothering anyone?), a message producer (what to
@@ -16,17 +16,17 @@ import java.util.function.Predicate;
  * a judgment, and a voice.
  * <p>
  * v1 honest boundary: condition and message are Java functions supplied
- * by the assembly layer. Natural-language standing instructions ("help me
- * keep an eye on X") parsed by the LLM are Stage 13 declarative-layer
+ * by the assembly layer. Natural-language standing instructions "help me
+ * keep an eye on X" parsed by the LLM are declarative-layer
  * scope.
  *
  * @param instructionId unique id
- * @param description   human-readable instruction text
- * @param trigger       SCHEDULED(interval) or EVENT(eventKey)
- * @param importance    noise tier: INFO (digest), WARN / CRITICAL (realtime)
- * @param condition     payload -> is it worth a notification at all
+ * @param description human-readable instruction text
+ * @param trigger SCHEDULED(interval) or EVENT(eventKey)
+ * @param importance noise tier: INFO (digest), WARN / CRITICAL (realtime)
+ * @param condition payload -> is it worth a notification at all
  *                      (false = total silence, not even digest)
- * @param message       payload -> what to say
+ * @param message payload -> what to say
  */
 public record AmbientInstruction(
         String instructionId,

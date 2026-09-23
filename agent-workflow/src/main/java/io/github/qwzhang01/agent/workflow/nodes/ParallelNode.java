@@ -24,11 +24,11 @@ import java.util.concurrent.CompletionException;
  * accepted for v1); upgrading to graph-level parallel scheduling is a
  * v2 concern.
  * <pre>{@code
- * ParallelNode.builder("fanout")
- *     .branch("search", searchNode)
- *     .branch("calc", calcStep1, calcStep2)
+ * ParallelNode.builder"fanout"
+ *     .branch"search", searchNode)
+ *     .branch"calc", calcStep1, calcStep2)
  *     .join(JoinPolicy.ALL_OF)
- *     .build()
+ *     .build
  * }</pre>
  * <p>
  * Failure semantics: a failing branch makes the whole node fail
@@ -89,7 +89,7 @@ public final class ParallelNode implements WorkflowNode {
      * Run one branch sequentially. First node receives the ParallelNode's
      * own input; each subsequent node receives its predecessor's output.
      * <p>
-     * Stage 1.2 (harness roadmap): the branch context keeps the parent's
+     * (harness roadmap): the branch context keeps the parent's
      * runId / resume flag / scheduler / RunContext, so cancellation and
      * deadline signals reach every parallel branch.
      */

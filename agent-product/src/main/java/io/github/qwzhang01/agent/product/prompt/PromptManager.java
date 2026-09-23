@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Prompt-as-asset management (Stage 13 M13.4, D4): versioning, two-channel
+ * Prompt-as-asset management (, D4): versioning, two-channel
  * release, tenant routing, rollback - all as APPEND-ONLY history.
  * <p>
  * The mental model is a package registry, not a config file:
@@ -96,8 +96,8 @@ public final class PromptManager {
      * <p>
      * Channel priority: tenant override &gt; declared channel &gt; stable.
      *
-     * @param name            prompt name
-     * @param tenantId        optional tenant id (may unlock a canary override)
+     * @param name prompt name
+     * @param tenantId optional tenant id (may unlock a canary override)
      * @param declaredChannel the channel the DEFINITION asked for (null = stable)
      * @return the routed version, empty if the prompt/channel has no version
      */

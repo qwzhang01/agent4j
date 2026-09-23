@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.sandbox.guard;
 import java.lang.reflect.Method;
 
 /**
- * Guest entrypoint wrapper (Stage 4.1).
+ * Guest entrypoint wrapper .
  * <p>
  * The guest class runs as-is; the LAUNCHER runs first, installs the guard,
  * then invokes {@code <GuestClass>.main(String[])} reflectively. The guest

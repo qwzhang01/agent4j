@@ -11,19 +11,19 @@ import java.util.function.Predicate;
  * <p>
  * Usage:
  * <pre>{@code
- * Workflow wf = Workflow.builder("support-flow")
- *     .node(AgentNode.of("intent", intentAgent))
- *     .node(ToolNode.of("query", ticketTool))
- *     .edge(Workflow.START, "intent")
- *     .edge("intent", "query").when(s -> "QUERY".equals(s.get("intent")))
- *     .edge("intent", Workflow.END).otherwise()
- *     .onError("query", "fallback")
- *     .node("fallback", ActionNode.of("fallback", ctx -> "fallback done"))
- *     .edge("fallback", Workflow.END)
- *     .build();
+ * Workflow wf = Workflow.builder"support-flow"
+ *     .node(AgentNode.of"intent", intentAgent))
+ *     .node(ToolNode.of"query", ticketTool))
+ *     .edge(Workflow.START, "intent"
+ *     .edge"intent", "query".when(s -> "QUERY".equals(s.get"intent"))
+ *     .edge"intent", Workflow.END).otherwise
+ *     .onError"query", "fallback"
+ *     .node"fallback", ActionNode.of"fallback", ctx -> "fallback done")
+ *     .edge"fallback", Workflow.END)
+ *     .build;
  * }</pre>
  * <p>
- * build() validates the definition and fails fast on:
+ * build validates the definition and fails fast on:
  * duplicate node ids, unknown edge endpoints, missing START edges,
  * nodes without outgoing edges, retry policies for unknown nodes.
  */
@@ -43,8 +43,8 @@ public final class WorkflowBuilder {
 
 
     /**
-     * Stage 3.1 (harness roadmap): version this definition (free-form,
-     * e.g. "1.2.0"). Stored in checkpoints; a resume against a different
+     * (harness roadmap): version this definition (free-form,
+     * e.g. "1.2.0". Stored in checkpoints; a resume against a different
      * version of the same name is refused with DEFINITION_VERSION_MISMATCH.
      */
     public WorkflowBuilder version(String version) {
@@ -71,7 +71,7 @@ public final class WorkflowBuilder {
 
     /**
      * Start declaring an edge. Call .when(predicate) for a conditional
-     * edge, .otherwise() for an unconditional edge, or neither (the edge
+     * edge, .otherwise for an unconditional edge, or neither (the edge
      * becomes unconditional at build time).
      */
     public EdgeSpec edge(String from, String to) {
@@ -89,7 +89,6 @@ public final class WorkflowBuilder {
     }
 
     public Workflow build() {
-        // Resolve edges declared without when()/otherwise()
         for (EdgeSpec spec : pendingSpecs) {
             if (!spec.resolved) {
                 edges.add(new Edge(spec.from, spec.to, null));
@@ -150,7 +149,7 @@ public final class WorkflowBuilder {
     /**
      * Pending edge declaration returned by {@link #edge(String, String)}.
      * <p>
-     * Call when()/otherwise() to make the edge conditional/unconditional,
+     * Call when/otherwise to make the edge conditional/unconditional,
      * or keep chaining builder methods directly - the edge resolves to
      * unconditional at build time.
      */

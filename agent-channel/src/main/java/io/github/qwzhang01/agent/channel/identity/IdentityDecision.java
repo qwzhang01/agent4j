@@ -4,26 +4,26 @@ import java.time.Instant;
 import java.util.Set;
 
 /**
- * The outcome of one identity resolution attempt (Stage 12 D4/D6).
+ * The outcome of one identity resolution attempt (D4/D6).
  * <p>
  * Both allowed AND denied resolutions produce a decision, and every
  * decision is offered to the audit sink - "who tried to act under which
  * agent identity but was blocked" is itself a security signal (same
- * philosophy as Stage 9 D6: denied is intelligence, not noise).
+ * philosophy as D6: denied is intelligence, not noise).
  * <p>
- * This type deliberately mirrors Stage 9's AuditEvent shape (status +
+ * This type deliberately mirrors 's AuditEvent shape (status +
  * reason + context) without depending on it: the assembly layer bridges
  * decisions into the AuditLogger, keeping the module boundary discipline
  * established by agent-orchestrator's D5.
  *
- * @param channelId  the channel where the resolution was requested
- * @param userId     the invoking user
- * @param agentId    the agent being invoked
- * @param allowed    whether the resolution succeeded
- * @param reason     denial reason, null when allowed
- * @param granted    the agent's granted capabilities (decision context for auditing)
- * @param role       the user's channel role capabilities (decision context for auditing)
- * @param timestamp  when the decision was made
+ * @param channelId the channel where the resolution was requested
+ * @param userId the invoking user
+ * @param agentId the agent being invoked
+ * @param allowed whether the resolution succeeded
+ * @param reason denial reason, null when allowed
+ * @param granted the agent's granted capabilities (decision context for auditing)
+ * @param role the user's channel role capabilities (decision context for auditing)
+ * @param timestamp when the decision was made
  */
 public record IdentityDecision(
         String channelId,

@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * The regression dataset (Stage 18 D7): a set of {@link EvalCase}s, two ways
+ * The regression dataset (D7): a set of {@link EvalCase}s, two ways
  * to fill it - hand-written, or mined from failure trajectories - plus the
  * JSONL persistence that makes a dataset a long-lived asset.
  * <p>
@@ -30,13 +30,13 @@ import java.util.function.Function;
  * cannot become cases; the count returned reflects only what was imported.
  * <p>
  * Translating a failure SHAPE into an assertion is domain knowledge the
- * framework does not have ("the answer must now contain an apology", "the
- * tool must be called at most twice") - so {@link #importFailures} takes the
+ * framework does not have "the answer must now contain an apology", "the
+ * tool must be called at most twice" - so {@link #importFailures} takes the
  * translation as a function. A default translation would either fabricate
  * assertions or make them vacuous; both are worse than asking the operator
  * once.
  * <p>
- * JSONL contract (hand-built trees, the Stage 14 TrajectoryCodec discipline:
+ * JSONL contract (hand-built trees, the TrajectoryCodec discipline:
  * every field name explicit, snake_case, never inferred):
  * <pre>{@code
  * {"api_version":"v1","kind":"EvalCase","case_id":"case-0001","prompt":"...",

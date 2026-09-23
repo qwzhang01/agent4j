@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The machine verdict of a test run (Stage 17 M17.3, blueprint D3: "the test is the
- * judge - the only objective referee among the three profile scenarios").
+ * The machine verdict of a test run (, blueprint D3: "the test is the
+ * judge - the only objective referee among the three profile scenarios".
  * <p>
  * {@code passed} = exit code 0 AND not timed out (a timeout is an honest failure,
  * not a crash). The {@code outputExcerpt} is the readable evidence: lines matching
@@ -17,13 +17,13 @@ import java.util.List;
  * on failure - the model reads this observation and enters the fix loop naturally
  * (blueprint D4: rhythm in the model).
  * <p>
- * This is also the natural reward signal for Stage 14: {@code passed} maps directly
+ * This is also the natural reward signal for {@code passed} maps directly
  * to a rule reward (+1.0) - the coding-trajectory-as-RL-data bridge (v2, blueprint D3).
  *
- * @param passed        exit code 0 and no timeout
- * @param exitCode      process exit code (-1 if it never finished)
- * @param timedOut      killed by the runner's timeout
- * @param durationMs    wall-clock duration of the run
+ * @param passed exit code 0 and no timeout
+ * @param exitCode process exit code (-1 if it never finished)
+ * @param timedOut killed by the runner's timeout
+ * @param durationMs wall-clock duration of the run
  * @param outputExcerpt readable evidence (test-run summary lines + failure tail)
  */
 public record TestResult(boolean passed, int exitCode, boolean timedOut,

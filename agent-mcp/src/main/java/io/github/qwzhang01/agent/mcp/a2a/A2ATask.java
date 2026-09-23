@@ -9,7 +9,7 @@ import java.util.Objects;
  * <p>
  * Two shapes, one record:
  * <ul>
- *   <li><b>Delegation shape</b> (the legacy 6-arg constructor, Stage 10/11
+ *   <li><b>Delegation shape</b> (the legacy 6-arg constructor, /11
  *       callers): a task you are about to SEND. No contextId / status /
  *       artifacts -- those do not exist until the peer answers.</li>
  *   <li><b>Observed shape</b> (the canonical 9-arg constructor): a task as
@@ -22,18 +22,18 @@ import java.util.Objects;
  * registered agent by name; over HTTP it is informational (the URL you
  * constructed the client with IS the recipient).
  *
- * @param taskId     unique task identifier (assigned by the sender pre-wire;
+ * @param taskId unique task identifier (assigned by the sender pre-wire;
  *                   the SERVER assigns its own id on the wire and the HTTP
  *                   client maps between the two)
- * @param recipient  the recipient Agent's name
- * @param taskType   what kind of task (e.g. "code-review", "summarize")
- * @param payload    the task data (free-form JSON; "prompt" is the convention)
- * @param sender     who sent this task
- * @param deadline   expected completion time (ISO 8601, nullable = no deadline)
- * @param contextId  spec context id: groups messages belonging to one
+ * @param recipient the recipient Agent's name
+ * @param taskType what kind of task (e.g. "code-review", "summarize"
+ * @param payload the task data (free-form JSON; "prompt" is the convention)
+ * @param sender who sent this task
+ * @param deadline expected completion time (ISO 8601, nullable = no deadline)
+ * @param contextId spec context id: groups messages belonging to one
  *                   conversation across tasks (nullable)
- * @param status     spec-dialect lifecycle state (nullable = not yet observed)
- * @param artifacts  outputs as reported by the peer (empty when none)
+ * @param status spec-dialect lifecycle state (nullable = not yet observed)
+ * @param artifacts outputs as reported by the peer (empty when none)
  */
 public record A2ATask(
         String taskId,
@@ -55,7 +55,7 @@ public record A2ATask(
     }
 
     /**
-     * Legacy 6-arg delegation shape (Stage 10/11 callers compile unchanged):
+     * Legacy 6-arg delegation shape (/11 callers compile unchanged):
      * a task about to be sent, no wire observations attached.
      */
     public A2ATask(String taskId, String recipient, String taskType,

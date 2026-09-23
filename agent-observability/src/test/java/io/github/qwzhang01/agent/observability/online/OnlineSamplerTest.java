@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.3 acceptance for the online sampler: deterministic 1-in-N
+ * acceptance for the online sampler: deterministic 1-in-N
  * sampling, failures ALWAYS kept (survivor-bias guard), bounded window.
  */
 class OnlineSamplerTest {

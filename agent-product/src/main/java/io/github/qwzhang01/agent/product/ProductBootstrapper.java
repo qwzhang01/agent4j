@@ -22,17 +22,17 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * One-time platform scaffolding (Stage 13 M13.1): register implementations,
+ * One-time platform scaffolding : register implementations,
  * then start every agent defined in a directory of YAML files.
  * <p>
  * This class is the "zero Java per agent" story:
  * <pre>{@code
- * AgentRegistry agents = ProductBootstrapper.builder()
- *         .model("openai", openAiClient)
- *         .model("deepseek", deepSeekClient)
- *         .tool("order-query", orderQueryTool)
- *         .build()
- *         .startAll(Path.of("agents/"));   // business side: YAML files only
+ * AgentRegistry agents = ProductBootstrapper.builder
+ *         .model"openai", openAiClient)
+ *         .model"deepseek", deepSeekClient)
+ *         .tool"order-query", orderQueryTool)
+ *         .build
+ *         .startAll(Path.of"agents/"); // business side: YAML files only
  * }</pre>
  * The main method above is written ONCE by the platform team; a business author
  * adds agents by dropping definition files into {@code agents/}.
@@ -78,7 +78,7 @@ public final class ProductBootstrapper {
      * Parse, validate and bind every definition file in {@code agentsDir}
      * (.yaml / .yml / .json). All-or-nothing: any failure means nothing starts.
      * <p>
-     * Every definition is bound as a PLAIN agent ({@code bind()}). A definition
+     * Every definition is bound as a PLAIN agent ({@code bind}). A definition
      * that declares {@code spec.ambient} is still started, but its ambient
      * instructions are NOT wired (they need a channel session): a WARN names
      * the agent. To run ambient, use {@code AgentDefinitionBinder.bindChannel}

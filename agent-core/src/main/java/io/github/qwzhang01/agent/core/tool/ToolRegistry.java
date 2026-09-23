@@ -10,8 +10,8 @@ import java.util.Optional;
  * - Registry is about "what tools exist" (metadata)
  * - Executor is about "how to run a tool safely" (execution + error handling)
  * <p>
- * In stage 3, this will be backed by the Plugin system for hot-pluggable tools.
- * For now (stage 1-2), it's a simple in-memory map.
+ * In , this will be backed by the Plugin system for hot-pluggable tools.
+ * For now (-2), it's a simple in-memory map.
  */
 public interface ToolRegistry {
 

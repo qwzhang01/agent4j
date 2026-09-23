@@ -6,26 +6,26 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * One played turn - the replay data unit of a game (Stage 16, blueprint D7).
+ * One played turn - the replay data unit of a game (, blueprint D7).
  * <p>
  * A turn bundles everything a replay needs for one beat of the game: what the
  * player said, which character answered (plus any event-driven follow-up
  * responses, M16.3), and which world effects and relationship changes were
  * applied while it happened. The domain trajectory (turn-by-turn) and the
- * model trajectory (Stage 14, step-by-step) stay parallel and unmerged:
+ * model trajectory (, step-by-step) stay parallel and unmerged:
  * different units, different consumers (game replay vs RL training).
  *
- * @param turnNo              1-based turn number (matches WorldState at play time)
- * @param playerInput         raw player input, mentions included, verbatim
+ * @param turnNo 1-based turn number (matches WorldState at play time)
+ * @param playerInput raw player input, mentions included, verbatim
  * @param speakingCharacterId the character the turn was routed to
- * @param responses           in order: the speaking character's reply, then any
+ * @param responses in order: the speaking character's reply, then any
  *                            event-driven responses (M16.3)
- * @param appliedEffects      world effects applied during this turn (tool-submitted
+ * @param appliedEffects world effects applied during this turn (tool-submitted
  *                            plus event-carried, M16.3), in application order
  * @param relationshipChanges relationship adjustments ACCEPTED this turn (rejected
  *                            ones change nothing and are not recorded), in order
- * @param triggeredEventIds   story events triggered at settlement (M16.3; empty until then)
- * @param timestamp           when the turn was settled
+ * @param triggeredEventIds story events triggered at settlement (M16.3; empty until then)
+ * @param timestamp when the turn was settled
  */
 public record Turn(
         int turnNo,

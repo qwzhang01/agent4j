@@ -8,21 +8,21 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 
 /**
- * Audit event record (Stage 9 D6).
+ * Audit event record (D6).
  * <p>
  * One event is produced per tool call attempt, regardless of outcome.
  * Failed/denied calls are also audited - "who tried to do what but was blocked"
  * is itself a security event.
  *
- * @param eventId    unique event id
- * @param runId      the run that triggered this call (null if not run-scoped)
- * @param toolName   the tool being called
- * @param args       JSON arguments (may be truncated for storage)
- * @param result     execution result (may be truncated; null if not executed)
- * @param status     outcome: APPROVED / DENIED / EXECUTED / FAILED / SANITIZED
- * @param timestamp  when the event was recorded
+ * @param eventId unique event id
+ * @param runId the run that triggered this call (null if not run-scoped)
+ * @param toolName the tool being called
+ * @param args JSON arguments (may be truncated for storage)
+ * @param result execution result (may be truncated; null if not executed)
+ * @param status outcome: APPROVED / DENIED / EXECUTED / FAILED / SANITIZED
+ * @param timestamp when the event was recorded
  * @param durationMs execution duration (0 if not executed)
- * @param reason     denial reason / sanitization note (null if not applicable)
+ * @param reason denial reason / sanitization note (null if not applicable)
  */
 public record AuditEvent(
         String eventId,

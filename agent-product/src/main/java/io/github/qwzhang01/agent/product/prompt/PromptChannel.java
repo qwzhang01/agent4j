@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.product.prompt;
 
 /**
- * Release channels for prompts (Stage 13 M13.4, D4).
+ * Release channels for prompts (, D4).
  * <p>
  * v1 has exactly two channels. Canary serves the tenants the operator routes
  * to it (tenant overrides); everyone else stays on stable. Percentage-based

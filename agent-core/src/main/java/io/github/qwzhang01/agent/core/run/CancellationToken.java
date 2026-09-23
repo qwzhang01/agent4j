@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.core.run;
 
 /**
- * Read-only cancellation view (Stage 1.4).
+ * Read-only cancellation view .
  * <p>
  * Handed to every execution boundary (model call, tool execution,
  * workflow node, sandbox run) via {@link RunContext}. Boundaries check

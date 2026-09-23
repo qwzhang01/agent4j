@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Secure-by-default agent assembly (Stage 2.4, harness roadmap).
+ * Secure-by-default agent assembly (, harness roadmap).
  * <p>
  * The contract flips: business code calling this builder gets the full
  * governance stack wired by default — no hand-assembled eight-layer
@@ -19,18 +19,18 @@ import org.slf4j.LoggerFactory;
  * the raw path still exists but must be asked for by name
  * ({@link UnsafeAgentBuilder}), so "ungoverned" can never be silent.
  * <p>
- * Default stack (order per the Stage 2.5 order contract — validation first):
+ * Default stack (order per the order contract — validation first):
  * <pre>
  *   Agent
  *     └─ AgentConfig
  *          ├─ guardrails: input + output guardrail chain (if configured)
- *          └─ toolExecutor: ContractAwareToolExecutor       // outermost: schema + timeout + no-ctx refuse
- *               └─ GovernedToolExecutor                     // permission → rate-limit → approval → sanitize → audit
- *                    └─ DefaultToolExecutor                 // actual lookup + execution
+ *          └─ toolExecutor: ContractAwareToolExecutor // outermost: schema + timeout + no-ctx refuse
+ *               └─ GovernedToolExecutor // permission → rate-limit → approval → sanitize → audit
+ *                    └─ DefaultToolExecutor // actual lookup + execution
  * </pre>
  * Side-effect tools without an approval service are denied (deny-on-absence).
  * Call {@link #approvalService} to plug in a human / durable approver.
- * Default permissions derived from the Tool Contract (Stage 2.1):
+ * Default permissions derived from the Tool Contract :
  * read-shaped tools (NONE / READ_ONLY) run automatic; everything else —
  * SIDE_EFFECT, DESTRUCTIVE and the honest UNKNOWN — requires approval.
  * Unknown tools are refused, never string-returned.

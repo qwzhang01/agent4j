@@ -75,7 +75,7 @@ class LinearWorkflowTest {
 
     @Test
     void builderRejectsInvalidDefinitions() {
-        // Duplicate node id (throws immediately on the second node() call)
+        // Duplicate node id (throws immediately on the second node call)
         assertThrows(WorkflowException.class, () -> Workflow.builder("dup")
                 .node(ActionNode.of("n", ctx -> "x"))
                 .node(ActionNode.of("n", ctx -> "x")));

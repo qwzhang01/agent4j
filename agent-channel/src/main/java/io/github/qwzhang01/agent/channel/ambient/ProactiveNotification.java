@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * One proactive push produced by an ambient instruction (Stage 12 M12.4).
+ * One proactive push produced by an ambient instruction .
  * <p>
  * Attribution (design D4): the actor is the AGENT identity, never the
  * event's originator - "the agent chose to speak", not "the cron job
@@ -13,12 +13,12 @@ import java.util.UUID;
  * carries the matching NOTIFICATION_SENT event.
  *
  * @param notificationId unique id
- * @param instructionId  which instruction produced it
- * @param channelId      which channel it was pushed to
- * @param actor          the agent id (service identity attribution)
- * @param content        what was said
- * @param importance     the instruction's noise tier
- * @param createdAt      when it was produced
+ * @param instructionId which instruction produced it
+ * @param channelId which channel it was pushed to
+ * @param actor the agent id (service identity attribution)
+ * @param content what was said
+ * @param importance the instruction's noise tier
+ * @param createdAt when it was produced
  */
 public record ProactiveNotification(
         String notificationId,

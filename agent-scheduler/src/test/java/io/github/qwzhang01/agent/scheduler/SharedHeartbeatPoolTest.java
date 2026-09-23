@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Harness batch 7: the shared-pool heartbeat shape — many holders on ONE
- * host-owned {@link ScheduledExecutorService}, close() cancelling only
+ * host-owned {@link ScheduledExecutorService}, close cancelling only
  * the holder's own future, the pool never shut down by a holder.
  */
 class SharedHeartbeatPoolTest {
@@ -54,7 +54,7 @@ class SharedHeartbeatPoolTest {
             }
             // All holders closed cleanly on the shared pool: no assertion on
             // thread count (an implementation detail), the contract is that
-            // close() never shuts the pool down — exercised by the renewals
+            // close never shuts the pool down — exercised by the renewals
             // below still being schedulable.
             JdbcTaskQueue.TaskRow extra = queue.enqueue(null, "flow",
                     TaskPriority.NORMAL, "extra");

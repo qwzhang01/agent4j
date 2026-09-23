@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.1: pins the three resilience knobs the roadmap names —
+ *  pins the three resilience knobs the roadmap names —
  * Retry-After honoring, circuit breaking, credential rotation — as ONE
  * decorator. Each test scripts a failure sequence into a fake client and
  * asserts the observable outcome (call count, thrown type, breaker state).

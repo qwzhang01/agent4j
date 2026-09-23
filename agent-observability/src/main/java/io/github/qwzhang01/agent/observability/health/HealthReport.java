@@ -30,16 +30,16 @@ import java.util.Objects;
  * timestamps, no ambient state - the same window and the same snapshot
  * sequence yield equal reports.
  *
- * @param windowRuns              runs in the numeric window (&gt; 0)
- * @param completedRuns           runs that reached DONE
- * @param processCompletionRate   DONE fraction in [0.0, 1.0] - process layer only
- * @param totalCostMicros         summed microUSD over the window
- * @param avgCostPerTaskMicros    totalCostMicros / windowRuns
- * @param latencyP50Ms            nearest-rank P50 of run durations
- * @param latencyP95Ms            nearest-rank P95 of run durations
- * @param deniedToolCalls         tool calls blocked by the governance chain
- * @param modelCallErrors         model calls that threw
- * @param drift                   output-distribution signal (never null)
+ * @param windowRuns runs in the numeric window (&gt; 0)
+ * @param completedRuns runs that reached DONE
+ * @param processCompletionRate DONE fraction in [0.0, 1.0] - process layer only
+ * @param totalCostMicros summed microUSD over the window
+ * @param avgCostPerTaskMicros totalCostMicros / windowRuns
+ * @param latencyP50Ms nearest-rank P50 of run durations
+ * @param latencyP95Ms nearest-rank P95 of run durations
+ * @param deniedToolCalls tool calls blocked by the governance chain
+ * @param modelCallErrors model calls that threw
+ * @param drift output-distribution signal (never null)
  */
 public record HealthReport(
         int windowRuns,
@@ -91,12 +91,12 @@ public record HealthReport(
      * window. {@link Status#SUSPECTED} means "investigate", never
      * "page someone" - the band is a heuristic, not a distribution test.
      *
-     * @param status                 tripwire verdict for this window
-     * @param sampleCount            final answers in the content window
-     * @param currentAvgAnswerChars  average answer length this window
+     * @param status tripwire verdict for this window
+     * @param sampleCount final answers in the content window
+     * @param currentAvgAnswerChars average answer length this window
      * @param baselineAvgAnswerChars average answer length the previous
      *                               snapshot reconciled to
-     * @param ratio                  current / baseline (positive infinity when
+     * @param ratio current / baseline (positive infinity when
      *                               the baseline was 0 and output appeared;
      *                               1.0 while building)
      */

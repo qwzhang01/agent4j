@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 
 /**
  * The orchestrator: owns a pool of {@link AgentWorker}s and dispatches tasks to
- * them in parallel (Stage 11 M11.2).
+ * them in parallel .
  * <p>
  * "Supervisor" in name only for now: v1 dispatch is STATIC and EXPLICIT (D2) --
  * the caller decides which worker gets which task. LLM-driven dispatch (the
  * supervisor itself being an agent that reads AgentCards and allocates) is v2,
- * mirroring Stage 7's evolution from TaskScheduler to LlmDrivenScheduler.
+ * mirroring 's evolution from TaskScheduler to LlmDrivenScheduler.
  * <p>
  * Failure philosophy (D4): one crashed worker must not blow up the dispatch.
  * Everything a worker does wrong -- including pointing at an unregistered
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * exception out of {@link #dispatchAll}.
  * <p>
  * Lifecycle: the default constructor owns a cached thread pool (closed via
- * {@link #close()}); the executor-injecting constructor leaves the executor's
+ * {@link #close}); the executor-injecting constructor leaves the executor's
  * lifecycle to the caller.
  */
 public class AgentSupervisor implements AutoCloseable {
@@ -53,7 +53,7 @@ public class AgentSupervisor implements AutoCloseable {
 
     /**
      * Create a supervisor with its own cached thread pool.
-     * Call {@link #close()} when done.
+     * Call {@link #close} when done.
      */
     public AgentSupervisor() {
         this(Executors.newCachedThreadPool(), true);
@@ -61,7 +61,7 @@ public class AgentSupervisor implements AutoCloseable {
 
     /**
      * Create a supervisor on an injected executor; the executor's lifecycle
-     * stays with the caller (not shut down by {@link #close()}).
+     * stays with the caller (not shut down by {@link #close}).
      */
     public AgentSupervisor(ExecutorService executor) {
         this(executor, false);
@@ -115,7 +115,7 @@ public class AgentSupervisor implements AutoCloseable {
 
     /**
      * Dispatch all tasks to their workers IN PARALLEL, wait for every one of
-     * them, aggregate (Stage 11 M11.3).
+     * them, aggregate .
      * <p>
      * Per-task semantics (see {@link WorkerTask}):
      * <ul>
@@ -123,7 +123,7 @@ public class AgentSupervisor implements AutoCloseable {
      *       when it exceeds the budget; timeout counts as one failed attempt
      *       and can be retried.</li>
      *   <li>{@code maxRetries > 0} -- failed attempts are retried up to the
-     *       budget, pausing {@code policy.retryBackoffMs()} between attempts.</li>
+     *       budget, pausing {@code policy.retryBackoffMs} between attempts.</li>
      * </ul>
      * Dispatch-wide semantics (see {@link FailurePolicy}):
      * <ul>
@@ -139,9 +139,9 @@ public class AgentSupervisor implements AutoCloseable {
      * pool this is safe; with an injected fixed pool of size N, keep
      * {@code tasks-with-timeout <= N} or you can starve the inner submissions.
      *
-     * @param tasks      tasks in dispatch order (result order follows this)
+     * @param tasks tasks in dispatch order (result order follows this)
      * @param aggregator how to merge the per-task results
-     * @param policy     failure mode + retry pacing
+     * @param policy failure mode + retry pacing
      */
     public SupervisorResult dispatchAll(List<WorkerTask> tasks, ResultAggregator aggregator,
                                         FailurePolicy policy) {
@@ -290,7 +290,7 @@ public class AgentSupervisor implements AutoCloseable {
                 r.error(), r.durationMs(), attempts, r.totalTokens());
     }
 
-    /** future.get() that converts every failure mode into result data. */
+    /** future.get that converts every failure mode into result data. */
     private static WorkerResult awaitQuietly(Future<WorkerResult> future, WorkerTask task) {
         try {
             return future.get();

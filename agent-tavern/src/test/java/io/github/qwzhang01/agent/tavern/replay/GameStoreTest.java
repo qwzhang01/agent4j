@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.4: the save/reload round trip - blueprint D6 under test.
+ *  the save/reload round trip - blueprint D6 under test.
  * <p>
  * A save is a game snapshot, not a run checkpoint: world + relationships +
  * every character's dialogue history + event bookkeeping, all of which must

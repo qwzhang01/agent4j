@@ -33,7 +33,7 @@ final class RecordingSession implements RunSession {
     private final Instant startedAt = Instant.now();
     private final long startedNanos = System.nanoTime();
 
-    // Config snapshot taken at attach() time (registry may change later - snapshot now)
+    // Config snapshot taken at attach time (registry may change later - snapshot now)
     private String agentName;
     private String promptSha256;
     private List<String> toolNames;
@@ -43,7 +43,7 @@ final class RecordingSession implements RunSession {
     private final List<TrajectoryStep> steps = new ArrayList<>();
 
     // Pending step under assembly: set by onModelCall, observations appended,
-    // flushed when the next model call arrives or at finish()
+    // flushed when the next model call arrives or at finish
     private List<ChatMessage> pendingState;
     private StepAction pendingAction;
     private List<ToolObservation> pendingObservations;

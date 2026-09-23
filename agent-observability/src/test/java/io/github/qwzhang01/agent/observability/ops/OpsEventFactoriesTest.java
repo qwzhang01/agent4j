@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.4 acceptance for the translators: every native signal type gets
+ * acceptance for the translators: every native signal type gets
  * an OpsEvent with the right kind, severity and - always - a recommended
  * action an operator can follow.
  */

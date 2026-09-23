@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Executes a {@link Plan} on the EXISTING workflow runtime (Stage 9:
- * "adding a Planner must not copy a new Runtime").
+ * Executes a {@link Plan} on the EXISTING workflow runtime
+ * "adding a Planner must not copy a new Runtime".
  * <p>
  * The adapter lowers a Plan to the graph model the runtime already
  * executes. The runtime is a single-cursor deterministic state machine
@@ -57,7 +57,7 @@ public final class PlanExecutor {
      * {@code GraphRuntime.run(workflow, input)} directly, or wraps in a
      * Run + RunManager for durable execution.
      *
-     * @param plan         validated plan
+     * @param plan validated plan
      * @param stepExecutor executes each step's objective
      */
     public Workflow toWorkflow(Plan plan, StepExecutor stepExecutor) {

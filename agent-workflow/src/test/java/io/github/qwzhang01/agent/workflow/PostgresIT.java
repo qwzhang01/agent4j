@@ -8,7 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Stage 8.3: PostgreSQL integration profile base class.
+ *  PostgreSQL integration profile base class.
  * <p>
  * The JDBC spine's dialect discipline (plain ANSI SQL, H2 tests /
  * PostgreSQL production) gets its proof here: the same contract tests run

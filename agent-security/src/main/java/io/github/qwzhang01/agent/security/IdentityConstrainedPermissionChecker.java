@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Stage 12 assembly bridge: identity capabilities ∩ {@link ToolPolicy}.
+ * assembly bridge: identity capabilities ∩ {@link ToolPolicy}.
  * <p>
  * Lives in agent-security (not agent-channel) so channel stays free of a
  * hard security dependency. The assembly layer binds capabilities from
- * {@code ResolvedIdentity.effectiveCapabilities()} on each speak.
+ * {@code ResolvedIdentity.effectiveCapabilities} on each speak.
  * <p>
  * Fail-closed: a tool that is not in the bound capability set is
  * {@link ToolPermission#DENY}. A tool that is granted still follows the

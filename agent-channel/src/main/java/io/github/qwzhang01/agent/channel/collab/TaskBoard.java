@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The channel task board: a MATERIALIZED VIEW of the visibility stream
- * (Stage 12 M12.3, design D6).
+ * (, design D6).
  * <p>
  * The board never invents state: it subscribes to
  * {@link ExecutionVisibility} like any other listener and projects events

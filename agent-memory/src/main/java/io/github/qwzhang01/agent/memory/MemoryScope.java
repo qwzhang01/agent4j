@@ -3,16 +3,16 @@ package io.github.qwzhang01.agent.memory;
 import java.util.Objects;
 
 /**
- * A memory namespace - the single mechanism for both isolation and sharing (Stage 8 D3).
+ * A memory namespace - the single mechanism for both isolation and sharing (D3).
  * <p>
  * Scope string format: {@code <kind>:<id>}, e.g.
  * <ul>
  *   <li>{@code agent:weather-bot} - this agent's own knowledge</li>
  *   <li>{@code user:u1} - a user's personal memories (private)</li>
  *   <li>{@code session:s7} - session-level facts</li>
- *   <li>{@code task:r42} - task working memory (maps to a Stage 7 AsyncTask)</li>
+ *   <li>{@code task:r42} - task working memory (maps to a AsyncTask)</li>
  *   <li>{@code channel:c1} - channel-shared memory (multi-user, Claude Tag style)</li>
- *   <li>{@code tenant:acme} - tenant-scoped data (knowledge base, Stage 15 enterprise profile)</li>
+ *   <li>{@code tenant:acme} - tenant-scoped data (knowledge base, enterprise profile)</li>
  * </ul>
  * <p>
  * Sharing is just a scope value, not a separate system. Multi-tenant isolation is
@@ -33,7 +33,7 @@ public record MemoryScope(String value) {
         TASK,
         CHANNEL,
         /**
-         * Tenant namespace (Stage 15 Enterprise Agent Profile). Holds tenant-scoped
+         * Tenant namespace (Enterprise Agent Profile). Holds tenant-scoped
          * data such as knowledge base entries. Isolation is enforced by the store's
          * scope whitelist - a query listing {@code tenant:acme} can never see
          * {@code tenant:globex} entries.
@@ -62,7 +62,7 @@ public record MemoryScope(String value) {
     }
 
     /**
-     * Scope for tenant-scoped data (Stage 15): knowledge base entries and other
+     * Scope for tenant-scoped data : knowledge base entries and other
      * data shared by every member of a tenant, visible to no one else.
      */
     public static MemoryScope tenant(String tenantId) {

@@ -16,9 +16,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 10 M10.3 tests: McpToolAdapter -- the glue between MCP and our Tool interface.
+ * tests: McpToolAdapter -- the glue between MCP and our Tool interface.
  * <p>
- * Key assertion: MCP tools are transparently governed by Stage 9's governance layer
+ * Key assertion: MCP tools are transparently governed by 's governance layer
  * (GovernedToolExecutor) with ZERO extra code -- the D1 design decision.
  */
 class McpToolAdapterTest {

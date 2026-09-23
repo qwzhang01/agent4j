@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 /**
  * {@code trigger_event} - a character may deliberately set a story event in
- * motion (Stage 16 M16.3): raising a toast to trigger "crowd cheers",
+ * motion : raising a toast to trigger "crowd cheers",
  * picking a fight to trigger "the guards step in".
  * <p>
  * Manual triggering bypasses the rule CONDITION (the character's dramatic
@@ -36,7 +36,7 @@ public final class TriggerEventTool implements Tool {
     private final Consumer<EventEvaluator.TriggeredEvent> pendingSink;
 
     /**
-     * @param evaluator   the rule table (id lookup + once bookkeeping)
+     * @param evaluator the rule table (id lookup + once bookkeeping)
      * @param pendingSink where queued events wait for the settlement batch
      */
     public TriggerEventTool(EventEvaluator evaluator,

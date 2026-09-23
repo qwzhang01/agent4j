@@ -1,10 +1,10 @@
 package io.github.qwzhang01.agent.security;
 
 /**
- * Rate limiter for tool calls (Stage 9 D7 - optional component).
+ * Rate limiter for tool calls (D7 - optional component).
  * <p>
  * v1 = simple count-based window (N calls per minute per tool).
- * Full implementations (token bucket / sliding window / per-user) are Stage 18.
+ * Full implementations (token bucket / sliding window / per-user) are .
  */
 public interface RateLimiter {
 

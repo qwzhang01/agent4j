@@ -1,19 +1,19 @@
 package io.github.qwzhang01.agent.core.run;
 
 /**
- * Unified failure taxonomy (Stage 1.3/2.2 groundwork, harness contract 1.3).
+ * Unified failure taxonomy (/2.2 groundwork, harness contract 1.3).
  * <p>
  * v0.1.3 reality: only the sandbox has a typed FailureKind
  * (SANDBOX_FAILURE / BLOCKED_BY_POLICY / TIMEOUT / CODE_FAILURE); every
- * other boundary emits free strings ("Tool not found: ..."). This enum is
- * the core-side anchor the roadmap Stage 2.2 unified taxonomy builds on.
+ * other boundary emits free strings "Tool not found: ...". This enum is
+ * the core-side anchor the roadmap unified taxonomy builds on.
  * Modules map their local failures onto these kinds; nobody invents new
  * string prefixes.
  * <p>
- * v1 scope (Stage 1): CANCELLED, TIMEOUT, INPUT_INVALID (used by the new
+ * v1 scope : CANCELLED, TIMEOUT, INPUT_INVALID (used by the new
  * run-context machinery). The remaining roadmap classes (permission
  * denied, approval-waiting, model failure, tool failure, resource
- * exhausted, protocol failure, recovery failure) land with Stage 2-3
+ * exhausted, protocol failure, recovery failure) land with -3
  * consumers; the enum is open for extension without breaking switch
  * statements that handle a default branch.
  */

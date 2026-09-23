@@ -13,12 +13,12 @@ import java.util.Objects;
  * A multimodal message mixes text and image parts:
  * <pre>{@code
  * ChatMessage.user(List.of(
- *     ContentPart.text("What's in this image?"),
- *     ContentPart.imageByUrl("https://example.com/cat.png")));
+ *     ContentPart.text"What's in this image?",
+ *     ContentPart.imageByUrl"https://example.com/cat.png"));
  * }</pre>
  * <p>
  * Provider clients (OpenAI-compatible, Anthropic) convert parts into their
- * wire format. Pure-text messages keep using {@link ChatMessage#content()}.
+ * wire format. Pure-text messages keep using {@link ChatMessage#content}.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -43,9 +43,9 @@ public sealed interface ContentPart {
     /**
      * An image, referenced either by URL or by base64-encoded bytes.
      *
-     * @param url        public URL of the image (mutually exclusive with base64Data)
+     * @param url public URL of the image (mutually exclusive with base64Data)
      * @param base64Data base64-encoded image bytes (mutually exclusive with url)
-     * @param mimeType   image MIME type, required for base64 data (e.g. "image/png")
+     * @param mimeType image MIME type, required for base64 data (e.g. "image/png"
      */
     record ImagePart(String url, String base64Data, String mimeType) implements ContentPart {
         public ImagePart {

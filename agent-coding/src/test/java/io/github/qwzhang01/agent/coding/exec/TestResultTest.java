@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.3: the verdict record - passed semantics (exit code AND no timeout)
+ *  the verdict record - passed semantics (exit code AND no timeout)
  * and the evidence excerpt (surefire "Tests run:" lines first, failure tail after).
  */
 class TestResultTest {

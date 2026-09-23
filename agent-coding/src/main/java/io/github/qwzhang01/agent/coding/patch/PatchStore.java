@@ -15,16 +15,16 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Session-scoped staging area for file changes (Stage 17 M17.2, blueprint D1:
- * "writing to disk is a privilege, the patch is the request form").
+ * Session-scoped staging area for file changes (, blueprint D1:
+ * "writing to disk is a privilege, the patch is the request form".
  * <p>
  * The core invariant - <b>staging never touches the disk</b>: {@link #stage} /
  * {@link #stageDeletion} only record a {@link FileChange} (with the on-disk snapshot as
- * drift baseline). The one and only write point is {@link #apply()}, and it is
+ * drift baseline). The one and only write point is {@link #apply}, and it is
  * two-phase: verify every change against its baseline first (fail whole-patch on drift),
  * then write all files. Half-applied is the worst state; the two-phase window is kept
  * minimal (v1 honest boundary: a kill mid-write can still leave a partial apply - that
- * is Stage 6 checkpoint territory, not this class's).
+ * is checkpoint territory, not this class's).
  * <p>
  * Semantics:
  * <ul>
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *       frozen for review; discard first to start over)</li>
  *   <li>drift rejection leaves the disk exactly as-is - a rejected apply has zero side
  *       effects, including not clobbering the human's concurrent edit</li>
- *   <li>{@code apply()}/{@code discard()}/{@code reject()} all close the patch; the next
+ *   <li>{@code apply}/{@code discard}/{@code reject} all close the patch; the next
  *       stage opens a fresh one with a new patchId</li>
  * </ul>
  * <p>
@@ -162,7 +162,7 @@ public final class PatchStore {
      * Allowed from DRAFT (untested but human-approved) or VALIDATED.
      * <p>
      * A change whose disk content already equals its {@code newContent} (a prior
-     * {@link #materialize()}) is applied idempotently - see {@link OnDiskState}.
+     * {@link #materialize}) is applied idempotently - see {@link OnDiskState}.
      * <p>
      * On drift: nothing is written, the disk keeps its current content.
      */

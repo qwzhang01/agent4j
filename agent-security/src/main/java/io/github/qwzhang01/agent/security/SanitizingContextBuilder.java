@@ -24,7 +24,7 @@ import java.util.Objects;
  * <ol>
  *   <li><b>Sanitization</b> (enforcement): every TOOL-role message content is
  *   scanned by the {@link ResultSanitizer}; hits are rewritten per its strategy.
- *   This is the same pattern library as the Stage 9 output door, applied one
+ *   This is the same pattern library as the output door, applied one
  *   step earlier - before the content ever reaches the model, instead of
  *   after the model already saw it.</li>
  *   <li><b>Spotlighting</b> (framing): every non-SYSTEM message is wrapped in
@@ -37,8 +37,8 @@ import java.util.Objects;
  * Spotlighting is a framing hint, not a guarantee - a model may still follow
  * an instruction that survived sanitization. The defenses stack; none is absolute.
  * <p>
- * State discipline (Decision 12, "ledger records the original"): this builder
- * MUST NOT rewrite {@code state.getMessages()} in place. It returns a new list;
+ * State discipline (Decision 12, "ledger records the original": this builder
+ * MUST NOT rewrite {@code state.getMessages} in place. It returns a new list;
  * the persisted history keeps the original bytes. The same compromise as the
  * audit ledger - sanitized views for the model, raw records for forensics.
  * <p>
@@ -65,8 +65,8 @@ public final class SanitizingContextBuilder implements ContextBuilder {
     /**
      * Full form.
      *
-     * @param delegate     upstream builder producing the raw message list
-     * @param sanitizer    pattern scanner applied to TOOL-role message content
+     * @param delegate upstream builder producing the raw message list
+     * @param sanitizer pattern scanner applied to TOOL-role message content
      * @param spotlighting wrap non-SYSTEM messages in untrusted delimiters
      */
     public SanitizingContextBuilder(ContextBuilder delegate, ResultSanitizer sanitizer,

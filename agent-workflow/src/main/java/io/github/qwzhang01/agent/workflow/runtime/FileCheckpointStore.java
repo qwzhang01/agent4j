@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * Values on the blackboard must be Jackson-serializable (String / Number /
  * Map / List for the teaching v1).
  * <p>
- * Stage 3.1 (harness roadmap) durability upgrades:
+ * (harness roadmap) durability upgrades:
  * <ul>
  *   <li><b>Atomic save</b> — write to a temp file in the same directory,
  *       fsync the file, then atomic-rename onto the target. A crash
@@ -145,7 +145,7 @@ public final class FileCheckpointStore implements CheckpointStore {
     /**
      * Reject runIds that could escape the store directory: traversal
      * sequences, separators, wildcards, or absurd lengths.
-     * Widened for {@code JdbcCheckpointStore} (Stage 8.1): the same
+     * Widened for {@code JdbcCheckpointStore} : the same
      * whitelist guards SQL-bound runIds.
      */
     public static void validateRunId(String runId) {
@@ -159,9 +159,9 @@ public final class FileCheckpointStore implements CheckpointStore {
      * Jackson-friendly snapshot of a Checkpoint. Public fields so the
      * default ObjectMapper can round-trip without extra mixins.
      * <p>
-     * Stage 3.1: schemaVersion / workflowName / workflowVersion /
+     *  schemaVersion / workflowName / workflowVersion /
      * workflowHash / lastEventSeq fields ride along. Version 1 files
-     * (missing schemaVersion) load with legacy identity ("" hash = never
+     * (missing schemaVersion) load with legacy identity "" hash = never
      * mismatches) — old checkpoints keep working, new ones are guarded.
      */
     public static class Snapshot {

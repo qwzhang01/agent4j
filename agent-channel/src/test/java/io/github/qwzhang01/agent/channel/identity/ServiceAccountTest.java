@@ -9,7 +9,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link ServiceAccount} (Stage 12 M12.1).
+ * Unit tests for {@link ServiceAccount} .
  */
 class ServiceAccountTest {
 

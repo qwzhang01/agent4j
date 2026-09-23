@@ -49,8 +49,8 @@ class HybridRankingStrategyTest {
 
     /**
      * Query "relocation plans" vs entries:
-     * - "home-city: lives in Shenzhen"  (no lexical overlap; vector close to query)
-     * - "work: next week interview"     (no overlap; vector orthogonal to query)
+     * - "home-city: lives in Shenzhen" (no lexical overlap; vector close to query)
+     * - "work: next week interview" (no overlap; vector orthogonal to query)
      * Shenzhen must rank first purely through the semantic path.
      */
     @Test
@@ -122,7 +122,7 @@ class HybridRankingStrategyTest {
                 vecEntry("tax", "fiscal year deadline", 0.9, client)),
                 "latte");
 
-        // latte: 0.3*1.0 + 0.2*0.2 = 0.34  vs  tax: 0.3*0 + 0.2*0.9 = 0.18
+        // latte: 0.3*1.0 + 0.2*0.2 = 0.34 vs tax: 0.3*0 + 0.2*0.9 = 0.18
         assertEquals("latte with oat milk", ranked.get(0).content(),
                 "legacy entry surfaces via β token overlap despite α=0");
     }
@@ -141,7 +141,7 @@ class HybridRankingStrategyTest {
                 vecEntry("tax", "fiscal year deadline", 0.9, client)),
                 "latte");
 
-        // Degraded: latte = 0.3*1.0 + 0.2*0.2 = 0.34  vs  tax = 0.3*0 + 0.2*0.9 = 0.18
+        // Degraded: latte = 0.3*1.0 + 0.2*0.2 = 0.34 vs tax = 0.3*0 + 0.2*0.9 = 0.18
         assertEquals("latte with oat milk", ranked.get(0).content(),
                 "lexical path must still surface the coffee memory when the provider is down");
     }

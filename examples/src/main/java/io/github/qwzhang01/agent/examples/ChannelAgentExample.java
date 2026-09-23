@@ -24,18 +24,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Stage 12 acceptance example: a channel-scoped shared agent.
+ * acceptance example: a channel-scoped shared agent.
  * <p>
  * The scenario (architecture note §6, T0-T3 + T5): eng-bot is deployed
  * into #team-eng as a TEAM member - three members share ONE agent with
  * ONE conversation, tasks can be handed off without losing context, and
  * identity is fail-closed.
  * <pre>
- *   T0  deploy: ServiceAccount eng-bot (granted [chat]) + channel members
- *   T1  alice @eng-bot starts a task (identity gate + channel memory)
- *   T2  alice hands the task off to bob (state/memory/board, three parts)
- *   T3  the board and the visibility stream show progress to everyone
- *   T5  identity denials: member-without-role vs stranger (fail-closed)
+ *   T0 deploy: ServiceAccount eng-bot (granted [chat]) + channel members
+ *   T1 alice @eng-bot starts a task (identity gate + channel memory)
+ *   T2 alice hands the task off to bob (state/memory/board, three parts)
+ *   T3 the board and the visibility stream show progress to everyone
+ *   T5 identity denials: member-without-role vs stranger (fail-closed)
  * </pre>
  * Run:
  * <pre>

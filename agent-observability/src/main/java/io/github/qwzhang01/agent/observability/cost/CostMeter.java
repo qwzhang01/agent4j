@@ -5,7 +5,7 @@ import io.github.qwzhang01.agent.observability.metrics.ModelCallMetrics;
 import java.util.Objects;
 
 /**
- * TokenUsage -&gt; microUSD converter (Stage 18 M18.2).
+ * TokenUsage -&gt; microUSD converter .
  * <p>
  * Integer arithmetic only, round-half-up: the accounting path never touches
  * floating point. Overflow honesty: tokens are int (&lt; 2^31) and realistic
@@ -37,13 +37,13 @@ public final class CostMeter {
     }
 
     /**
-     * Stage 5.1: cache-aware cost of one call, in microUSD.
+     *  cache-aware cost of one call, in microUSD.
      * <p>
      * The prompt splits into three disjoint parts (same semantics as
      * {@code routing.CachePricing.promptCostMicros}, E3 / decision 26):
      * <pre>
      *   prompt = cached + written + base
-     *   cost   = cached * cacheRead + written * cacheWrite + base * input
+     *   cost = cached * cacheRead + written * cacheWrite + base * input
      * </pre>
      * When the price row carries no cache fields (legacy two-field tables),
      * this method must be called with cached/written = 0 and degenerates to
@@ -51,7 +51,7 @@ public final class CostMeter {
      * row priced without cache accounting throws: that would silently bill
      * cache reads at full price - a config bug, fail loud.
      *
-     * @param cachedTokens  portion of the prompt served from cache (⊆ promptTokens)
+     * @param cachedTokens portion of the prompt served from cache (⊆ promptTokens)
      * @param writtenTokens portion written INTO the cache this call
      */
     public long costMicros(String model, long promptTokens, long completionTokens,

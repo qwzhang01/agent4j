@@ -13,12 +13,12 @@ import io.github.qwzhang01.agent.workflow.nodes.HumanApprovalNode;
 import io.github.qwzhang01.agent.workflow.nodes.ToolNode;
 
 /**
- * Stage 5 acceptance example: the three-path support flow.
+ * acceptance example: the three-path support flow.
  * <pre>{@code
  * user request -> intent (AgentNode) -> conditional routing
- *   ├── QUERY  -> ticket lookup (ToolNode, deterministic)
+ *   ├── QUERY -> ticket lookup (ToolNode, deterministic)
  *   ├── REFUND -> human approval (HumanApprovalNode) -> execute
- *   └── other  -> human handoff (ActionNode)
+ *   └── other -> human handoff (ActionNode)
  * }</pre>
  * Demonstrates: Agent as a graph node, deterministic tools, human-in-the-loop,
  * blackboard routing, and the step trace - all without a real LLM

@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Stage 8 acceptance example 1: multi-turn personal memory loop.
+ * acceptance example 1: multi-turn personal memory loop.
  * <p>
  * Demonstrates:
  * - Turn 1: user states a preference -> KeywordMemoryExtractor stores it

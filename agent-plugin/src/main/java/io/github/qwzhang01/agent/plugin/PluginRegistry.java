@@ -23,21 +23,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * - One plugin failure does NOT affect others
  * - onLoad failure -> state = FAILED, exception stored,
  *   AND everything the plugin registered before failing is rolled back
- *   (Stage 6.4: "加载失败时回滚已注册 Tool、线程、连接和资源" — the tool
+ *   "加载失败时回滚已注册 Tool、线程、连接和资源" — the tool
  *   rollback is enforced by the registry; threads/connections are
  *   plugin-owned resources the plugin must release in its own failure
  *   path, the registry can only guarantee the registry surface)
  * - onUnload failure -> state = UNLOADED anyway, error logged, orphan
  *   tools swept
  * <p>
- * Stage 6.4: thread-safe (per-plugin locking over a ConcurrentHashMap —
+ *  thread-safe (per-plugin locking over a ConcurrentHashMap —
  * concurrent load/unload of DIFFERENT plugins proceeds in parallel, the
  * same plugin is serialized) and namespace-isolated (each plugin owns a
  * {@code pluginName__toolName} namespace; a plugin cannot overwrite or
  * unregister another plugin's tools, nor the host's own tools).
  * <p>
  * Security boundary (honest, per the roadmap's "明确当前 SPI Plugin 的安全
- * 边界，不再暗示隔离"): this registry isolates REGISTRATION SURFACES, not
+ * 边界，不再暗示隔离": this registry isolates REGISTRATION SURFACES, not
  * code. SPI plugins run in-process with full JVM permissions. The only
  * enforcement point is the manifest gate at registration time — a plugin
  * without a manifest (legacy path, kept for backward compatibility) or
@@ -63,7 +63,7 @@ public class PluginRegistry {
 
     /**
      * Load a plugin with NO manifest (legacy / trusted-internal path).
-     * The plugin may register tools freely — this is the Stage 3 behavior,
+     * The plugin may register tools freely — this is the behavior,
      * kept so existing hosts and tests do not break.
      */
     public void load(Plugin plugin) {
@@ -78,7 +78,7 @@ public class PluginRegistry {
      * through. onLoad failure rolls back whatever the plugin managed to
      * register before throwing.
      *
-     * @param plugin   the plugin to load
+     * @param plugin the plugin to load
      * @param manifest host-side permission declaration; null = legacy
      *                 trusted path (no enforcement)
      * @throws PluginException if the name is already in use or the manifest
@@ -221,7 +221,7 @@ public class PluginRegistry {
      * load-failure rollback can drop tools the plugin left behind, and so
      * the manifest gate can deny undeclared registrations.
      * <p>
-     * Namespace isolation (Stage 6.4): registration goes through
+     * Namespace isolation : registration goes through
      * {@code pluginName__toolName}. The HOST's own tools (registered
      * directly on the delegate registry) are invisible to plugin
      * unregister/unregister because the tracking view only ever removes

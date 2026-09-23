@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 /**
  * In-memory implementation of {@link MemoryStore}.
  * <p>
- * v1 backing store for Stage 8. Uses a {@link ConcurrentHashMap} keyed by id.
+ * v1 backing store for . Uses a {@link ConcurrentHashMap} keyed by id.
  * Scope isolation is enforced in {@link #query}: entries whose scope is not in
  * the query's scope list are never returned.
  */

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.2: allowlist + trust levels. The gatekeeper rule under test:
+ *  allowlist + trust levels. The gatekeeper rule under test:
  * absence from the list is denial; RESTRICTED gates per-tool; UNTRUSTED
  * refuses to connect at all.
  */
@@ -77,7 +77,7 @@ class McpAllowlistTest {
     @Test
     void deniedServer_isAuditableNotThrown() {
         // Denial is a return value (it goes into audit records), never an
-        // exception from evaluate().
+        // exception from evaluate.
         McpAllowlist list = McpAllowlist.denyAll();
         McpServerTrust trust = list.evaluate(
                 McpServerDescriptor.sse("unknown", "https://unknown.example/sse"));

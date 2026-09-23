@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Objects;
 
 /**
- * JSON-RPC 2.0 notification (Stage 10 D3).
+ * JSON-RPC 2.0 notification (D3).
  * <p>
  * Like a request but with no id -- the server is not expected to reply.
  * Used for one-way signals like "notifications/initialized" (MCP handshake step 2).

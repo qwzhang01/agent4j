@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.3: the ANSI dialect discipline proven on real PostgreSQL.
+ *  the ANSI dialect discipline proven on real PostgreSQL.
  * <p>
- * Stage 8.1 wrote the JDBC spine against embedded H2 with one policy — plain
+ * wrote the JDBC spine against embedded H2 with one policy — plain
  * ANSI SQL, no MERGE / ON CONFLICT / FOR UPDATE SKIP LOCKED, guarded UPDATE
  * affected-rows as the CAS verdict. This class runs the CORE contract of
  * every store against a real PostgreSQL (skip-by-assumption when none is

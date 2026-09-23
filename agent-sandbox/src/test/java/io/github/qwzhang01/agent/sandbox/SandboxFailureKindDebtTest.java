@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * data, not consumer-guessed string prefixes.
  * <p>
  * The debt: in-repo producers pinned the kind explicitly at every failure
- * site, so the {@code deriveKind} prefix heuristic ("Blocked:..." /
- * "Sandbox error:...") is no longer load-bearing for in-repo classification.
+ * site, so the {@code deriveKind} prefix heuristic "Blocked:..." /
+ * "Sandbox error:..." is no longer load-bearing for in-repo classification.
  * These tests pin the NEW contract (typed factories carry the kind; text is
  * display-only) and the compatibility contract (old shapes still derive the
  * same kinds, so external construction sites keep behaving identically).
@@ -65,7 +65,7 @@ class SandboxFailureKindDebtTest {
     @Test
     @DisplayName("ClassLoaderSandbox's blocked path is typed even if the error text changes")
     void classLoaderBlockIsTypedAtSource() {
-        // The producer-side fix: the blocked() factory (used by ClassLoaderSandbox's
+        // The producer-side fix: the blocked factory (used by ClassLoaderSandbox's
         // SecurityException catch) pins BLOCKED_BY_POLICY inside the factory. A future
         // rewording of the message cannot re-bucket the kind - this test pins that
         // the factory, not the prefix, is the source of truth.
@@ -79,7 +79,7 @@ class SandboxFailureKindDebtTest {
     @Test
     @DisplayName("ProcessSandbox infra catch is typed: spawn failure is SANDBOX_FAILURE even in Chinese")
     void processInfraFailureIsTypedAtSource() {
-        // Simulates what ProcessSandbox's catch now produces via sandboxFailure():
+        // Simulates what ProcessSandbox's catch now produces via sandboxFailure:
         // the kind is carried as data, so a localized or reworded message cannot
         // silently downgrade it to CODE_FAILURE (which would advise "fix the code"
         // for a machine problem).

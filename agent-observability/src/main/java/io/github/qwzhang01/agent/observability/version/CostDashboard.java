@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The cost dashboard's DATA outlet (Stage 18 D8/acceptance 9): aggregate
+ * The cost dashboard's DATA outlet (D8/acceptance 9): aggregate
  * microUSD by dimension key, export per-dimension breakdowns - the
  * dashboard UI itself is a frontend concern and stays out of v1.
  * <p>
@@ -30,7 +30,7 @@ import java.util.Objects;
  * multiply-count multi-attributed events - the classic double-counting trap.
  * The reconciliation discipline is structural: when assembly attributes every
  * event to all four dimensions, each dimension's total MUST equal
- * {@link #totalCost()} - the same account read from four angles. The example
+ * {@link #totalCost} - the same account read from four angles. The example
  * asserts this; a real deployment alerts on it.
  * <p>
  * {@link #attributionSink} is the one-line wiring for the common shape
@@ -189,10 +189,10 @@ public final class CostDashboard {
      * Wire the fixed-attribution sink: prices model calls via
      * {@link CostMeter}, books microUSD under each dimension key.
      *
-     * @param meter       pricer (CostMeter's fail-loud contract applies to
+     * @param meter pricer (CostMeter's fail-loud contract applies to
      *                    direct callers; this adapter catches and skips)
      * @param attribution dimension -&gt; key to book under (e.g.
-     *                    TENANT-&gt;"acme", USER-&gt;"alice"); must not be empty
+     *                    TENANT-&gt;"acme", USER-&gt;"alice"; must not be empty
      */
     public static AttributionSink attributionSink(CostMeter meter, Map<BudgetDimension, String> attribution) {
         Objects.requireNonNull(meter, "meter");

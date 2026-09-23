@@ -48,7 +48,7 @@ public class ReActAgentLoop implements AgentLoop {
     private final HandoffTargetResolver resolver;
 
     /**
-     * Stage 9 Tool Parallelism: when non-null and a response carries more
+     * Tool Parallelism: when non-null and a response carries more
      * than one plain tool call, the loop fans them out through this
      * executor (bounded width, declaration-order join). Null = sequential
      * legacy behavior, bit-for-bit.
@@ -65,7 +65,7 @@ public class ReActAgentLoop implements AgentLoop {
     }
 
     /**
-     * Stage 9: opt in to parallel plain-tool execution. Injected after
+     *  opt in to parallel plain-tool execution. Injected after
      * construction (the loop's existing constructors stay unchanged for
      * binary compatibility).
      */
@@ -125,7 +125,7 @@ public class ReActAgentLoop implements AgentLoop {
      * {@link #execute} uses a no-op sink and returns the final state;
      * {@link #stream} forwards {@link AgentEvent}s to the caller's sink.
      * <p>
-     * Stage 19: the loop does not own a single config. It starts with the
+     *  the loop does not own a single config. It starts with the
      * entry config, but a declared handoff swaps the active config mid-run
      * (persona, model client, tools, context builder) while the shared
      * {@link AgentState} — history plus the global step budget — survives.
@@ -144,13 +144,13 @@ public class ReActAgentLoop implements AgentLoop {
     }
 
     /**
-     * The ctx-aware loop (Stage 1.2). Null ctx = legacy behaviour, bit-for-bit.
+     * The ctx-aware loop . Null ctx = legacy behaviour, bit-for-bit.
      * With a context: every step boundary checks cancellation (structured
      * RunCancelledException) and deadline (RunDeadlineException); the model
      * call and every tool call receive the context via their ctx-aware
      * overloads.
      * <p>
-     * Stage 7.1: when {@code ctx.eventSink()} is present, the loop emits the
+     *  when {@code ctx.eventSink} is present, the loop emits the
      * eight lifecycle facts (RunStarted / StepStarted / StepCompleted /
      * RunCompleted / RunFailed / RunCanceled; pause/resume belong to the
      * workflow layer). Emission failures never break the run they observe -
@@ -609,10 +609,10 @@ public class ReActAgentLoop implements AgentLoop {
      * loop was constructed with (which hosts may have wrapped with
      * governance/audit decorators). A swapped-in target uses
      * {@link HandoffTargetResolver#executorFor} — typically the target's
-     * own {@link AgentConfig#getToolExecutor()}, else a plain
+     * own {@link AgentConfig#getToolExecutor}, else a plain
      * {@link DefaultToolExecutor}. The loop never re-weaves host decorations.
      * <p>
-     * Stage 1.2: the ctx-aware overload carries the run context through to
+     *  the ctx-aware overload carries the run context through to
      * the tool boundary (governance decorators read identity/budget from it).
      */
     private String executePlainTool(AgentConfig entryConfig, AgentConfig currentConfig,
@@ -651,7 +651,7 @@ public class ReActAgentLoop implements AgentLoop {
     }
 
     /**
-     * Stage 1.2: ctx-aware model invoker. Null ctx = legacy invocation.
+     *  ctx-aware model invoker. Null ctx = legacy invocation.
      */
     @FunctionalInterface
     private interface CtxModelInvoker {
@@ -696,7 +696,7 @@ public class ReActAgentLoop implements AgentLoop {
                     sink.accept(new AgentEvent.ContentDelta(delta.delta()));
                 }
             } else if (event instanceof StreamEvent.ToolCallEvent) {
-                // Incremental; wait for Done.finalResponse() before executing.
+                // Incremental; wait for Done.finalResponse before executing.
             } else if (event instanceof StreamEvent.Done done) {
                 response = done.finalResponse();
                 break;
@@ -818,7 +818,7 @@ public class ReActAgentLoop implements AgentLoop {
     }
 
     /**
-     * Stage 9: a tool result that is a governance refusal (not a tool
+     *  a tool result that is a governance refusal (not a tool
      * output) gets an explicit {@code ToolValidationRejected} event — the
      * observability twin of the model-visible error string. The wired
      * refusal prefixes, by governance stage:

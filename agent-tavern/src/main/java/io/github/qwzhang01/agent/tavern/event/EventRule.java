@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 
 /**
  * One trigger rule: a condition over game facts, the event it fires, and the
- * world effects that come along (Stage 16 M16.3, blueprint D5).
+ * world effects that come along (, blueprint D5).
  * <p>
  * {@code once = true} (the default) is the story-semantics default: a plot
  * event happens once ever; repeatable conditions use {@link #repeatable}.

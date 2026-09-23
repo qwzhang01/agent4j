@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.observability.eval;
 import java.util.Objects;
 
 /**
- * Deterministic assertion over one evaluated run (Stage 18 D7) - the v1
+ * Deterministic assertion over one evaluated run (D7) - the v1
  * judgment vocabulary of the regression gate.
  * <p>
  * v1 is DELIBERATELY deterministic-only (four kinds): the gate's lifeline is
@@ -33,14 +33,14 @@ public sealed interface Expectation {
      */
     boolean test(Outcome outcome);
 
-    /** Human-readable one-liner for reports ("contains '道歉'"). */
+    /** Human-readable one-liner for reports "contains '道歉'". */
     String describe();
 
     /**
      * What one evaluated run produced - the input every expectation judges.
      *
-     * @param finalText     the subject's final answer text ("" when none)
-     * @param totalTokens   total tokens consumed by the run (0 when unknown)
+     * @param finalText the subject's final answer text "" when none)
+     * @param totalTokens total tokens consumed by the run (0 when unknown)
      * @param toolCallCount tool calls issued during the run
      */
     record Outcome(String finalText, long totalTokens, int toolCallCount) {

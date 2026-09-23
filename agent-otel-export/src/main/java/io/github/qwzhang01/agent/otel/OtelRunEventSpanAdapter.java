@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * RunEvent-to-span adapter (Stage 7.1, blueprint D9's cashed promise: the
+ * RunEvent-to-span adapter (, blueprint D9's cashed promise: the
  * SDK finally arrives as a THIN shell over the stable contracts).
  * <p>
  * Translation rules (deliberately conservative):
@@ -32,10 +32,10 @@ import java.util.function.Consumer;
  *   <li>{@code RunPaused}/{@code RunResumed} add timeline events on the
  *       run span, not new spans - a pause is not work.</li>
  * </ul>
- * Sensitive-content discipline (roadmap 7.1): the adapter records ONLY
+ * Sensitive-content discipline : the adapter records ONLY
  * structural attributes (ids, kinds, counts, durations). Prompts, tool
  * args and results are never attached - consumers wanting content-level
- * tracing must opt in at the trajectory layer, where Stage 5's
+ * tracing must opt in at the trajectory layer, where 's
  * redaction policy already governs what leaves the process.
  * <p>
  * Orphan policy: a terminal event for an unknown runId is counted

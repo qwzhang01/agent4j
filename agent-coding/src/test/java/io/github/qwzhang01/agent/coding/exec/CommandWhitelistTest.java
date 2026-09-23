@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.3: gate 2 - prefix matching on argv, fail-closed on everything else.
+ *  gate 2 - prefix matching on argv, fail-closed on everything else.
  */
 class CommandWhitelistTest {
 

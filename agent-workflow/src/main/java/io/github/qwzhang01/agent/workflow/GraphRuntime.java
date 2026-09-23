@@ -20,15 +20,15 @@ import java.util.concurrent.TimeoutException;
  * The interpreter: walks a Workflow from START to END.
  * <p>
  * Main loop (one iteration = one node):
- * 1. [Stage 6] Check cancellation and max-steps
+ * 1. [] Check cancellation and max-steps
  * 2. Route: explicit node jump > matching conditional edge > unconditional edge
  * 3. Execute node (with RetryPolicy), on failure try onError edge
- * 4. [Stage 6] Catch PauseException -> save cursor, return PAUSED
+ * 4. [] Catch PauseException -> save cursor, return PAUSED
  * 5. Write output to the blackboard under the node id
  * 6. Record a StepRecord in the trace
  * 7. Advance cursor
  * <p>
- * Stage 6 additions:
+ * additions:
  * - {@link #execute(Run)}: main entry point with pause/cancel/resume support
  * - Resume: if Run has a cursor, start from there (skip completed nodes)
  * - Cancel: check volatile flag at each node boundary
@@ -182,7 +182,7 @@ public class GraphRuntime {
                             System.currentTimeMillis(), System.currentTimeMillis()));
                     lastOutput = replayed;
                     log.info("[{}] Node '{}' replayed from side-effect ledger", runId, cursor);
-                    // idempotencyKey holds the recorded NodeResult.next()
+                    // idempotencyKey holds the recorded NodeResult.next
                     // (empty = no explicit jump; route falls through to edges).
                     String recordedNext = hit.get().idempotencyKey();
                     cursor = route(workflow, node.id(),
@@ -278,7 +278,7 @@ public class GraphRuntime {
         String rendered = output == null ? "null" : String.valueOf(output);
         // Node-scoped row: empty argsHash so JDBC lookup(runId, nodeId) hits
         // the same row InMemory finds by Effect.idFor(runId, nodeId).
-        // idempotencyKey carries NodeResult.next() so replay keeps explicit jumps
+        // idempotencyKey carries NodeResult.next so replay keeps explicit jumps
         // (Effect has no next field; empty = route via edges).
         String recordedNext = next == null ? "" : next;
         ledger.record(new SideEffectLedger.Effect(

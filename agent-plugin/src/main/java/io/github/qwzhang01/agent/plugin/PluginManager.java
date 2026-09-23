@@ -20,11 +20,11 @@ import java.util.ServiceLoader;
  * Usage:
  * <pre>{@code
  * PluginManager manager = new PluginManager(toolRegistry);
- * manager.loadAll();               // scan + load all plugins
- * manager.unloadAll();             // unload all plugins
- * manager.load("search-tool");     // load specific plugin by name
- * manager.unload("search-tool");   // unload specific plugin
- * manager.listPlugins();           // show all plugins with states
+ * manager.loadAll; // scan + load all plugins
+ * manager.unloadAll; // unload all plugins
+ * manager.load"search-tool"; // load specific plugin by name
+ * manager.unload"search-tool"; // unload specific plugin
+ * manager.listPlugins; // show all plugins with states
  * }</pre>
  * <p>
  * Plugins are discovered via {@code META-INF/services/io.github.qwzhang01.agent.plugin.ToolPlugin}.

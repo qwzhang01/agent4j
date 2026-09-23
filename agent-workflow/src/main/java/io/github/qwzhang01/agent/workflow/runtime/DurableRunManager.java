@@ -19,13 +19,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Durable execution manager (Stage 3, harness roadmap).
+ * Durable execution manager (, harness roadmap).
  * <p>
  * Wraps a plain {@link RunManager} and adds the durable spine:
  * <ul>
  *   <li><b>RunStore</b> — every transition lands as an optimistic-locked
  *       row; recovery candidates come from the store, never from the JVM
- *       active map ("Scheduler only schedules persistent Runs").</li>
+ *       active map "Scheduler only schedules persistent Runs".</li>
  *   <li><b>Lease</b> — two workers recovering the same run: only one wins
  *       the lease; the loser fails loudly.</li>
  *   <li><b>Definition guard</b> — a resume against a changed workflow
@@ -40,7 +40,7 @@ import java.util.Optional;
  * </ul>
  * <p>
  * Execution itself is still delegated to the wrapped {@link RunManager}
- * (design decision D1 from Stage 7: this class adds the durability layer,
+ * (design decision D1 from this class adds the durability layer,
  * it does not replace the executor).
  */
 public class DurableRunManager {
@@ -68,7 +68,7 @@ public class DurableRunManager {
     }
 
     /**
-     * Stage 8.1: leases are pluggable ({@link RunLeases}) so a JDBC/Redis
+     *  leases are pluggable ({@link RunLeases}) so a JDBC/Redis
      * backend can back cross-instance recovery; the default stays the
      * in-memory reference registry.
      */
@@ -78,7 +78,7 @@ public class DurableRunManager {
     }
 
     /**
-     * Stage 8.1: with an explicit lease TTL (tests and deployments whose
+     *  with an explicit lease TTL (tests and deployments whose
      * lease backend policy differs from the 60s default).
      */
     public DurableRunManager(RunManager delegate, RunStore runStore,
@@ -139,10 +139,10 @@ public class DurableRunManager {
     // Resume (guarded, leased)
 
     /**
-     * Resume a paused/waiting run with all Stage 3 guarantees:
+     * Resume a paused/waiting run with all guarantees:
      * definition-match check, lease acquisition, optimistic-locked
      * transition, ledger-aware re-execution (the delegate's nodes consult
-     * {@link #ledger()}).
+     * {@link #ledger}).
      */
     public ExecutionResult resume(String runId, Workflow workflow) {
         RunRecord row = runStore.get(runId)
@@ -256,7 +256,7 @@ public class DurableRunManager {
     }
 
     /**
-     * Stage 8.1: cancel a run from this instance. Two channels:
+     *  cancel a run from this instance. Two channels:
      * <ol>
      *   <li><b>Local</b> — if the run is live in this JVM ({@link
      *       RunManager#getRun}), flip its cancel flag directly (fastest

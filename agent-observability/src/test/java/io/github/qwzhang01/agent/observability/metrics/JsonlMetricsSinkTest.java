@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.2 acceptance for the JSONL persistence sink: one JSON line per
+ * acceptance for the JSONL persistence sink: one JSON line per
  * boundary event with a {@code type} discriminator, durable appends across
  * sink instances (append mode), and the honest dropped/written counters.
  */

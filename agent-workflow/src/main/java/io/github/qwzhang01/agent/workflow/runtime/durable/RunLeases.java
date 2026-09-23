@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.workflow.runtime.durable;
 import java.util.Optional;
 
 /**
- * Execution-lease contract (Stage 8.1, harness roadmap).
+ * Execution-lease contract (, harness roadmap).
  * <p>
  * "Two workers recovering the same Run: only one holds the Lease." The
  * reference semantics live in {@link RunLeaseRegistry} (in-memory CAS);
@@ -14,7 +14,7 @@ import java.util.Optional;
  *       worker fails loudly, never silently.</li>
  *   <li><b>TTL</b> — a crashed holder's lease frees after the window, so
  *       recovery can take over.</li>
- *   <li><b>Heartbeat</b> — a <em>live</em> holder renews (Stage 8 fix: a
+ *   <li><b>Heartbeat</b> — a <em>live</em> holder renews (fix: a
  *       resume legitimately longer than the TTL was previously take-overable
  *       mid-flight, a duplicate-execution bug). Renew only succeeds for the
  *       current holder of a non-expired lease.</li>
@@ -27,7 +27,7 @@ public interface RunLeases {
     /**
      * Try to acquire the lease for a run.
      *
-     * @param holder    worker identity (host:thread, instance id)
+     * @param holder worker identity (host:thread, instance id)
      * @param ttlMillis lease lifetime; {@code <=0} = no expiry (held until release)
      * @return true when this worker now holds the lease
      */

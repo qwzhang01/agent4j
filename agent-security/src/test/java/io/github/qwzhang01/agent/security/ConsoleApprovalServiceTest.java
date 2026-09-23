@@ -10,10 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Regression tests for the System.in close bug (Stage 9).
+ * Regression tests for the System.in close bug .
  * <p>
  * Bug: readFromConsole used to create a fresh try-with-resources
- * Scanner(System.in) per request. Scanner.close() closes the underlying
+ * Scanner(System.in) per request. Scanner.close closes the underlying
  * System.in - a process-global, non-reopenable stream - so the second console
  * approval crashed with NoSuchElementException instead of waiting for input.
  * <p>
@@ -27,7 +27,7 @@ class ConsoleApprovalServiceTest {
 
     @Test
     void sharedScannerSurvivesConsecutiveApprovals() {
-        // Two scripted answers ("y" then "n") - with the old bug the second
+        // Two scripted answers "y" then "n" - with the old bug the second
         // request would crash because the first one closed System.in.
         ConsoleApprovalService.replaceStdinScannerForTest(
                 new ByteArrayInputStream("y\nn\n".getBytes(StandardCharsets.UTF_8)));
@@ -42,7 +42,7 @@ class ConsoleApprovalServiceTest {
 
     @Test
     void failsClosedWhenStdinIsExhausted() {
-        // Empty stream -> nextLine() hits EOF -> NoSuchElementException.
+        // Empty stream -> nextLine hits EOF -> NoSuchElementException.
         // Approval must fail closed (reject), never propagate the exception.
         ConsoleApprovalService.replaceStdinScannerForTest(
                 new ByteArrayInputStream(new byte[0]));

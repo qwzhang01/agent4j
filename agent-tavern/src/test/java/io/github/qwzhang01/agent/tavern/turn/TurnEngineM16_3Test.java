@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.3 integration: relationships + events through the full turn
+ * integration: relationships + events through the full turn
  * pipeline - blueprint acceptance under test.
  * <p>
  * Covers: relationship tool changing the matrix and landing in the turn

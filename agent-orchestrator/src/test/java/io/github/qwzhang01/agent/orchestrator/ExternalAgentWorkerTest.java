@@ -12,7 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.4 tests: ExternalAgentWorker bridging to A2A, including the
+ * tests: ExternalAgentWorker bridging to A2A, including the
  * full round-trip through {@link InProcessA2AClient} (protocol data model,
  * fake transport) and the D5 sanitizer hook.
  */

@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Stage 13 acceptance: a complete agent defined by ONE YAML file - managed
+ * acceptance: a complete agent defined by ONE YAML file - managed
  * prompt (promptRef), config-declared HTTP tool, windowed memory, tenant
  * overlay - started with zero agent-side Java, plus a DAG export of its
  * workflow for visualization.

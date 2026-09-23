@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Holder-side lease keeper for one claimed {@link JdbcTaskQueue} task:
  * renews {@link JdbcTaskQueue#heartbeat(String)} on a fixed period until
- * {@link #close()}, so a task that runs longer than the sweep grace
+ * {@link #close}, so a task that runs longer than the sweep grace
  * window is never mistaken for an orphan. Harness batch 5 (2026-09-17).
  * <p>
  * Failure semantics follow the module's heartbeat precedent — fail-open
@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * a partition); the error is counted and renewal keeps trying. A renewal
  * that returns {@code false} — the row is no longer RUNNING (completed,
  * cancelled, or requeued by a sweep) — DOES mark the lease lost and
- * stops renewing; a worker observing {@link #lost()} between work units
+ * stops renewing; a worker observing {@link #lost} between work units
  * should abandon the task rather than keep spending on it.
  * <p>
  * Two thread shapes (harness batch 7): the legacy constructors own ONE
  * DAEMON THREAD PER HOLDER (fine for a handful of claimed tasks); hosts
  * claiming many tasks concurrently should hand ONE SHARED
  * {@link ScheduledExecutorService} to the new constructor — every
- * holder then rides the pool's threads and {@link #close()} only cancels
+ * holder then rides the pool's threads and {@link #close} only cancels
  * its own future, never shuts the shared pool down. The primitive
  * {@link JdbcTaskQueue#heartbeat(String)} remains the API; this class is
  * the convenience.
@@ -60,7 +60,7 @@ public final class ClaimedTaskHeartbeat implements AutoCloseable {
 
     /**
      * Shared-pool shape (harness batch 7): renew on the GIVEN executor —
-     * the holder never spawns a thread of its own and {@link #close()}
+     * the holder never spawns a thread of its own and {@link #close}
      * never shuts the pool down. The pool must outlive every holder on it
      * (the host owns its lifecycle). A null executor falls back to the
      * dedicated-thread shape.

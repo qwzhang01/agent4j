@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * In-memory implementation of ToolRegistry.
  * <p>
- * Stage 1-2: simple map-based registry.
- * Stage 3: will be replaced/augmented by Plugin-aware registry.
+ * -2: simple map-based registry.
+ *  will be replaced/augmented by Plugin-aware registry.
  */
 public class InMemoryToolRegistry implements ToolRegistry {
 

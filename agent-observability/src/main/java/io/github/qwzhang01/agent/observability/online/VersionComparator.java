@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Shadow run and version comparison (Stage 7.3 "shadow run 和版本对照"):
+ * Shadow run and version comparison "shadow run 和版本对照":
  * replay-shaped comparison of two traffic slices - the live slice (what
  * production serves now) and a shadow slice (a candidate combination, or
  * another prompt/model/tool version) - over the same metrics definitions.
@@ -84,7 +84,7 @@ public final class VersionComparator {
     /**
      * Group run rows by the version combination that served them - the
      * "which combination did this batch" half of version comparison. Keyed
-     * by the human-readable combination string (RunRecord.combination()).
+     * by the human-readable combination string (RunRecord.combination).
      */
     public static Map<String, OnlineMetrics> byCombination(
             Map<String, List<RunMetrics>> combinationGroups) {

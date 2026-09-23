@@ -3,21 +3,21 @@ package io.github.qwzhang01.agent.core.run;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Unified cooperative cancellation (Stage 1.4 of the harness roadmap).
+ * Unified cooperative cancellation (of the harness roadmap).
  * <p>
  * One source per run. The source is the only mutable corner of the
  * Stage-1 context machinery: everything else in {@link RunContext} is
  * immutable. Callers hold the read-only {@link CancellationToken} view
- * via {@link #token()}; only the owner (the entry adapter or
- * {@code RunManager.cancel}) may call {@link #cancel()}.
+ * via {@link #token}; only the owner (the entry adapter or
+ * {@code RunManager.cancel}) may call {@link #cancel}.
  * <p>
  * Cancellation is cooperative, never preemptive: long-running components
  * (model call wrapper, tool loop, workflow runtime, sandbox) check
- * {@code token.isCancelled()} at their natural boundaries and translate
+ * {@code token.isCancelled} at their natural boundaries and translate
  * a hit into {@link RunCancelledException} — a structured signal, not a
  * business failure. Cancellation must never surface as {@code ERROR}
- * with a free-text message (roadmap 1.4: "cancellation must not be
- * recorded as a business failure").
+ * with a free-text message "cancellation must not be
+ * recorded as a business failure".
  * <p>
  * v1 scope: a plain boolean flag, no listener callbacks. This keeps the
  * primitive allocation-free on the hot path (every step boundary reads

@@ -18,13 +18,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * implementations, plus integration with {@link MemoryRetriever}.
  *
  * <p>The existing {@code MemoryRetrieverTest} verifies the end-to-end behaviour
- * expected by callers.  This class focuses on:
+ * expected by callers. This class focuses on:
  * <ol>
  *   <li>The default {@link ImportanceRankingStrategy} produces the same results
  *       as the pre-A8 {@code MemoryRetriever} (regression guard).</li>
  *   <li>A custom strategy injected via the new 2-arg constructor is actually used.</li>
  *   <li>{@link HybridRankingStrategy} (stub) delegates to importance ranking.</li>
- *   <li>{@code RankingStrategy.defaults()} factory works.</li>
+ *   <li>{@code RankingStrategy.defaults} factory works.</li>
  * </ol>
  */
 class RankingStrategyTest {
@@ -111,7 +111,7 @@ class RankingStrategyTest {
                 "no-query hybrid must produce identical results to ImportanceRankingStrategy");
     }
 
-    // RankingStrategy.defaults() factory
+    // RankingStrategy.defaults factory
 
     @Test
     void defaults_factoryReturnsWorkingStrategy() {

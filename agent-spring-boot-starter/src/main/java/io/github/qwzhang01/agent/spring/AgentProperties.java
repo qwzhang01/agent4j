@@ -13,17 +13,17 @@ import java.util.Map;
  * <pre>
  * agent4j:
  *   enabled: true
- *   profile: secure      # secure | test | unsafe (default secure)
+ *   profile: secure # secure | test | unsafe (default secure)
  *   model:
- *     provider: openai   # openai | mock
+ *     provider: openai # openai | mock
  *     api-key:
  *     base-url: https://api.openai.com/v1
  *     name: gpt-4o-mini
  *     timeout: 60s
- *     reasoning:            # provider-neutral reasoning intent
- *       mode: disabled      # auto | enabled | disabled
- *       effort: medium      # optional: low | medium | high
- *     extra-body:           # escape hatch for vendor-specific fields
+ *     reasoning: # provider-neutral reasoning intent
+ *       mode: disabled # auto | enabled | disabled
+ *       effort: medium # optional: low | medium | high
+ *     extra-body: # escape hatch for vendor-specific fields
  *       thinking:
  *         budget_tokens: 8000
  *   retry:
@@ -33,11 +33,11 @@ import java.util.Map;
  *     enabled: false
  *     duration: 30s
  *   approval:
- *     auto-approve: false  # true = test-grade; HIGH finding under secure
+ *     auto-approve: false # true = test-grade; HIGH finding under secure
  *   shutdown:
  *     drain-timeout: 30s
  *   config-version:
- *     value: ""            # app-declared, lands in health/ops output
+ *     value: "" # app-declared, lands in health/ops output
  * </pre>
  * Core runtime modules stay Spring-free. This starter only wires a
  * {@link io.github.qwzhang01.agent.core.client.ModelClient} and an
@@ -52,7 +52,7 @@ public class AgentProperties {
     private boolean enabled = true;
 
     /**
-     * Runtime profile (Stage 8.2): {@code secure} | {@code test} |
+     * Runtime profile : {@code secure} | {@code test} |
      * {@code unsafe}. Defaults to {@code secure} — governance is the
      * default; raw is opt-in by name.
      */
@@ -74,14 +74,14 @@ public class AgentProperties {
     private final CallTimeout callTimeout = new CallTimeout();
 
     /**
-     * Approval wiring for the secure profile (Stage 8.2).
+     * Approval wiring for the secure profile .
      */
     private final Approval approval = new Approval();
 
     private final Shutdown shutdown = new Shutdown();
 
     /**
-     * Runtime config version declaration (Stage 8.2).
+     * Runtime config version declaration .
      */
     private final ConfigVersion configVersion = new ConfigVersion();
 
@@ -158,7 +158,7 @@ public class AgentProperties {
         private Duration timeout = Duration.ofSeconds(60);
 
         /**
-         * Reasoning ("thinking") control applied to every request unless the
+         * Reasoning "thinking" control applied to every request unless the
          * request itself carries a {@code ReasoningConfig}.
          */
         private final Reasoning reasoning = new Reasoning();
@@ -237,7 +237,7 @@ public class AgentProperties {
          * is sent and the model default applies.
          * <p>
          * Only provider-neutral intent lives here. Vendor-specific knobs belong
-         * in {@link Model#getExtraBody()}.
+         * in {@link Model#getExtraBody}.
          */
         public static class Reasoning {
 
@@ -350,7 +350,7 @@ public class AgentProperties {
     }
 
     /**
-     * Approval wiring (Stage 8.2 secure profile). Default is deny-on-
+     * Approval wiring (secure profile). Default is deny-on-
      * absence: without an explicit approval service, side-effect tools
      * are denied — the secure stance. {@code auto-approve=true} flips to
      * the test-grade stance and is a HIGH finding under SECURE.
@@ -372,7 +372,7 @@ public class AgentProperties {
     }
 
     /**
-     * Graceful shutdown (Stage 8.2): gate + bounded drain + straggler
+     * Graceful shutdown : gate + bounded drain + straggler
      * cancel.
      */
     public static class Shutdown {
@@ -392,8 +392,8 @@ public class AgentProperties {
     }
 
     /**
-     * Runtime config version (Stage 8.2 "提供运行时配置版本和热更新边
-     * 界"): an app-declared version string for the agent configuration.
+     * Runtime config version "提供运行时配置版本和热更新边
+     * 界": an app-declared version string for the agent configuration.
      * Hot updates are explicitly OUT of scope — the boundary is: config
      * changes require a restart; this string lands in health/ops output
      * so operators can see which version a running instance serves.

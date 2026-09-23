@@ -44,8 +44,8 @@ public interface VideoGenerationClient {
      * Blocks until the task reaches a terminal state (succeeded/failed)
      * or the timeout hits. Convenience wrapper around {@link #status} polling.
      *
-     * @param taskId       task to wait for
-     * @param timeout      overall timeout
+     * @param taskId task to wait for
+     * @param timeout overall timeout
      * @param pollInterval sleep between status checks
      * @return the terminal VideoTask (succeeded or failed)
      * @throws ModelException on timeout or interruption
@@ -89,11 +89,11 @@ public interface VideoGenerationClient {
     /**
      * Video generation request.
      *
-     * @param model              model id, e.g. "doubao-seedance-1-0-pro-250528", "sora-2"
-     * @param prompt             text description of the desired video
-     * @param seconds            desired duration in seconds; null for provider default
-     * @param size               resolution, e.g. "1280x720" (OpenAI); null for provider default
-     * @param ratio              aspect ratio, e.g. "16:9", "9:16" (Ark Seedance); null for default
+     * @param model model id, e.g. "doubao-seedance-1-0-pro-250528", "sora-2"
+     * @param prompt text description of the desired video
+     * @param seconds desired duration in seconds; null for provider default
+     * @param size resolution, e.g. "1280x720" (OpenAI); null for provider default
+     * @param ratio aspect ratio, e.g. "16:9", "9:16" (Ark Seedance); null for default
      * @param referenceImageUrls optional first-frame/reference images (image-to-video)
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -167,12 +167,12 @@ public interface VideoGenerationClient {
     /**
      * A video generation task and its current state.
      *
-     * @param id           task id
-     * @param status       one of: queued / running / succeeded / failed
-     * @param videoUrl     public video URL when succeeded (may be null for Sora)
+     * @param id task id
+     * @param status one of: queued / running / succeeded / failed
+     * @param videoUrl public video URL when succeeded (may be null for Sora)
      * @param coverImageUrl optional cover/thumbnail URL
-     * @param progress     0-100 when the provider reports it, may be null
-     * @param error        error message when failed
+     * @param progress 0-100 when the provider reports it, may be null
+     * @param error error message when failed
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record VideoTask(

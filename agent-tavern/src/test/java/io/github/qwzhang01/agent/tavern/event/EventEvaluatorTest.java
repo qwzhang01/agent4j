@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.3: the synchronous rule evaluator - once semantics, fail-soft
+ *  the synchronous rule evaluator - once semantics, fail-soft
  * conditions, and the manual-trigger catalog (blueprint D5).
  */
 class EventEvaluatorTest {

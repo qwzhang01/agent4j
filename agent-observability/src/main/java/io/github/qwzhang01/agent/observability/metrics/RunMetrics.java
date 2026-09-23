@@ -7,25 +7,25 @@ import java.util.Objects;
 
 /**
  * Run-level summary row - the on-call engineer's one-screen answer for
- * "what happened on this run" (Stage 18 D1: the operations projection of a run).
+ * "what happened on this run" (D1: the operations projection of a run).
  * <p>
  * Materialized by {@link MetricsCollector#endRun} from the boundary events
  * captured during the run. The training projection of the same run is the
- * Stage 14 {@code Trajectory}; the governance projection is the Stage 9
+ * {@code Trajectory}; the governance projection is the Stage 9
  * {@code AuditEvent} stream.
  *
- * @param runId            run identifier
- * @param agentName        agent name given at {@code beginRun}
- * @param status           terminal status from {@link AgentState}
- * @param lastError        last error text (null unless failed) - carries the
+ * @param runId run identifier
+ * @param agentName agent name given at {@code beginRun}
+ * @param status terminal status from {@link AgentState}
+ * @param lastError last error text (null unless failed) - carries the
  *                         doneReason semantics for failures
- * @param durationMs       wall-clock duration from beginRun to endRun
- * @param modelCallCount   total model calls (errors included)
- * @param modelCallErrors  model calls that threw
- * @param toolCallCount    total tool calls (denied included)
- * @param deniedToolCalls  tool calls blocked by the governance chain
- * @param tokenUsage       summed token usage across model calls
- * @param costMicros       summed cost in microUSD; 0 until M18.2 wires the
+ * @param durationMs wall-clock duration from beginRun to endRun
+ * @param modelCallCount total model calls (errors included)
+ * @param modelCallErrors model calls that threw
+ * @param toolCallCount total tool calls (denied included)
+ * @param deniedToolCalls tool calls blocked by the governance chain
+ * @param tokenUsage summed token usage across model calls
+ * @param costMicros summed cost in microUSD; 0 until M18.2 wires the
  *                         {@code CostMeter} (honest placeholder, not a lie:
  *                         no pricing table configured means no cost computed)
  */

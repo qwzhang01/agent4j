@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Noise control: four gates in order, first failure wins (Stage 12 M12.4,
+ * Noise control: four gates in order, first failure wins (,
  * design D7).
  * <p>
  * Design premise: an ambient agent's failure mode is not "doesn't work",
@@ -63,9 +63,9 @@ public class NoisePolicy {
     private final List<ProactiveNotification> digestQueue = new CopyOnWriteArrayList<>();
 
     /**
-     * @param zone        timezone for the quiet-window clock
-     * @param quietFrom   quiet window start (e.g. 22:00)
-     * @param quietTo     quiet window end (e.g. 08:00); window may cross midnight
+     * @param zone timezone for the quiet-window clock
+     * @param quietFrom quiet window start (e.g. 22:00)
+     * @param quietTo quiet window end (e.g. 08:00); window may cross midnight
      * @param dailyBudget max realtime NOTIFY verdicts per day (digest excluded)
      * @param minInterval min interval between emissions of the SAME instruction
      */

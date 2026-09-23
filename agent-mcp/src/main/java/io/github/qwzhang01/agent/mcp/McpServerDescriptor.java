@@ -4,14 +4,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * MCP server connection configuration (Stage 10).
+ * MCP server connection configuration .
  * <p>
  * Describes how to reach a server and what transport to use.
  *
- * @param name     human-readable server name
- * @param command  subprocess command for stdio transport (null for SSE)
- * @param url      server URL for SSE transport (null for stdio)
- * @param version  expected MCP version (default "2024-11-05")
+ * @param name human-readable server name
+ * @param command subprocess command for stdio transport (null for SSE)
+ * @param url server URL for SSE transport (null for stdio)
+ * @param version expected MCP version (default "2024-11-05"
  */
 public record McpServerDescriptor(
         String name,

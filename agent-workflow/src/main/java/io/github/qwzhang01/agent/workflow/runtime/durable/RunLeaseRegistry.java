@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Execution lease over a run (Stage 3.3, harness roadmap).
+ * Execution lease over a run (, harness roadmap).
  * <p>
  * "Two workers simultaneously recovering the same Run: only one gets the
  * Lease." Acquire is compare-and-set on the run's row: the first worker to
@@ -30,7 +30,7 @@ public final class RunLeaseRegistry implements RunLeases {
     /**
      * Try to acquire the lease for a run.
      *
-     * @param holder    worker identity (host:thread, instance id)
+     * @param holder worker identity (host:thread, instance id)
      * @param ttlMillis lease lifetime; {@code <=0} = no expiry (held until release)
      * @return true when this worker now holds the lease
      */
@@ -44,7 +44,7 @@ public final class RunLeaseRegistry implements RunLeases {
     }
 
     /**
-     * Stage 8.1 heartbeat: extend a lease this holder still owns. Returns
+     * heartbeat: extend a lease this holder still owns. Returns
      * false when ownership was lost (expired + taken over, or another
      * holder) — the caller must stop touching the run at once.
      */

@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry of tenants and users, and the login gate of the enterprise profile
- * (Stage 15 M15.1).
+ * .
  * <p>
  * v1 credential model is deliberately simple: one api key per user, held in
  * an internal credential table (never on the {@link User} record - identity
- * and credential are separate concerns, and {@code User.toString()} must not
+ * and credential are separate concerns, and {@code User.toString} must not
  * leak secrets). Real SSO/OAuth is out of scope (blueprint §12); the mechanism
  * being validated here is "every request has a verified owner".
  * <p>
@@ -51,7 +51,7 @@ public final class TenantRegistry {
      * ACTIVE (a user cannot belong to a nonexistent or suspended tenant),
      * and the userId must be globally unique.
      *
-     * @param user   the user entity (home tenant membership is immutable)
+     * @param user the user entity (home tenant membership is immutable)
      * @param apiKey login credential (blank rejected)
      */
     public void registerUser(User user, String apiKey) {
@@ -87,8 +87,8 @@ public final class TenantRegistry {
      * {@link EnterpriseAuthException}. There is no anonymous fallback.
      *
      * @param tenantId the tenant the caller claims to belong to
-     * @param userId   the user claiming to log in
-     * @param apiKey   the credential
+     * @param userId the user claiming to log in
+     * @param apiKey the credential
      * @return a fully attributed request context (never null)
      */
     public RequestContext login(String tenantId, String userId, String apiKey) {

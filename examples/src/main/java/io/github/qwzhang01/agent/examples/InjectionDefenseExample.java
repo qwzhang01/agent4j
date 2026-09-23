@@ -9,7 +9,7 @@ import io.github.qwzhang01.agent.security.*;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Stage 9 acceptance example 2: Prompt Injection defense.
+ * acceptance example 2: Prompt Injection defense.
  * <p>
  * Demonstrates:
  * - A tool returns content with embedded injection patterns

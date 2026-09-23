@@ -12,8 +12,8 @@ import java.util.List;
  *   <li>{@link HttpA2AClient} -- any A2A endpoint over HTTP: spec dialect
  *       ({@code message/send}, {@code tasks/get}, {@code /.well-known/agent.json}).</li>
  * </ul>
- * Swapping the transport changes no caller -- the split Stage 10 promised
- * and Stage 11's D6 kept honest.
+ * Swapping the transport changes no caller -- the split promised
+ * and 's D6 kept honest.
  * <p>
  * Failure semantics shared by both implementations:
  * <ul>
@@ -44,7 +44,7 @@ public interface A2AClient {
      * @return the result from the recipient Agent
      * @throws IllegalStateException the task ran but failed / was rejected /
      *                               canceled (both implementations)
-     * @throws A2AHttpException      HTTP transport: the call itself broke
+     * @throws A2AHttpException HTTP transport: the call itself broke
      */
     JsonNode sendTask(A2ATask task);
 

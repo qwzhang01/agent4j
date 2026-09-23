@@ -20,7 +20,7 @@ import io.github.qwzhang01.agent.security.SecureAgentBuilder;
  * 4. Running the agent with user input
  * <p>
  * Run: mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
- * Or:  run directly from IDE.
+ * Or: run directly from IDE.
  */
 public class MockAgentExample {
 

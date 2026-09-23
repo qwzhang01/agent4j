@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 2.4 / 2.5 acceptance (harness roadmap).
+ * / 2.5 acceptance (harness roadmap).
  * <p>
  * Roadmap acceptance lines covered:
  * <ul>
@@ -243,7 +243,7 @@ class SecureAssemblyTest {
     }
 
     /**
-     * Order contract (Stage 2.5): the observing executor must sit OUTSIDE
+     * Order contract : the observing executor must sit OUTSIDE
      * the governed executor — otherwise it cannot see denials (a denied call
      * never reaches the inner executor, so an inner observer would record
      * silence instead of a rejection).

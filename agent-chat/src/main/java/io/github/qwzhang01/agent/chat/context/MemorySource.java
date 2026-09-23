@@ -15,32 +15,32 @@ import java.util.stream.Stream;
 /**
  * Optional recall slice: {@link MemoryRetriever} + host-supplied scopes + limit.
  * <p>
- * Not registered by {@link ContextAssembler#defaults()} or
+ * Not registered by {@link ContextAssembler#defaults} or
  * {@link io.github.qwzhang01.agent.chat.ChatRoom.Builder} unless the host
- * calls {@code .source(new MemorySource(...))}. Calling {@code .source()}
+ * calls {@code .source(new MemorySource(...))}. Calling {@code .source}
  * replaces the default Persona + History pair; register those explicitly
  * if they are still wanted.
  * <p>
- * Scopes may be set on the source, or inherited from {@link Room#scopes()}
+ * Scopes may be set on the source, or inherited from {@link Room#scopes}
  * when the source was built without an explicit list. An explicit empty
  * list still means "recall nothing".
  * <p>
  * This class does not extract, schedule, or interpret {@code subject}.
  * The host decides what is in the store and which scopes are visible.
  * <p>
- * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastRecalledSubjects()}
- * is a "last {@code contribute()} call" snapshot used by
+ * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastRecalledSubjects}
+ * is a "last {@code contribute} call" snapshot used by
  * {@link io.github.qwzhang01.agent.chat.ChatEngine} to build {@code TurnTrace} right
- * after {@code contribute()} returns on the same thread. Each {@code ChatRoom}/
+ * after {@code contribute} returns on the same thread. Each {@code ChatRoom}/
  * {@code ChatEngine} must own its own {@code MemorySource} instance; if the same
- * instance is registered on two rooms, or the same room's {@code stream()} is invoked
+ * instance is registered on two rooms, or the same room's {@code stream} is invoked
  * concurrently from multiple threads, one turn's {@code TurnTrace} can observe another
  * turn's recalled subjects.
  */
 public final class MemorySource implements ContextSource {
 
     private final MemoryRetriever retriever;
-    /** {@code null} = inherit from {@link Room#scopes()} */
+    /** {@code null} = inherit from {@link Room#scopes} */
     private final List<String> scopes;
     private final int limit;
     /**
@@ -76,7 +76,7 @@ public final class MemorySource implements ContextSource {
 
     /**
      * @param scopes explicit list, or {@code null} to inherit from the room
-     * @param limit  max entries after importance-then-recency rank;
+     * @param limit max entries after importance-then-recency rank;
      *               {@code <= 0} means no cut-off
      */
     public MemorySource(MemoryRetriever retriever, List<String> scopes, int limit) {
@@ -100,7 +100,7 @@ public final class MemorySource implements ContextSource {
      * Subject keys of all entries injected during the most recent {@link #contribute} call.
      * Empty list if the source has never been called or contributed nothing.
      * Used by {@link io.github.qwzhang01.agent.chat.ChatEngine} to populate
-     * {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace#recalledSubjects()}.
+     * {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace#recalledSubjects}.
      */
     public List<String> lastRecalledSubjects() {
         return lastRecalledSubjects;

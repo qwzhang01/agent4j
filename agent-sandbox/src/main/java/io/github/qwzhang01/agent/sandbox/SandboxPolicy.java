@@ -9,31 +9,31 @@ package io.github.qwzhang01.agent.sandbox;
  * <p>
  * Default policy table:
  * <pre>
- *   Risk Level      Tier          Rationale
+ *   Risk Level Tier Rationale
  *   ──────────────────────────────────────────────────────────────────────────
- *   TRUSTED         CLASSLOADER   Same trust domain; no security boundary needed.
+ *   TRUSTED CLASSLOADER Same trust domain; no security boundary needed.
  *                                 ClassLoader used for output capture + timeout only.
  *
- *   SEMI_TRUSTED    CLASSLOADER   Decision 21: LLM-generated code is non-adversarial.
- *   (single-tenant)               ClassLoader blocks common dangerous APIs at load time
+ *   SEMI_TRUSTED CLASSLOADER Decision 21: LLM-generated code is non-adversarial.
+ *   (single-tenant) ClassLoader blocks common dangerous APIs at load time
  *                                 (Runtime, File, ProcessBuilder, reflection).
  *                                 Fast path; escalator auto-upgrades if code is blocked.
  *
- *   SEMI_TRUSTED    PROCESS       Decision 21 breaks in multi-tenant: one user's prompt
- *   (multi-tenant)                can instruct the LLM to try escape techniques. The
+ *   SEMI_TRUSTED PROCESS Decision 21 breaks in multi-tenant: one user's prompt
+ *   (multi-tenant) can instruct the LLM to try escape techniques. The
  *                                 process boundary prevents cross-tenant contamination.
  *
- *   UNTRUSTED       PROCESS       User-submitted code; may be intentionally malicious.
+ *   UNTRUSTED PROCESS User-submitted code; may be intentionally malicious.
  *                                 Process boundary prevents JVM heap access. OS-level
  *                                 filesystem isolation is still the operator's concern.
  *
- *   ADVERSARIAL     PROCESS       Minimum viable tier in v1. Production deployments at
+ *   ADVERSARIAL PROCESS Minimum viable tier in v1. Production deployments at
  *                                 this level should add Docker / Firecracker / seccomp.
  * </pre>
  *
  * <h2>Usage</h2>
  * <pre>{@code
- * SandboxPolicy policy = SandboxPolicy.defaultPolicy();
+ * SandboxPolicy policy = SandboxPolicy.defaultPolicy;
  * SandboxTier tier = policy.tierFor(SandboxRiskLevel.SEMI_TRUSTED, false);
  * // -> CLASSLOADER (single-tenant, Decision 21 holds)
  *
@@ -62,8 +62,8 @@ public class SandboxPolicy {
     /**
      * Select the sandbox tier for the given risk level and tenancy mode.
      *
-     * @param riskLevel    risk classification of the code to execute
-     * @param multiTenant  {@code true} when multiple untrusted users share the same
+     * @param riskLevel risk classification of the code to execute
+     * @param multiTenant {@code true} when multiple untrusted users share the same
      *                     sandbox host (breaks Decision 21 for {@link SandboxRiskLevel#SEMI_TRUSTED})
      * @return the minimum recommended {@link SandboxTier} for this risk profile
      */
@@ -87,7 +87,7 @@ public class SandboxPolicy {
      * skip the ClassLoader attempt entirely and go straight to Process — the code is
      * already assumed dangerous, trying ClassLoader first wastes a compilation round-trip.
      *
-     * @param riskLevel   risk classification
+     * @param riskLevel risk classification
      * @param multiTenant tenancy context
      */
     public boolean useOptimisticEscalation(SandboxRiskLevel riskLevel, boolean multiTenant) {

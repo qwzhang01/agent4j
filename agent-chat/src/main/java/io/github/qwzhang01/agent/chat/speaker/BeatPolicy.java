@@ -7,7 +7,7 @@ import java.util.Optional;
 
 /**
  * Beat continuation policy for ensemble rooms: after the first reply of a
- * user turn, decide whether another persona should speak next (a "beat").
+ * user turn, decide whether another persona should speak next (a "beat".
  * <p>
  * The first speaker is still chosen by the {@link SpeakerPolicy}. This
  * interface governs subsequent beats only — e.g. a director model asked
@@ -22,9 +22,9 @@ import java.util.Optional;
 public interface BeatPolicy {
 
     /**
-     * @param room        the ensemble room (history includes the just-finished reply)
+     * @param room the ensemble room (history includes the just-finished reply)
      * @param lastSpeaker the persona that just spoke
-     * @param lastReply   the reply text that just finished
+     * @param lastReply the reply text that just finished
      * @return the next persona to speak, or empty to stop the turn
      */
     Optional<ChatPersona> nextBeat(Room room, ChatPersona lastSpeaker, String lastReply);

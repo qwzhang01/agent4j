@@ -13,14 +13,14 @@ import java.util.function.Function;
 
 /**
  * In-process worker: wraps a core {@link Agent} as an {@link AgentWorker}
- * (Stage 11 M11.1, D1).
+ * (, D1).
  * <p>
- * The "internal" half of the unified worker abstraction. {@code execute()}
+ * The "internal" half of the unified worker abstraction. {@code execute}
  * delegates to {@code agent.run(prompt)} -- same JVM, plain method call,
  * the agent runs its own ReAct loop with its own tools, permissions and
  * memory namespace. The trust level is high (we compiled it), so no extra
  * sanitization is applied here (contrast with {@code ExternalAgentWorker},
- * M11.4, where outbound results must pass Stage 9's ResultSanitizer).
+ * M11.4, where outbound results must pass 's ResultSanitizer).
  * <p>
  * Payload-to-prompt conversion: by default the task payload's "prompt" text
  * field becomes the user input; payloads without one are serialized to their
@@ -38,8 +38,8 @@ public class InternalAgentWorker implements AgentWorker {
     /**
      * Create a worker with an auto-built {@link AgentCard}.
      *
-     * @param name   worker name (also the card name)
-     * @param agent  the wrapped core Agent
+     * @param name worker name (also the card name)
+     * @param agent the wrapped core Agent
      * @param skills capability tags for skill-based routing (M11.4)
      */
     public static InternalAgentWorker of(String name, Agent agent, String... skills) {

@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.core.tool.contract;
 
 /**
- * How much external state a tool can touch (Stage 2.1, harness roadmap).
+ * How much external state a tool can touch (, harness roadmap).
  * <p>
  * The level feeds two defaults: the permission a secure assembly grants the
  * tool out of the box, and the audit posture (read-only tools need lighter

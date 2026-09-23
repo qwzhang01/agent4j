@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Tenant-scoped knowledge base facade (Stage 15 M15.2, D5).
+ * Tenant-scoped knowledge base facade (, D5).
  * <p>
- * This class deliberately builds on the Stage 8 store instead of adding a
+ * This class deliberately builds on the store instead of adding a
  * second storage system: knowledge entries are {@code MemoryEntry} rows of
  * {@code type=KNOWLEDGE} under {@code tenant:{id}} scopes. Everything the
  * store already guarantees is inherited for free - scope-whitelist isolation
@@ -42,8 +42,8 @@ public final class KnowledgeBase {
      * channel memories, which go through PENDING_REVIEW).
      *
      * @param tenantId the tenant whose knowledge base this belongs to
-     * @param entries  the entries to import (null/empty tolerated as no-op)
-     * @param adminId  who is importing (recorded in provenance)
+     * @param entries the entries to import (null/empty tolerated as no-op)
+     * @param adminId who is importing (recorded in provenance)
      */
     public void ingest(String tenantId, List<KnowledgeEntry> entries, String adminId) {
         requireTenantId(tenantId);
@@ -64,8 +64,8 @@ public final class KnowledgeBase {
      *
      * @param tenantId the tenant whose knowledge is searched - and ONLY that
      *                 tenant's (scope whitelist, D3)
-     * @param query    keyword; null/blank returns the newest entries unfiltered
-     * @param topK     max results; {@code <=} 0 means {@link KnowledgeEntry#DEFAULT_TOP_K}
+     * @param query keyword; null/blank returns the newest entries unfiltered
+     * @param topK max results; {@code <=} 0 means {@link KnowledgeEntry#DEFAULT_TOP_K}
      * @return matching entries, newest first; empty list when nothing matches
      */
     public List<KnowledgeEntry> search(String tenantId, String query, int topK) {

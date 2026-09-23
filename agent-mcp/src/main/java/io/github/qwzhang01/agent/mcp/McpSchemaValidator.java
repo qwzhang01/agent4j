@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Stage 6.2: schema validation for MCP tools at the border.
+ *  schema validation for MCP tools at the border.
  * <p>
  * Roadmap: "MCP Tool 接入统一 ToolDefinition 和 Schema Validator". An MCP
  * server hands us an {@code inputSchema} with its tool listing; before the
@@ -32,7 +32,7 @@ public final class McpSchemaValidator {
      *
      * @param schema the tool's declared inputSchema (may be null → only
      *               required-field checks are skipped, arguments pass)
-     * @param args   the arguments about to be sent
+     * @param args the arguments about to be sent
      * @return violation messages; empty list = valid
      */
     public static List<String> validate(JsonNode schema, JsonNode args) {

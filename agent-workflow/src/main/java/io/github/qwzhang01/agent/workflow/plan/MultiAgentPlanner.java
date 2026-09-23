@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Multi-Agent Plan (Stage 9): fan a {@link Plan} of subtasks out to named
+ * Multi-Agent Plan : fan a {@link Plan} of subtasks out to named
  * sub-agents, join their outputs back with explicit state, isolation,
  * budget and dedup semantics.
  * <p>
@@ -32,7 +32,7 @@ import java.util.Set;
  *       tearing down siblings mid-flight.</li>
  *   <li><b>result dedup</b>: when multiple subtasks resolve to the same
  *       output text, the join keeps ONE canonical entry per distinct
- *       output and records which tasks produced it ({@code Result.dedup()}
+ *       output and records which tasks produced it ({@code Result.dedup}
  *       groups), so downstream steps consume a set, not a bag of echoes.</li>
  * </ul>
  * <p>
@@ -90,7 +90,7 @@ public final class MultiAgentPlanner {
      * semantics, not the scheduling; parallel dispatch composes on top via
      * the workflow runtime's ParallelNode when needed).
      *
-     * @param subtasks  subtask list (execution order = list order)
+     * @param subtasks subtask list (execution order = list order)
      * @param parentCtx optional parent run context; each sub-agent gets a
      *                  child context (trace/tenant inherited, own runId)
      */

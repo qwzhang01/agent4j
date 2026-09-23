@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Gate verdict over one evaluation run (Stage 18 D7) - the report IS the
+ * Gate verdict over one evaluation run (D7) - the report IS the
  * release gate's input.
  * <p>
  * Verdict semantics (three states, honestly labeled):
@@ -30,9 +30,9 @@ import java.util.Objects;
  * is under test.
  *
  * @param passRate fraction of cases that passed, in [0.0, 1.0]
- * @param results  per-case outcomes, dataset order preserved
+ * @param results per-case outcomes, dataset order preserved
  * @param baseline the report this one is gated against, null on first run
- * @param verdict  gate verdict (never null)
+ * @param verdict gate verdict (never null)
  */
 public record EvalReport(double passRate, List<CaseResult> results,
                          EvalReport baseline, Verdict verdict) {
@@ -48,8 +48,8 @@ public record EvalReport(double passRate, List<CaseResult> results,
     /**
      * Compute passRate and verdict from per-case results.
      *
-     * @param baseline     previous report to gate against, null when none yet
-     * @param minPassRate  gate threshold in (0.0, 1.0]; strictly below fails
+     * @param baseline previous report to gate against, null when none yet
+     * @param minPassRate gate threshold in (0.0, 1.0]; strictly below fails
      */
     public static EvalReport of(List<CaseResult> results, EvalReport baseline, double minPassRate) {
         if (minPassRate <= 0.0 || minPassRate > 1.0) {

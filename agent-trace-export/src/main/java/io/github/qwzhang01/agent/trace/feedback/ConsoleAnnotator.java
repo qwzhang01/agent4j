@@ -18,7 +18,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 /**
- * Console preference annotator (Stage 14 D6): shows two same-prompt
+ * Console preference annotator (D6): shows two same-prompt
  * rollouts side by side (step-by-step replay summaries + final answers),
  * reads a/b/skip, appends the verdict to an annotations SIDECAR.
  * <p>

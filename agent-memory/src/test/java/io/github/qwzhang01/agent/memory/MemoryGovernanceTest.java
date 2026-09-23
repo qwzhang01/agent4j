@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 5.2: governed access over the memory store.
+ *  governed access over the memory store.
  * <p>
  * The raw {@code MemoryStore} trusts callers; {@link MemoryGovernance} adds
  * identity-bound scopes, per-access audit, mandatory purpose, content

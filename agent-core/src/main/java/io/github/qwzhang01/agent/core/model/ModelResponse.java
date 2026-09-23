@@ -7,10 +7,10 @@ import java.util.List;
 /**
  * Response from a model provider.
  *
- * @param content      text output from the model (may be empty if only tool calls)
- * @param toolCalls    tool calls requested by the model (null if none)
+ * @param content text output from the model (may be empty if only tool calls)
+ * @param toolCalls tool calls requested by the model (null if none)
  * @param finishReason why the model stopped: "stop", "tool_calls", "length", "error"
- * @param usage        token usage stats (null if not reported)
+ * @param usage token usage stats (null if not reported)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ModelResponse(
@@ -56,10 +56,10 @@ public record ModelResponse(
      * promptTokens (a cache hit larger than the prompt is a provider bug we
      * refuse to propagate downstream).
      *
-     * @param promptTokens     full billed prompt tokens (uncached + cached)
+     * @param promptTokens full billed prompt tokens (uncached + cached)
      * @param completionTokens completion tokens
-     * @param totalTokens      total tokens as reported
-     * @param cachedTokens     prompt tokens served from cache (0 = none/unreported)
+     * @param totalTokens total tokens as reported
+     * @param cachedTokens prompt tokens served from cache (0 = none/unreported)
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record TokenUsage(int promptTokens, int completionTokens, int totalTokens, int cachedTokens) {

@@ -6,8 +6,8 @@ import java.util.Objects;
  * One host-supplied lore slice. Content is injected verbatim when the
  * trigger hits; the engine does not parse card formats or titles.
  *
- * @param content  text to inject; blank content is skipped even on a hit
- * @param trigger  keyword and/or regex; required
+ * @param content text to inject; blank content is skipped even on a hit
+ * @param trigger keyword and/or regex; required
  */
 public record LoreEntry(String content, LoreTrigger trigger) {
 

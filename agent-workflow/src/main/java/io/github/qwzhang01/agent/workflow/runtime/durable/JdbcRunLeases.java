@@ -8,7 +8,7 @@ import java.sql.Statement;
 import java.util.Optional;
 
 /**
- * JDBC-backed {@link RunLeases} (Stage 8.1): lease rows live in the
+ * JDBC-backed {@link RunLeases} : lease rows live in the
  * database so two runtime instances can coordinate ownership of the same
  * run. CAS discipline on the {@code version} column reproduces the
  * in-memory registry's rules exactly:

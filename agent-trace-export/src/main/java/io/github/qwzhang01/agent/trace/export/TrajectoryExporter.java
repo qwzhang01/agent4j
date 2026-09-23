@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Export facade (Stage 14 D4 + D5 + D8): score -> sample -> persist.
+ * Export facade (D4 + D5 + D8): score -> sample -> persist.
  * <p>
  * {@link #record} is the always-on path for finished runs:
  * rule/human reward attaches first, then the sampler decides whether the
@@ -30,9 +30,9 @@ public final class TrajectoryExporter {
     private int skippedCount;
 
     /**
-     * @param directory   export directory (created if absent; trajectories.jsonl inside)
+     * @param directory export directory (created if absent; trajectories.jsonl inside)
      * @param rewardSource how runs are scored before sampling
-     * @param policy      which scored trajectories get persisted
+     * @param policy which scored trajectories get persisted
      */
     public TrajectoryExporter(Path directory, RewardSource rewardSource, SamplingPolicy policy) throws IOException {
         Files.createDirectories(directory);

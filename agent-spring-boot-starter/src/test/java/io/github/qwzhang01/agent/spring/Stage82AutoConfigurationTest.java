@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Stage 8.2 auto-configuration integration: profile property flows into
+ * auto-configuration integration: profile property flows into
  * the factory, the check/health/shutdown beans exist, and legacy
  * behaviour (mock provider, factory.create) keeps working.
  */

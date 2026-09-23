@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 1.4 acceptance (harness roadmap): cancelling a run reaches every
+ * acceptance (harness roadmap): cancelling a run reaches every
  * parallel branch — each branch observes the shared cancellation token
  * through its own NodeContext and stops at its next boundary check.
  */
@@ -89,7 +89,7 @@ class ParallelCancelTest {
     /**
      * Cooperative wait: poll the boundary check until the shared token is
      * cancelled. This mirrors what long-running nodes should do — check
-     * {@code ctx.runContext().checkAlive()} at safe points instead of
+     * {@code ctx.runContext.checkAlive} at safe points instead of
      * blocking forever.
      */
     private static void awaitCancel(NodeContext ctx, String branch) {

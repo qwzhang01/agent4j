@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Administrator governance interface for memory entries (Stage 8 D6 - governance layer).
+ * Administrator governance interface for memory entries (D6 - governance layer).
  * <p>
  * Provides the admin operations needed for channel-shared memory governance:
  * <ul>
@@ -97,7 +97,7 @@ public class MemoryAdmin {
     /**
      * Edit the content of an entry (provenance tracked as ADMIN_EDIT).
      * <p>
-     * Stage 5.2 field fidelity: rebuilds via the FULL constructor so
+     * field fidelity: rebuilds via the FULL constructor so
      * lifecycle / embedding / validFrom / validAt / invalidAt survive the
      * edit. The embedding intentionally becomes null — content changed, the
      * old vector no longer matches; the embedding store re-computes on write.
@@ -155,7 +155,7 @@ public class MemoryAdmin {
     /**
      * Set a TTL on an entry (expire at the given instant).
      * <p>
-     * Stage 5.2 field fidelity: full constructor, ONLY expireAt replaced,
+     * field fidelity: full constructor, ONLY expireAt replaced,
      * every other field (including embedding and all three time-axis fields)
      * preserved verbatim.
      */

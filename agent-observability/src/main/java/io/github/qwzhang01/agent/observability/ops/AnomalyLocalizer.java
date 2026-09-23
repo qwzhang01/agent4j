@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Anomaly localization (Stage 7.4 "指标异常可以定位到具体 Run、Step、Tool、
- * Provider 和版本"): given a drifted metric window, walk DOWN the evidence
+ * Anomaly localization "指标异常可以定位到具体 Run、Step、Tool、
+ * Provider 和版本": given a drifted metric window, walk DOWN the evidence
  * tree the registry already holds - which runs failed, which combination
  * served them, which tools were denied - and produce the ranked suspect
  * list. No new data structures: this is a query over RunRecords.
@@ -37,7 +37,7 @@ public final class AnomalyLocalizer {
      * Localize a bad window: the failed runs of the given rows, grouped and
      * ranked by what they share.
      *
-     * @param rows     the window's run rows (from the sampler or registry)
+     * @param rows the window's run rows (from the sampler or registry)
      * @param registry the version registry (combination attribution)
      * @return ranked suspects, most contributing first; empty when every
      *         run succeeded (nothing to localize)

@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC-backed {@link CheckpointStore} (Stage 8.1, harness roadmap): the
+ * JDBC-backed {@link CheckpointStore} (, harness roadmap): the
  * checkpoint payload rides in the database so instance A's pause is
  * instance B's resume. Without a shared checkpoint store, "two runtime
- * instances can safely take over the same waiting run" (Stage 8's
+ * instances can safely take over the same waiting run" ('s
  * completion definition) is impossible — B has no blackboard to restore.
  * <p>
  * Reuses {@link FileCheckpointStore.Snapshot} as the JSON codec (one
@@ -28,7 +28,7 @@ import java.util.Optional;
  * <p>
  * Dialect policy: plain ANSI SQL (H2 tests / PostgreSQL production), no
  * {@code MERGE}, no {@code ON CONFLICT}. Upsert discipline is the same
- * CAS-by-affected-rows pattern the other Stage 8.1 JDBC stores use:
+ * CAS-by-affected-rows pattern the other JDBC stores use:
  * INSERT first; on duplicate key fall through to a guarded UPDATE.
  * <p>
  * runId validation is inherited from {@link FileCheckpointStore#validateRunId}
@@ -70,7 +70,7 @@ public final class JdbcCheckpointStore implements CheckpointStore {
     /**
      * Borrows a connection for one operation. The guard is declared as
      * the FIRST try-with-resources resource (the connection is fetched
-     * through {@code g.get()}, never declared as a resource itself), so
+     * through {@code g.get}, never declared as a resource itself), so
      * the JVM never auto-closes the connection — only the guard decides:
      * supplier-provided connections are released, a shared one is handed
      * back untouched.

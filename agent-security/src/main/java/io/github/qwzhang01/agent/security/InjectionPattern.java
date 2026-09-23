@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Injection patterns for Prompt Injection defense (Stage 9 D5).
+ * Injection patterns for Prompt Injection defense (D5).
  * <p>
  * Three categories of common injection templates:
  * <ol>

@@ -20,7 +20,7 @@ public interface MemoryDecisionListener {
 
     /**
      * Called once per write decision, after the decision has been applied to
-     * the store. {@code decision.appliedAt()} is already stamped.
+     * the store. {@code decision.appliedAt} is already stamped.
      */
     void onDecision(MemoryDecision decision, MemoryStore store);
 

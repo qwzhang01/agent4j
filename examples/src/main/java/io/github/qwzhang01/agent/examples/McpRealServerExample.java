@@ -9,7 +9,7 @@ import io.github.qwzhang01.agent.mcp.McpToolSchema;
 import java.util.List;
 
 /**
- * Stage 10: connect to a REAL external MCP server -- the official filesystem server.
+ *  connect to a REAL external MCP server -- the official filesystem server.
  * <p>
  * Unlike {@link McpExample} (inline mock), this launches an actual subprocess:
  * <pre>

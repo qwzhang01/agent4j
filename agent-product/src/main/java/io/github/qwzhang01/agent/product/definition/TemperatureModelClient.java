@@ -9,14 +9,14 @@ import java.util.stream.Stream;
 
 /**
  * Decorator that injects the definition's default temperature into requests that do
- * not carry one (Stage 13 M13.1).
+ * not carry one .
  * <p>
  * Why a decorator and not an AgentConfig field: {@code AgentConfig} has no
  * temperature slot and {@code ReActAgentLoop} never sets one - the sampling
  * parameter lives in {@link ModelRequest}. Rather than touching agent-core
  * (assembly-stage discipline), the binder wraps the assembled client chain:
  * {@code Temperature(Fallback(primary, fallbacks...))} - the same decorator
- * philosophy as Retry/Timeout/Fallback (Stage 1).
+ * philosophy as Retry/Timeout/Fallback .
  * <p>
  * Semantics: an explicitly set request temperature wins; the definition value is a
  * <b>default</b>, not an override.

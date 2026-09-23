@@ -7,7 +7,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Rule-based reward (Stage 14 D5, v1 default): maps the terminal DoneReason
+ * Rule-based reward (D5, v1 default): maps the terminal DoneReason
  * to a score. "Did it finish" is the cheapest honest signal - anything
  * fancier (did it finish WELL) needs human feedback or a judge, which are
  * the other RewardSource slots.

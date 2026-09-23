@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * Cache domain: providers cache per (model, conversation). Two keys map to
  * the same provider cache when they share the same model id - requests with
  * DIFFERENT model ids never share a prefix (they hit different weights/sessions).
- * This decorator keys its LCP memory on {@code request.model()}; when the
+ * This decorator keys its LCP memory on {@code request.model}; when the
  * loop swaps configs (handoff) or a cascade escalates cheap -> premium, the
  * model id changes and the domains stay separate - exactly mirroring how
  * real providers partition their caches. A separate "session id" axis is

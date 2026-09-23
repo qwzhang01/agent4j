@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 19: handoff as a loop-level config swap.
+ *  handoff as a loop-level config swap.
  * <p>
  * Verifies the P1 acceptance line: A→B→C in a single run; post-handoff
  * requests carry the new persona first and no SYSTEM in state; the step

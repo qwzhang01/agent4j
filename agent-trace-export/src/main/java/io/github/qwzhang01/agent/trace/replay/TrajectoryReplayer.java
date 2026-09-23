@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Load trajectories for replay (Stage 14 D7): file -> verified step-through
+ * Load trajectories for replay (D7): file -> verified step-through
  * views. Malformed JSON lines surface with their line number; structurally
  * inconsistent trajectories fail verification inside {@link ReplayView#of}.
  * Both are loud by design - replaying a guessed-at trajectory is worse than

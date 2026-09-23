@@ -6,9 +6,9 @@ package io.github.qwzhang01.agent.observability.cost;
  * <p>
  * Example rows (real-world scale, for orientation):
  * <pre>
- *   gpt-4o     input $2.50/M  -> 2_500_000 microUSD/M
+ *   gpt-4o input $2.50/M -> 2_500_000 microUSD/M
  *              output $10.00/M -> 10_000_000 microUSD/M
- *   gpt-4o-mini input $0.15/M  ->   150_000 microUSD/M
+ *   gpt-4o-mini input $0.15/M -> 150_000 microUSD/M
  * </pre>
  * <p>
  * The table is immutable after build; a missing row is a configuration bug and
@@ -44,7 +44,7 @@ public final class PricingTable {
     /**
      * One model's price row, integer microUSD per million tokens.
      * <p>
-     * Stage 5.1: the two cache fields default to 0 = no cache accounting,
+     *  the two cache fields default to 0 = no cache accounting,
      * preserving the pre-Stage-5 two-field behaviour for every existing
      * table. Non-zero values engage the cache-aware prompt split in
      * {@link CostMeter#costMicros(String, long, long, long, long)}:
@@ -65,8 +65,8 @@ public final class PricingTable {
         private final java.util.Map<String, Price> prices = new java.util.LinkedHashMap<>();
 
         /**
-         * @param model                  model identifier as it appears in requests
-         * @param inputMicrosPerMillion  prompt-token price, microUSD per 1M tokens (&gt; 0)
+         * @param model model identifier as it appears in requests
+         * @param inputMicrosPerMillion prompt-token price, microUSD per 1M tokens (&gt; 0)
          * @param outputMicrosPerMillion completion-token price, microUSD per 1M tokens (&gt; 0)
          */
         public Builder price(String model, long inputMicrosPerMillion, long outputMicrosPerMillion) {
@@ -82,7 +82,7 @@ public final class PricingTable {
         }
 
         /**
-         * Stage 5.1: price row with cache accounting. Cache fields follow the
+         *  price row with cache accounting. Cache fields follow the
          * {@code routing.CachePricing} semantics - read discount, write premium.
          */
         public Builder price(String model, long inputMicrosPerMillion, long outputMicrosPerMillion,

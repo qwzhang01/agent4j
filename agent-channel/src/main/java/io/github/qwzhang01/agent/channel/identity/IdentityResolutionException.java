@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.channel.identity;
 
 /**
- * Thrown when identity resolution fails closed (Stage 12 D4).
+ * Thrown when identity resolution fails closed (D4).
  * <p>
  * Fail-closed semantics: an identity problem can never be "degraded
  * through" - an unknown agent, an expired account, a non-member user, or

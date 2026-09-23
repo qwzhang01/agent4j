@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.2 acceptance for {@link BudgetedModelClient}: the model boundary
+ * acceptance for {@link BudgetedModelClient}: the model boundary
  * enforces budgets derived from the RunContext the loop already propagates -
  * no business-side requireBudget call. DENIED must throw BEFORE the delegate
  * is reached; the honest ledger records actual usage after the call.

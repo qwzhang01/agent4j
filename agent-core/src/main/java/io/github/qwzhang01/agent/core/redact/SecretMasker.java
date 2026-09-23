@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Regex-based secret / PII masker (Stage 5.3).
+ * Regex-based secret / PII masker .
  * <p>
  * One masking engine shared by every governed surface - memory reads
  * ({@code MemoryGovernance}), trajectory export ({@code TrajectoryCodec}),
@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * Rules are ordered (first registered wins for overlapping spans) and each
  * hit is replaced with {@code [REDACTED:<rule>]} so auditors can see WHICH
  * rule fired without seeing the payload. Rule sets are tenant-customizable:
- * hosts build one masker per tenant from {@link #builder()} - the builder IS
+ * hosts build one masker per tenant from {@link #builder} - the builder IS
  * the customization surface, no registry magic.
  * <p>
  * Failure posture: masking never throws on input text; a null / blank input
@@ -57,7 +57,7 @@ public final class SecretMasker {
 
     /**
      * Mask and report per-rule hit counts (for audit records: "3 emails,
-     * 1 api key were masked from this memory").
+     * 1 api key were masked from this memory".
      */
     public MaskResult maskDetailed(String text) {
         if (text == null || text.isEmpty()) {

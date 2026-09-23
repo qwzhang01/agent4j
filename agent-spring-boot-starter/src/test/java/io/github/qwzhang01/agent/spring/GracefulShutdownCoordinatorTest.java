@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Stage 8.2 graceful shutdown: gate closed → drain bounded → stragglers
+ * graceful shutdown: gate closed → drain bounded → stragglers
  * cancelled → report.
  */
 class GracefulShutdownCoordinatorTest {

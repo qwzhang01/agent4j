@@ -66,7 +66,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * Stage 18 acceptance script (M18.5): an operations day in the life of one
+ * acceptance script (M18.5): an operations day in the life of one
  * observable, budget-gated, routed, evaluated, version-recorded agent - the
  * whole T0-T7 blueprint play plus F-series failure branches, ZERO LLM
  * (premium/cheap are two scripted {@link MockModelClient}s).
@@ -105,7 +105,7 @@ public final class ObservabilityExample {
                 .build();
         CostMeter meter = new CostMeter(pricing);
 
-        // console sink first: the budget book wires it as its alarm outlet (warn is "be SEEN")
+        // console sink first: the budget book wires it as its alarm outlet (warn is "be SEEN"
         MetricsSink console = new MetricsSink() {
             @Override
             public void onModelCall(ModelCallMetrics m) {

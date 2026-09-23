@@ -1,11 +1,11 @@
 package io.github.qwzhang01.agent.coding.patch;
 
 /**
- * Outcome of {@link PatchStore#apply()} (Stage 17 M17.2).
+ * Outcome of {@link PatchStore#apply} .
  * <p>
  * The blueprint sketched a two-value enum; drift rejection needs details (which path,
  * why), so this is a sealed interface with two records instead (same precedent as
- * {@code TurnResult} in Stage 16 M16.2).
+ * {@code TurnResult} in ).
  * <p>
  * Drift = the disk no longer matches the staging-time snapshot: someone (or something)
  * modified the workspace while the patch was awaiting approval. A drifted apply is

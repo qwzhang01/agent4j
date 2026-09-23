@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * Creates {@link Agent} instances from the shared {@link ModelClient} bean.
  * <p>
- * Stage 8.2: the factory is now profile-aware.
+ *  the factory is now profile-aware.
  * <ul>
  *   <li><b>SECURE</b> — every agent goes through {@link SecureAgentBuilder}:
  *       governed tool executor, contract-derived permissions (read-shaped
@@ -68,7 +68,7 @@ public class AgentFactory {
     /**
      * Create an agent with an empty tool registry and default max steps ({@value DEFAULT_MAX_STEPS}).
      *
-     * @param name         agent name (used in config / observability)
+     * @param name agent name (used in config / observability)
      * @param systemPrompt per-character system prompt
      */
     public Agent create(String name, String systemPrompt) {
@@ -78,10 +78,10 @@ public class AgentFactory {
     /**
      * Create an agent with an explicit tool registry and step bound.
      *
-     * @param name         agent name
+     * @param name agent name
      * @param systemPrompt per-character system prompt
-     * @param tools        tools available to this agent; {@code null} becomes an empty in-memory registry
-     * @param maxSteps     safety bound against unbounded tool loops
+     * @param tools tools available to this agent; {@code null} becomes an empty in-memory registry
+     * @param maxSteps safety bound against unbounded tool loops
      */
     public Agent create(String name, String systemPrompt, ToolRegistry tools, int maxSteps) {
         ToolRegistry registry = tools != null ? tools : new InMemoryToolRegistry();

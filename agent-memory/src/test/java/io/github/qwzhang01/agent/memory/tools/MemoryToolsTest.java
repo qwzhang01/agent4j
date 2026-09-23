@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8 M8.5 tests: MemoryTools (save_memory / search_memory).
+ * tests: MemoryTools (save_memory / search_memory).
  */
 class MemoryToolsTest {
 

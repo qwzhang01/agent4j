@@ -14,19 +14,19 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The no-shell command executor - gate 3 of the command defense (Stage 17 M17.3,
+ * The no-shell command executor - gate 3 of the command defense (,
  * blueprint D2/D5).
  * <p>
  * <b>No shell anywhere</b>: {@code ProcessBuilder} receives the argv directly, no
- * {@code /bin/sh -c} is ever involved, so injection syntax ({@code ; | && $( ) ` >})
+ * {@code /bin/sh -c} is ever involved, so injection syntax ({@code ; | && $ ` >})
  * inside arguments is inert by construction - it is just an argument nobody interprets.
  * <p>
- * Blueprint D5 (the Stage 4 sandbox field check): the <b>data contracts are reused</b>
+ * Blueprint D5 (the sandbox field check): the <b>data contracts are reused</b>
  * ({@link SandboxSpec} in, {@link SandboxResult} out - timeout/env/result semantics are
  * not re-invented), and the <b>process pattern is re-implemented</b> (dual-stream
  * reading to avoid pipe deadlock, timeout with destroyForcibly - the same shape as
  * {@code ProcessSandbox.runProcess}). What is deliberately NOT reused is
- * {@code ProcessSandbox.execute()} itself: its temp-dir-and-burn isolation model
+ * {@code ProcessSandbox.execute} itself: its temp-dir-and-burn isolation model
  * contradicts "the command must see the real workspace" - here the cwd is
  * <b>pinned to the workspace root</b> ({@code spec.workingDirectory} is ignored, javadoc
  * honesty over silent surprise).
@@ -153,7 +153,7 @@ public final class CommandRunner {
                 int room = (int) Math.min(length, hardCapBytes - buffer.size());
                 buffer.write(data, 0, room);
             }
-            // beyond the hard cap only the count keeps running - the marker in render()
+            // beyond the hard cap only the count keeps running - the marker in render
             // reports the true total, the tail degrades honestly (v1 boundary)
         }
 

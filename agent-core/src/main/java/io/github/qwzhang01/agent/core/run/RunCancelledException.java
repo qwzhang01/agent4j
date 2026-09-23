@@ -2,7 +2,7 @@ package io.github.qwzhang01.agent.core.run;
 
 /**
  * Thrown at an execution boundary when the run's cancellation token fired
- * (Stage 1.4). This is a control-flow signal, not a business failure:
+ * . This is a control-flow signal, not a business failure:
  * catching code records {@link FailureKind#CANCELLED}, never
  * {@link FailureKind#MODEL_FAILURE} or free text like "tool failed".
  */

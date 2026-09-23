@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.observability.version;
 import java.util.Objects;
 
 /**
- * One atom of the version triple (Stage 18 D8): which PROMPT, which MODEL,
+ * One atom of the version triple (D8): which PROMPT, which MODEL,
  * which TOOL set served a run - the reproducibility precondition.
  * <p>
  * The standard postmortem question - "yesterday's bad batch of runs, which
@@ -14,23 +14,23 @@ import java.util.Objects;
  * Sources are deliberately heterogeneous (assembly declares, it does not
  * discover):
  * <ul>
- *   <li>PROMPT - the Stage 13 {@code PromptManager} version at bind time
+ *   <li>PROMPT - the {@code PromptManager} version at bind time
  *       (assembly reads {@code PromptManager.resolve(...)} and translates;
  *       the module itself never imports product - D5's numbers-not-identities
  *       discipline, here versions-not-managers)</li>
- *   <li>MODEL - the deployment's declared model id ("premium", "gpt-4o")</li>
+ *   <li>MODEL - the deployment's declared model id "premium", "gpt-4o"</li>
  *   <li>TOOL - the tool-set fingerprint the assembly chooses (e.g. name@f1
  *       for the registered set)</li>
  *   <li>AGENT - the agent identity serving the run. {@code RunRecord.versions}
- *       carries it as the head entry ("unversioned" until assemblies declare
+ *       carries it as the head entry "unversioned" until assemblies declare
  *       agent releases); see {@code DurableRunManager#createRow}</li>
  * </ul>
- * {@code channel} is the Stage 13 stable/canary channel for prompts, null
+ * {@code channel} is the stable/canary channel for prompts, null
  * when the kind has no channel concept (models/tools/agents) - absence is honest.
  *
- * @param kind    which atom of the version chain this is
- * @param name    component name (prompt name / model key / tool-set label)
- * @param version version string ("v3", "2026-08-25.1", a fingerprint)
+ * @param kind which atom of the version chain this is
+ * @param name component name (prompt name / model key / tool-set label)
+ * @param version version string "v3", "2026-08-25.1", a fingerprint)
  * @param channel release channel for prompts (stable/canary), null otherwise
  */
 public record ComponentVersion(Kind kind, String name, String version, String channel) {

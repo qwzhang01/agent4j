@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 /**
- * Stage 6.4: loads plugins from EXTERNAL jars with per-plugin classloader
+ *  loads plugins from EXTERNAL jars with per-plugin classloader
  * isolation, checksum verification, and (mandatory) host-signed manifests.
  * <p>
  * Roadmap: "设计外部 JAR ClassLoader 和版本隔离" + "增加插件签名、Checksum 和
@@ -74,7 +74,7 @@ public final class PluginJarLoader {
      * manifest name mismatches the plugin's descriptor name are refused
      * (a jar cannot smuggle in a plugin under someone else's name).
      *
-     * @param jar      the plugin jar on disk
+     * @param jar the plugin jar on disk
      * @param manifest the HOST-provided manifest (never read from the jar)
      * @return the plugins plus their classloader (close it on unload)
      */
@@ -90,7 +90,7 @@ public final class PluginJarLoader {
             /**
              * External-jar isolation: ServiceLoader enumerates providers
              * through this loader, and the JDK's ServiceLoader looks up
-             * META-INF/services resources via getResources() — which by
+             * META-INF/services resources via getResources — which by
              * default walks the PARENT chain too, so host-classpath SPI
              * entries (e.g. our own test fixture) would leak into the jar's
              * plugin list. Only the jar's own registration file counts.

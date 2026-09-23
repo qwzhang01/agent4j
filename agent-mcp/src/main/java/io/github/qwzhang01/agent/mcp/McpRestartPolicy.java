@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.mcp;
 
 /**
- * Restart budget for {@link ManagedMcpClient} (Stage 10 process management).
+ * Restart budget for {@link ManagedMcpClient} (process management).
  * <p>
  * Prevents restart storms when a server is fundamentally broken (bad command,
  * corrupted package, crashes on startup):
@@ -12,8 +12,8 @@ package io.github.qwzhang01.agent.mcp;
  * </ul>
  *
  * @param maxRestarts max restarts within the window (>= 1)
- * @param cooldownMs  min interval between restarts (>= 0)
- * @param windowMs    budget reset window (> 0)
+ * @param cooldownMs min interval between restarts (>= 0)
+ * @param windowMs budget reset window (> 0)
  */
 public record McpRestartPolicy(int maxRestarts, long cooldownMs, long windowMs) {
 

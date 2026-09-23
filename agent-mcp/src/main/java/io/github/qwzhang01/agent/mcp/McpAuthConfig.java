@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Stage 6.2: host-managed authentication adapter for remote MCP servers.
+ *  host-managed authentication adapter for remote MCP servers.
  * <p>
  * Roadmap: "OAuth 或宿主认证适配器". The split the framework draws: the
  * HOST owns credentials (vault, env, SSO session); the transport only
@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * framework gets a fresh value from the supplier and stays out of the
  * credential business. Honest gap, tracked in notes/harness-gap.
  *
- * @param headerName   the header to set (default "Authorization")
+ * @param headerName the header to set (default "Authorization"
  * @param valueSupplier called per request; must never return credentials
  *                      into logs — only into the header
  */

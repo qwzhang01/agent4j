@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.core.approval;
 
 /**
- * Lifecycle status of an approval request (Stage 3.4, harness roadmap).
+ * Lifecycle status of an approval request (, harness roadmap).
  * <p>
  * Each terminal status carries its own failure semantics — the roadmap
  * forbids collapsing "expired", "rejected", "revoked" and "duplicate"

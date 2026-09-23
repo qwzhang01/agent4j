@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Session-level conversation holder (Stage 8 - session memory layer).
+ * Session-level conversation holder (- session memory layer).
  * <p>
  * Holds the multi-turn message history that spans across Agent runs within
  * one conversation. Each turn:
@@ -17,7 +17,7 @@ import java.util.List;
  *   <li>{@link #syncFrom} pulls the updated history back into session history</li>
  * </ol>
  * <p>
- * This is the "Session Memory" layer in the three-tier model (Stage 8 §2.1):
+ * This is the "Session Memory" layer in the three-tier model (§2.1):
  * Working = AgentState (run-scoped), Session = this, Long-term = MemoryStore.
  */
 public class ChatSession {

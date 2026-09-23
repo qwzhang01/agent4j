@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 M9.1 tests: permission tiers, policy, governed executor decorator.
+ * tests: permission tiers, policy, governed executor decorator.
  */
 class GovernedToolExecutorTest {
 

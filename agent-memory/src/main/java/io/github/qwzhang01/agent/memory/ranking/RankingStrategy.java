@@ -26,7 +26,7 @@ import java.util.List;
  * <p>Typical usage via {@code MemoryRetriever} (production default; equivalent to the
  * 1-arg constructor):
  * <pre>{@code
- * MemoryRetriever retriever = new MemoryRetriever(store, new ImportanceRankingStrategy());
+ * MemoryRetriever retriever = new MemoryRetriever(store, new ImportanceRankingStrategy);
  * }</pre>
  */
 public interface RankingStrategy {
@@ -35,7 +35,7 @@ public interface RankingStrategy {
      * Rank candidate memory entries for injection into the model context.
      *
      * @param candidates unsorted active memory entries from the store
-     * @param query      optional free-text user message (e.g. current turn text);
+     * @param query optional free-text user message (e.g. current turn text);
      *                   {@code null} or blank means no query bias
      * @return ranked list – first element has highest priority
      */

@@ -6,7 +6,7 @@ package io.github.qwzhang01.agent.mcp.a2a;
  * The wire labels are exactly the spec's: a task moves
  * {@code submitted -> working -> completed | failed | input-required |
  * canceled | rejected}. Before this enum existed the in-process client
- * tracked status as free strings ("running") -- close, but a dialect is a
+ * tracked status as free strings "running" -- close, but a dialect is a
  * contract: a remote peer reading "running" cannot map it to any spec state.
  * Every status this framework emits or accepts now round-trips through
  * these labels.

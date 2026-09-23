@@ -3,9 +3,9 @@ package io.github.qwzhang01.agent.trace.sample;
 import io.github.qwzhang01.agent.trace.trajectory.Trajectory;
 
 /**
- * Applies a {@link SamplingPolicy} to finished trajectories (Stage 14 D4).
+ * Applies a {@link SamplingPolicy} to finished trajectories (D4).
  * <p>
- * Rate decisions are deterministic: {@code floorMod(runId.hashCode() ^ seed, 100) < rate}.
+ * Rate decisions are deterministic: {@code floorMod(runId.hashCode ^ seed, 100) < rate}.
  * String.hashCode is JLS-mandated, so the same runId+seed decides identically
  * across JVMs and reruns - "why wasn't this exported" is always answerable by
  * recomputing the hash, never by chasing a Random seed.

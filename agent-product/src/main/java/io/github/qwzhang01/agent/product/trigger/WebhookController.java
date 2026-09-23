@@ -20,12 +20,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /**
- * Transport-agnostic webhook intake (Stage 13 M13.5, D8).
+ * Transport-agnostic webhook intake (, D8).
  * <p>
  * NOT an EventBroker subscriber by design (pre-checked in the blueprint's
  * reuse table): EventBroker.fire callbacks are bound to RunManager.resume,
  * but a webhook starts a NEW task. This controller goes straight to the
- * agent entry point - the Stage 12 D3 lesson applied prospectively.
+ * agent entry point - the D3 lesson applied prospectively.
  * <p>
  * The three-piece safety contract (D8):
  * <ol>
@@ -39,7 +39,7 @@ import java.util.concurrent.Executors;
  *       deliver the event. A run that fails AFTER dispatch keeps the slot:
  *       that is at-least-once semantics, and a retry must not double-run a
  *       partially executed event</li>
- *   <li><b>202 semantics:</b> handle() returns as soon as the work is queued;
+ *   <li><b>202 semantics:</b> handle returns as soon as the work is queued;
  *       the run executes on an Executor - a slow agent must not turn the
  *       sender's timeout into a double delivery</li>
  * </ol>
@@ -68,7 +68,7 @@ public final class WebhookController {
     /**
      * Handle one webhook delivery.
      *
-     * @param source  the external source identifier
+     * @param source the external source identifier
      * @param headers request headers (signature read from X-Signature, hex)
      * @param rawBody the raw request body (signature input AND payload source)
      * @return outcome record (never throws for delivery-level problems)

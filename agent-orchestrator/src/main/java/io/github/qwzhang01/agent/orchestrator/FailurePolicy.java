@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.orchestrator;
 import java.util.Objects;
 
 /**
- * Failure semantics for a dispatch (Stage 11 M11.3, D4).
+ * Failure semantics for a dispatch (, D4).
  * <p>
  * Two orthogonal decisions packed together:
  * <ul>
@@ -20,7 +20,7 @@ import java.util.Objects;
  * Retry budget lives on the task (the caller knows whether THIS task is worth
  * retrying); backoff pacing lives here (the supervisor throttles globally).
  *
- * @param mode           failure mode
+ * @param mode failure mode
  * @param retryBackoffMs pause between attempts, >= 0 (0 = retry immediately)
  */
 public record FailurePolicy(Mode mode, long retryBackoffMs) {

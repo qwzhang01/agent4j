@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.4: walk the recording, never re-run the model - blueprint D7
+ *  walk the recording, never re-run the model - blueprint D7
  * under test.
  * <p>
  * stateAt(n) rebuilds world + relationships at any point in history from the
  * recorded effects/changes alone; the replay's final state must equal the
  * save's state (the two files check each other); corrupted logs fail loud
- * with line numbers (the Stage 14 discipline).
+ * with line numbers (the discipline).
  */
 class GameReplayerTest {
 

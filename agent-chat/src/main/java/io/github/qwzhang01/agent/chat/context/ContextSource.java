@@ -14,7 +14,7 @@ import java.util.List;
  * {@code AgentEvent.TurnTrace}, see {@code MemorySource} / {@code ExtraTextSource})
  * are inherently stateful and must be owned by exactly one room. Do not register
  * the same source instance on more than one {@code ChatRoom}, and do not invoke a
- * room's {@code stream()} concurrently from multiple threads — both would let one
+ * room's {@code stream} concurrently from multiple threads — both would let one
  * turn observe another turn's telemetry.
  */
 public interface ContextSource {

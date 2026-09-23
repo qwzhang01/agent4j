@@ -34,12 +34,12 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link SharedAgentSession} (Stage 12 M12.2).
+ * Unit tests for {@link SharedAgentSession} .
  * <p>
  * Acceptance mapping (architecture note §10):
  * - "A、B 交替 speak，Agent 能引用对方说过的话" -> multiUser_sharedContext
- * - "@mention 路由、非 mention 只进历史"          -> mentionRouting / history
- * - "记忆来自 channel scope"                      -> channelMemory_isInjected
+ * - "@mention 路由、非 mention 只进历史" -> mentionRouting / history
+ * - "记忆来自 channel scope" -> channelMemory_isInjected
  */
 class SharedAgentSessionTest {
 

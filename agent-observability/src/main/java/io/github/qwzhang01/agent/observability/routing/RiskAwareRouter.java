@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Risk-aware routing (Stage 9 gap closure): the RISK dimension of model
+ * Risk-aware routing (gap closure): the RISK dimension of model
  * routing — a high-stakes step deserves the strongest model, a read-only
  * step can run cheap. The risk signal is the tool contract's
  * {@link SideEffectLevel} the assembly declares per tool name.
@@ -54,8 +54,8 @@ public final class RiskAwareRouter implements ModelRouter {
 
     /**
      * @param premiumModel candidate key for the strong/cautious tier
-     * @param cheapModel   candidate key for the cheap tier
-     * @param toolRisk     tool name → declared side-effect level; the risk
+     * @param cheapModel candidate key for the cheap tier
+     * @param toolRisk tool name → declared side-effect level; the risk
      *                     signal source. Copy is defensive; empty map =
      *                     this router never upgrades (all calls cheap when
      *                     no other signal applies — see {@link #route})

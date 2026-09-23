@@ -6,7 +6,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import java.util.List;
 
 /**
- * One complete run as RL training data (Stage 14): the in-memory form of what
+ * One complete run as RL training data : the in-memory form of what
  * M14.2 will serialize to the versioned JSONL contract.
  * <p>
  * Two consumption channels (D3):
@@ -25,13 +25,13 @@ import java.util.List;
  * this trajectory (M14.2); the recorder never invents values (D5).
  *
  * @param trajectoryId unique trajectory id (UUID)
- * @param runId        run id (caller-supplied or recorder-generated)
- * @param metadata     run metadata (config fingerprint, timings, token cost)
- * @param status       loop terminal status (reuses AgentState.Status - one vocabulary, Stage 12 lesson)
- * @param steps        one step per model call
- * @param messages     logical full conversation
- * @param reward       outcome reward, null until scored (M14.2)
- * @param rewardSource where the reward came from ("rule"/"human"/...), null until scored
+ * @param runId run id (caller-supplied or recorder-generated)
+ * @param metadata run metadata (config fingerprint, timings, token cost)
+ * @param status loop terminal status (reuses AgentState.Status - one vocabulary, lesson)
+ * @param steps one step per model call
+ * @param messages logical full conversation
+ * @param reward outcome reward, null until scored (M14.2)
+ * @param rewardSource where the reward came from "rule"/"human"/...), null until scored
  */
 public record Trajectory(
         String trajectoryId,

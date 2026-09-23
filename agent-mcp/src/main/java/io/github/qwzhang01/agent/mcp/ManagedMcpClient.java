@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  * Self-healing MCP client: a {@link McpClient} that automatically restarts a
- * crashed server subprocess and retries the failed call (Stage 10 process
+ * crashed server subprocess and retries the failed call (process
  * management -- one of the 5 production gaps).
  * <p>
  * Recovery recipe, applied to {@link #listTools} and {@link #callTool}:
@@ -31,13 +31,13 @@ import java.util.function.Supplier;
  * <p>
  * Mechanism vs strategy split: {@link McpClient#reconnect} is the mechanism
  * (how to re-establish a connection); this class is the policy (when to restart,
- * how often, and whether to retry). Same decorator spirit as Stage 9's
+ * how often, and whether to retry). Same decorator spirit as 's
  * GovernedToolExecutor: existing code (McpToolAdapter, governance layers) sees
  * a plain {@link McpClient} and stays untouched.
  * <p>
  * v1 limitation: a HUNG server (process alive but unresponsive) is not detected
  * -- calls block until the transport times out. Detecting hangs needs receive
- * timeouts (Stage 18 observability territory).
+ * timeouts (observability territory).
  */
 public class ManagedMcpClient extends McpClient {
 
@@ -58,7 +58,7 @@ public class ManagedMcpClient extends McpClient {
 
     /**
      * @param transportFactory builds a FRESH transport per (re)connection
-     *                         (e.g. {@code () -> new StdioTransport(command)})
+     *                         (e.g. {@code -> new StdioTransport(command)})
      */
     public ManagedMcpClient(McpServerDescriptor descriptor,
                             Supplier<McpTransport> transportFactory,

@@ -19,7 +19,7 @@ package io.github.qwzhang01.agent.sandbox;
  * </ol>
  *
  * <h2>When does Decision 21 break?</h2>
- * Decision 21 ("ClassLoader is enough for single-tenant half-trusted tool code") holds
+ * Decision 21 "ClassLoader is enough for single-tenant half-trusted tool code" holds
  * under two conditions:
  * <ul>
  *   <li>Single tenant — one user's code cannot affect another user's state.</li>

@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * {@code list_files} - the Coding Agent's directory view on the workspace
- * (Stage 17 M17.1).
+ * .
  * <p>
  * Wraps {@link Workspace#listTree(String, int)}: deterministic sorted listing,
  * deny-listed entries and symlinks invisible, depth/entry budgets enforced by the

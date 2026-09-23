@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.2: the human-review rendering - common prefix/suffix diff (v1 honest
+ *  the human-review rendering - common prefix/suffix diff (v1 honest
  * boundary: not a minimal edit script), CREATE/DELETE via /dev/null, and honest line
  * counts (a re-staged file with no textual change shows +0 -0).
  */
@@ -79,7 +79,7 @@ class PatchSummarizerTest {
     @Test
     @DisplayName("line counts: middle blocks only, head/tail not counted")
     void lineCounts() {
-        // old: h1 h2 [x y z] t1 t2   ->  new: h1 h2 [a] t1 t2
+        // old: h1 h2 [x y z] t1 t2 -> new: h1 h2 [a] t1 t2
         FileChange change = new FileChange("App.java", FileChange.ChangeKind.MODIFY,
                 "h1\nh2\na\nt1\nt2\n",
                 "h1\nh2\nx\ny\nz\nt1\nt2\n");
@@ -99,7 +99,7 @@ class PatchSummarizerTest {
 
         String summary = summarizer.summarize(patch);
 
-        // +: A(+1) + B(+2) = 3;  -: A(-1) + C(-4) = 5
+        // +: A(+1) + B(+2) = 3; -: A(-1) + C(-4) = 5
         assertTrue(summary.contains("Patch P-1 [VALIDATED]: 3 file(s) - 1 create, 1 modify, 1 delete (+3 -5 lines)"),
                 summary);
         assertTrue(summary.contains("--- A.java"), summary);

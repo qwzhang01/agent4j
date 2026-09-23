@@ -10,13 +10,13 @@ package io.github.qwzhang01.agent.core.agent;
  * (persona, model client, tools, context builder) while the shared
  * {@link AgentState} — history and the global step budget — stays.
  * <p>
- * {@link #inputFilter()} trims what the <em>next</em> model request carries
+ * {@link #inputFilter} trims what the <em>next</em> model request carries
  * (Decision 24 P2). It does not rewrite {@link AgentState}. Default is
  * {@link HandoffInputFilter#IDENTITY} (full carry).
  *
- * @param target      the agent config to transfer to; must not be the
+ * @param target the agent config to transfer to; must not be the
  *                    declaring config itself (validated by {@code AgentConfig})
- * @param toolName    the tool name the model calls to trigger the transfer
+ * @param toolName the tool name the model calls to trigger the transfer
  * @param description sent to the model inside the tool schema; clarity
  *                    matters — it tells the model WHEN to transfer
  * @param inputFilter request-boundary history filter for the target; null
@@ -72,7 +72,7 @@ public record HandoffSpec(AgentConfig target, String toolName, String descriptio
     }
 
     /**
-     * Tool schema string, same shape as {@code ToolRegistry#getToolSchemas()}
+     * Tool schema string, same shape as {@code ToolRegistry#getToolSchemas}
      * entries. Handoff tools take no parameters: the transfer itself is the
      * whole intent.
      */

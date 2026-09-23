@@ -7,15 +7,15 @@ package io.github.qwzhang01.agent.memory;
  */
 public enum MemoryType {
     /**
-     * User preference (e.g. "prefers dark mode", "allergic to peanuts").
+     * User preference (e.g. "prefers dark mode", "allergic to peanuts".
      */
     PREFERENCE,
     /**
-     * A factual statement (e.g. "user's timezone is UTC+8").
+     * A factual statement (e.g. "user's timezone is UTC+8".
      */
     FACT,
     /**
-     * An episodic event (e.g. "user asked for a refund on 2026-08-19").
+     * An episodic event (e.g. "user asked for a refund on 2026-08-19".
      */
     EPISODE,
     /**
@@ -24,11 +24,11 @@ public enum MemoryType {
      */
     SUMMARY,
     /**
-     * An external event worth remembering (e.g. "PR #123 was merged").
+     * An external event worth remembering (e.g. "PR #123 was merged".
      */
     EVENT,
     /**
-     * Tenant knowledge base content (Stage 15): imported documents, FAQs, policies.
+     * Tenant knowledge base content : imported documents, FAQs, policies.
      * Unlike conversation-derived memories, knowledge entries are admin-ingested
      * (controlled import, not dialog sediment) and live in {@code tenant:*} scopes.
      */

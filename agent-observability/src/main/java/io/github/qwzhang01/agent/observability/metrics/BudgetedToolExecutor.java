@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * Tool boundary with the budget wired in (Stage 7.2, the tool-side twin
+ * Tool boundary with the budget wired in (, the tool-side twin
  * of {@link BudgetedModelClient}): every tool call consumes the RUN
  * budget's tool-call axis when the host configured a per-run
  * {@code maxToolCalls} limit.
@@ -23,7 +23,7 @@ import java.util.Objects;
  * costs (a search API returning 8k tokens of context) are NOT invented
  * here - the host prices its own tools and records them via
  * {@code BudgetBook.recordUsage}; this decorator enforces the call-count
- * circuit breaker, the axis Stage 17's fix-loop trench taught us to hold.
+ * circuit breaker, the axis 's fix-loop trench taught us to hold.
  * <p>
  * Denial text, not exception: the loop's error discipline turns executor
  * throws into generic failures the model sees as broken tools; a budget

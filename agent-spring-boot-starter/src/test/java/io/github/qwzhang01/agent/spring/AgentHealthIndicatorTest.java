@@ -8,7 +8,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Stage 8.2 six-face health check: aggregation, exception capture, and
+ * six-face health check: aggregation, exception capture, and
  * the overall verdict.
  */
 class AgentHealthIndicatorTest {

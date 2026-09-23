@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.3 acceptance for the online metrics definitions: the five-plus-one
+ * acceptance for the online metrics definitions: the five-plus-one
  * indicators computed from real run rows, with the honest-blank memory rate
  * and the rejected empty window.
  */

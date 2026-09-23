@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Stage 7 dynamic variant: reads the scheduling parameters from the blackboard
+ * dynamic variant: reads the scheduling parameters from the blackboard
  * instead of the constructor, so an upstream AgentNode (LLM) decides at runtime
  * what to wait for and how long.
  * <p>

@@ -22,16 +22,16 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Stage 11 acceptance example: multi-agent orchestration with a mixed team.
+ * acceptance example: multi-agent orchestration with a mixed team.
  * <p>
  * The scenario -- a small "tech investigation" job split by RESPONSIBILITY:
  * <pre>
  *   supervisor
- *   ├── researcher  (INTERNAL worker -- same JVM, plain method call)
- *   ├── executor    (INTERNAL worker -- same JVM)
- *   ├── reviewer    (EXTERNAL worker -- behind the A2A protocol, output
- *   │                sanitized by Stage 9's ResultSanitizer, D5)
- *   └── flaky       (INTERNAL worker that fails once, then recovers -- D4 retry)
+ *   ├── researcher (INTERNAL worker -- same JVM, plain method call)
+ *   ├── executor (INTERNAL worker -- same JVM)
+ *   ├── reviewer (EXTERNAL worker -- behind the A2A protocol, output
+ *   │ sanitized by 's ResultSanitizer, D5)
+ *   └── flaky (INTERNAL worker that fails once, then recovers -- D4 retry)
  * </pre>
  * Demonstrates: parallel dispatch (wall clock ~= max, not sum), result
  * aggregation, skill-based routing, failure retry, and trust downgrade.

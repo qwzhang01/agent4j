@@ -14,14 +14,14 @@ import io.github.qwzhang01.agent.workflow.runtime.PersistentApprovalService;
  * <p>
  * Two modes (design decision D6):
  * <p>
- * <b>Sync mode</b> (Stage 5): when {@code ctx.runId() == null} (no RunManager),
- * calls {@code approve()} synchronously. Blocks the thread. On reject,
+ * <b>Sync mode</b> : when {@code ctx.runId == null} (no RunManager),
+ * calls {@code approve} synchronously. Blocks the thread. On reject,
  * throws {@link WorkflowException.ApprovalRejectedException}.
  * <p>
- * <b>Async mode</b> (Stage 6): when {@code ctx.runId() != null} (via RunManager),
- * calls {@code requestApproval()} then throws {@link PauseException} to suspend
- * the run. On resume ({@code ctx.isResuming() == true}), calls
- * {@code checkDecision()} to get the result. This enables pause-resume
+ * <b>Async mode</b> : when {@code ctx.runId != null} (via RunManager),
+ * calls {@code requestApproval} then throws {@link PauseException} to suspend
+ * the run. On resume ({@code ctx.isResuming == true}), calls
+ * {@code checkDecision} to get the result. This enables pause-resume
  * without blocking a thread.
  * <p>
  * On approval, the node passes its input through unchanged to downstream nodes.

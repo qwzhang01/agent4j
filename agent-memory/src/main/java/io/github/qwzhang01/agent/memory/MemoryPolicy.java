@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.memory;
 
 /**
- * Write-gate policy for memory entries (Stage 8 D6 - pollution defense, gate 1 and 2).
+ * Write-gate policy for memory entries (D6 - pollution defense, gate 1 and 2).
  * <p>
  * Three checks (gate 3 - supersede - is handled by the write flow, not here):
  * <ol>
@@ -9,7 +9,7 @@ package io.github.qwzhang01.agent.memory;
  *   <li>Frequency control: identical content (same scope+subject+content) is not re-written</li>
  * </ol>
  * Explicit save_memory tool calls (importance >= 1.0) bypass the importance threshold
- * (Stage 8 D8 - model self-decided storage is high-confidence).
+ * (D8 - model self-decided storage is high-confidence).
  */
 public class MemoryPolicy {
 
@@ -27,7 +27,7 @@ public class MemoryPolicy {
      * Whether a candidate entry should be stored.
      *
      * @param candidate the entry proposed for storage
-     * @param store     the store (to check for duplicates)
+     * @param store the store (to check for duplicates)
      * @return true if the entry passes the gate
      */
     public boolean shouldStore(MemoryEntry candidate, MemoryStore store) {
@@ -59,7 +59,7 @@ public class MemoryPolicy {
     }
 
     /**
-     * Default status for a new entry based on its scope (Stage 8 D6, gate 2).
+     * Default status for a new entry based on its scope (D6, gate 2).
      * <p>
      * Channel-shared memories default to PENDING_REVIEW (awaiting admin approval)
      * so unconfirmed entries never enter the context. Other scopes default to ACTIVE.

@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.enterprise.govern;
 
 /**
- * Budget gate rejection (Stage 15 M15.3, D8 fail-closed).
+ * Budget gate rejection (, D8 fail-closed).
  * <p>
  * Thrown by {@link CostLedger#requireBudget} when the tenant or user budget
  * is exhausted. Rejecting is the honest behavior: an SLA promises service

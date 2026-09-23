@@ -61,7 +61,7 @@ public final class LayeredResultSanitizer implements ResultSanitizer {
      * Full stack: regex wall + semantic judge.
      *
      * @param fastWall the regex-based sanitizer
-     * @param judge    semantic judge; {@link InjectionJudge#absent()} disables the layer
+     * @param judge semantic judge; {@link InjectionJudge#absent} disables the layer
      */
     public LayeredResultSanitizer(ResultSanitizer fastWall, InjectionJudge judge) {
         this.fastWall = Objects.requireNonNull(fastWall, "fastWall must not be null");

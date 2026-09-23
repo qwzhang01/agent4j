@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Stage 6 D5: AgentState must survive a Jackson round-trip so AgentNode
+ * D5: AgentState must survive a Jackson round-trip so AgentNode
  * can park it on the workflow blackboard and restore after a restart.
  */
 class AgentStateJsonTest {

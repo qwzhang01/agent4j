@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Bridges video generation (agent-model tools) onto Stage 7 long-task machinery.
+ * Bridges video generation (agent-model tools) onto long-task machinery.
  * <p>
  * On submit: enqueue an {@link AsyncTask} and poll {@link VideoGenerationClient#status}
  * on the scheduler thread. On terminal state: fire {@code video-done:{taskId}}

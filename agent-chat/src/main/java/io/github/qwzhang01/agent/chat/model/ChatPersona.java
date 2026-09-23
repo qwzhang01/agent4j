@@ -8,11 +8,11 @@ import io.github.qwzhang01.agent.chat.persona.PersonaRenderer;
  * Optional {@link PersonaRenderer} fills that string from {@link PersonaSpec}
  * before the persona enters the room; a null renderer keeps the spec prompt.
  *
- * @param personaId    stable id used for @mention routing
- * @param displayName  name shown to the player (blank defaults to personaId)
+ * @param personaId stable id used for @mention routing
+ * @param displayName name shown to the player (blank defaults to personaId)
  * @param systemPrompt persona text sent to the model (may be blank)
- * @param greeting     optional opening line (engine does not auto-send it)
- * @param version      opaque version tag forwarded from {@link PersonaSpec#version()};
+ * @param greeting optional opening line (engine does not auto-send it)
+ * @param version opaque version tag forwarded from {@link PersonaSpec#version};
  *                     null when the spec does not carry a version.
  *                     Surfaced in {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace}
  *                     so that replies can be correlated to a specific persona revision.
@@ -44,8 +44,8 @@ public record ChatPersona(String personaId, String displayName, String systemPro
 
     /**
      * Build a persona from structured attributes.
-     * {@code renderer == null} keeps {@link PersonaSpec#promptOrEmpty()} as-is.
-     * {@link PersonaSpec#version()} is propagated into {@link #version()}.
+     * {@code renderer == null} keeps {@link PersonaSpec#promptOrEmpty} as-is.
+     * {@link PersonaSpec#version} is propagated into {@link #version}.
      */
     public static ChatPersona render(PersonaSpec spec, PersonaRenderer renderer) {
         if (spec == null) {

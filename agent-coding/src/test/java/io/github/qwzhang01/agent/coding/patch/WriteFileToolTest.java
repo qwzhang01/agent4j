@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.2: the write tool stages, never writes - and says so in its
+ *  the write tool stages, never writes - and says so in its
  * confirmation so the model knows applying is a separate, approved action.
  */
 class WriteFileToolTest {

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.1: tenant/user domain and the login gate.
+ *  tenant/user domain and the login gate.
  * <p>
  * Fail-closed is the contract under test: every rejection path throws
  * {@link EnterpriseAuthException} with an evidence-carrying message -

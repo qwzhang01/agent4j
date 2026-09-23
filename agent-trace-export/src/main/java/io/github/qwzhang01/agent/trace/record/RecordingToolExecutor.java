@@ -6,11 +6,11 @@ import io.github.qwzhang01.agent.core.tool.ToolExecutor;
 import java.util.Objects;
 
 /**
- * ToolExecutor boundary decorator (Stage 14 D1): captures (toolCall, result)
+ * ToolExecutor boundary decorator (D1): captures (toolCall, result)
  * = Observation into the active recording session.
  * <p>
- * The result text is recorded VERBATIM: Stage 2 "[ERROR] ..." wrapping and
- * Stage 9 "[DENIED]" governance texts are observations like any other - the
+ * The result text is recorded VERBATIM: "[ERROR] ..." wrapping and
+ * "[DENIED]" governance texts are observations like any other - the
  * model saw them, so the trajectory keeps them (record what the policy saw).
  * <p>
  * {@code success=false} only when the executor itself THREW (a framework-level

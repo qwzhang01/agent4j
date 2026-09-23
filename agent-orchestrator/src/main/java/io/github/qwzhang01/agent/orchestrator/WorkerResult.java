@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.orchestrator;
 import java.util.Objects;
 
 /**
- * A worker's receipt for one {@link WorkerTask} execution (Stage 11 M11.1).
+ * A worker's receipt for one {@link WorkerTask} execution .
  * <p>
  * Contract: success/failure is DATA, never an exception -- the supervisor
  * dispatches workers in parallel and must be able to aggregate partial failures
@@ -11,18 +11,18 @@ import java.util.Objects;
  * <p>
  * Cost attribution v1 = bookkeeping, not allocation: {@code durationMs} and
  * {@code totalTokens} are recorded per result; how to split the bill across
- * tenants/workers is Stage 18's cost dashboard.
+ * tenants/workers is 's cost dashboard.
  *
- * @param taskId     the task this result belongs to
+ * @param taskId the task this result belongs to
  * @param workerName which worker produced it
- * @param success    whether the task completed
- * @param output     the worker's output (null on failure)
- * @param error      failure description (null on success)
+ * @param success whether the task completed
+ * @param output the worker's output (null on failure)
+ * @param error failure description (null on success)
  * @param durationMs wall-clock execution time of the (final) attempt
- * @param attempts   how many attempts were made (1 = executed once, no retry)
+ * @param attempts how many attempts were made (1 = executed once, no retry)
  * @param totalTokens token usage of the execution; 0 = unknown / not wired
  *                   (v1: the core {@code Agent} interface does not expose token
- *                   stats yet -- Stage 18 observability will wire it)
+ *                   stats yet -- observability will wire it)
  */
 public record WorkerResult(
         String taskId,

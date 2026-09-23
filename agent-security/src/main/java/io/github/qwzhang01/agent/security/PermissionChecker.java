@@ -1,11 +1,11 @@
 package io.github.qwzhang01.agent.security;
 
 /**
- * Checks tool permissions against a {@link ToolPolicy} (Stage 9).
+ * Checks tool permissions against a {@link ToolPolicy} .
  * <p>
  * Thin wrapper around ToolPolicy - separated into its own class so that
  * future stages can add context-aware logic (e.g. "user role X can call
- * tool Y") without changing the policy data structure.
+ * tool Y" without changing the policy data structure.
  */
 public class PermissionChecker {
 

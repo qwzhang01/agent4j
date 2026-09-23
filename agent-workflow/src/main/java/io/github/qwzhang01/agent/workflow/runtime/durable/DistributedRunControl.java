@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.workflow.runtime.durable;
 import java.util.Optional;
 
 /**
- * Cross-instance control plane for durable runs (Stage 8.1, harness
+ * Cross-instance control plane for durable runs (, harness
  * roadmap): "the run row is the control channel".
  * <p>
  * A {@link RunStore} shared by two runtime instances is already the
@@ -24,7 +24,7 @@ import java.util.Optional;
  * </ol>
  * Cancel-vs-cancel and cancel-vs-final-status races are settled by the
  * row's optimistic {@code version}: exactly one writer wins each CAS;
- * losers get {@link RunRecord#isRecoveryCandidate()} returning false on
+ * losers get {@link RunRecord#isRecoveryCandidate} returning false on
  * reload and fail loudly.
  * <p>
  * This class deliberately holds no execution logic: it is the operator

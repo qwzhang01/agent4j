@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Record of one task handoff between members (Stage 12 M12.3, design D5).
+ * Record of one task handoff between members (, design D5).
  * <p>
  * A handoff moves THREE things, not one:
  * <ol>
@@ -18,10 +18,10 @@ import java.util.Objects;
  * </ol>
  * This record itself is the audit trail: who gave, who took, why, when.
  *
- * @param taskId     the handed-off task
- * @param fromUser   the previous owner (must equal the owner at handoff time)
- * @param toUser     the new owner (must be a channel member)
- * @param note       why / what state things are in (shown to the model too)
+ * @param taskId the handed-off task
+ * @param fromUser the previous owner (must equal the owner at handoff time)
+ * @param toUser the new owner (must be a channel member)
+ * @param note why / what state things are in (shown to the model too)
  * @param handedOffAt when it happened
  */
 public record TaskHandoff(

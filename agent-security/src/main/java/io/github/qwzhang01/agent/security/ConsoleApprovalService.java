@@ -10,13 +10,13 @@ import java.util.Scanner;
 import java.util.function.Function;
 
 /**
- * Console-based approval service (Stage 9 v1).
+ * Console-based approval service (v1).
  * <p>
  * Three factory modes:
  * <ul>
- *   <li>{@link #autoApprove()} - always approves (for testing / non-interactive)</li>
- *   <li>{@link #autoReject()} - always rejects (for testing)</li>
- *   <li>{@link #console()} - reads from stdin (for interactive demos)</li>
+ *   <li>{@link #autoApprove} - always approves (for testing / non-interactive)</li>
+ *   <li>{@link #autoReject} - always rejects (for testing)</li>
+ *   <li>{@link #console} - reads from stdin (for interactive demos)</li>
  * </ul>
  * <p>
  * For custom logic (e.g. webhook, Slack, REST API), implement

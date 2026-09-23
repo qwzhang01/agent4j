@@ -9,7 +9,7 @@ import io.github.qwzhang01.agent.core.agent.GuardrailVerdict;
 import java.util.Objects;
 
 /**
- * KP5 adapter: reuse Stage 9 {@link ResultSanitizer} as an input or output door.
+ * KP5 adapter: reuse {@link ResultSanitizer} as an input or output door.
  * <p>
  * {@link DefaultResultSanitizer.Strategy#BLOCK} becomes {@link GuardrailVerdict.Block}.
  * SANITIZE / TRUNCATE become {@link GuardrailVerdict.Rewrite}. Clean text is Allow.

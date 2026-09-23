@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Role-aware permission checker (Stage 15 M15.3) - the extension point
- * {@link PermissionChecker}'s javadoc has reserved since Stage 9:
+ * Role-aware permission checker - the extension point
+ * {@link PermissionChecker}'s javadoc has reserved since
  * "future stages can add context-aware logic (e.g. user role X can call
  * tool Y)". This milestone redeems that promise.
  * <p>
@@ -46,12 +46,12 @@ public final class RoleBasedPermissionChecker extends PermissionChecker {
     /**
      * Create a request-scoped checker.
      *
-     * @param roleMatrix      assembly-level static config: role name -> set of
+     * @param roleMatrix assembly-level static config: role name -> set of
      *                        tool names that role grants AUTO access to
-     * @param fallbackPolicy  the Stage 9 policy deciding unlisted tools
+     * @param fallbackPolicy the policy deciding unlisted tools
      *                        (also the source of hard DENY entries)
-     * @param roles           the requesting user's roles (from
-     *                        {@code RequestContext.user().roles()}); empty
+     * @param roles the requesting user's roles (from
+     *                        {@code RequestContext.user.roles}); empty
      *                        means everything falls back to the policy
      */
     public static RoleBasedPermissionChecker forRequest(

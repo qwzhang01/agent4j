@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lightweight six-face health check (Stage 8.2): Model, Store, Scheduler,
+ * Lightweight six-face health check : Model, Store, Scheduler,
  * MCP, A2A, Sandbox — the roadmap's "提供健康检查" bar.
  * <p>
  * Deliberately NOT a Spring Boot actuator {@code HealthIndicator}: the
  * starter must not force the actuator onto every consumer's classpath.
  * Instead this is a plain interface plus one aggregated reporter; apps
  * that DO use the actuator can adapt it with a three-line lambda
- * ({@code HealthIndicator} delegating to {@link #report()}), apps that
+ * ({@code HealthIndicator} delegating to {@link #report}), apps that
  * don't can expose it as a plain controller endpoint.
  * <p>
  * Each face is optional: a deployment without MCP simply reports
@@ -30,7 +30,7 @@ public interface AgentHealthIndicator {
      * Probe this face. Return true for healthy, false for configured-but-
      * failing. Throwing is allowed and treated as DOWN. A face that is
      * not configured at all should return {@code false} from
-     * {@link #isConfigured()} and will report NOT_CONFIGURED.
+     * {@link #isConfigured} and will report NOT_CONFIGURED.
      */
     boolean healthy() throws Exception;
 

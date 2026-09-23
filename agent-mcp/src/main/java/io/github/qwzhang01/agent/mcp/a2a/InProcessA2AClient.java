@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * In-process implementation of {@link A2AClient} (Stage 11 M11.4, D6).
+ * In-process implementation of {@link A2AClient} (, D6).
  * <p>
  * Routes A2A tasks to agents living in the SAME JVM. The protocol data model
  * (AgentCard / A2ATask / A2AMessage) is used 100% faithfully -- what is faked
@@ -102,7 +102,7 @@ public class InProcessA2AClient implements A2AClient {
      * {@code {"output": "..."}}.
      *
      * @throws IllegalArgumentException unknown recipient
-     * @throws IllegalStateException    the agent ended in an error state
+     * @throws IllegalStateException the agent ended in an error state
      */
     @Override
     public JsonNode sendTask(A2ATask task) {

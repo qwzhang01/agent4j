@@ -12,9 +12,9 @@ import java.util.List;
  * the WRITE side ({@code MemoryReconciler} evidence recall) and the READ side
  * ({@code MemoryContextBuilder} archival relevance) anchor on the SAME
  * conversation turn — the last non-blank USER message. The turn the writer
- * compares old entries against is the turn the reader ranks relevance for;
+ * compares old entries against is the turn the reader ranks relevance ;
  * two private copies of this rule would eventually diverge (the same reason
- * {@code MemoryEntry.embedText()} is defined once for write and read).
+ * {@code MemoryEntry.embedText} is defined once for write and read).
  * <p>
  * Multimodal-only USER messages (parts, null content) carry no text anchor
  * and are skipped.

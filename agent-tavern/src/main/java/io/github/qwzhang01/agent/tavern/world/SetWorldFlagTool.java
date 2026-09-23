@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * {@code set_world_flag} - the character's handle on the world (Stage 16 M16.2,
- * blueprint D4: "influence is a tool").
+ * {@code set_world_flag} - the character's handle on the world (,
+ * blueprint D4: "influence is a tool".
  * <p>
  * This tool does NOT apply the effect. It submits a {@link WorldEffect.SetFlag}
  * instruction to the engine-provided sink; the turn engine is the single place
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  * The tool is therefore a pure instruction submitter - trivially testable with
  * a collecting sink, and replay-safe by construction.
  * <p>
- * Governance (Stage 9 chain: permission + audit) plugs in at the executor level
+ * Governance (chain: permission + audit) plugs in at the executor level
  * in M16.3 together with the relationship limiter - the two-layer split is
  * "governance decides IF the call may happen, the tool's domain validates
  * WHAT the call contains".

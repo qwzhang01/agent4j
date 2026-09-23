@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Stage 17 M17.2: the change record's kind/content invariants - a CREATE must not
+ *  the change record's kind/content invariants - a CREATE must not
  * claim a baseline, a DELETE must not carry content.
  */
 class FileChangeTest {

@@ -24,7 +24,7 @@ public class TimeoutModelClient implements ModelClient {
 
     /**
      * @param delegate underlying ModelClient
-     * @param timeout  max duration for a single call
+     * @param timeout max duration for a single call
      */
     public TimeoutModelClient(ModelClient delegate, Duration timeout) {
         this(delegate, timeout, Executors.newCachedThreadPool(r -> {

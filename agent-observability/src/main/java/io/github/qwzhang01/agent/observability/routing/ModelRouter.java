@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.observability.routing;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 
 /**
- * Routing strategy interface (Stage 18 D6): WHO to call is a pluggable
+ * Routing strategy interface (D6): WHO to call is a pluggable
  * decision, not a framework structure.
  * <p>
  * {@code RoutingModelClient} does exactly one thing - ask the router before
@@ -13,7 +13,7 @@ import io.github.qwzhang01.agent.core.model.ModelRequest;
  * AvailabilityRouter (health) - routing policies are configuration, not code
  * structure.
  * <p>
- * Routing vs Fallback (Stage 1) - the two layers complement, neither replaces:
+ * Routing vs Fallback - the two layers complement, neither replaces:
  * Fallback manages AVAILABILITY (switch after failure, passive, after the
  * fact); routing manages ECONOMICS (choose before the call, active, on the
  * happy path). Composition: {@code Routing(Fallback(premium, cheap))} - the
@@ -32,7 +32,7 @@ public interface ModelRouter {
      *
      * @param request the model request about to be sent (may inform
      *                complexity-based routing)
-     * @param budget  remaining-budget snapshot at decision time; the SAME
+     * @param budget remaining-budget snapshot at decision time; the SAME
      *                router may see different snapshots call to call as the
      *                ledger drains
      * @return decision with a non-blank {@code reason} (enforced by
@@ -47,7 +47,7 @@ public interface ModelRouter {
      * (D5: numbers injected, never the ledger itself).
      *
      * @param remainingTokens tokens still spendable under the routed budget
-     * @param limitTokens     the configured limit; {@code -1} marks the
+     * @param limitTokens the configured limit; {@code -1} marks the
      *                        unlimited snapshot (no cap -> never downgrade)
      */
     record BudgetSnapshot(long remainingTokens, long limitTokens) {

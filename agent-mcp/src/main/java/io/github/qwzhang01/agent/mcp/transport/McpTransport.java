@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Transport layer abstraction for MCP (Stage 10 D2).
+ * Transport layer abstraction for MCP (D2).
  * <p>
  * Carries JSON-RPC messages between client and server.
  * v1 implementation: {@link StdioTransport} (local subprocess via stdin/stdout).

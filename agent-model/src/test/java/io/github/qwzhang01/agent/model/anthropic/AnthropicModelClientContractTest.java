@@ -25,7 +25,7 @@ import java.util.concurrent.Flow;
 import java.util.function.BiFunction;
 
 /**
- * Stage 6.1: Anthropic's run of the shared {@link ModelClientContract}.
+ *  Anthropic's run of the shared {@link ModelClientContract}.
  * <p>
  * Lives in the anthropic package on purpose: the contract seam constructor
  * is package-private so production code cannot touch it, and the test needs
@@ -230,7 +230,7 @@ class AnthropicModelClientContractTest extends ModelClientContract {
 
         private <T> HttpResponse<T> respond(HttpResponse.BodyHandler<T> handler) {
             // No reflection (JPMS blocks setAccessible on java.net.http internals):
-            // call the handler's public apply() with a ResponseInfo, then feed
+            // call the handler's public apply with a ResponseInfo, then feed
             // the returned BodySubscriber synchronously with the canned bytes.
             HttpResponse.BodySubscriber<T> subscriber = handler.apply(new HttpResponse.ResponseInfo() {
                 @Override

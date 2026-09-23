@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 
 /**
  * A declarative agent template: an {@link AgentDefinition} spec with declared
- * {@code ${variable}} holes (Stage 13 M13.2, D6: instances are fork snapshots).
+ * {@code ${variable}} holes (, D6: instances are fork snapshots).
  * <p>
  * A template is DATA, not code: the spec is kept as a JSON tree and instantiation
  * is a pure tree transformation (substitute placeholders -&gt; rehydrate into an
@@ -48,15 +48,15 @@ import java.util.regex.Pattern;
  *     required: true
  *   - name: brandName
  *     default: "七七商城"
- * spec:                    # same shape as AgentDefinition.spec, may hold ${var}
+ * spec: # same shape as AgentDefinition.spec, may hold ${var}
  *   persona: ...
  * }</pre>
  *
  * @param apiVersion envelope, must be "v1"
- * @param kind       envelope, must be "AgentTemplate"
- * @param metadata   template identity (name is the registry key)
- * @param variables  declared placeholders; the tree may not reference undeclared ones
- * @param spec       the definition spec tree (with placeholders)
+ * @param kind envelope, must be "AgentTemplate"
+ * @param metadata template identity (name is the registry key)
+ * @param variables declared placeholders; the tree may not reference undeclared ones
+ * @param spec the definition spec tree (with placeholders)
  */
 public record AgentTemplate(
         String apiVersion,
@@ -128,8 +128,8 @@ public record AgentTemplate(
      * Produce a complete, independent agent definition from this template.
      *
      * @param instanceName name for the produced definition (registry key later)
-     * @param tenant       optional tenant for the produced definition
-     * @param params       variable values; missing required variables (without
+     * @param tenant optional tenant for the produced definition
+     * @param params variable values; missing required variables (without
      *                     defaults) and undeclared parameter keys are rejected
      * @return a full {@link AgentDefinition} - validate and bind it as usual
      * @throws DefinitionException listing every parameter problem

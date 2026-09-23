@@ -4,16 +4,16 @@ import io.github.qwzhang01.agent.core.model.ModelResponse;
 
 /**
  * Operational facts of one model call, captured at the ModelClient boundary
- * (Stage 18 D2: metrics live at the boundary, not in the loop path).
+ * (D2: metrics live at the boundary, not in the loop path).
  *
- * @param model            model identifier from the request (e.g. "gpt-4o")
- * @param latencyMs        wall-clock latency of the call, measured around the delegate
- * @param promptTokens     prompt tokens reported by the model (0 if usage not reported)
+ * @param model model identifier from the request (e.g. "gpt-4o"
+ * @param latencyMs wall-clock latency of the call, measured around the delegate
+ * @param promptTokens prompt tokens reported by the model (0 if usage not reported)
  * @param completionTokens completion tokens reported by the model (0 if usage not reported)
- * @param totalTokens      total tokens reported by the model (0 if usage not reported)
- * @param cachedTokens     prompt tokens served from cache (0 if none/unreported, E3)
- * @param finishReason     finish reason from the response (null on failure)
- * @param error            failure description, null on success - the delegate's
+ * @param totalTokens total tokens reported by the model (0 if usage not reported)
+ * @param cachedTokens prompt tokens served from cache (0 if none/unreported, E3)
+ * @param finishReason finish reason from the response (null on failure)
+ * @param error failure description, null on success - the delegate's
  *                         exception is recorded and rethrown, never swallowed here
  */
 public record ModelCallMetrics(

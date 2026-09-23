@@ -2,7 +2,7 @@ package io.github.qwzhang01.agent.core.approval;
 
 /**
  * Raised by {@link ApprovalStore#decide}/{@link ApprovalStore#revoke} when
- * the transition violates the protocol (Stage 3.4): stale version, already
+ * the transition violates the protocol : stale version, already
  * terminal, or already decided. Carries the offending request's state so
  * callers can map to their layer-specific failure semantics.
  */

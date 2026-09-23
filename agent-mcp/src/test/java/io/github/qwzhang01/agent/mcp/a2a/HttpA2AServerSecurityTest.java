@@ -19,13 +19,13 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6.3 wire-level tests for the new HttpA2AServer surface: bearer auth
+ * wire-level tests for the new HttpA2AServer surface: bearer auth
  * (401 on protected routes, agent card stays public), signed push
  * notifications (X-Signature / X-Timestamp / X-Nonce headers), and task
  * persistence through the pluggable store (a shared store survives a
  * server restart — the cross-instance recovery story).
  *
- * <p>Stage 8.3 A2A Integration Profile: tagged {@code a2a-it} (see
+ * <p>A2A Integration Profile: tagged {@code a2a-it} (see
  * {@link HttpA2ARoundTripTest} for the profile entry point).</p>
  */
 @Tag("a2a-it")

@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 1.2/1.4 acceptance: the ctx-aware loop checks cancellation at step
+ * /1.4 acceptance: the ctx-aware loop checks cancellation at step
  * boundaries and propagates the context to model + tool boundaries.
  */
 class ContextAwareLoopTest {
@@ -157,7 +157,7 @@ class ContextAwareLoopTest {
 
     @Test
     void legacyPathIsUnchanged() {
-        // No-ctx run must hit the legacy chat() and legacy tool.execute()
+        // No-ctx run must hit the legacy chat and legacy tool.execute
         RecordingClient client = new RecordingClient();
         client.turnOverride = () -> client.answer; // plain answer, no tool calls
         InMemoryToolRegistry registry = new InMemoryToolRegistry();

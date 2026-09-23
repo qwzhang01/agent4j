@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 gap-closure: the governed tool boundary emits typed rejection
+ * gap-closure: the governed tool boundary emits typed rejection
  * events through the loop. The {@code GovernedToolExecutor} has ALWAYS
  * returned {@code [DENIED]} / {@code [RATE_LIMITED]} strings (governance
  * stays a model-visible result the loop can self-correct on); what was

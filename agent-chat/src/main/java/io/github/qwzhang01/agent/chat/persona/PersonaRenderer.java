@@ -6,7 +6,7 @@ import io.github.qwzhang01.agent.chat.model.PersonaSpec;
  * Turns structured persona attributes into system text.
  * <p>
  * The engine does not interpret keys and does not own placeholder vocabularies.
- * Products decide what lives in {@link PersonaSpec#attributes()}.
+ * Products decide what lives in {@link PersonaSpec#attributes}.
  */
 @FunctionalInterface
 public interface PersonaRenderer {

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A JSON-serializable description of a Workflow (Stage 13 M13.5, D5):
+ * A JSON-serializable description of a Workflow (, D5):
  * what a frontend (React Flow etc.) renders and what a visual editor
  * would submit back.
  * <p>
@@ -19,10 +19,10 @@ import java.util.Objects;
  * START/END are control-flow sentinels: they appear as edge endpoints,
  * never as nodes.
  *
- * @param version    spec version, "v1"
- * @param name       workflow name
- * @param nodes      node id + type (implementation class simple name)
- * @param edges      normal routing edges
+ * @param version spec version, "v1"
+ * @param name workflow name
+ * @param nodes node id + type (implementation class simple name)
+ * @param edges normal routing edges
  * @param errorEdges onError edges
  */
 public record DagSpec(
@@ -43,9 +43,9 @@ public record DagSpec(
     }
 
     /**
-     * A node: id plus its implementation type name (e.g. "AgentNode").
+     * A node: id plus its implementation type name (e.g. "AgentNode".
      *
-     * @param id   node id
+     * @param id node id
      * @param type implementation class simple name
      */
     public record NodeSpec(String id, String type) {
@@ -56,7 +56,7 @@ public record DagSpec(
      * unconditional.
      *
      * @param from source node id or "__START__"
-     * @param to   target node id or "__END__"
+     * @param to target node id or "__END__"
      * @param when condition name, null = unconditional
      */
     public record EdgeSpec(String from, String to, String when) {

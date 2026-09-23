@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Saves and loads games (Stage 16 M16.4, blueprint D6).
+ * Saves and loads games (, blueprint D6).
  * <p>
  * Directory layout: {@code {root}/{gameId}/save.json} (the full-state
  * snapshot for resuming) and {@code {root}/{gameId}/turn-log.jsonl} (the

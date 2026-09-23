@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  *   <li>{@link ReasoningConfig} — the canonical, provider-neutral intent
  *       ({@code auto} / {@code enabled} / {@code disabled} plus an effort hint).
  *       Set per request via
- *       {@code ModelRequest.builder().reasoning(ReasoningConfig.disabled())}, or
+ *       {@code ModelRequest.builder.reasoning(ReasoningConfig.disabled)}, or
  *       as a client-wide default via the constructor.</li>
  *   <li>{@code extraBody} — an escape hatch merged verbatim into every request
  *       body. Use it for vendor-specific fields the framework has no business
@@ -95,14 +95,14 @@ public class OpenAiModelClient implements ModelClient {
     }
 
     /**
-     * @param baseUrl          endpoint base URL (no trailing slash required)
-     * @param apiKey           bearer token
-     * @param defaultModel     model used when a request carries none
-     * @param timeout          per-request read timeout; also bounds streams
-     * @param flavor           endpoint identity, used only to pick the vendor's
+     * @param baseUrl endpoint base URL (no trailing slash required)
+     * @param apiKey bearer token
+     * @param defaultModel model used when a request carries none
+     * @param timeout per-request read timeout; also bounds streams
+     * @param flavor endpoint identity, used only to pick the vendor's
      *                         reasoning switch; null auto-detects from {@code baseUrl}
      * @param defaultReasoning client-wide reasoning default; null means
-     *                         {@link ReasoningConfig#auto()}. A request-level
+     *                         {@link ReasoningConfig#auto}. A request-level
      *                         config always wins.
      */
     public OpenAiModelClient(String baseUrl, String apiKey, String defaultModel, Duration timeout,
@@ -125,7 +125,7 @@ public class OpenAiModelClient implements ModelClient {
     }
 
     /**
-     * Stage 6.1 contract-test seam: injectable HttpClient. Package-private —
+     * contract-test seam: injectable HttpClient. Package-private —
      * production code must not touch this; it exists so
      * {@code ModelClientContract} implementations can pin the client's
      * mapping logic against a canned HTTP layer without a live vendor.
@@ -210,7 +210,7 @@ public class OpenAiModelClient implements ModelClient {
 
     /**
      * Request-level reasoning wins over the client default, which in turn wins
-     * over {@link ReasoningConfig#auto()}.
+     * over {@link ReasoningConfig#auto}.
      */
     private ReasoningConfig resolveReasoning(ModelRequest request) {
         if (request.reasoning() != null) {

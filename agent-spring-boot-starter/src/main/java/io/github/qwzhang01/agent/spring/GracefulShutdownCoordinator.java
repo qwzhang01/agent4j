@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Graceful shutdown coordinator (Stage 8.2): "提供优雅停机：停止接收新
+ * Graceful shutdown coordinator : "提供优雅停机：停止接收新
  * Run，等待或持久化已有 Run".
  * <p>
- * Phase 1 — gate: {@link #beginShutdown()} flips a volatile bit; every
- * {@code start()} call after that is rejected with a clear exception
+ * Phase 1 — gate: {@link #beginShutdown} flips a volatile bit; every
+ * {@code start} call after that is rejected with a clear exception
  * (new runs must not sneak in behind the drain).
  * <p>
  * Phase 2 — drain: registered in-flight run tasks are awaited, bounded
@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class GracefulShutdownCoordinator {
 
-    /** Thrown when a run is started after {@link #beginShutdown()}. */
+    /** Thrown when a run is started after {@link #beginShutdown}. */
     public static class ShutdownInProgressException extends RuntimeException {
         public ShutdownInProgressException(String message) {
             super(message);
@@ -56,7 +56,7 @@ public class GracefulShutdownCoordinator {
         shuttingDown = true;
     }
 
-    /** True once {@link #beginShutdown()} has been called. */
+    /** True once {@link #beginShutdown} has been called. */
     public boolean isShuttingDown() {
         return shuttingDown;
     }

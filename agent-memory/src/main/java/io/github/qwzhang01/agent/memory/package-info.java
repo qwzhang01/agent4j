@@ -3,10 +3,10 @@
  * <p>
  * Four pipelines, one Maven module:
  * <pre>
- *   write   extract/   Extractor → Policy → Store
- *   read    (root)     Store → Retriever → context/ Builder → prompt
- *   compact context/   Budget → Compressor → optional archive
- *   govern  (root)     Admin approve / edit / delete
+ *   write extract/ Extractor → Policy → Store
+ *   read (root) Store → Retriever → context/ Builder → prompt
+ *   compact context/ Budget → Compressor → optional archive
+ *   govern (root) Admin approve / edit / delete
  * </pre>
  * Root types are what a host wires: {@link io.github.qwzhang01.agent.memory.MemoryStore},
  * {@link io.github.qwzhang01.agent.memory.MemoryEntry}, {@link io.github.qwzhang01.agent.memory.MemoryQuery},

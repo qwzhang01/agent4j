@@ -13,7 +13,7 @@ import java.util.List;
  * <p>
  * This is the no-op baseline, not a memory capability. When no
  * memory/context management is needed, this (or simply leaving
- * {@code contextBuilder == null} on AgentConfig) preserves Stage 1-7
+ * {@code contextBuilder == null} on AgentConfig) preserves -7
  * behavior exactly.
  */
 public class PassthroughContextBuilder implements ContextBuilder {

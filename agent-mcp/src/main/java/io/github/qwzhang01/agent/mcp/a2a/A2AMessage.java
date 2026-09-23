@@ -4,17 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
 
 /**
- * A message between Agents (A2A protocol, Stage 10 v1).
+ * A message between Agents (A2A protocol, v1).
  * <p>
  * Unlike {@link A2ATask} (which is a one-shot delegation), A2AMessage is for
  * ongoing conversation -- clarifications, progress updates, results.
  *
- * @param messageId  unique message identifier
- * @param from        sender Agent name
- * @param to          recipient Agent name
- * @param content     message content (free-form JSON)
- * @param taskId      the task this message relates to (nullable for ad-hoc)
- * @param timestamp   when the message was sent
+ * @param messageId unique message identifier
+ * @param from sender Agent name
+ * @param to recipient Agent name
+ * @param content message content (free-form JSON)
+ * @param taskId the task this message relates to (nullable for ad-hoc)
+ * @param timestamp when the message was sent
  */
 public record A2AMessage(
         String messageId,

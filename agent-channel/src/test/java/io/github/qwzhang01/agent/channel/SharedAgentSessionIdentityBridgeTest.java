@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Assembly-layer Identity ↔ PermissionChecker bridge (Stage 12).
+ * Assembly-layer Identity ↔ PermissionChecker bridge .
  * channel does not depend on security at compile time; the test wires them.
  */
 class SharedAgentSessionIdentityBridgeTest {

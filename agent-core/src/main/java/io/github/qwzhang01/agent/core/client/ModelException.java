@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.core.client;
 /**
  * Exception thrown when a model call fails.
  * <p>
- * In stage 1 this is a simple unchecked exception.
+ * In this is a simple unchecked exception.
  * Later stages will add structured error codes (TIMEOUT, RATE_LIMIT, AUTH, etc.)
  * to support retry and fallback logic.
  */

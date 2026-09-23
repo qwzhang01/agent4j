@@ -55,7 +55,7 @@ public final class MemoryExtractWrite {
     /**
      * Reconciliation path (memory route step 2).
      *
-     * @param reconciler       recalls old entries as extraction evidence;
+     * @param reconciler recalls old entries as extraction evidence;
      *                         {@code null} = no reconciliation (plain 5-arg behaviour)
      * @param decisionListener receives one {@link MemoryDecision} per write decision;
      *                         {@code null} = no reporting

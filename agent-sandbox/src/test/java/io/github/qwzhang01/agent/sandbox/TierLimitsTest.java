@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 4.2: anchor {@link TierLimits} - the executable per-tier limit table.
+ *  anchor {@link TierLimits} - the executable per-tier limit table.
  * <p>
  * These tests pin the deny-by-default contract: every tier denies network,
  * every tier below DOCKER denies process spawn, ADVERSARIAL requires approval,

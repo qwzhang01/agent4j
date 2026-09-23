@@ -6,7 +6,7 @@ import io.github.qwzhang01.agent.observability.cost.BudgetExhaustedException;
 import java.util.Objects;
 
 /**
- * The default routing strategy (Stage 18 D6): spend the good model while the
+ * The default routing strategy (D6): spend the good model while the
  * budget is healthy, downgrade when it is not, refuse when it is gone - the
  * first crossing of economics and availability.
  * <p>
@@ -36,8 +36,8 @@ public final class BudgetAwareRouter implements ModelRouter {
     private final int downgradeBelowPercent;
 
     /**
-     * @param premiumModel          candidate key for the expensive/primary tier
-     * @param cheapModel            candidate key for the cheap/downgrade tier
+     * @param premiumModel candidate key for the expensive/primary tier
+     * @param cheapModel candidate key for the cheap/downgrade tier
      * @param downgradeBelowPercent switch to the cheap tier when the remaining
      *                              percent drops strictly below this (1-99,
      *                              blueprint default 25)

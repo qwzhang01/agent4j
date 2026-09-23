@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.5: the facade end-to-end - budget gate, request-scoped
+ *  the facade end-to-end - budget gate, request-scoped
  * assembly, RAG tool call, governance attribution, usage billing and the
  * task path, all through one entry point.
  */
@@ -130,7 +130,7 @@ class EnterpriseAssistantTest {
     }
 
     // keyword retrieval is substring-based (v1): queries use a word that
-    // actually appears in the ingested contents ("policy")
+    // actually appears in the ingested contents "policy"
 
     // ask: Full Chain
 

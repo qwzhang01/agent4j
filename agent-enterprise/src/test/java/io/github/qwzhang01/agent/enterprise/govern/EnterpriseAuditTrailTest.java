@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.3: audit attribution - "who made the Agent do what".
+ *  audit attribution - "who made the Agent do what".
  */
 class EnterpriseAuditTrailTest {
 

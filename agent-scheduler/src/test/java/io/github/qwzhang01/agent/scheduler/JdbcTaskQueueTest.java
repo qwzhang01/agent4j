@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1: {@link JdbcTaskQueue} contract — claim is single-winner via
+ *  {@link JdbcTaskQueue} contract — claim is single-winner via
  * guarded UPDATE, priority DESC + seq ASC ordering, terminal-only
  * complete/fail, PENDING-only cancel, orphan requeue with grace window.
  */

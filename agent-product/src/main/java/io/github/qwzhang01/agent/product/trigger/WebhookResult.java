@@ -1,13 +1,13 @@
 package io.github.qwzhang01.agent.product.trigger;
 
 /**
- * Outcome of handling a webhook (Stage 13 M13.5, D8).
+ * Outcome of handling a webhook (, D8).
  * <p>
  * Transport-agnostic: the HTTP layer maps statuses to codes
  * (202 accepted / 200 replay / 401 / 404 / 400 / 503), tests assert on this
  * record instead.
  *
- * @param status  outcome category
+ * @param status outcome category
  * @param message human-readable detail (also what audits log)
  */
 public record WebhookResult(Status status, String message) {

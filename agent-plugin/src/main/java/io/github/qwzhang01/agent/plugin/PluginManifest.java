@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Stage 6.4: host-side declaration of what a plugin is allowed to do.
+ *  host-side declaration of what a plugin is allowed to do.
  * <p>
  * Trust direction matters: the manifest is written by the HOST (or read
  * from a host-controlled channel), NEVER parsed out of the plugin artifact
@@ -20,16 +20,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * security} are declared now and enforced when those registry surfaces
  * exist — an honest, forward-compatible gap.
  *
- * @param name     the plugin this manifest describes (must match the
- *                 plugin's {@link PluginDescriptor#name()})
- * @param version  expected version (informational today)
- * @param tools    may register tools into the tool registry
- * @param model    may contribute model adapters (declared, not yet enforced)
- * @param memory   may contribute memory stores (declared, not yet enforced)
+ * @param name the plugin this manifest describes (must match the
+ *                 plugin's {@link PluginDescriptor#name})
+ * @param version expected version (informational today)
+ * @param tools may register tools into the tool registry
+ * @param model may contribute model adapters (declared, not yet enforced)
+ * @param memory may contribute memory stores (declared, not yet enforced)
  * @param security may contribute security components (declared, not yet enforced)
- * @param sha256   expected SHA-256 of the plugin jar (hex); null = integrity
+ * @param sha256 expected SHA-256 of the plugin jar (hex); null = integrity
  *                 check disabled (trusted-internal artifact)
- * @param source   declared origin (informational, e.g. "internal-repo")
+ * @param source declared origin (informational, e.g. "internal-repo"
  */
 public record PluginManifest(
         String name,

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 10 M10.1 tests: JSON-RPC 2.0 message serialization/deserialization.
+ * tests: JSON-RPC 2.0 message serialization/deserialization.
  */
 class JsonRpcTest {
 

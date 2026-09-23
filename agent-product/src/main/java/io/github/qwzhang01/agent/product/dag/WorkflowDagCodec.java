@@ -15,10 +15,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Workflow &lt;-&gt; DagSpec round-trip codec (Stage 13 M13.5, D5).
+ * Workflow &lt;-&gt; DagSpec round-trip codec (, D5).
  * <p>
  * Same semantics, two representations: the Workflow is the executable truth
- * (immutable definition, "define once, execute N times" from Stage 5), the
+ * (immutable definition, "define once, execute N times" from ), the
  * DagSpec is the serializable projection (what frontends render and editors
  * submit). Round-trip contract:
  * <ul>
@@ -37,7 +37,7 @@ public final class WorkflowDagCodec {
     /**
      * Project a workflow into its serializable DAG description.
      *
-     * @param workflow   the executable truth
+     * @param workflow the executable truth
      * @param conditions registry mapping predicates to exportable names
      * @throws IllegalArgumentException if any conditional edge's predicate is
      *                                  not registered (fail-fast, D5)
@@ -76,9 +76,9 @@ public final class WorkflowDagCodec {
      * Rebuild a workflow from a DAG description. Node BEHAVIOR comes from the
      * resolver (id -&gt; live node); structure and conditions come from the spec.
      *
-     * @param spec         the DAG description
+     * @param spec the DAG description
      * @param nodeResolver supplies node instances by id (the D1 registry end)
-     * @param conditions   resolves condition names back to predicates
+     * @param conditions resolves condition names back to predicates
      * @return a rebuilt executable workflow
      * @throws IllegalArgumentException on unknown node, unknown condition name,
      *                                  or invalid graph (builder validates)

@@ -20,15 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Business task lifecycle manager (Stage 15 M15.4).
+ * Business task lifecycle manager .
  * <p>
  * Bridges two layers that index work differently: supervisors and users think
- * in tasks ("refund ticket T-0001"), the Stage 6 Runtime thinks in runs. This
+ * in tasks "refund ticket T-0001", the Runtime thinks in runs. This
  * manager owns the projection - submit starts a run and records its id,
  * approve settles the paused run from its checkpoint, reject cancels it.
  * <p>
  * The approval channel: wire workflows with
- * {@code HumanApprovalNode.of(id, summary, taskManager.approvalService())}.
+ * {@code HumanApprovalNode.of(id, summary, taskManager.approvalService)}.
  * The channel is a {@link TaskApprovalBridge} - an assembly-scoped object
  * that must outlive any single manager (crash recovery hands the task to a
  * NEW manager; the workflow's nodes still point at the shared bridge, so the
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * Run id capture: {@code RunManager.start} returns an id only inside the
  * PAUSED resume token; for terminal runs the id is captured by diffing
- * {@code listRuns()} around the (synchronous) start call - the one
+ * {@code listRuns} around the (synchronous) start call - the one
  * workaround the zero-existing-change discipline costs us here.
  * <p>
  * Honest v1 boundaries: tasks live in memory (no persistence - a restart
@@ -67,7 +67,7 @@ public final class EnterpriseTaskManager {
      * workflow's HumanApprovalNodes and every manager generation (pre- and
      * post-restart) must talk through the SAME bridge instance.
      *
-     * @param runManager      the run engine (after a crash: a new instance
+     * @param runManager the run engine (after a crash: a new instance
      *                        over the same CheckpointStore)
      * @param sharedApprovalBridge the bridge the workflow nodes were wired
      *                        with (create it at assembly time, before any
@@ -95,11 +95,11 @@ public final class EnterpriseTaskManager {
      * The blackboard input carries the task context (taskId, description,
      * submitter, tenant) so downstream nodes can act on it.
      *
-     * @param ctx         the submitting request context (attribution)
-     * @param description business description ("refund order 8842")
-     * @param workflow    the task's workflow; must contain the
+     * @param ctx the submitting request context (attribution)
+     * @param description business description "refund order 8842"
+     * @param workflow the task's workflow; must contain the
      *                    {@link HumanApprovalNode} wired to
-     *                    {@link #approvalService()} if approvals are needed
+     *                    {@link #approvalService} if approvals are needed
      * @return the task after the first run attempt (typically
      *         WAITING_APPROVAL when the workflow pauses at an approval node)
      */
@@ -133,12 +133,12 @@ public final class EnterpriseTaskManager {
      * paused run from its checkpoint, project the new status.
      * <p>
      * Nodes that already completed before the pause are NOT re-executed -
-     * that is the Stage 6 checkpoint guarantee this method inherits (and the
+     * that is the checkpoint guarantee this method inherits (and the
      * test suite proves with node counters: side effects happen once).
      *
-     * @param taskId     the task to approve
+     * @param taskId the task to approve
      * @param approverId who approves (audit attribution)
-     * @param reason     free-text justification
+     * @param reason free-text justification
      * @return the task after resume (DONE / FAILED, or WAITING_APPROVAL
      *         again when another approval node follows)
      */
@@ -166,9 +166,9 @@ public final class EnterpriseTaskManager {
      * v2 Saga concern); the rejection record is the evidence of what was
      * stopped and by whom.
      *
-     * @param taskId     the task to reject
+     * @param taskId the task to reject
      * @param approverId who rejects (audit attribution)
-     * @param reason     free-text justification
+     * @param reason free-text justification
      * @return the task in CANCELLED status with the rejection recorded
      */
     public BusinessTask reject(String taskId, String approverId, String reason) {

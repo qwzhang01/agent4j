@@ -5,10 +5,10 @@ package io.github.qwzhang01.agent.workflow;
  * <p>
  * Two modes:
  * <p>
- * <b>Synchronous (Stage 5)</b>: {@link #approve} blocks until a decision
- * is made. Used when calling GraphRuntime.run() directly (no RunManager).
+ * <b>Synchronous </b>: {@link #approve} blocks until a decision
+ * is made. Used when calling GraphRuntime.run directly (no RunManager).
  * <p>
- * <b>Asynchronous (Stage 6)</b>: {@link #requestApproval} sends the request
+ * <b>Asynchronous </b>: {@link #requestApproval} sends the request
  * without waiting, the node throws PauseException, and on resume
  * {@link #checkDecision} returns the result. Used via RunManager for
  * pause-resume workflows.
@@ -26,8 +26,8 @@ public interface ApprovalService {
      * Asynchronous: send the approval request without waiting.
      * The node will throw PauseException after this returns.
      *
-     * @param runId   the Run requesting approval
-     * @param nodeId  the node requesting approval
+     * @param runId the Run requesting approval
+     * @param nodeId the node requesting approval
      * @param summary what the approver is being asked to approve
      * @param payload business data for the approver to inspect
      */
@@ -48,7 +48,7 @@ public interface ApprovalService {
     /**
      * Approval request payload (for synchronous mode).
      *
-     * @param nodeId  node asking for approval
+     * @param nodeId node asking for approval
      * @param summary what the approver is being asked to approve
      * @param payload workflow input / business data for the approver to inspect
      */

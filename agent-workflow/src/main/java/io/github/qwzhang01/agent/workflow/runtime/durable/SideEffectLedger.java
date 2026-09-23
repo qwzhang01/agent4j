@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Side-effect ledger (Stage 3.2, harness roadmap).
+ * Side-effect ledger (, harness roadmap).
  * <p>
  * The write-ahead truth for external side effects: a tool/node that has
  * successfully touched the outside world (sent the email, charged the card)
@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface SideEffectLedger {
 
-    /** Explicit delivery semantics for one effect (no blanket "idempotent"). */
+    /** Explicit delivery semantics for one effect (no blanket "idempotent". */
     enum DeliverySemantics { AT_MOST_ONCE, AT_LEAST_ONCE, EXACTLY_ONCE }
 
     /** What may happen after an effect fails or lands uncertainly. */
@@ -48,15 +48,15 @@ public interface SideEffectLedger {
     /**
      * One recorded external effect.
      *
-     * @param effectId     derived idempotent id: runId:nodeId[:callHash]
-     * @param runId        owning run
-     * @param nodeId       workflow node that fired the effect
-     * @param idempotencyKey business-supplied idempotency key ("" = none)
-     * @param argsHash     SHA-256 prefix of the effect's arguments
-     * @param semantics    delivery semantics declared for this effect
-     * @param disposition  retry disposition declared for this effect
-     * @param result       the outcome the external system returned
-     * @param completedAt  epoch ms when the effect landed
+     * @param effectId derived idempotent id: runId:nodeId[:callHash]
+     * @param runId owning run
+     * @param nodeId workflow node that fired the effect
+     * @param idempotencyKey business-supplied idempotency key "" = none)
+     * @param argsHash SHA-256 prefix of the effect's arguments
+     * @param semantics delivery semantics declared for this effect
+     * @param disposition retry disposition declared for this effect
+     * @param result the outcome the external system returned
+     * @param completedAt epoch ms when the effect landed
      */
     record Effect(String effectId, String runId, String nodeId, String idempotencyKey,
                   String argsHash, DeliverySemantics semantics, RetryDisposition disposition,
@@ -91,7 +91,7 @@ public interface SideEffectLedger {
     /** Call-scoped lookup (multiple tool calls inside one node). */
     Optional<Effect> lookup(String runId, String nodeId, String callHash);
 
-    /** Effects recorded for a run (diagnostics: "what already landed"). */
+    /** Effects recorded for a run (diagnostics: "what already landed". */
     List<Effect> effectsForRun(String runId);
 
     /** All effects (admin / test inspection). */

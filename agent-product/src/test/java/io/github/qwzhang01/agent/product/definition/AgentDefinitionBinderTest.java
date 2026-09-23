@@ -37,7 +37,7 @@ class AgentDefinitionBinderTest {
 
     /**
      * Captures every ModelRequest the agent actually sends (the boundary where
-     * persona/temperature wiring becomes observable). Same technique as Stage 12's
+     * persona/temperature wiring becomes observable). Same technique as 's
      * RecordingModelClient: MockModelClient does not expose requests, so we
      * intercept at the ModelClient boundary.
      */
@@ -460,7 +460,7 @@ class AgentDefinitionBinderTest {
                   model:
                     provider: ghost
                 """);
-        // No validate() call - binder must defend itself anyway.
+        // No validate call - binder must defend itself anyway.
         assertThrows(IllegalArgumentException.class,
                 () -> new AgentDefinitionBinder(ctx).bind(dangling));
     }

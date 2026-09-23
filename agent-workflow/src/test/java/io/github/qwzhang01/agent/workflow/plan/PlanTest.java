@@ -9,7 +9,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Planner contract tests: structural validation, versioning,
+ * Planner contract tests: structural validation, versioning,
  * resume frontier.
  */
 class PlanTest {

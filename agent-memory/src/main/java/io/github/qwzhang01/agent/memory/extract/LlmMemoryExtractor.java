@@ -39,9 +39,9 @@ import java.util.function.Supplier;
  * memories).
  * <p>
  * <b>Async + sampling</b>: use {@link #extractAsync} to run extraction off the
- * calling thread with probabilistic down-sampling.  The sample decision is
+ * calling thread with probabilistic down-sampling. The sample decision is
  * {@code Math.floorMod(sessionHash ^ seed, 100) < sampleRate} where
- * {@code sessionHash} is {@code sessionId.hashCode()}.  This formula is
+ * {@code sessionHash} is {@code sessionId.hashCode}. This formula is
  * deterministic across JVM restarts for the same input pair, so replaying a
  * session always makes the same sampling decision.
  */
@@ -83,9 +83,9 @@ public class LlmMemoryExtractor implements MemoryExtractor {
     /**
      * Shared fallback pool used only when the host does not inject its own {@link Executor}.
      * <p>
-     * Deliberately <em>not</em> {@link java.util.concurrent.ForkJoinPool#commonPool()}: that
+     * Deliberately <em>not</em> {@link java.util.concurrent.ForkJoinPool#commonPool}: that
      * pool is shared with unrelated parallel streams throughout the JVM, and an LLM call can
-     * block a common-pool worker for seconds — starving unrelated {@code parallelStream()}
+     * block a common-pool worker for seconds — starving unrelated {@code parallelStream}
      * work elsewhere in the host application. This pool is small, bounded, and uses daemon
      * threads so it never blocks JVM shutdown. Hosts running non-trivial extraction volume
      * should inject a purpose-sized {@link Executor} via the full constructor instead of
@@ -122,7 +122,7 @@ public class LlmMemoryExtractor implements MemoryExtractor {
      * With sampling; uses the shared {@link #DEFAULT_EXECUTOR} for async extraction.
      *
      * @param sampleRate 0–100; percentage of sessions that trigger extraction
-     * @param seed       XOR salt for the sampling hash (e.g. per-deployment constant)
+     * @param seed XOR salt for the sampling hash (e.g. per-deployment constant)
      */
     public LlmMemoryExtractor(ModelClient modelClient, String instructions,
                                int sampleRate, long seed) {

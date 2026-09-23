@@ -8,20 +8,20 @@ package io.github.qwzhang01.agent.sandbox;
  * caller should do about it (retry in a stronger tier vs fix the code
  * vs collect a bug report). v1 flattened both axes into the free-form
  * {@code error} string, forcing consumers to string-match
- * ("Blocked:...") — {@link FailureKind} restores the axes as data.
+ * "Blocked:..." — {@link FailureKind} restores the axes as data.
  * <p>
  * Derivation is total (the compact constructor derives the kind from
  * the other fields, so every historical construction site keeps
  * compiling and behaves identically); an explicit kind still wins so
  * tests and future callers can pin it.
  *
- * @param success  whether execution completed without error
- * @param stdout   captured standard output
- * @param stderr   captured standard error
+ * @param success whether execution completed without error
+ * @param stdout captured standard output
+ * @param stderr captured standard error
  * @param exitCode process exit code (-1 for ClassLoader sandbox)
  * @param timedOut whether execution was killed due to timeout
- * @param error    error message if execution failed
- * @param kind     failure classification; null when {@code success} is true
+ * @param error error message if execution failed
+ * @param kind failure classification; null when {@code success} is true
  */
 public record SandboxResult(
         boolean success,

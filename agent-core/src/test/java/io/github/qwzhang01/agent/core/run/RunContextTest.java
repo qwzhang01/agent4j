@@ -8,7 +8,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 1.1 acceptance: the immutable RunContext itself.
+ * acceptance: the immutable RunContext itself.
  */
 class RunContextTest {
 

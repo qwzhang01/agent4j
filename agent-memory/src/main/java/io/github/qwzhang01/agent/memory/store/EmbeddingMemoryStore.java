@@ -42,7 +42,7 @@ public class EmbeddingMemoryStore implements MemoryStore {
 
     /**
      * @param delegate the ledger store (e.g. {@link InMemoryMemoryStore})
-     * @param client   embedding provider port; must not be null
+     * @param client embedding provider port; must not be null
      */
     public EmbeddingMemoryStore(MemoryStore delegate, EmbeddingClient client) {
         this.delegate = Objects.requireNonNull(delegate, "delegate");

@@ -13,9 +13,9 @@ import java.util.function.Supplier;
 /**
  * Optional relationship slice: inject a host-supplied {@link RelationSnapshot}.
  * <p>
- * Not registered by {@link ContextAssembler#defaults()} or
+ * Not registered by {@link ContextAssembler#defaults} or
  * {@link io.github.qwzhang01.agent.chat.ChatRoom.Builder} unless the host
- * calls {@code .source(new RelationSource(...))}. Calling {@code .source()}
+ * calls {@code .source(new RelationSource(...))}. Calling {@code .source}
  * replaces the default Persona + History pair; register those explicitly
  * if they are still wanted.
  * <p>

@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Translators feeding the {@link OpsEventBus} (Stage 7.4): every signal the
+ * Translators feeding the {@link OpsEventBus} : every signal the
  * roadmap names gets a bridge from its native type to an {@link
  * OpsEventBus.OpsEvent} with coordinates and a recommended action.
  * <p>
@@ -140,7 +140,7 @@ public final class OpsEventFactories {
 
     /**
      * Run failure - the anchor event: coordinates from the metrics row,
-     * version combination from the registry (7.4 "locate to Run and version").
+     * version combination from the registry (7.4 "locate to Run and version".
      */
     public static OpsEventBus.OpsEvent runFailed(
             RunMetrics metrics, RunRegistry registry) {

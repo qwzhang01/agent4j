@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.observability.cost;
 
 /**
- * The budget is gone - fail-closed (Stage 18 D3, the honest refusal).
+ * The budget is gone - fail-closed (D3, the honest refusal).
  * <p>
  * Thrown by {@link io.github.qwzhang01.agent.observability.routing.BudgetAwareRouter}
  * when the remaining budget is exactly zero (routing to a cheaper model cannot
@@ -9,7 +9,7 @@ package io.github.qwzhang01.agent.observability.cost;
  * turn a {@link BudgetCheck.Denied} from {@link BudgetBook#requireBudget} into
  * an exception (blueprint T4).
  * <p>
- * Stage 15 sibling: {@code agent-enterprise BudgetExceededException} carries
+ * sibling: {@code agent-enterprise BudgetExceededException} carries
  * the same semantics (Dimension/used/limit). This type exists because D4
  * forbids the dependency direction - observability is the layer UNDER the
  * enterprise domain and cannot import it. The distinct name avoids ambiguous

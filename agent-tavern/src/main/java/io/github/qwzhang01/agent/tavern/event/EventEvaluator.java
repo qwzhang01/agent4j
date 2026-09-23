@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Synchronous rule evaluation at the turn settlement point (Stage 16 M16.3,
+ * Synchronous rule evaluation at the turn settlement point (,
  * blueprint D5: events are a settlement judgment, NOT an EventBroker).
  * <p>
  * Two entry paths over the same rule table:
@@ -23,7 +23,7 @@ import java.util.Set;
  *       authorization), but the same once bookkeeping.</li>
  * </ul>
  * A condition that throws is treated as not-matching (fail-soft): one broken
- * rule must not kill the whole settlement - the same semantics as Stage 12's
+ * rule must not kill the whole settlement - the same semantics as 's
  * ambient conditions.
  * <p>
  * The fired set is engine-observable for the M16.4 save file.

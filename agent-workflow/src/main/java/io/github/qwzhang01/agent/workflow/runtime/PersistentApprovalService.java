@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /**
  * Workflow-layer {@link ApprovalService} backed by the durable
- * {@link ApprovalStore} (Stage 3.4, harness roadmap).
+ * {@link ApprovalStore} (, harness roadmap).
  * <p>
  * Workflow Approval and Tool Approval reuse the same persistence protocol
  * ({@link ApprovalRequest}/{@link ApprovalDecision}/{@link ApprovalStore})
@@ -23,7 +23,7 @@ import java.util.Optional;
  * pauses and re-executes re-submits the same logical request; the store
  * returns the original — no duplicate rows, no double decisions.
  * <p>
- * Distinct failure semantics (roadmap 3.4): REJECTED throws
+ * Distinct failure semantics : REJECTED throws
  * {@code ApprovalRejectedException} (business rejection), EXPIRED throws
  * an expiry exception (timeout-shaped), REVOKED throws a revocation
  * exception. {@link #checkDecision} returns null while PENDING so the
@@ -50,8 +50,8 @@ public final class PersistentApprovalService implements ApprovalService {
     private final long ttlMillis;
 
     /**
-     * @param store     durable protocol store
-     * @param riskLevel label recorded on every request (e.g. "HIGH")
+     * @param store durable protocol store
+     * @param riskLevel label recorded on every request (e.g. "HIGH"
      * @param ttlMillis request expiry; {@code <=0} = never expires
      */
     public PersistentApprovalService(ApprovalStore store, String riskLevel, long ttlMillis) {

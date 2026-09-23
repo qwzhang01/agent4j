@@ -23,7 +23,7 @@ import java.util.jar.JarOutputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6.4: external-jar loading — checksum gate, per-jar classloader
+ *  external-jar loading — checksum gate, per-jar classloader
  * isolation (framework-first resolution), SPI name consistency, honest
  * failure modes. The tests build REAL jars on the fly from generated
  * source, so the classloader path is exercised end-to-end, not mocked.
@@ -152,7 +152,7 @@ class PluginJarLoaderTest {
      * forked JVM {@code java.class.path} is a manifest-only bootstrap jar
      * whose relative Class-Path entries an external javac cannot resolve,
      * so entries come from the context classloader instead:
-     * {@link URLClassLoader#getURLs()} when available, else marker-resource
+     * {@link URLClassLoader#getURLs} when available, else marker-resource
      * lookup. Falls back to {@code java.class.path} (plain IDE runs where
      * it already holds real paths).
      */

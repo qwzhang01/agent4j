@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.2: the staging area - "staging never touches the disk" is the invariant
+ *  the staging area - "staging never touches the disk" is the invariant
  * threaded through every test here, and apply is the single write point with
  * whole-patch drift detection (TOCTOU defense).
  */

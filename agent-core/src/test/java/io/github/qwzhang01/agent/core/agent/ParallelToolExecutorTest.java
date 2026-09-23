@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Tool Parallelism unit tests: bounded width, declaration-order
+ * Tool Parallelism unit tests: bounded width, declaration-order
  * join, failure isolation with readable error strings.
  */
 class ParallelToolExecutorTest {

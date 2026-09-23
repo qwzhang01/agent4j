@@ -11,7 +11,7 @@ import io.github.qwzhang01.agent.core.tool.Tool;
  * <p>
  * Example:
  * <pre>{@code
- * var client = new OpenAiImageClient(arkBaseUrl, arkApiKey, "doubao-seedream-4-0-250828");
+ * var client = new OpenAiImageClient(arkBaseUrl, arkApiKey, "doubao-seedream-4-0-250828";
  * registry.register(new ImageGenerationTool(client));
  * }</pre>
  * The tool returns image URLs as text - the model relays them to the user.

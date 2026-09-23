@@ -9,13 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Two-level cost ledger: pre-gate + post-recording (Stage 15 M15.3, D8).
+ * Two-level cost ledger: pre-gate + post-recording (, D8).
  * <p>
- * Philosophy aligned with the Stage 7 {@code TokenBudget} (fail-closed
+ * Philosophy aligned with the {@code TokenBudget} (fail-closed
  * counter), different dimension: TokenBudget guards a single Run, this
  * ledger accumulates across runs per TENANT and per USER - the dimensions
  * enterprise accounting actually bills in. Time-window quotas, model routing
- * and degradation remain Stage 18 scope (TokenBudget's javadoc reserves
+ * and degradation remain scope (TokenBudget's javadoc reserves
  * exactly that).
  * <p>
  * Two operations, strictly ordered:
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Quota sources: the tenant limit is read from the {@link Tenant} entity the
  * request carries (login-time snapshot - quota changes take effect on the
  * next login, not mid-flight); user limits are injected at assembly time
- * ({@code -1} = unlimited, the Stage 12/15 shared convention).
+ * ({@code -1} = unlimited, the /15 shared convention).
  */
 public final class CostLedger {
 
@@ -92,8 +92,8 @@ public final class CostLedger {
     /**
      * Record a finished request's token usage into both dimensions.
      *
-     * @param ctx             the request context (attribution)
-     * @param promptTokens    prompt tokens consumed by the run
+     * @param ctx the request context (attribution)
+     * @param promptTokens prompt tokens consumed by the run
      * @param completionTokens completion tokens consumed by the run
      */
     public void record(RequestContext ctx, long promptTokens, long completionTokens) {

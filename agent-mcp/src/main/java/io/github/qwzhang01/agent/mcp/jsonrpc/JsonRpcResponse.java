@@ -7,14 +7,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Objects;
 
 /**
- * JSON-RPC 2.0 response (Stage 10 D3).
+ * JSON-RPC 2.0 response (D3).
  * <p>
  * Carries either a result (success) or an error (failure) -- never both.
  * The id matches the request id for correlation.
  *
- * @param id     echoes the request id
+ * @param id echoes the request id
  * @param result result payload (nullable when error is set)
- * @param error  error object (nullable when result is set)
+ * @param error error object (nullable when result is set)
  */
 public record JsonRpcResponse(
         Object id,

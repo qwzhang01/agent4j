@@ -9,8 +9,8 @@ import java.util.function.Consumer;
 
 /**
  * Consumer-side deduplication for {@link OpsEventBus} subscribers
- * (harness 4.4, roadmap 3.4: "event recovery is idempotent with
- * duplicate-message dedup").
+ * (harness 4.4, "event recovery is idempotent with
+ * duplicate-message dedup".
  * <p>
  * The premise: the bus is fire-and-forget and delivery guarantees are the
  * subscriber's problem — at-least-once recovery replays (sweep re-emission,
@@ -52,8 +52,8 @@ public final class OpsEventDeduplicator implements Consumer<OpsEventBus.OpsEvent
     /**
      * @param downstream the real subscriber that must see each logical
      *                   event exactly once per window
-     * @param window     how long a delivered key stays remembered
-     * @param capacity   max remembered keys (LRU eviction of the oldest)
+     * @param window how long a delivered key stays remembered
+     * @param capacity max remembered keys (LRU eviction of the oldest)
      */
     public OpsEventDeduplicator(Consumer<OpsEventBus.OpsEvent> downstream,
                                 Duration window, int capacity) {

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC-backed {@link RunStore} (Stage 8.1, harness roadmap): the database
+ * JDBC-backed {@link RunStore} (, harness roadmap): the database
  * is the source of truth, not any JVM's memory. Two runtime instances
  * pointing at the same schema see the same runs; the optimistic {@code
  * version} column makes concurrent transitions lose loudly, not silently.
@@ -29,12 +29,12 @@ import java.util.Optional;
  * via Jackson; the record shape is part of the row contract and
  * round-trips through {@link TraceCodec}.
  * <p>
- * Schema bootstrap is explicit ({@link #initialize()}), not an implicit
+ * Schema bootstrap is explicit ({@link #initialize}), not an implicit
  * startup mutation — the roadmap's 3.1 rule: "design a migration, do not
  * alter tables silently at boot". DDL is {@code CREATE TABLE IF NOT
  * EXISTS} so repeated calls are safe; production deployments that prefer
- * Flyway/Liquibase can run the DDL from {@link #ddl()} themselves and
- * skip initialize().
+ * Flyway/Liquibase can run the DDL from {@link #ddl} themselves and
+ * skip initialize.
  */
 public final class JdbcRunStore implements RunStore {
 
@@ -93,7 +93,7 @@ public final class JdbcRunStore implements RunStore {
     /**
      * Borrows a connection for one operation. The guard is declared as
      * the FIRST try-with-resources resource (the connection is fetched
-     * through {@code g.get()}, never declared as a resource itself), so
+     * through {@code g.get}, never declared as a resource itself), so
      * the JVM never auto-closes the connection — only the guard decides:
      * supplier-provided connections are released, a shared one is handed
      * back untouched.

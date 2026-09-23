@@ -12,7 +12,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 gap closure: risk-dimension routing. The risk signal is the tool
+ * gap closure: risk-dimension routing. The risk signal is the tool
  * contract's {@code SideEffectLevel} (declared per tool by the assembly);
  * a turn exposing destructive or possibly-mutating tools routes premium,
  * a read-shaped turn routes cheap. Pins the v1 mapping and the honest

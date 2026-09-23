@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Stage 17 acceptance demo: a fully governed coding task through the whole stack
+ * acceptance demo: a fully governed coding task through the whole stack
  * (blueprint §6, T0-T7): read the code, stage a patch, the test referee rejects it,
  * a bounded fix round, a human-gated apply, and the audit trail - plus the three
  * rejection demos (deny-read / whitelist / injection-inert).

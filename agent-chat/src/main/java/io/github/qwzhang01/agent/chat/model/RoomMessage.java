@@ -8,10 +8,10 @@ import java.util.Objects;
 /**
  * One utterance stored on a {@link Room}.
  *
- * @param speakerId {@link #USER_SPEAKER_ID} or a {@link ChatPersona#personaId()}
- * @param role      USER or ASSISTANT
- * @param content   text
- * @param at        when it was appended
+ * @param speakerId {@link #USER_SPEAKER_ID} or a {@link ChatPersona#personaId}
+ * @param role USER or ASSISTANT
+ * @param content text
+ * @param at when it was appended
  */
 public record RoomMessage(String speakerId, ChatRole role, String content, Instant at) {
 

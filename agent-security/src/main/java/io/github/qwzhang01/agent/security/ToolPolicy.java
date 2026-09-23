@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Tool permission policy: maps tool names to {@link ToolPermission} (Stage 9 D2).
+ * Tool permission policy: maps tool names to {@link ToolPermission} (D2).
  * <p>
  * Provides a default permission for tools not explicitly registered, and allows
  * runtime permission changes (e.g. an admin can downgrade a tool from AUTO to

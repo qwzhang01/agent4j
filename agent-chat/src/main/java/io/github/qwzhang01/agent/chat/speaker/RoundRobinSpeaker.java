@@ -10,11 +10,11 @@ import java.util.Optional;
 
 /**
  * Group rooms: rotate the answering persona in member order. The host
- * supplies member order via {@link Room#members()}; this policy does not
+ * supplies member order via {@link Room#members}; this policy does not
  * inject protagonist or narrative text (use {@code ExtraTextSource}).
  * <p>
  * Rotation is derived from the last assistant utterance already in
- * {@link Room#history()}. The current user line is appended before
+ * {@link Room#history}. The current user line is appended before
  * {@link SpeakerPolicy#pick} runs, so it is ignored when locating the
  * previous speaker.
  */

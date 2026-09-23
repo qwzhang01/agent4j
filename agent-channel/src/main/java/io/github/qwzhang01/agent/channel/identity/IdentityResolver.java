@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Resolves the three-party identity of a channel run (Stage 12 D4).
+ * Resolves the three-party identity of a channel run (D4).
  * <p>
  * Every channel run carries an identity triple:
  * <pre>
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * </pre>
  * The resolution rule:
  * <pre>
- *   effective capabilities = agent's granted scope  INTERSECT
+ *   effective capabilities = agent's granted scope INTERSECT
  *                            user's channel role capabilities
  * </pre>
  * never the union, never the user's full permissions. Fail-closed on five
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * Design decision (module boundary, same discipline as orchestrator D5):
  * this class does NOT depend on agent-security. Audit integration is a
  * {@code Consumer<IdentityDecision>} sink that the assembly layer bridges
- * to Stage 9's AuditLogger; a null sink means "no audit" (tests may inject
+ * to 's AuditLogger; a null sink means "no audit" (tests may inject
  * a collector).
  * <p>
  * v1 honest boundary: memory scopes and data classifications are
@@ -46,7 +46,7 @@ public class IdentityResolver {
 
     /**
      * @param rolePermissions user-side capabilities provider (required)
-     * @param auditSink       optional decision sink; null = no auditing
+     * @param auditSink optional decision sink; null = no auditing
      */
     public IdentityResolver(ChannelRolePermissions rolePermissions, Consumer<IdentityDecision> auditSink) {
         this.rolePermissions = Objects.requireNonNull(rolePermissions, "rolePermissions must not be null");

@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.2: minimal schema validation at the MCP border — required fields
+ *  minimal schema validation at the MCP border — required fields
  * and declared primitive types. Deliberately not a full JSON Schema
  * engine; unknown keywords fail open (documented gap).
  */

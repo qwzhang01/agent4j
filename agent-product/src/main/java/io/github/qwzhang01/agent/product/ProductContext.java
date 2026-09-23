@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The product-layer registry: "names -&gt; implementations" (Stage 13 M13.1, the
+ * The product-layer registry: "names -&gt; implementations" (, the
  * other end of D1's reference indirection).
  * <p>
  * AgentDefinition files hold NAMES; this context holds the IMPLEMENTATIONS those
@@ -39,7 +39,7 @@ public final class ProductContext {
 
 
     /**
-     * Register a model client under a name (e.g. "openai", "deepseek").
+     * Register a model client under a name (e.g. "openai", "deepseek".
      */
     public ProductContext registerModel(String name, ModelClient client) {
         requireName(name, "model");
@@ -52,7 +52,7 @@ public final class ProductContext {
     }
 
     /**
-     * Register a tool under an explicit name (decoupled from {@link Tool#getName()}).
+     * Register a tool under an explicit name (decoupled from {@link Tool#getName}).
      */
     public ProductContext registerTool(String name, Tool tool) {
         requireName(name, "tool");

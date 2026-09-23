@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8 M8.3 tests: retriever, policy, extractor, ChatSession,
+ * tests: retriever, policy, extractor, ChatSession,
  * MemoryContextBuilder, and end-to-end multi-turn memory loop.
  */
 class MemoryPipelineTest {

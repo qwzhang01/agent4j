@@ -10,14 +10,14 @@ import java.util.List;
 
 /**
  * Step-through view over ONE trajectory, with integrity verification at
- * construction (Stage 14 D7: walk the recording, never re-run).
+ * construction (D7: walk the recording, never re-run).
  * <p>
  * LLM calls are non-deterministic, so "replaying" a run faithfully is
  * impossible by definition; what replay MEANS here:
  * <ol>
  *   <li>verify the recorded structure is internally consistent (below)</li>
  *   <li>expose each step's exact model-seen state, action and observations
- *       for debugging ("why did the model call the wrong tool here") and
+ *       for debugging "why did the model call the wrong tool here" and
  *       for annotation browsing (M14.4)</li>
  * </ol>
  * Integrity checks (fail-fast, never guess):

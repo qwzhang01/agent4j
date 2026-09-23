@@ -4,12 +4,12 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Per-tenant configuration overlay (Stage 13 M13.5, D7): what a tenant is
+ * Per-tenant configuration overlay (, D7): what a tenant is
  * allowed to tune on top of a definition.
  * <p>
  * v1 scope = CONFIG isolation, not RUNTIME isolation: tenant separation of
  * memory comes from the existing MemoryScope namespace pattern and identity
- * from ServiceAccount wiring (Stage 8/12); token quotas are Stage 18.
+ * from ServiceAccount wiring (/12); token quotas are Stage 18.
  * <p>
  * Overlay precedence at bind time:
  * <ul>
@@ -21,12 +21,12 @@ import java.util.Set;
  *       subset (never adds - a tenant can restrict, never expand)</li>
  * </ul>
  *
- * @param tenantId       tenant identifier (matches AgentDefinition.metadata.tenant)
- * @param promptChannel  optional prompt channel override (stable/canary)
- * @param model          optional primary model override (registered name)
- * @param disabledTools  tool names to drop; empty = no restriction
+ * @param tenantId tenant identifier (matches AgentDefinition.metadata.tenant)
+ * @param promptChannel optional prompt channel override (stable/canary)
+ * @param model optional primary model override (registered name)
+ * @param disabledTools tool names to drop; empty = no restriction
  * @param serviceAccount optional service account id for identity wiring
- *                       (recorded in v1; enforcement is Stage 12 assembly)
+ *                       (recorded in v1; enforcement is assembly)
  */
 public record TenantAgentConfig(
         String tenantId,

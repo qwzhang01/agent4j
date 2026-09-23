@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Parses YAML (and JSON - YAML is a superset of JSON, one mapper handles both)
- * into {@link AgentDefinition} (Stage 13 M13.1).
+ * into {@link AgentDefinition} .
  * <p>
  * Fail-fast with location information (D8): syntax errors carry line/column,
  * unknown fields are rejected (a typo like {@code systemprompt} must not be
@@ -27,7 +27,7 @@ public final class AgentDefinitionParser {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
     /**
-     * Fields accepted by the full Stage 13 blueprint but not yet implemented.
+     * Fields accepted by the full blueprint but not yet implemented.
      * Mapping: field name -&gt; human hint. Keep in sync with milestone progress.
      */
     private static final Map<String, String> PLANNED_FIELDS = Map.of(

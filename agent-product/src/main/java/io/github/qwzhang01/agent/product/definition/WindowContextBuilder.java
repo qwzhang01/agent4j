@@ -10,11 +10,11 @@ import java.util.List;
 
 /**
  * Built-in short-term memory strategy: keep the most recent N history
- * messages (Stage 13 M13.1, {@code spec.memory.shortTerm: {strategy: window}}).
+ * messages (, {@code spec.memory.shortTerm: {strategy: window}}).
  * <p>
  * Read-time trimming: the loop prepends the persona after this builder; the agent state
  * keeps the FULL history (trace/audit stay complete). This is deliberately
- * different from {@code CompressingContextBuilder} (Stage 8), which rewrites
+ * different from {@code CompressingContextBuilder} , which rewrites
  * state in place - windowing is lossy visibility, compaction is lossy state.
  * <p>
  * Naming honesty: the YAML field is {@code maxMessages} (messages, not turns) -

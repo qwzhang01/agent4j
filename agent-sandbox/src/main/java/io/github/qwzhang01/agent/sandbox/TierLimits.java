@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Stage 4.2: the tier table as EXECUTABLE data, not prose.
+ *  the tier table as EXECUTABLE data, not prose.
  * <p>
  * {@link SandboxPolicy} answers "WHICH tier for this risk"; this class answers
  * "WHAT does that tier actually enforce". v1 had the limits scattered as
@@ -16,7 +16,7 @@ import java.util.Optional;
  * defaults, so policy review, red-team reports, and the DOCKER adapter all
  * read the SAME source of truth.
  * <p>
- * Defaults are deny-by-default aligned (Stage 4.2):
+ * Defaults are deny-by-default aligned :
  * <ul>
  *   <li>network: denied at every tier below DOCKER (guest guard + tier
  *       boundary at DOCKER+ via network namespace).</li>
@@ -33,12 +33,12 @@ public final class TierLimits {
     /**
      * Executable limits for one (tier, risk) pair.
      *
-     * @param tier          the isolation tier these limits apply to
-     * @param riskLevel     the risk classification that selected the tier
+     * @param tier the isolation tier these limits apply to
+     * @param riskLevel the risk classification that selected the tier
      * @param networkDenied whether outbound network access is denied
-     * @param fileAccess    guest filesystem access policy
+     * @param fileAccess guest filesystem access policy
      * @param processSpawnDenied whether spawning child processes is denied
-     * @param timeout       wall-clock ceiling for one execution
+     * @param timeout wall-clock ceiling for one execution
      * @param memoryLimitBytes heap ceiling (-Xmx / cgroup memory)
      * @param outputLimitBytes per-stream stdout/stderr capture cap
      * @param cpuLimitDescription CPU enforcement description (spec floor or
@@ -46,7 +46,7 @@ public final class TierLimits {
      *                      structurally where the tier supports it
      * @param requiresApproval whether executions at this (tier, risk) need
      *                      human approval or a stronger sandbox first
-     *                      (Stage 4.2: high-risk executes must pass approval
+     *                      high-risk executes must pass approval
      *                      or escalate)
      */
     public record Limits(

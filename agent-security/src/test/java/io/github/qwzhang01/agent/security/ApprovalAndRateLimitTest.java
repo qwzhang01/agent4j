@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 M9.2 (approval) + M9.3 (rate limiting) tests.
+ * (approval) + M9.3 (rate limiting) tests.
  */
 class ApprovalAndRateLimitTest {
 

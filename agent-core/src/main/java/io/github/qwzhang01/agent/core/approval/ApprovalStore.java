@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Durable approval persistence (Stage 3.4, harness roadmap).
+ * Durable approval persistence (, harness roadmap).
  * <p>
- * The whole point of Stage 3.4: a decision must survive process restarts
+ * The whole point of a decision must survive process restarts
  * and never depend on JVM memory. This store is the persistence boundary;
  * implementations range from {@code InMemoryApprovalStore} (tests) to a
  * future JDBC/Postgres backend (production).
@@ -42,8 +42,8 @@ public interface ApprovalStore {
 
     /**
      * Land a decision with optimistic locking. Rejects when:
-     * the request is missing, already terminal, or {@code decision.version()}
-     * does not match the stored {@link ApprovalRequest#version()}.
+     * the request is missing, already terminal, or {@code decision.version}
+     * does not match the stored {@link ApprovalRequest#version}.
      *
      * @param targetStatus APPROVED or REJECTED — the store does not guess
      *                     the semantic from free text; the caller states it

@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 loop-integration tests: parallel plain-tool dispatch through
+ * loop-integration tests: parallel plain-tool dispatch through
  * {@code ReActAgentLoop.withParallelTools} (declaration-order write-back,
  * failure-to-error-string, handoff executes last) and the null-executor
  * legacy bit-for-bit path.

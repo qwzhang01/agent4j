@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.observability.eval;
 import java.util.Objects;
 
 /**
- * One regression case (Stage 18 D7): a prompt, the assertion its answer must
+ * One regression case (D7): a prompt, the assertion its answer must
  * survive, and - when the case was mined from a failure - the lineage back to
  * the run that produced it.
  * <p>
@@ -11,10 +11,10 @@ import java.util.Objects;
  * form: the case knows which incident it came from, so "did the fix for
  * run-8842 hold?" is a query, not an archaeology project. Hand-written cases
  * carry null - absence of lineage is honest, fabricated lineage is not (the
- * Stage 14 metadata discipline).
+ * metadata discipline).
  *
- * @param caseId      unique id within the dataset ("case-0007" for imported)
- * @param prompt      the user prompt to replay
+ * @param caseId unique id within the dataset "case-0007" for imported)
+ * @param prompt the user prompt to replay
  * @param expectation the deterministic assertion (D7: v1 no judge)
  * @param originRunId run id of the failure this case was mined from, null for
  *                    hand-written cases

@@ -12,15 +12,15 @@ import java.util.List;
  * with an errorMessage (same philosophy as AgentState.Status.ERROR).
  * Definition bugs throw at build time instead.
  * <p>
- * Stage 6 additions: PAUSED and CANCELLED statuses.
+ * additions: PAUSED and CANCELLED statuses.
  * - PAUSED: a node threw PauseException; resumeToken is non-null
  * - CANCELLED: caller requested cancellation
  *
- * @param status       SUCCEEDED / FAILED / PAUSED / CANCELLED
- * @param output       output of the last executed node (null when not SUCCEEDED)
+ * @param status SUCCEEDED / FAILED / PAUSED / CANCELLED
+ * @param output output of the last executed node (null when not SUCCEEDED)
  * @param errorMessage failure reason (null unless FAILED)
- * @param state        the blackboard, including the step trace
- * @param resumeToken  present only when PAUSED (null otherwise)
+ * @param state the blackboard, including the step trace
+ * @param resumeToken present only when PAUSED (null otherwise)
  */
 public record ExecutionResult(Status status, Object output, String errorMessage,
                                WorkflowState state, ResumeToken resumeToken) {

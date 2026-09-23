@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.spring;
 
 /**
- * Runtime profiles (Stage 8.2, harness roadmap): the Starter's three
+ * Runtime profiles (, harness roadmap): the Starter's three
  * clearly-named operating modes.
  * <p>
  * The ladder exists so "ungoverned" can never be silent:
@@ -17,7 +17,7 @@ package io.github.qwzhang01.agent.spring;
  *   <li>{@link #UNSAFE} — the explicit raw path. No governance, no
  *       masking, no boot check. Opt-in by name, logged loudly at
  *       startup — the 0.1.3 default behavior, now something you must
- *       ask for.</li>
+ *       ask .</li>
  * </ul>
  * Map: {@code agent4j.profile: secure | test | unsafe} (default
  * {@code secure}).

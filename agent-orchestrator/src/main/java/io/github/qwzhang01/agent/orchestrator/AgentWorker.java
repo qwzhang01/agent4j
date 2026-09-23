@@ -3,9 +3,9 @@ package io.github.qwzhang01.agent.orchestrator;
 import io.github.qwzhang01.agent.mcp.a2a.AgentCard;
 
 /**
- * Unified worker abstraction for multi-agent orchestration (Stage 11 M11.1, D1).
+ * Unified worker abstraction for multi-agent orchestration (, D1).
  * <p>
- * THE central design decision of Stage 11: the supervisor, result aggregation,
+ * THE central design decision of the supervisor, result aggregation,
  * failure policies and skill routing see ONE interface -- they do not know (and
  * do not need to know) whether the worker is:
  * <ul>
@@ -14,7 +14,7 @@ import io.github.qwzhang01.agent.mcp.a2a.AgentCard;
  * </ul>
  * Adding a new kind of collaborator (e.g. a gRPC agent) = adding one
  * implementation; the orchestration layer stays untouched. Third payoff of the
- * decorator philosophy (Stage 9: GovernedToolExecutor, Stage 10: ManagedMcpClient).
+ * decorator philosophy GovernedToolExecutor, ManagedMcpClient).
  * <p>
  * Contract of {@link #execute}:
  * <ul>

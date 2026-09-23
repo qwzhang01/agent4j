@@ -8,7 +8,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.2 tests: parallel dispatch + aggregation + supervisor bookkeeping.
+ * tests: parallel dispatch + aggregation + supervisor bookkeeping.
  */
 class AgentSupervisorTest {
 
@@ -177,7 +177,7 @@ class AgentSupervisorTest {
                     List.of(WorkerTask.of("w", "t", "x")), new ConcatAggregator());
             assertTrue(r.allSucceeded());
         }
-        // caller owns the lifecycle: still usable after close()
+        // caller owns the lifecycle: still usable after close
         assertTrue(!injected.isShutdown());
         injected.shutdown();
     }

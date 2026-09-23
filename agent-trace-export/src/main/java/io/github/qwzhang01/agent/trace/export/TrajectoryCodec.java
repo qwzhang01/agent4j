@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Trajectory &lt;-&gt; JSON tree, the SINGLE implementation point of the v1
- * export contract (Stage 14 D8).
+ * export contract (D8).
  * <p>
  * Hand-built trees instead of Jackson annotations on the model records:
  * the contract must be explicit down to every field name (snake_case, the
@@ -49,11 +49,11 @@ public final class TrajectoryCodec {
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * Stage 5.3: optional secret masker applied to every content-bearing
+     *  optional secret masker applied to every content-bearing
      * field on export (message content, action content, observation
      * content). {@code null} = passthrough, byte-for-byte legacy behaviour
      * for single-tenant local runs. Export surfaces (DPO / replay / share)
-     * should construct with {@link SecretMasker#withDefaults()} or a
+     * should construct with {@link SecretMasker#withDefaults} or a
      * tenant-configured masker: once a trajectory leaves the host boundary,
      * embedded secrets must already be gone.
      * <p>

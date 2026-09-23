@@ -14,9 +14,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Tools that let the model self-manage memory (Stage 8 D8).
+ * Tools that let the model self-manage memory (D8).
  * <p>
- * Two tools, mirroring the Stage 3 self-evolution pattern (agent manages its own
+ * Two tools, mirroring the self-evolution pattern (agent manages its own
  * capabilities). Here the agent manages its own memory:
  * <ul>
  *   <li>{@code save_memory} - explicitly store a fact/preference (importance=1.0,
@@ -35,10 +35,10 @@ public class MemoryTools {
     /**
      * Create a save_memory tool bound to a store + scope + actor.
      *
-     * @param store     the memory store
-     * @param scope     the scope to save under
-     * @param policy    the write-gate policy (for default status + supersede)
-     * @param actorId   who is saving (model id / user id)
+     * @param store the memory store
+     * @param scope the scope to save under
+     * @param policy the write-gate policy (for default status + supersede)
+     * @param actorId who is saving (model id / user id)
      */
     public static Tool saveMemory(MemoryStore store, String scope, MemoryPolicy policy, String actorId) {
         return new Tool() {
@@ -160,11 +160,11 @@ public class MemoryTools {
      * Create a search_memory tool bound to a retriever + visible scopes.
      * <p>
      * Supports an optional subject + include_history mode for timeline lookups
-     * ("where did I live before?"): it returns the ACTIVE entry plus every
+     * "where did I live before?": it returns the ACTIVE entry plus every
      * HISTORICAL predecessor for that subject, newest first.
      *
      * @param retriever the memory retriever
-     * @param scopes    the scopes visible to this agent
+     * @param scopes the scopes visible to this agent
      */
     public static Tool searchMemory(MemoryRetriever retriever, List<String> scopes) {
         return new Tool() {

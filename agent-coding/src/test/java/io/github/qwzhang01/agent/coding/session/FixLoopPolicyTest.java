@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Stage 17 M17.4: the fix budget record - defaults, validation, and the zero-budget
+ *  the fix budget record - defaults, validation, and the zero-budget
  * edge (one failure is already too many).
  */
 class FixLoopPolicyTest {

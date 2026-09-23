@@ -16,7 +16,7 @@ import java.util.List;
  * <p>
  * User-initiated vision still goes through {@code SimpleAgent.run(ChatMessage)}.
  * This tool is for model-initiated "look at this URL / base64" turns, so
- * Stage 9 {@code GovernedToolExecutor} can approve / rate-limit / audit it.
+ * {@code GovernedToolExecutor} can approve / rate-limit / audit it.
  */
 public class VisionTool implements Tool {
 

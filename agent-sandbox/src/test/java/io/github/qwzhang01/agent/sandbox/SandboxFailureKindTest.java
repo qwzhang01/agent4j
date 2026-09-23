@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  *       it, so all 11+ existing construction sites keep behaving
  *       identically.</li>
  *   <li><b>Orthogonality</b> — the same kind can surface at any tier
- *       and any transport: {@code blocked()} carries
+ *       and any transport: {@code blocked} carries
  *       BLOCKED_BY_POLICY whether it came from the ClassLoader tier
  *       or a hypothetical policy-checking process tier; the taxonomy
  *       describes WHO died, not WHERE.</li>

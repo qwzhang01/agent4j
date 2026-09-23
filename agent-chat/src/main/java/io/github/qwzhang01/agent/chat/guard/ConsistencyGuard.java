@@ -10,7 +10,7 @@ import io.github.qwzhang01.agent.chat.model.Room;
  * user line and reply. The engine does not own OOC rules or product personas;
  * a rule or LLM implementation lives with the host.
  * <p>
- * Default is {@link #noop()}: always OK, no alert.
+ * Default is {@link #noop}: always OK, no alert.
  */
 @FunctionalInterface
 public interface ConsistencyGuard {
@@ -18,7 +18,7 @@ public interface ConsistencyGuard {
     /**
      * Inspect this turn. Must not mutate the room or rewrite {@code reply}.
      *
-     * @return {@link ConsistencyVerdict#ok()} or a warning; {@code null} is treated as OK
+     * @return {@link ConsistencyVerdict#ok} or a warning; {@code null} is treated as OK
      */
     ConsistencyVerdict check(Room room, ChatPersona speaker, String userText, String reply);
 

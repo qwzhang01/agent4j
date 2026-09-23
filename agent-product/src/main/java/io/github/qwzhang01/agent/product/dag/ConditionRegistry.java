@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Name &lt;-&gt; predicate registry for edge conditions (Stage 13 M13.5, D5).
+ * Name &lt;-&gt; predicate registry for edge conditions (, D5).
  * <p>
  * Workflow edge conditions are Java lambdas - invisible to any serializer.
  * The registry is the D1 pattern applied to predicates: the DAG stores the

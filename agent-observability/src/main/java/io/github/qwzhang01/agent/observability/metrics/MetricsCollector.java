@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * In-memory aggregator turning boundary events into run-level summaries
- * (Stage 18 M18.1).
+ * .
  * <p>
  * Implements {@link MetricsSink} so the observing decorators can feed it
  * directly; on top of the sink contract it owns the RUN concept:
@@ -27,7 +27,7 @@ import java.util.Optional;
  * ({@link #totalModelCalls} / {@link #totalToolCalls}). Operations accounting
  * does not cherry-pick runs: a token burned outside a run is still a token.
  * <p>
- * Thread discipline (v1 honest boundary, same as Stage 14 recording sessions):
+ * Thread discipline (v1 honest boundary, same as recording sessions):
  * the run context is thread-bound. Inner decorators that hop threads (e.g.
  * timeout wrappers) will detach events from the run - keep the observing
  * decorators outermost, or accept orphan attribution.
@@ -75,7 +75,7 @@ public final class MetricsCollector implements MetricsSink {
      *
      * @throws IllegalArgumentException blank ids, nested run on this thread
      *                                  (one active run per thread, same
-     *                                  discipline as Stage 14), or reused runId
+     *                                  discipline as ), or reused runId
      */
     public synchronized void beginRun(String runId, String agentName) {
         if (runId == null || runId.isBlank()) {
@@ -99,7 +99,7 @@ public final class MetricsCollector implements MetricsSink {
     /**
      * Close the run context and materialize its {@link RunMetrics}.
      *
-     * @param status    terminal status from {@link AgentState}
+     * @param status terminal status from {@link AgentState}
      * @param lastError last error text, null on success (carries doneReason
      *                  semantics for failures)
      * @return the materialized summary row (also queryable via {@link #runMetrics})

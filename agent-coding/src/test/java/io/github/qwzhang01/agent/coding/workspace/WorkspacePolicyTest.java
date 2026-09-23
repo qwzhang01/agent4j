@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.1: the path-boundary SSOT.
+ *  the path-boundary SSOT.
  * <p>
  * Under test: default deny set, ancestor propagation (deny a directory -> deny its
  * subtree), fail-fast glob compilation, and builder validation.

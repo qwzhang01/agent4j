@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  * Design principle: Agent code depends on this interface, never on a specific
  * provider SDK. Swapping OpenAI for a local model should not change Agent logic.
  * <p>
- * Stage 1 covers:
+ * covers:
  * - {@link #chat} synchronous call
  * - {@link #stream} streaming call
  * - tool calling (conveyed via ModelRequest.tools / ModelResponse.toolCalls)
@@ -45,15 +45,15 @@ public interface ModelClient {
 
 
     /**
-     * Synchronous chat completion with the run context (Stage 1.2).
+     * Synchronous chat completion with the run context .
      * <p>
      * Default: delegate to the legacy method. Implementations that need
      * run-scoped billing, budget consumption or trace correlation override
-     * this (e.g. Stage 7's metered client). The context is read-only for
+     * this (e.g. 's metered client). The context is read-only for
      * the client; it must never be re-created or mutated downstream.
      *
      * @param request model request
-     * @param ctx     the run context (may be null on the legacy path)
+     * @param ctx the run context (may be null on the legacy path)
      * @return model response
      */
     default ModelResponse chat(ModelRequest request, RunContext ctx) {

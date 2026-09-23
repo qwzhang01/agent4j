@@ -10,15 +10,15 @@ import io.github.qwzhang01.agent.workflow.runtime.RunManager;
 import io.github.qwzhang01.agent.workflow.runtime.ResumeToken;
 
 /**
- * Stage 6 acceptance example: pause-resume via Checkpoint.
+ * acceptance example: pause-resume via Checkpoint.
  * <pre>{@code
  * prepare -> approval (PAUSE) -> [human approves] -> resume -> execute_refund -> END
  * }</pre>
  * Demonstrates:
  * - HumanApprovalNode in async mode (pause-resume, not sync block)
- * - RunManager.start() -> PAUSED + ResumeToken
+ * - RunManager.start -> PAUSED + ResumeToken
  * - Simulated human approval
- * - RunManager.resume() -> SUCCEEDED (from the paused node, not from scratch)
+ * - RunManager.resume -> SUCCEEDED (from the paused node, not from scratch)
  * - StepRecord trace shows prepare was NOT re-executed (idempotent resume)
  * <p>
  * Run: mvn compile exec:java -pl examples -Dexec.mainClass=io.github.qwzhang01.agent.examples.CheckpointExample

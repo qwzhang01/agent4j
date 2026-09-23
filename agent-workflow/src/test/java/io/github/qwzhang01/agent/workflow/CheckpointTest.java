@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6 tests: pause-resume via Checkpoint.
+ * tests: pause-resume via Checkpoint.
  * <p>
  * M6.1: core abstractions (RunManager, CheckpointStore, Run)
  * M6.2: pause-resume (HumanApprovalNode async mode)

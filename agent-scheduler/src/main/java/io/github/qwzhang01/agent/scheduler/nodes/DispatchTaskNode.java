@@ -18,9 +18,9 @@ import java.util.function.Function;
  * <p>
  * Usage:
  * <pre>{@code
- * .node(DispatchTaskNode.of("dispatch", ctx -> List.of(
- *     AsyncTask.of(ctx.runId(), "query-A", TaskPriority.HIGH, "search-flow"),
- *     AsyncTask.of(ctx.runId(), "query-B", TaskPriority.NORMAL, "search-flow")
+ * .node(DispatchTaskNode.of"dispatch", ctx -> List.of(
+ *     AsyncTask.of(ctx.runId, "query-A", TaskPriority.HIGH, "search-flow",
+ *     AsyncTask.of(ctx.runId, "query-B", TaskPriority.NORMAL, "search-flow"
  * )))
  * }</pre>
  * <p>

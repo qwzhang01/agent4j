@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Contract tests for {@link JdbcCheckpointStore} (Stage 8.1): the
+ * Contract tests for {@link JdbcCheckpointStore} : the
  * checkpoint payload must round-trip through the database with the same
  * semantics as {@link FileCheckpointStore} (one codec, two transports),
  * because instance B's resume depends on instance A's pause.

@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.3 acceptance for drift detection and the unified report:
+ * acceptance for drift detection and the unified report:
  * threshold alarms carry recommended actions; one document carries golden
  * set + online metrics + red team + version attribution.
  */

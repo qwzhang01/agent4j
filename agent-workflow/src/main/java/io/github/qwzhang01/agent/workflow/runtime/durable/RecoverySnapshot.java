@@ -6,20 +6,20 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Pre-recovery human diagnostics (Stage 3.3, harness roadmap): before a
+ * Pre-recovery human diagnostics (, harness roadmap): before a
  * run resumes after a crash, an operator (or the resume API itself) can
  * ask "where exactly was this run, what was its last event, what failed,
  * and what side effects already landed?" — and get a single answer
  * instead of grepping checkpoint files.
  *
- * @param runId            the run in question
- * @param status           current RunState name
- * @param cursor           the node the run would re-execute on resume
- * @param lastEventSeq     last applied event/checkpoint sequence
- * @param lastTrace        trailing step records (bounded)
- * @param lastError        last recorded failure reason (null = none)
+ * @param runId the run in question
+ * @param status current RunState name
+ * @param cursor the node the run would re-execute on resume
+ * @param lastEventSeq last applied event/checkpoint sequence
+ * @param lastTrace trailing step records (bounded)
+ * @param lastError last recorded failure reason (null = none)
  * @param completedEffects side effects already recorded in the ledger
- * @param version          the row version a resume must carry
+ * @param version the row version a resume must carry
  */
 public record RecoverySnapshot(
         String runId,

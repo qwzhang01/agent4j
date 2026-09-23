@@ -4,9 +4,9 @@ package io.github.qwzhang01.agent.workflow;
  * One executed step in a workflow run (trace entry).
  * <p>
  * This is the workflow-level equivalent of AgentState's step tracking.
- * Stage 14 (RL trajectory export) consumes these records directly.
+ * (RL trajectory export) consumes these records directly.
  * <p>
- * Stage 6 additions: PAUSED and CANCELLED statuses.
+ * additions: PAUSED and CANCELLED statuses.
  * <p>
  * Harness 3.2 additions (2026-09-17): visit ordinal and start/end
  * timestamps. The ordinal is assigned by {@link WorkflowState#record}
@@ -16,14 +16,14 @@ package io.github.qwzhang01.agent.workflow;
  * control-flow entries where no node execution began (e.g. a cancel
  * observed at the loop head) — absence is honest, never faked.
  *
- * @param nodeId       node that executed
- * @param status       SUCCESS / FAILED / PAUSED / CANCELLED
- * @param durationMs   wall time of all attempts
- * @param attempts     total execution attempts (1 + retries)
- * @param summary      short output summary or exception message
+ * @param nodeId node that executed
+ * @param status SUCCESS / FAILED / PAUSED / CANCELLED
+ * @param durationMs wall time of all attempts
+ * @param attempts total execution attempts (1 + retries)
+ * @param summary short output summary or exception message
  * @param visitOrdinal 1-based position in the run's trace (null = legacy row)
- * @param startedAt    epoch ms when node execution began (null = not recorded)
- * @param endedAt      epoch ms when node execution ended (null = not recorded)
+ * @param startedAt epoch ms when node execution began (null = not recorded)
+ * @param endedAt epoch ms when node execution ended (null = not recorded)
  */
 public record StepRecord(String nodeId, Status status, long durationMs, int attempts, String summary,
                          Integer visitOrdinal, Long startedAt, Long endedAt) {

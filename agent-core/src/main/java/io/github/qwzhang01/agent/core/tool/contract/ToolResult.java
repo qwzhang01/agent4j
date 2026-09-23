@@ -8,29 +8,29 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 /**
- * Unified tool-result envelope (Stage 2.3, harness roadmap).
+ * Unified tool-result envelope (, harness roadmap).
  * <p>
  * Today every tool boundary collapses its outcome into a free string —
  * a denied call, a timeout and a business rejection are all
  * "Tool execution failed" from the loop's perspective. This record is the
  * typed envelope that separates them. The loop's model-visible rendering
  * stays a String (the model cannot consume an enum); the envelope rides
- * alongside for audit, metrics and the Stage 5 event pipeline.
+ * alongside for audit, metrics and the event pipeline.
  * <p>
- * Model-visible vs audit-visible (roadmap 2.3): {@link #modelVisibleText()}
+ * Model-visible vs audit-visible : {@link #modelVisibleText}
  * is what goes back to the model — bracket-tagged, short, no stack traces;
  * the envelope itself carries the raw error classification, argument hash,
  * result size and redaction state for audits. The raw result string never
  * enters the model path when the call did not succeed.
  *
- * @param outcome       the classified outcome
+ * @param outcome the classified outcome
  * @param modelVisibleText what the model sees (never null)
- * @param failureKind   core failure taxonomy anchor (null unless a failure)
- * @param rawError      tool-thrown error text (null unless a failure)
- * @param argsHash      SHA-256 prefix of the arguments (recorded, not raw args)
- * @param resultBytes   size of the successful result in bytes (0 otherwise)
+ * @param failureKind core failure taxonomy anchor (null unless a failure)
+ * @param rawError tool-thrown error text (null unless a failure)
+ * @param argsHash SHA-256 prefix of the arguments (recorded, not raw args)
+ * @param resultBytes size of the successful result in bytes (0 otherwise)
  * @param resultSummary first 120 chars of the successful result
- * @param redacted      true when a sanitizer rewrote the result
+ * @param redacted true when a sanitizer rewrote the result
  */
 public record ToolResult(
         Outcome outcome,

@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Governance-enabled ToolExecutor (Stage 9 D1 - decorator pattern).
+ * Governance-enabled ToolExecutor (D1 - decorator pattern).
  * <p>
  * Wraps a delegate {@link ToolExecutor} (typically {@code DefaultToolExecutor})
  * and inserts the governance four-pack around each tool call:
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * When not configured (null policy / null approval / null sanitizer / null audit),
  * the corresponding step is skipped. This makes it possible to incrementally
- * enable governance features, and ensures backward compatibility with Stage 1-8
+ * enable governance features, and ensures backward compatibility with -8
  * (which used plain DefaultToolExecutor with no governance).
  */
 public class GovernedToolExecutor implements ToolExecutor {
@@ -53,7 +53,7 @@ public class GovernedToolExecutor implements ToolExecutor {
     }
 
     /**
-     * Stage 1.2: ctx-aware execution. The context's runId/tenantId/identity
+     *  ctx-aware execution. The context's runId/tenantId/identity
      * override the builder-time static runId when present (context is the
      * truth; the static value was the v0.1.3 stopgap). Governance decisions
      * (permission/approval/rate-limit) stay identical - only attribution

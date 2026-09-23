@@ -10,7 +10,7 @@ import java.util.List;
  * Content deltas are for live UI. {@link Done} is the persistence boundary
  * and must not be preceded by a delta that merely repeats the full answer.
  * <p>
- * Stage 9 (typed-event completeness): the model boundary and the governance
+ * (typed-event completeness): the model boundary and the governance
  * boundary each get explicit facts. The loop already logged model calls and
  * tool validation silently; these events make them first-class without
  * changing any existing behavior:
@@ -43,12 +43,12 @@ public sealed interface AgentEvent {
      * request assembly, before the invoker runs. One event per model call,
      * paired with {@link ModelCallFinished}.
      *
-     * @param agentName    name of the config owning the loop at this call
+     * @param agentName name of the config owning the loop at this call
      *                     (differs from the entry name after a handoff)
-     * @param model        model id from the request (may be null when the
+     * @param model model id from the request (may be null when the
      *                     client fills it in — record what the loop knows)
      * @param messageCount messages in the assembled request
-     * @param step         1-based loop step this call belongs to
+     * @param step 1-based loop step this call belongs to
      */
     record ModelCallStarted(String agentName, String model, int messageCount, int step)
             implements AgentEvent {
@@ -58,11 +58,11 @@ public sealed interface AgentEvent {
      * The model call returned (success or failure). Emitted right after the
      * invoker, before tool handling. Latency is wall-clock milliseconds.
      *
-     * @param agentName   name of the config owning the loop
-     * @param model       model id from the request (null when unknown)
-     * @param latencyMs   wall-clock duration of the model call
+     * @param agentName name of the config owning the loop
+     * @param model model id from the request (null when unknown)
+     * @param latencyMs wall-clock duration of the model call
      * @param toolCallCount number of tool calls in the response (0 = text)
-     * @param failed      true when the call threw or the stream errored
+     * @param failed true when the call threw or the stream errored
      */
     record ModelCallFinished(String agentName, String model, long latencyMs,
                              int toolCallCount, boolean failed) implements AgentEvent {
@@ -79,17 +79,17 @@ public sealed interface AgentEvent {
      * A tool call was rejected by the governance chain (validation,
      * permission, or approval boundary) BEFORE execution started.
      * <p>
-     * Stage 9: rejection is an explicit fact. Previously a rejection
+     *  rejection is an explicit fact. Previously a rejection
      * surfaced only as an {@code [ERROR] ...} tool result string; hosts had
      * to parse text to audit the tool boundary. The legacy error-string
      * result is kept (models need it to self-correct); this event is the
      * observability twin.
      *
      * @param toolCallId the rejected call's id
-     * @param toolName   the rejected call's tool name
-     * @param stage      which governance stage rejected: "validation",
+     * @param toolName the rejected call's tool name
+     * @param stage which governance stage rejected: "validation",
      *                   "permission", or "approval"
-     * @param reason     rejection reason (governance message, never null)
+     * @param reason rejection reason (governance message, never null)
      */
     record ToolValidationRejected(String toolCallId, String toolName,
                                   String stage, String reason) implements AgentEvent {
@@ -105,7 +105,7 @@ public sealed interface AgentEvent {
      * The loop reached a terminal success or max-steps state.
      *
      * @param finalAnswer assistant text, or the max-steps placeholder
-     * @param state       mutated run state
+     * @param state mutated run state
      */
     record Done(String finalAnswer, AgentState state) implements AgentEvent {
     }
@@ -141,19 +141,19 @@ public sealed interface AgentEvent {
      * Hosts listen for this event to audit what the model actually saw, correlate
      * persona version with reply quality, and track per-turn cost signals.
      *
-     * @param personaVersion   persona version string from {@code PersonaSpec.version}
+     * @param personaVersion persona version string from {@code PersonaSpec.version}
      *                         (null until A6 wires it)
      * @param recalledSubjects subject keys of all memory entries injected via
      *                         {@link io.github.qwzhang01.agent.chat.context.MemorySource}
      *                         (empty list when no MemorySource is registered)
-     * @param extraTextBytes   UTF-8 byte size of all
+     * @param extraTextBytes UTF-8 byte size of all
      *                         {@link io.github.qwzhang01.agent.chat.context.ExtraTextSource}
      *                         contributions after budget truncation
-     * @param promptTokens     estimated prompt token count (character-count approximation),
+     * @param promptTokens estimated prompt token count (character-count approximation),
      *                         measured on the exact prefix sent for the accepted attempt
      *                         (includes any retry-extra text appended for later attempts)
      * @param completionTokens estimated completion token count (character-count approximation)
-     * @param latencyMs        wall-clock milliseconds from context assembly start to Done
+     * @param latencyMs wall-clock milliseconds from context assembly start to Done
      */
     record TurnTrace(
             String personaVersion,
@@ -167,17 +167,17 @@ public sealed interface AgentEvent {
 
     /**
      * The active agent transferred the conversation to another agent
-     * (Stage 19). Emitted right after the handoff tool result is written
+     * . Emitted right after the handoff tool result is written
      * into history and before the next model call, which already runs
      * under the new config.
      * <p>
      * Observability signal. Persistence of the active identity is
-     * {@link AgentState#getLastActiveAgentName()}; hosts no longer need to
+     * {@link AgentState#getLastActiveAgentName}; hosts no longer need to
      * remember {@code toAgent} themselves to resume correctly.
      *
      * @param fromAgent config name that declared and invoked the handoff
-     * @param toAgent   config name that now owns the loop
-     * @param toolName  the handoff tool the model called
+     * @param toAgent config name that now owns the loop
+     * @param toolName the handoff tool the model called
      */
     record Handoff(String fromAgent, String toAgent, String toolName) implements AgentEvent {
     }
@@ -193,20 +193,20 @@ public sealed interface AgentEvent {
      * {@code RetryPolicy} is configured (default behavior is unchanged).
      *
      * @param discardedReply the full text of the attempt being thrown away
-     * @param attemptNumber  1-based index of the attempt about to start (2 = first retry)
-     * @param maxAttempts    the configured {@code RetryPolicy#maxAttempts()}
+     * @param attemptNumber 1-based index of the attempt about to start (2 = first retry)
+     * @param maxAttempts the configured {@code RetryPolicy#maxAttempts}
      */
     record RetryStarted(String discardedReply, int attemptNumber, int maxAttempts)
             implements AgentEvent {
     }
 
     /**
-     * A reflection cycle started (Stage 9 {@link ReflectiveAgent}). The
+     * A reflection cycle started ({@link ReflectiveAgent}). The
      * critique pass re-reads the candidate answer and returns a verdict.
      * The critique text itself is NOT in this event — reflection output is
      * internal to the reflective loop and never shown to the user.
      *
-     * @param cycle  1-based reflection cycle index
+     * @param cycle 1-based reflection cycle index
      * @param maxCycles the configured maximum (rejection beyond this is
      *                  passed through as-is)
      */
@@ -216,7 +216,7 @@ public sealed interface AgentEvent {
     /**
      * A reflection cycle finished with a verdict.
      *
-     * @param cycle   1-based reflection cycle index
+     * @param cycle 1-based reflection cycle index
      * @param verdict {@code PASS} when the critique accepted the answer,
      *                {@code REVISE} when a revised candidate will be
      *                generated, {@code GIVE_UP} when max cycles were hit

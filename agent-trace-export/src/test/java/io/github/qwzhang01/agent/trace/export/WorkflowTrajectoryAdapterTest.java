@@ -20,7 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Fulfiling the Stage 5 javadoc promise: StepRecords -> Trajectory, and the
+ * Fulfiling the javadoc promise: StepRecords -> Trajectory, and the
  * whole downstream pipeline (reward / sampling / JSONL / replay) works on
  * workflow runs unchanged (M14.3 verification).
  */

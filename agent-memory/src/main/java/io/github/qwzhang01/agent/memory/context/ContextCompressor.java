@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Pi-style context compaction (Stage 8 D4).
+ * Pi-style context compaction (D4).
  * <p>
  * When the message history exceeds the token budget, the oldest messages
  * (excluding system prompt and the most recent K messages) are summarized
@@ -21,7 +21,7 @@ import java.util.List;
  *   [system..., summary(user), ...recent K messages]
  * </pre>
  * The original messages that were compressed are returned in
- * {@link CompressionResult#archived()} so the caller can persist them
+ * {@link CompressionResult#archived} so the caller can persist them
  * to {@link io.github.qwzhang01.agent.memory.MemoryStore} as a
  * {@link io.github.qwzhang01.agent.memory.MemoryType#SUMMARY} entry (for audit).
  */
@@ -42,9 +42,9 @@ public class ContextCompressor {
     private final int keepRecent;
 
     /**
-     * @param modelClient  used for the summarization call (can be a cheap model)
+     * @param modelClient used for the summarization call (can be a cheap model)
      * @param budgetTokens token budget; compaction triggers when exceeded
-     * @param keepRecent   number of most-recent non-system messages to keep verbatim
+     * @param keepRecent number of most-recent non-system messages to keep verbatim
      */
     public ContextCompressor(ModelClient modelClient, int budgetTokens, int keepRecent) {
         this.modelClient = modelClient;
@@ -135,7 +135,7 @@ public class ContextCompressor {
      * Result of a compaction attempt.
      *
      * @param compressed the resulting message list (same as input if not compressed)
-     * @param archived   the original messages that were folded into the summary (empty if not compressed)
+     * @param archived the original messages that were folded into the summary (empty if not compressed)
      * @param compressed whether compaction actually happened
      */
     public record CompressionResult(

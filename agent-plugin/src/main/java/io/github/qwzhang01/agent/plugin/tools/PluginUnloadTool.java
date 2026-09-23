@@ -10,7 +10,7 @@ import io.github.qwzhang01.agent.plugin.PluginManager;
  * Tool that lets the model unload a plugin by name.
  * <p>
  * The model calls this to remove a capability at runtime.
- * For example: "search-tool is giving wrong results" -> unload("search-tool").
+ * For example: "search-tool is giving wrong results" -> unload"search-tool".
  * <p>
  * Arguments:
  * name: string - the plugin name to unload

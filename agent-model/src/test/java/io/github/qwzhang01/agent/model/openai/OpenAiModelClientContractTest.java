@@ -7,7 +7,7 @@ import io.github.qwzhang01.agent.model.testsupport.FakeHttpClient;
 import java.time.Duration;
 
 /**
- * Stage 6.1: OpenAI-compatible run of the shared {@link ModelClientContract}.
+ *  OpenAI-compatible run of the shared {@link ModelClientContract}.
  * <p>
  * Pins the mapping logic of {@link OpenAiModelClient} (chat completions
  * wire format) against a canned HTTP layer: sync text, tool calls, SSE

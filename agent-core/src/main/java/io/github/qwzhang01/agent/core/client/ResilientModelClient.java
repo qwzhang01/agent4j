@@ -13,19 +13,19 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * Stage 6.1: provider resilience knobs the roadmap names — Retry-After
+ *  provider resilience knobs the roadmap names — Retry-After
  * honoring, circuit breaking, credential rotation — as ONE decorator so a
  * multi-provider setup gets all three without stacking three wrappers.
  * <p>
  * <b>Retry-After.</b> When a failing call surfaces a
- * {@link ProviderCallException} whose {@code getRetryAfter()} is present,
+ * {@link ProviderCallException} whose {@code getRetryAfter} is present,
  * the next attempt waits THAT long (capped) instead of the exponential
  * guess. Providers tell you when to come back; believing them beats
  * backoff arithmetic.
  * <p>
  * <b>Circuit breaker.</b> After {@code failureThreshold} consecutive
  * failures the breaker OPENs: calls fail fast with
- * {@code ProviderCallException(MODEL_ERROR, "circuit open")} without
+ * {@code ProviderCallException(MODEL_ERROR, "circuit open"} without
  * touching the provider, until {@code openDuration} passes, then one probe
  * call (HALF_OPEN). Success closes it again. This is per-decorator, not
  * per-provider-process: each {@code ResilientModelClient} guards exactly
@@ -63,13 +63,13 @@ public class ResilientModelClient implements ModelClient {
     /**
      * Full form. See class doc for semantics of each knob.
      *
-     * @param delegate            the wrapped client (required)
-     * @param maxRetries          retries beyond the first attempt (0 = no retry)
-     * @param initialBackoff      exponential-backoff base for retryable errors
-     * @param retryAfterCap       upper bound honoring provider Retry-After (null = honor fully)
-     * @param credentialRotation  supplies rotated credentials on AUTH_ERROR (null = off)
-     * @param failureThreshold    consecutive failures before the breaker opens
-     * @param openDuration        how long the breaker stays open before probing
+     * @param delegate the wrapped client (required)
+     * @param maxRetries retries beyond the first attempt (0 = no retry)
+     * @param initialBackoff exponential-backoff base for retryable errors
+     * @param retryAfterCap upper bound honoring provider Retry-After (null = honor fully)
+     * @param credentialRotation supplies rotated credentials on AUTH_ERROR (null = off)
+     * @param failureThreshold consecutive failures before the breaker opens
+     * @param openDuration how long the breaker stays open before probing
      */
     public ResilientModelClient(ModelClient delegate,
                                 int maxRetries,

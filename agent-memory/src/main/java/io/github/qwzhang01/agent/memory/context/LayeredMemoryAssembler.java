@@ -52,10 +52,10 @@ final class LayeredMemoryAssembler {
      * (a multimodal USER message counts as the anchor; messages after it stay
      * after). Both blocks are optional (empty tier = no block).
      *
-     * @param core     core-tier entries (already ordered), may be empty
-     * @param history  the conversation history as built so far
+     * @param core core-tier entries (already ordered), may be empty
+     * @param history the conversation history as built so far
      * @param archival archival-tier entries (already ranked), may be empty
-     * @param policy   layering policy (token budget), never null
+     * @param policy layering policy (token budget), never null
      * @return the assembled message list, never null
      */
     static List<ChatMessage> assemble(List<MemoryEntry> core,

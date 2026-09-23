@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * stdio transport: communicates with a local MCP server subprocess (Stage 10 D2).
+ * stdio transport: communicates with a local MCP server subprocess (D2).
  * <p>
  * Spawns a child process via {@link ProcessBuilder}, writes JSON-RPC messages to its stdin,
  * reads responses from its stdout. Messages are newline-delimited (one JSON object per line).
@@ -86,7 +86,7 @@ public class StdioTransport implements McpTransport {
     }
 
     /**
-     * Same as {@link #receive()} but fails with {@link IOException} if no line
+     * Same as {@link #receive} but fails with {@link IOException} if no line
      * arrives within {@code timeout}.
      */
     @Override
@@ -118,7 +118,7 @@ public class StdioTransport implements McpTransport {
      * If nobody reads stderr, the OS pipe buffer (~64KB on macOS/Linux) fills up
      * once the server logs enough (npx download progress, server startup logs),
      * and the subprocess BLOCKS forever on its next stderr write -- the classic
-     * "process management" production trap (Stage 10, one of the 5 production gaps).
+     * "process management" production trap (, one of the 5 production gaps).
      */
     private void startStderrDrainer() {
         stderrDrainer = new Thread(() -> {

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>The subprocess runs with the host OS user's permissions.</li>
  *   <li>File access within the subprocess's working directory works.</li>
  *   <li>The subprocess CANNOT access the parent JVM's heap or file descriptors.</li>
- *   <li>Reliable kill via {@code destroyForcibly()} on timeout.</li>
+ *   <li>Reliable kill via {@code destroyForcibly} on timeout.</li>
  * </ul>
  */
 @Tag("sandbox-escape")
@@ -174,7 +174,7 @@ class SandboxEscapeTest {
         }
     }
 
-    // SandboxEscalator.isBlocked() helper
+    // SandboxEscalator.isBlocked helper
 
     @Test
     @DisplayName("isBlocked: correctly identifies Blocked result")

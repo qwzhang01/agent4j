@@ -8,7 +8,7 @@ import io.github.qwzhang01.agent.mcp.McpServerDescriptor;
 import io.github.qwzhang01.agent.mcp.transport.StdioTransport;
 
 /**
- * Stage 10 process management: self-healing MCP connection, demonstrated against
+ * process management: self-healing MCP connection, demonstrated against
  * the REAL official filesystem server.
  * <p>
  * Scenario:
@@ -25,7 +25,7 @@ import io.github.qwzhang01.agent.mcp.transport.StdioTransport;
  * Run:
  * <pre>
  *   mkdir -p /tmp/mcp-demo && echo "hello" > /tmp/mcp-demo/hello.txt
- *   mvn install -DskipTests -pl agent-mcp -am   # after changing agent-mcp
+ *   mvn install -DskipTests -pl agent-mcp -am # after changing agent-mcp
  *   mvn compile exec:java -pl examples \
  *     -Dexec.mainClass=io.github.qwzhang01.agent.examples.ManagedMcpExample
  * </pre>

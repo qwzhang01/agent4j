@@ -7,7 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Renders a message template against a JSON payload (Stage 13 M13.5).
+ * Renders a message template against a JSON payload .
  * <p>
  * Placeholders look like {@code {$.alert.title}} - a dot path into the
  * payload. Unknown paths render as the literal placeholder (the consumer -
@@ -21,7 +21,7 @@ public final class PayloadRenderer {
 
     /**
      * @param template template with {@code {$.path}} placeholders, null = no template
-     * @param payload  the JSON payload the paths resolve against
+     * @param payload the JSON payload the paths resolve against
      * @return rendered text, or the raw payload JSON when there is no template
      */
     public static String render(String template, JsonNode payload) {

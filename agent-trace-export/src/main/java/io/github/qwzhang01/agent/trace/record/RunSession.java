@@ -5,7 +5,7 @@ import io.github.qwzhang01.agent.core.agent.AgentState;
 import io.github.qwzhang01.agent.trace.trajectory.Trajectory;
 
 /**
- * One run's recording session (Stage 14 M14.1).
+ * One run's recording session .
  * <p>
  * Lifecycle: {@code open(runId)} on {@link TrajectoryRecorder} creates and
  * thread-binds a session; boundary decorators feed events into it while the
@@ -30,14 +30,14 @@ public interface RunSession extends AutoCloseable {
      * Assemble and return the trajectory. Exactly once. Unbinds the session
      * from its recorder thread.
      *
-     * @param status    terminal loop status (from AgentState.getStatus())
-     * @param lastError terminal error text (from AgentState.getLastError(), may be null)
+     * @param status terminal loop status (from AgentState.getStatus)
+     * @param lastError terminal error text (from AgentState.getLastError, may be null)
      */
     Trajectory finish(AgentState.Status status, String lastError);
 
     /**
      * Safety net: if never finished explicitly, assemble with ERROR
-     * ("session closed without explicit finish") - a lost trajectory is worse
+     * "session closed without explicit finish" - a lost trajectory is worse
      * than an honestly-labeled error one. Idempotent.
      */
     @Override

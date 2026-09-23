@@ -22,10 +22,10 @@ import java.util.function.Consumer;
 /**
  * The ambient runner: registers standing instructions, wires their
  * triggers, applies the noise gates, and pushes proactive notifications
- * (Stage 12 M12.4, design D3 + D7).
+ * (, design D3 + D7).
  * <p>
  * Disabled by default (safety default): {@link #register} before
- * {@link #enable()} only RECORDS the instruction - no schedule is armed
+ * {@link #enable} only RECORDS the instruction - no schedule is armed
  * and no event subscription is active. An ambient agent that starts
  * pushing without an explicit admin opt-in is a bug, not a feature.
  * <p>
@@ -33,14 +33,14 @@ import java.util.function.Consumer;
  * <pre>
  * trigger fires -> condition judged
  *   false -> total silence (not even digest)
- *   true  -> NoisePolicy gates
- *     SUPPRESS -> silence          DIGEST -> queue for summary
- *     NOTIFY   -> push now, actor = agent identity (never the event
+ *   true -> NoisePolicy gates
+ *     SUPPRESS -> silence DIGEST -> queue for summary
+ *     NOTIFY -> push now, actor = agent identity (never the event
  *                 originator), NOTIFICATION_SENT lands in the visibility
  *                 stream so the whole channel sees what the agent said
  * </pre>
  * <p>
- * Reuse honesty (design D3, v1 deviation): Stage 7's EventBroker callback
+ * Reuse honesty (design D3, v1 deviation): 's EventBroker callback
  * is hard-wired to {@code RunManager.resume(runId)} - ambient instructions
  * are not runs, so this engine reuses the MECHANISMS (a
  * {@link ScheduledExecutorService} for schedules; an eventKey registry
@@ -74,8 +74,8 @@ public class AmbientEngine {
     }
 
     /**
-     * @param executor      scheduler for SCHEDULED instructions (injectable for tests)
-     * @param ownsExecutor  whether shutdown() should close the executor
+     * @param executor scheduler for SCHEDULED instructions (injectable for tests)
+     * @param ownsExecutor whether shutdown should close the executor
      */
     public AmbientEngine(SharedAgentSession session, NoisePolicy noise,
                          ScheduledExecutorService executor, boolean ownsExecutor) {

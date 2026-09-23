@@ -3,12 +3,12 @@ package io.github.qwzhang01.agent.core.approval;
 import java.util.Objects;
 
 /**
- * The human decision landed on an {@link ApprovalRequest} (Stage 3.4).
+ * The human decision landed on an {@link ApprovalRequest} .
  *
  * @param decidedBy who made the decision (user id, approver role)
  * @param decidedAt epoch millis when the decision was made
- * @param reason    free-form justification (audit trail)
- * @param version   the {@link ApprovalRequest#version()} this decision
+ * @param reason free-form justification (audit trail)
+ * @param version the {@link ApprovalRequest#version} this decision
  *                  transitions from — stale versions are rejected by the
  *                  store, so two concurrent decisions cannot both land
  */

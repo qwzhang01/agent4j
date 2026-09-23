@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.3: the relationship tool's contract - success text, rejection
+ *  the relationship tool's contract - success text, rejection
  * text (game flow, not exceptions), and the applied-sink record stream.
  */
 class AdjustRelationshipToolTest {

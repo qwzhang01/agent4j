@@ -21,7 +21,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
 /**
- * Stage 6.1 test support: a canned {@link HttpClient} for contract tests.
+ * test support: a canned {@link HttpClient} for contract tests.
  * <p>
  * Answers EVERY request with the same status/body. Body handlers are driven
  * through their public {@code apply(ResponseInfo)} API (no reflection — JPMS

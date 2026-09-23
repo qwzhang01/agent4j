@@ -4,14 +4,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Simple count-based rate limiter (Stage 9 D7 v1).
+ * Simple count-based rate limiter (D7 v1).
  * <p>
  * Each tool gets a fixed window of N calls per minute. When the window
  * expires, the counter resets. This is the simplest correct rate limiter -
  * not smooth (bursty at window boundaries), but sufficient for demonstrating
  * the governance mechanism.
  * <p>
- * Full implementations (token bucket / sliding window / per-user) are Stage 18.
+ * Full implementations (token bucket / sliding window / per-user) are .
  */
 public class SimpleRateLimiter implements RateLimiter {
 
@@ -27,8 +27,8 @@ public class SimpleRateLimiter implements RateLimiter {
     }
 
     /**
-     * @param maxCalls  maximum calls per window
-     * @param windowMs  window size in milliseconds (default 60000 = 1 minute)
+     * @param maxCalls maximum calls per window
+     * @param windowMs window size in milliseconds (default 60000 = 1 minute)
      */
     public SimpleRateLimiter(int maxCalls, long windowMs) {
         this.maxCallsPerMinute = maxCalls;

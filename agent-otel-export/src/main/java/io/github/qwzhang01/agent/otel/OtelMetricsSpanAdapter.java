@@ -13,7 +13,7 @@ import io.opentelemetry.api.trace.Tracer;
 import java.util.Objects;
 
 /**
- * Model/Tool boundary metrics-to-span adapter (Stage 7.1): every model call
+ * Model/Tool boundary metrics-to-span adapter : every model call
  * becomes a {@code agent.model} span, every tool call a {@code agent.tool}
  * span - the two boundaries the on-call engineer greps first.
  * <p>

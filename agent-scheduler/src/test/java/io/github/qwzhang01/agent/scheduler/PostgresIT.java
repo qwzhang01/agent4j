@@ -8,7 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Stage 8.3: PostgreSQL integration profile base class (scheduler copy of
+ *  PostgreSQL integration profile base class (scheduler copy of
  * the workflow one - module-local so no cross-module test dependency is
  * introduced; agent-workflow cannot depend on agent-scheduler without a
  * reactor cycle).

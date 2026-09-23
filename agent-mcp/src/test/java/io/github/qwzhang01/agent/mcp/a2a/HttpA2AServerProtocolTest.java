@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * the round-trip tests cannot express (continuation refusal, notification
  * refusal, parse errors, method routing, HTTP verb rules).
  *
- * <p>Stage 8.3 A2A Integration Profile: tagged {@code a2a-it} (see
+ * <p>A2A Integration Profile: tagged {@code a2a-it} (see
  * {@link HttpA2ARoundTripTest} for the profile entry point).</p>
  */
 @Tag("a2a-it")

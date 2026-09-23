@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Channel metadata: the "where" of the identity triple (Stage 12 M12.2).
+ * Channel metadata: the "where" of the identity triple .
  * <p>
  * The member list here is the single source of truth for membership:
  * {@code SharedAgentSession} combines it with role permissions so that a non-member is denied before any role lookup happens
@@ -15,7 +15,7 @@ import java.util.Set;
  * membership with listener notifications is v2 scope.
  *
  * @param channelId stable channel identifier, e.g. "team-eng"
- * @param members   channel member user ids
+ * @param members channel member user ids
  */
 public record ChannelContext(String channelId, Set<String> members) {
 

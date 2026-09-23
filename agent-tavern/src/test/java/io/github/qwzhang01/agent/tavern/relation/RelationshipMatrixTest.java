@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.3: the relationship matrix with its per-turn accumulated
- * limiter - blueprint D4 under test ("governance is balance").
+ *  the relationship matrix with its per-turn accumulated
+ * limiter - blueprint D4 under test "governance is balance".
  * <p>
  * The salami-slicing defense is the headline: +3 four times must NOT reach +12.
  */

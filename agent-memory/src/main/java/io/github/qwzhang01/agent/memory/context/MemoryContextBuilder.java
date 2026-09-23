@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Full-featured context builder combining memory retrieval + compaction (Stage 8 M8.3).
+ * Full-featured context builder combining memory retrieval + compaction .
  * <p>
  * Flow:
  * <ol>
@@ -34,7 +34,7 @@ import java.util.List;
  * legacy single-block behaviour bit-for-bit (all existing call sites compile
  * and behave unchanged):
  * <ul>
- *   <li><b>Core tier</b> ({@code importance >= layering.coreImportanceThreshold()}):
+ *   <li><b>Core tier</b> ({@code importance >= layering.coreImportanceThreshold}):
  *       always-on working set. Injected at the head as {@code [Core memories]},
  *       never ranked by the query, never dropped by the token budget.</li>
  *   <li><b>Archival tier</b> (everything else): paged in beside the last USER
@@ -72,12 +72,12 @@ public class MemoryContextBuilder implements ContextBuilder {
      * sites (channel / tavern / enterprise / examples) compile and behave
      * unchanged — the layered path is opt-in.
      *
-     * @param retriever    memory retriever
-     * @param scopes       scopes visible in this context (e.g. [user:u1, channel:c1])
-     * @param compressor   optional compactor (null = no compaction)
+     * @param retriever memory retriever
+     * @param scopes scopes visible in this context (e.g. [user:u1, channel:c1])
+     * @param compressor optional compactor (null = no compaction)
      * @param archiveStore optional store for compaction archives
      * @param archiveScope scope for compaction archives
-     * @param recallLimit  max memories to inject (0 = no limit)
+     * @param recallLimit max memories to inject (0 = no limit)
      */
     public MemoryContextBuilder(MemoryRetriever retriever, List<String> scopes,
                                 ContextCompressor compressor,
@@ -93,15 +93,15 @@ public class MemoryContextBuilder implements ContextBuilder {
      * ({@code [Known memories]}), ranked by query relevance and trimmed by
      * the token budget.
      *
-     * @param retriever     memory retriever
-     * @param scopes        scopes visible in this context
-     * @param compressor    optional compactor (null = no compaction)
-     * @param archiveStore  optional store for compaction archives
-     * @param archiveScope  scope for compaction archives
-     * @param recallLimit   kept for source compatibility; the layered path
+     * @param retriever memory retriever
+     * @param scopes scopes visible in this context
+     * @param compressor optional compactor (null = no compaction)
+     * @param archiveStore optional store for compaction archives
+     * @param archiveScope scope for compaction archives
+     * @param recallLimit kept for source compatibility; the layered path
      *                      bounds archival with {@code archivalLimit} instead
      *                      (0 = no limit on archival)
-     * @param layering      layering policy (core threshold + token budget);
+     * @param layering layering policy (core threshold + token budget);
      *                      {@code null} falls back to the legacy single block
      * @param archivalLimit max archival-tier entries to page in (0 = no limit)
      */
@@ -127,15 +127,15 @@ public class MemoryContextBuilder implements ContextBuilder {
     }
 
     /**
-     * Stage 1.2 (harness roadmap): ctx-aware recall. When the run context
+     * (harness roadmap): ctx-aware recall. When the run context
      * carries tenant/user/channel/agent identity, the recall scopes are
      * intersected with the context-derived scope whitelist: only scopes the
      * run's identity may see are actually queried. An anonymous context
-     * (the auto-minted {@code RunContext.create()} with no identity fields)
+     * (the auto-minted {@code RunContext.create} with no identity fields)
      * keeps the configured scopes list as-is — same as the legacy no-ctx
      * path — so minting a runId does not silently drop channel memory.
      * <p>
-     * This is the read-side hook for Stage 5's full tenant governance
+     * This is the read-side hook for 's full tenant governance
      * (write-side audit + field redaction land there); today it guarantees
      * a context-bound run cannot widen its memory view by configuration.
      */

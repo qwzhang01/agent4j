@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.3: gate 3 - the no-shell executor. Runs real subprocesses (POSIX
+ *  gate 3 - the no-shell executor. Runs real subprocesses (POSIX
  * utilities) against a temp workspace: cwd anchoring, timeout kill, head/tail output
  * truncation, and the D5 contract reuse (SandboxSpec in, SandboxResult out).
  */

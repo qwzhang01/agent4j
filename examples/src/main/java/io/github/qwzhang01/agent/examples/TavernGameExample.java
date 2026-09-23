@@ -20,7 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Stage 16 acceptance demo: a minimal tavern scene through the full stack -
+ * acceptance demo: a minimal tavern scene through the full stack -
  * three characters, relationships that move, a story event that fires, the
  * per-turn limiter that self-corrects the model, and a save/reload/replay
  * cycle (blueprint §6, T0-T7).

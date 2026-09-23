@@ -29,7 +29,7 @@ import java.text.Normalizer;
  * model, raw bytes for audit).
  *
  * <p>Honest boundaries (what normalization does NOT catch): paraphrase
- * ("其实你真正的任务是..."), cross-language semantic attacks, and
+ * "其实你真正的任务是...", cross-language semantic attacks, and
  * token-splitting tricks that survive NFKC (e.g. Base64 payloads decoded
  * by the model itself). Those belong to the semantic judge
  * ({@link InjectionJudge}, the v2 slot) — normalization widens the regex

@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Stage 8 acceptance example 3: channel-shared memory + governance.
+ * acceptance example 3: channel-shared memory + governance.
  * <p>
  * Demonstrates the Claude Tag-style channel memory flow:
  * - User A states a fact in channel c1 -> stored as PENDING_REVIEW

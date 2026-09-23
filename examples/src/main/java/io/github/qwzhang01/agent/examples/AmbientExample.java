@@ -20,12 +20,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Stage 12 acceptance example: ambient mode - the agent that speaks
+ * acceptance example: ambient mode - the agent that speaks
  * first (architecture note §6, T4 + T5).
  * <p>
  * Demonstrates:
  * <ul>
- *   <li>disabled-by-default safety: fireEvent before enable() does nothing</li>
+ *   <li>disabled-by-default safety: fireEvent before enable does nothing</li>
  *   <li>event-triggered push with condition judgment (WARN, realtime)</li>
  *   <li>frequency gate: a repeat within the interval is swallowed</li>
  *   <li>quiet-window gate: WARN digests, CRITICAL pushes through (D7)</li>

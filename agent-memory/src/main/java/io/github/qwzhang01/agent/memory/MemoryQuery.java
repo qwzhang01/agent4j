@@ -9,15 +9,15 @@ import java.util.Objects;
  * <p>
  * Retrieval is scope-bounded by design: the caller must explicitly list which
  * scopes are visible for the current context. The store will never return
- * entries outside this list (Stage 8 D3 isolation).
+ * entries outside this list (D3 isolation).
  *
- * @param scopes   scopes to search within (e.g. [user:u1, channel:c1])
- * @param type     optional type filter (null = any)
- * @param subject  optional exact subject filter (null = any)
- * @param keyword  optional keyword filter matched against content (null/blank = any)
- * @param limit    max results (0 or negative = no limit)
- * @param dueFrom  inclusive lower bound on {@link MemoryEntry#dueAt()} (null = no min)
- * @param dueTo    inclusive upper bound on {@link MemoryEntry#dueAt()} (null = no max)
+ * @param scopes scopes to search within (e.g. [user:u1, channel:c1])
+ * @param type optional type filter (null = any)
+ * @param subject optional exact subject filter (null = any)
+ * @param keyword optional keyword filter matched against content (null/blank = any)
+ * @param limit max results (0 or negative = no limit)
+ * @param dueFrom inclusive lower bound on {@link MemoryEntry#dueAt} (null = no min)
+ * @param dueTo inclusive upper bound on {@link MemoryEntry#dueAt} (null = no max)
  * @param statuses optional status filter (null/empty = ACTIVE only, the default view).
  *                 History lookups pass e.g. [ACTIVE, HISTORICAL] to surface
  *                 replaced-but-once-true entries. SUPERSEDED is audit-only and is

@@ -7,7 +7,7 @@ import java.util.Optional;
  * Persistent storage for {@link Checkpoint}s.
  * <p>
  * Design decision (D6): v1 ships InMemory + File implementations.
- * The interface is ready for database backends (Stage 18 or production).
+ * The interface is ready for database backends (or production).
  * <p>
  * Keyed by runId: one latest checkpoint per Run.
  */

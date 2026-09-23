@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads a turn log into a step-through {@link GameReplay} (Stage 16 M16.4).
+ * Loads a turn log into a step-through {@link GameReplay} .
  * <p>
- * Load-time integrity checks, fail-loud with line numbers (the Stage 14
+ * Load-time integrity checks, fail-loud with line numbers (the
  * discipline): the first line must be the initial envelope; turn numbers
  * must run 1..n consecutively; every line must parse. A replay is a
  * historical record - a corrupted one must be rejected, not best-efforted.

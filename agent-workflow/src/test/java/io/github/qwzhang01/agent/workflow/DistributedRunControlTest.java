@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Cross-instance semantics for Stage 8.1's completion definition: "two
+ * Cross-instance semantics for 's completion definition: "two
  * runtime instances can safely take over the same waiting run". All
  * coordination goes through shared H2 tables (runs / leases / approvals /
  * checkpoints) — instance A and instance B are two {@link

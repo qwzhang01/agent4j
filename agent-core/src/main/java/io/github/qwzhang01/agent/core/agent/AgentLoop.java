@@ -12,9 +12,9 @@ import java.util.function.Consumer;
  * <p>
  * Flow:
  * <pre>{@code
- * while (state.hasStepsRemaining() && !state.isTerminal()) {
+ * while (state.hasStepsRemaining && !state.isTerminal) {
  *     1. Build ModelRequest from state (messages + tool schemas)
- *     2. Call ModelClient.chat(request)  — or ModelClient.stream for stream()
+ *     2. Call ModelClient.chat(request) — or ModelClient.stream for stream
  *     3. If response has tool calls:
  *        - Execute each tool via ToolExecutor
  *        - Add tool results to state
@@ -38,14 +38,14 @@ public interface AgentLoop {
      * Execute the agent loop until completion, error, or max steps.
      *
      * @param config agent configuration
-     * @param state  mutable agent state (will be updated in place)
+     * @param state mutable agent state (will be updated in place)
      * @return the final state
      */
     AgentState execute(AgentConfig config, AgentState state);
 
     /**
      * Execute with a {@link io.github.qwzhang01.agent.core.run.RunContext}
-     * (Stage 1.2). Default: fall back to the context-free path so existing
+     * . Default: fall back to the context-free path so existing
      * implementations (including host-written loops) keep compiling and
      * behaving unchanged. {@link ReActAgentLoop} overrides this to check
      * cancellation at every step boundary and propagate the context to

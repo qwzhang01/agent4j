@@ -10,7 +10,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.4 tests: skill-based routing on the supervisor (D7).
+ * tests: skill-based routing on the supervisor (D7).
  */
 class SupervisorRoutingTest {
 

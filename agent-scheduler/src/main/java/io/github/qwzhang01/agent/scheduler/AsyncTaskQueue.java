@@ -14,9 +14,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * execute them.
  * <p>
  * Ordering: by priority descending (URGENT first), then by enqueue sequence
- * (FIFO within same priority). {@link #pollNext()} is thread-safe.
+ * (FIFO within same priority). {@link #pollNext} is thread-safe.
  * <p>
- * Stage 3.5 (harness roadmap): bounded capacity with explicit rejection.
+ * (harness roadmap): bounded capacity with explicit rejection.
  * A full queue refuses with {@link QueueFullException} — an overflow is a
  * loud, classified event (backpressure), never a silent OOM or an
  * unbounded latency cliff.

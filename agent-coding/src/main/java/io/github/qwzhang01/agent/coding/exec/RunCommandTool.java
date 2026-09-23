@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * {@code run_command} - the model's command handle (Stage 17 M17.3).
+ * {@code run_command} - the model's command handle .
  * <p>
- * Gate layout (blueprint D2): the governance chain (Stage 9, plugged at assembly time,
+ * Gate layout (blueprint D2): the governance chain (, plugged at assembly time,
  * M17.5) decides IF the tool may run at all; this tool's own whitelist decides whether
  * the <b>argument</b> - the specific argv - is legal; the runner enforces time/space
  * budgets. Any single gate failing is not an accident.

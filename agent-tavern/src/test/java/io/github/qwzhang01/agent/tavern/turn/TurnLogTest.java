@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Stage 16 M16.2: the turn log is append-only (memory-level contract;
+ *  the turn log is append-only (memory-level contract;
  * the JSONL byte-stable form lands in M16.4 with GameStore).
  */
 class TurnLogTest {

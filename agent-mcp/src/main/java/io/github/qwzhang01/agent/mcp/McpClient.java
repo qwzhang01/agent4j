@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
- * MCP client: manages connection lifecycle and protocol operations (Stage 10 D3/D5,
+ * MCP client: manages connection lifecycle and protocol operations (D3/D5,
  * harness batch 3: capability negotiation + cancellation wiring).
  * <p>
  * Operations:
@@ -43,14 +43,14 @@ import java.util.function.Supplier;
  * server could act on); the record exists so the ASSEMBLY can decide what to
  * do with a server that also offers resources/prompts/sampling/elicitation
  * (log it, refuse it, or wire a future consumer) instead of silently
- * ignoring the declaration. {@link #supportsTools()} guards the tool path:
+ * ignoring the declaration. {@link #supportsTools} guards the tool path:
  * a server that declared no tools capability is refused at listTools/callTool
  * with a clear message instead of an obscure protocol error — but the
  * handshake-era servers that declared nothing (capability-absent = the
  * 2024-11-05 optional-field semantics) are honored as tools-capable, the
  * era the framework has always served.
  * <p>
- * v1 uses synchronous request-response: send a request, block on receive() for
+ * v1 uses synchronous request-response: send a request, block on receive for
  * the matching response (by id). Notifications (no id) are fire-and-forget.
  * <p>
  * Designed for stdio transport (local subprocess). For SSE/HTTP, swap the
@@ -65,7 +65,7 @@ public class McpClient {
 
     /** Max unmatched notifications / out-of-order responses before sendRequest fails. */
     public static final int DEFAULT_MAX_STRAY_MESSAGES = 32;
-    /** How long sendRequest waits for one receive() before failing. */
+    /** How long sendRequest waits for one receive before failing. */
     public static final Duration DEFAULT_RECEIVE_TIMEOUT = Duration.ofSeconds(30);
 
     private final McpServerDescriptor descriptor;
@@ -90,7 +90,7 @@ public class McpClient {
      * Create a client with a custom transport (for testing / SSE / etc.).
      * <p>
      * The same transport instance is reused across reconnects, so it must be
-     * reopenable ({@code open()} after {@code close()}): mocks are, a real
+     * reopenable ({@code open} after {@code close}): mocks are, a real
      * {@link StdioTransport} is not -- use the factory constructor in production.
      */
     public McpClient(McpServerDescriptor descriptor, McpTransport transport) {
@@ -125,7 +125,7 @@ public class McpClient {
      * tools only, and a declared-but-unimplemented capability is a lie the
      * server may act upon (e.g. sending sampling requests we would drop).
      * Step 2: receive initialize response — the server's declared capabilities
-     * are parsed into {@link #serverCapabilities()} (typed record).
+     * are parsed into {@link #serverCapabilities} (typed record).
      * Step 3: send initialized notification (handshake complete).
      */
     public void connect() throws IOException {
@@ -217,7 +217,7 @@ public class McpClient {
      * (images, resource refs) are skipped.
      *
      * @param toolName the tool to call
-     * @param args     the arguments (JSON node)
+     * @param args the arguments (JSON node)
      * @return the concatenated text content from the tool result
      */
     public String callTool(String toolName, JsonNode args) throws IOException {
@@ -395,7 +395,7 @@ public class McpClient {
         transport.send(request.toJson());
 
         // Synchronous: wait for the matching id. Stray notifications / out-of-order
-        // responses are skipped up to maxStrayMessages; receive() is bounded by timeout.
+        // responses are skipped up to maxStrayMessages; receive is bounded by timeout.
         // Id comparison is String.valueOf so Integer vs Long still match.
         int stray = 0;
         int strayLimit = maxStrayMessages;

@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Stage 15 M15.3: the role x tool permission matrix - redeeming the extension
- * point PermissionChecker's javadoc has reserved since Stage 9 ("user role X
- * can call tool Y").
+ *  the role x tool permission matrix - redeeming the extension
+ * point PermissionChecker's javadoc has reserved since "user role X
+ * can call tool Y".
  */
 class RoleBasedPermissionCheckerTest {
 

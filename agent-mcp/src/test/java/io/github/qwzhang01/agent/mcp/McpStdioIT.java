@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.3 MCP Integration Profile: the FULL lifecycle against a REAL
+ * MCP Integration Profile: the FULL lifecycle against a REAL
  * subprocess MCP server (a Python script speaking the actual wire protocol),
  * not mocks.
  * <p>

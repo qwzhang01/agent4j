@@ -9,7 +9,7 @@ package io.github.qwzhang01.agent.workflow;
  * over edge conditions (validated at runtime).
  *
  * @param output node output (may be null)
- * @param next   explicit next node id or END, or null to follow edges
+ * @param next explicit next node id or END, or null to follow edges
  */
 public record NodeResult(Object output, String next) {
 

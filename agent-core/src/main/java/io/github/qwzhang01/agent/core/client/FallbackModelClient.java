@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * - Primary response has finishReason "error"
  * <p>
  * Does NOT fallback on:
- * - Successful responses (even if quality is low - that's a routing concern, stage 18)
+ * - Successful responses (even if quality is low - that's a routing concern, )
  */
 public class FallbackModelClient implements ModelClient {
 

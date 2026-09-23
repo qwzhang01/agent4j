@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1: {@link JdbcRunLeases} must reproduce the in-memory registry's
+ *  {@link JdbcRunLeases} must reproduce the in-memory registry's
  * four rules exactly — single winner, TTL expiry/takeover, heartbeat renew,
  * holder-only release — because the DurableRunManager's cross-instance
  * safety leans on them.

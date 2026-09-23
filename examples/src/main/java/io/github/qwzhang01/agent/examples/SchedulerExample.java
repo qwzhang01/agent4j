@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Stage 7 acceptance example: automatic resume via TaskScheduler.
+ * acceptance example: automatic resume via TaskScheduler.
  * <p>
  * Three demos:
  * 1. Scheduled resume: Agent says "check again in 2 seconds" -> auto-resume

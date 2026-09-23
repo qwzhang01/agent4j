@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <ol>
  *   <li>The initialize handshake records the server's declared capabilities
  *       (typed record, null for old-era non-declarations).</li>
- *   <li>{@code supportsTools()} guards the tool path: a declaration that
+ *   <li>{@code supportsTools} guards the tool path: a declaration that
  *       excludes tools is refused at listTools/callTool with a clear
  *       message; a non-declaration is honored (2024-11-05 semantics).</li>
  *   <li>A cancelled run surfaces as {@link RunCancelledException} — the
@@ -176,7 +176,7 @@ class McpClientCapabilityAndCancelTest {
         source.cancel();
 
         // No tools/call response registered on this transport — if the
-        // pre-wire check failed and the request went out, receive() would
+        // pre-wire check failed and the request went out, receive would
         // throw "No response queued" (RuntimeException), not RunCancelled.
         assertThrows(RunCancelledException.class,
                 () -> client.callTool("echo", null, source.token()));

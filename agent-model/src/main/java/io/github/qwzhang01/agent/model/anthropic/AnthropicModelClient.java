@@ -33,10 +33,10 @@ import java.util.stream.Stream;
  * - Auth: x-api-key header (not Bearer token)
  * - System prompt: top-level "system" field (not in messages array)
  * - max_tokens: required (not optional)
- * - Tools: "input_schema" (not "parameters")
+ * - Tools: "input_schema" (not "parameters"
  * - Response: "content" is an array of blocks (text / tool_use)
- * - Stop reason: "end_turn" / "tool_use" / "max_tokens" (not "stop" / "tool_calls")
- * - Usage: "input_tokens" / "output_tokens" (not "prompt_tokens" / "completion_tokens")
+ * - Stop reason: "end_turn" / "tool_use" / "max_tokens" (not "stop" / "tool_calls"
+ * - Usage: "input_tokens" / "output_tokens" (not "prompt_tokens" / "completion_tokens"
  * <p>
  * Uses Java 21's built-in HttpClient (no external HTTP library needed).
  * Supports:
@@ -100,9 +100,9 @@ public class AnthropicModelClient implements ModelClient {
 
     /**
      * @param defaultReasoning client-wide reasoning default; null means
-     *                         {@link ReasoningConfig#auto()}. A request-level
+     *                         {@link ReasoningConfig#auto}. A request-level
      *                         config always wins.
-     * @param extraBody        vendor-specific fields merged into every request
+     * @param extraBody vendor-specific fields merged into every request
      *                         body (e.g. {@code thinking.budget_tokens}, since a
      *                         thinking budget is an Anthropic-only knob and has
      *                         no place in the provider-neutral
@@ -118,7 +118,7 @@ public class AnthropicModelClient implements ModelClient {
     }
 
     /**
-     * Stage 6.1 contract-test seam: injectable HttpClient. Package-private —
+     * contract-test seam: injectable HttpClient. Package-private —
      * production code must not touch this; it exists so
      * {@code ModelClientContract} implementations can pin the client's
      * mapping logic against a canned HTTP layer without a live vendor.
@@ -145,7 +145,7 @@ public class AnthropicModelClient implements ModelClient {
 
     /**
      * Request-level reasoning wins over the client default, which in turn wins
-     * over {@link ReasoningConfig#auto()}.
+     * over {@link ReasoningConfig#auto}.
      */
     private ReasoningConfig resolveReasoning(ModelRequest request) {
         if (request.reasoning() != null) {
@@ -457,14 +457,14 @@ public class AnthropicModelClient implements ModelClient {
 
     //
     // Anthropic SSE event types:
-    //   event: message_start       -> message metadata
+    //   event: message_start -> message metadata
     //   event: content_block_start -> starts a block (text or tool_use)
     //   event: content_block_delta -> delta for a block
     //     - text_delta: { "text": "..." }
     //     - input_json_delta: { "partial_json": "..." }
-    //   event: content_block_stop  -> ends a block
-    //   event: message_delta      -> stop_reason + usage
-    //   event: message_stop        -> message complete
+    //   event: content_block_stop -> ends a block
+    //   event: message_delta -> stop_reason + usage
+    //   event: message_stop -> message complete
 
     private Stream<StreamEvent> parseSseStream(Stream<String> lines) {
         // State accumulators (captured by the stream pipeline)
@@ -519,7 +519,7 @@ public class AnthropicModelClient implements ModelClient {
                                     yield (StreamEvent) new StreamEvent.ContentDelta(text);
                                 } else if ("thinking_delta".equals(deltaType)) {
                                     // Extended thinking is the model's scratchpad:
-                                    // parsed so it is accounted for, never emitted
+                                    // parsed so it is accounted , never emitted
                                     // as content.
                                     yield null;
                                 } else if ("input_json_delta".equals(deltaType)) {
@@ -644,11 +644,11 @@ public class AnthropicModelClient implements ModelClient {
      * Map Anthropic stop_reason to our internal finishReason.
      * <p>
      * Anthropic stop_reason values:
-     * - end_turn      -> "stop" (model finished naturally)
-     * - tool_use      -> "tool_calls" (model wants to call tools)
-     * - max_tokens    -> "length" (hit token limit)
+     * - end_turn -> "stop" (model finished naturally)
+     * - tool_use -> "tool_calls" (model wants to call tools)
+     * - max_tokens -> "length" (hit token limit)
      * - stop_sequence -> "stop" (hit a stop sequence)
-     * - pause_turn    -> "stop" (paused, will continue)
+     * - pause_turn -> "stop" (paused, will continue)
      */
     private String mapStopReason(String stopReason) {
         return switch (stopReason) {

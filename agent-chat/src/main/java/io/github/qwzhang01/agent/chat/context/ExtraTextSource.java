@@ -17,20 +17,20 @@ import java.util.List;
  * Structured relationship views use {@link RelationSource}. Worldbook
  * entries use {@link LoreSource}.
  * <p>
- * Optionally bounded by a token budget ({@code maxTokens}).  When the
+ * Optionally bounded by a token budget ({@code maxTokens}). When the
  * text exceeds the budget, newline-delimited segments are dropped from
  * the <em>tail</em> (last-appended = lowest priority) until the result
- * fits.  At least the first segment is always kept to avoid silently
- * zeroing out all instruction context.  Tokens are approximated by
+ * fits. At least the first segment is always kept to avoid silently
+ * zeroing out all instruction context. Tokens are approximated by
  * character count (1 char ≈ 1 token); swap {@link #estimateTokens} via
  * subclass to plug in a real tokenizer.
  * <p>
- * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastOutputBytes()}
- * is a "last {@code contribute()} call" snapshot used by
+ * <b>Not safe to share across concurrent rooms/turns.</b> {@link #lastOutputBytes}
+ * is a "last {@code contribute} call" snapshot used by
  * {@link io.github.qwzhang01.agent.chat.ChatEngine} to build {@code TurnTrace} right
- * after {@code contribute()} returns on the same thread. Each {@code ChatRoom}/
+ * after {@code contribute} returns on the same thread. Each {@code ChatRoom}/
  * {@code ChatEngine} must own its own {@code ExtraTextSource} instance; if the same
- * instance is registered on two rooms, or the same room's {@code stream()} is invoked
+ * instance is registered on two rooms, or the same room's {@code stream} is invoked
  * concurrently from multiple threads, one turn's {@code TurnTrace} can observe another
  * turn's byte count.
  */
@@ -58,7 +58,7 @@ public class ExtraTextSource implements ContextSource {
     }
 
     /**
-     * @param text      host-supplied text; {@code null} treated as empty
+     * @param text host-supplied text; {@code null} treated as empty
      * @param maxTokens positive character budget, or {@link #NO_LIMIT} ({@code -1})
      *                  for no limit
      * @throws IllegalArgumentException if {@code maxTokens} is 0 or any negative
@@ -81,7 +81,7 @@ public class ExtraTextSource implements ContextSource {
      * UTF-8 byte size of the text emitted during the most recent {@link #contribute} call.
      * Zero if the source has never been called or contributed nothing.
      * Used by {@link io.github.qwzhang01.agent.chat.ChatEngine} to populate
-     * {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace#extraTextBytes()}.
+     * {@link io.github.qwzhang01.agent.core.agent.AgentEvent.TurnTrace#extraTextBytes}.
      */
     public int lastOutputBytes() {
         return lastOutputBytes;

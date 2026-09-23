@@ -23,7 +23,7 @@ import java.util.List;
  * This harness makes that loop runnable and repeatable:
  *
  * <pre>
- *   attacker LLM  --(generates variants)-->  defense stack  --(verdicts)-->  report
+ *   attacker LLM --(generates variants)--> defense stack --(verdicts)--> report
  * </pre>
  *
  * <p>Architecture (why this shape):
@@ -39,7 +39,7 @@ import java.util.List;
  *       JUDGE (did the attack land?) is a different role from the defense
  *       judge (is this text an instruction?). Confusing the two would let
  *       the defense grade its own homework.</li>
- *   <li><b>Harness, not a test</b> — deliberately a main() example, not a
+ *   <li><b>Harness, not a test</b> — deliberately a main example, not a
  *       JUnit test: it costs real API money and its result is a STATISTIC
  *       (penetration rate), not a pass/fail line. The Moonlit golden set
  *       (M7) owns the pass/fail thresholds; this harness produces the
@@ -48,8 +48,8 @@ import java.util.List;
  *
  * <p>Run with a real attacker model (OpenAI-compatible):
  * <pre>{@code
- * ModelClient attacker = new OpenAiModelClient("https://api.example.com/v1", "sk-...");
- * new RedTeamHarness(attacker).runAndReport();
+ * ModelClient attacker = new OpenAiModelClient"https://api.example.com/v1", "sk-...";
+ * new RedTeamHarness(attacker).runAndReport;
  * }</pre>
  *
  * <p>Honest boundaries: no automatic threshold enforcement (a statistic is

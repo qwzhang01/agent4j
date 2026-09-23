@@ -10,7 +10,7 @@ import java.util.SplittableRandom;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 8.3: malformed-input fuzz and property tests for the JSON-RPC wire
+ *  malformed-input fuzz and property tests for the JSON-RPC wire
  * layer.
  * <p>
  * Roadmap: "协议 malformed input fuzz/property tests". Existing JsonRpcTest

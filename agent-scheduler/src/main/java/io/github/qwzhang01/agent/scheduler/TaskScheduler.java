@@ -14,27 +14,27 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The Stage 7 facade: scheduled resume, event-driven resume, async task queue.
+ * The facade: scheduled resume, event-driven resume, async task queue.
  * <p>
- * Wraps {@link RunManager} (Stage 6) and adds automatic resume triggers.
+ * Wraps {@link RunManager} and adds automatic resume triggers.
  * Design decision (D1): TaskScheduler does NOT replace RunManager - it only
  * adds the "when to resume" layer. Execution is delegated to RunManager.
  * <p>
  * Usage:
  * <pre>{@code
  * TaskScheduler scheduler = new TaskScheduler(runManager);
- * scheduler.start();
+ * scheduler.start;
  *
  * // Register a scheduled resume (2 hours)
  * scheduler.scheduleResume(runId, Duration.ofHours(2));
  *
  * // Register an event-driven resume
- * scheduler.waitForEvent(runId, "ci-passed:pr-123");
+ * scheduler.waitForEvent(runId, "ci-passed:pr-123";
  *
  * // Fire an external event
- * scheduler.fireEvent("ci-passed:pr-123");
+ * scheduler.fireEvent"ci-passed:pr-123";
  *
- * scheduler.shutdown();
+ * scheduler.shutdown;
  * }</pre>
  */
 public class TaskScheduler {
@@ -229,7 +229,7 @@ public class TaskScheduler {
     /**
      * Whether the scheduled-resume timer for this run has actually fired
      * (the scheduler callback ran). Wall-clock expiry alone is not enough:
-     * a manual {@code resume()} before the timer must re-pause.
+     * a manual {@code resume} before the timer must re-pause.
      */
     public boolean hasScheduledResumeFired(String runId) {
         return firedScheduledRunIds.contains(runId);
@@ -260,7 +260,7 @@ public class TaskScheduler {
 
     /**
      * After a scheduler restart: re-register a one-shot resume for every
-     * still-PAUSED run. Crash-recovery path for Stage 7.
+     * still-PAUSED run. Crash-recovery path for .
      *
      * @return number of runs re-scheduled
      */
@@ -274,14 +274,14 @@ public class TaskScheduler {
     }
 
     /**
-     * Stage 3.5 (harness roadmap): restart sweep backed by the durable
+     * (harness roadmap): restart sweep backed by the durable
      * RunStore instead of JVM memory. Scans RUNNING / PAUSED /
      * WAITING_APPROVAL recovery candidates from the store (skipping runs
      * still actively tracked in this process), schedules each for a
      * leased resume. The JVM active map is a cache, not the truth.
      *
      * @param durable durable manager whose RunStore is the source of truth
-     * @param delay   delay before the first resume attempt of each run
+     * @param delay delay before the first resume attempt of each run
      * @return number of runs scheduled for recovery
      */
     public int restoreDurableRuns(

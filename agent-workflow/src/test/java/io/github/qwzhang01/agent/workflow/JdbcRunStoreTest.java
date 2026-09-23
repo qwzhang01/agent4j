@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1: {@link JdbcRunStore} contract against embedded H2. The
+ *  {@link JdbcRunStore} contract against embedded H2. The
  * assertions mirror the in-memory store's semantics: create is
  * duplicate-loud, update is optimistic-locked CAS, recovery candidates
  * are RUNNING/PAUSED/WAITING_APPROVAL rows, and the {@code lastTrace}

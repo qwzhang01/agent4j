@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.1: {@link JdbcSideEffectLedger} contract — idempotent record
+ *  {@link JdbcSideEffectLedger} contract — idempotent record
  * (PK collision returns the original), node-scoped and call-scoped
  * lookup, per-run and global listing.
  */

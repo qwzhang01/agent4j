@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * falling back to a weaker tier (the placeholder contract {@code
  * DockerDaemonProbeIT} pins).
  * <p>
- * Why ship a skeleton now (roadmap 4.3 row 1: "先覆盖 Linux CI"): the
+ * Why ship a skeleton now (row 1: "先覆盖 Linux CI": the
  * flag assembly — uid/gid mapping, seccomp default profile, capability
  * drop to none, cgroup memory/cpu ceilings, {@code --network none},
  * read-only rootfs with a tmpfs workspace, image digest pinning — is
@@ -51,8 +51,8 @@ public final class DockerSandboxAdapter implements Sandbox {
             Pattern.compile("^[A-Za-z_$][A-Za-z0-9_$]*$");
 
     /**
-     * The unprivileged in-container identity (roadmap 4.3: "配置非特权
-     * UID/GID"). 65534 = nobody/nogroup on the standard images; the
+     * The unprivileged in-container identity "配置非特权
+     * UID/GID". 65534 = nobody/nogroup on the standard images; the
      * container never runs code as uid 0.
      */
     static final long SANDBOX_UID = 65534;
@@ -161,23 +161,23 @@ public final class DockerSandboxAdapter implements Sandbox {
      * execution. Pure function: no daemon, no filesystem, no side
      * effects — every 4.3 hardening row maps to a real flag.
      * <pre>
-     *   roadmap 4.3 row                     -> flag
+     *   row -> flag
      *   ─────────────────────────────────────────────────────────────
-     *   非特权 UID/GID                       -> --user 65534:65534
-     *   seccomp                              -> --security-opt seccomp=default (Docker's
+     *   非特权 UID/GID -> --user 65534:65534
+     *   seccomp -> --security-opt seccomp=default (Docker's
      *                                          default profile applies; "unconfined" never)
-     *   capability drop                      -> --cap-drop ALL
-     *   cgroup CPU/内存/IO                   -> --memory, --cpus (IO waits for the
+     *   capability drop -> --cap-drop ALL
+     *   cgroup CPU/内存/IO -> --memory, --cpus (IO waits for the
      *                                          device-mapping form on CI)
-     *   网络 namespace + allowlist           -> --network none (v1: deny-all; the
+     *   网络 namespace + allowlist -> --network none (v1: deny-all; the
      *                                          allowlist form waits for CI)
-     *   read-only rootfs + workspace mount   -> --read-only + tmpfs /workspace
-     *   镜像 Digest 记录                      -> digest() (pinned reference, reported)
+     *   read-only rootfs + workspace mount -> --read-only + tmpfs /workspace
+     *   镜像 Digest 记录 -> digest (pinned reference, reported)
      * </pre>
      *
-     * @param spec        the sandbox configuration (timeout/memory/network policy)
-     * @param guestCmd    the command the container runs (already inside the image)
-     * @param workspace   the in-container workspace path mounts operate on
+     * @param spec the sandbox configuration (timeout/memory/network policy)
+     * @param guestCmd the command the container runs (already inside the image)
+     * @param workspace the in-container workspace path mounts operate on
      */
     List<String> dockerRunCommand(SandboxSpec spec, List<String> guestCmd, String workspace) {
         Objects.requireNonNull(spec, "spec");
@@ -212,7 +212,7 @@ public final class DockerSandboxAdapter implements Sandbox {
 
     /**
      * The image reference this adapter reports for {@code SandboxReport}
-     * digest pinning (roadmap 4.3: "记录镜像 Digest"). A reference WITH a
+     * digest pinning "记录镜像 Digest". A reference WITH a
      * digest ({@code repo@sha256:...}) is reported as-is; a tag reference
      * is reported tagged, honestly — the digest is resolvable only by the
      * daemon at pull time, and the v1 skeleton reports what was CONFIGURED,

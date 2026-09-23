@@ -57,10 +57,10 @@ public class Run {
     }
 
     /**
-     * Stage 1 (harness roadmap): fresh start bound to a unified
+     * (harness roadmap): fresh start bound to a unified
      * {@link RunContext}. The context's runId wins when present; a
      * {@link CancellationSource}-backed token in the context is honored by
-     * {@link #cancel()} (single cancel path).
+     * {@link #cancel} (single cancel path).
      */
     public Run(String runId, Workflow workflow, WorkflowState state, RunContext runContext) {
         this(runId, workflow, state);
@@ -117,7 +117,7 @@ public class Run {
 
     /**
      * Request cancellation. The run will stop at the next node boundary.
-     * Stage 1: also flips the unified {@link CancellationSource} so every
+     *  also flips the unified {@link CancellationSource} so every
      * component holding the RunContext token observes the same cancel.
      */
     public void cancel() {

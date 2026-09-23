@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 11 M11.3 tests: retry, timeout, FAIL_FAST / BEST_EFFORT semantics.
+ * tests: retry, timeout, FAIL_FAST / BEST_EFFORT semantics.
  */
 class SupervisorFailureTest {
 

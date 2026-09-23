@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 2.1 / 2.2 / 2.3 acceptance (harness roadmap).
+ * / 2.2 / 2.3 acceptance (harness roadmap).
  * <p>
  * Roadmap acceptance lines covered here:
  * <ul>
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>unknown tools refused (never string-passed as if they were results)</li>
  *   <li>same validation chain for every tool — contract-declared or legacy</li>
  *   <li>result envelope keeps the original classification (never collapsed
- *       to "Tool execution failed")</li>
+ *       to "Tool execution failed"</li>
  * </ul>
  */
 class ToolContractTest {

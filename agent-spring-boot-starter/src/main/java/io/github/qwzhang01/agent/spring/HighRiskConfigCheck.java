@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Boot-time high-risk configuration check (Stage 8.2): "启动时检查高风险配置"
+ * Boot-time high-risk configuration check : "启动时检查高风险配置"
  * — bare tools, no sandbox, no persistent store, no secret masking.
  * <p>
  * Runs once at startup. Findings are logged as one structured block and —

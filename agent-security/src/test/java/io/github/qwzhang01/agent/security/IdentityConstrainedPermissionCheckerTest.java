@@ -12,7 +12,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Identity capabilities ∩ ToolPolicy (Stage 12 assembly bridge).
+ * Identity capabilities ∩ ToolPolicy (assembly bridge).
  */
 class IdentityConstrainedPermissionCheckerTest {
 

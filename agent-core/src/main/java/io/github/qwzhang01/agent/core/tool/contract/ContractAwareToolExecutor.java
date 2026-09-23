@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Validation-first tool executor (Stage 2.2, harness roadmap).
+ * Validation-first tool executor (, harness roadmap).
  * <p>
  * One executor decorator, applied identically to built-ins, MCP tools and
  * plugins — the same validation chain for everything. Sits <b>outside</b>
@@ -36,7 +36,7 @@ import java.util.concurrent.TimeoutException;
  *       refusal the secure assembly wants, instead of a string the model
  *       might mistake for a result).</li>
  *   <li>Argument validation via {@link ToolArgumentValidator} against
- *       {@link Tool#definition()} — invalid arguments produce
+ *       {@link Tool#definition} — invalid arguments produce
  *       {@code [INVALID_TOOL_ARGUMENTS]} classified as
  *       {@link FailureKind#INPUT_INVALID}, and the tool is <b>not</b>
  *       executed.</li>
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeoutException;
  *       {@link RunDeadlineException} pass through untouched (control flow,
  *       not tool failures).</li>
  *   <li>Everything the tool throws is wrapped in a
- *       {@link ToolResult} envelope (Stage 2.3) carrying the failure kind,
+ *       {@link ToolResult} envelope carrying the failure kind,
  *       argument hash and model-visible text; the loop still receives a
  *       String (compatibility), but audits and tests can consume the typed
  *       envelope via {@link #lastResult(String)}.</li>
@@ -59,7 +59,7 @@ import java.util.concurrent.TimeoutException;
  * Thread note: the timeout watchdog uses a small cached daemon pool shared
  * across calls. Cancelling the run interrupts the worker, but a tool that
  * ignores interruption may keep running until its own timeout — that is
- * the documented limit of cooperative cancellation (Stage 4 hardens it).
+ * the documented limit of cooperative cancellation (hardens it).
  */
 public class ContractAwareToolExecutor implements ToolExecutor {
 

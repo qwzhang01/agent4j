@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 8.3: {@link JdbcTaskQueue}'s dialect discipline proven on real
+ *  {@link JdbcTaskQueue}'s dialect discipline proven on real
  * PostgreSQL (skip-by-assumption when none is reachable). The H2 suite (11
  * tests) stays the full contract; this is the dialect proof.
  */

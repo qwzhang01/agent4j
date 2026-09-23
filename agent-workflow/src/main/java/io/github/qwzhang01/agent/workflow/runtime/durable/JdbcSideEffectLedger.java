@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * JDBC-backed {@link SideEffectLedger} (Stage 8.1): the write-ahead truth
+ * JDBC-backed {@link SideEffectLedger} : the write-ahead truth
  * for external side effects lands in the database, shared across runtime
  * instances. {@code INSERT} on the {@code PRIMARY KEY (effect_id)} gives
  * the idempotent-record semantic for free: a duplicate record of the same

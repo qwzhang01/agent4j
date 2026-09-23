@@ -12,7 +12,7 @@ import java.util.Objects;
 
 /**
  * The model-facing knowledge retrieval tool: {@code search_knowledge}
- * (Stage 15 M15.2, D5).
+ * (, D5).
  * <p>
  * The model decides WHEN to retrieve (blueprint D5: injection via tool call,
  * not via ContextBuilder pre-assembly - retrieval timing is a model decision).
@@ -20,7 +20,7 @@ import java.util.Objects;
  * id is bound into the tool instance at assembly time and never appears in
  * the tool's parameters. Even a fully injected malicious prompt cannot make
  * this tool read another tenant's knowledge base - the scope whitelist holds
- * regardless of what the model asks for.
+ * regardless of what the model asks .
  * <p>
  * Output contract: a JSON object
  * {@code {"count": n, "results": [{"title": ..., "content": ...}]}} so the

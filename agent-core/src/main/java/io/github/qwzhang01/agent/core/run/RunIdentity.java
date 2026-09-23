@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.core.run;
 
 /**
- * Caller identity attached to a {@link RunContext} (Stage 1.1).
+ * Caller identity attached to a {@link RunContext} .
  * <p>
  * Free of credentials by design: this is the display/audit identity (who
  * the human or system actor is), NOT a token. Auth remains the host's

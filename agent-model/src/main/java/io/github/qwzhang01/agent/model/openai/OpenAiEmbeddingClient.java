@@ -51,11 +51,11 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
     }
 
     /**
-     * @param baseUrl      endpoint base URL, e.g. {@code https://api.openai.com/v1};
+     * @param baseUrl endpoint base URL, e.g. {@code https://api.openai.com/v1};
      *                     trailing slash tolerated
-     * @param apiKey       bearer token
+     * @param apiKey bearer token
      * @param defaultModel embedding model used when a call carries none
-     * @param timeout      per-request read timeout; null = 30s
+     * @param timeout per-request read timeout; null = 30s
      */
     public OpenAiEmbeddingClient(String baseUrl, String apiKey, String defaultModel, Duration timeout) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;

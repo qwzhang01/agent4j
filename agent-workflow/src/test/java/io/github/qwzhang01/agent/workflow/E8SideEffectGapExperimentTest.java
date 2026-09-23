@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *       starts past them (Checkpoint D2). Span: everything before the
  *       cursor. Scenario 1.</li>
  *   <li><b>isResuming guard</b> (node level, the framework's hook): the
- *       node that PAUSED is re-entered with {@code ctx.isResuming()==true},
+ *       node that PAUSED is re-entered with {@code ctx.isResuming==true},
  *       so a two-phase node (fire side effect, then settle) fires once
  *       and only polls on resume - HumanApprovalNode is the canonical
  *       in-repo example. Span: the cursor node itself. Scenario 3.</li>
@@ -327,7 +327,7 @@ class E8SideEffectGapExperimentTest {
      * charge fires and the run SUCCEEDS, but a terminal run writes NO
      * checkpoint, so disk still holds the approval-pause checkpoint:
      * exactly the state a mid-charge crash would leave. Generation 2
-     * ("restart"): recovery replays from that checkpoint - the approval
+     * "restart": recovery replays from that checkpoint - the approval
      * re-pauses (fresh decision table, the documented recover
      * semantics), gets re-approved, and the charge re-executes with
      * isResuming==false and no protection. An unguarded node charges

@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.trace.trajectory;
 import io.github.qwzhang01.agent.core.agent.AgentState;
 
 /**
- * Why a run terminated (Stage 14 trajectory terminal marker).
+ * Why a run terminated (trajectory terminal marker).
  * <p>
  * Mirrors {@link AgentState.Status} terminal states and adds {@link #CANCELLED}
  * for future workflow-run trajectories. Non-terminal loop statuses

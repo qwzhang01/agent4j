@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
  * - Wrap errors as text (so the model can decide how to recover)
  * <p>
  * Future stages will add:
- * - Timeout enforcement (stage 6)
- * - Policy check before execution (stage 9)
- * - Audit logging (stage 9)
- * - Sandbox execution (stage 4)
+ * - Timeout enforcement
+ * - Policy check before execution
+ * - Audit logging
+ * - Sandbox execution
  */
 public class DefaultToolExecutor implements ToolExecutor {
 
@@ -37,7 +37,7 @@ public class DefaultToolExecutor implements ToolExecutor {
     }
 
     /**
-     * Context-aware execution (Stage 1.2): forwards the run context to the
+     * Context-aware execution : forwards the run context to the
      * tool boundary so tools can see tenant / user / budget / cancellation.
      * Tools that do not override the ctx overload fall back to the legacy
      * method via the {@link Tool} default implementation.

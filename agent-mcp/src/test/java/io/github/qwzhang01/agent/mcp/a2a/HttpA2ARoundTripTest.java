@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * whole HTTP A2A work exists for -- zero mocks between the two sides, real
  * sockets, real JSON on the wire.
  *
- * <p>Stage 8.3 A2A Integration Profile: tagged {@code a2a-it} so CI can run
+ * <p>A2A Integration Profile: tagged {@code a2a-it} so CI can run
  * the transport-level suite as an opt-in profile
  * ({@code -Dagent4j.surefire.excludedGroups= -Dgroups=a2a-it}).</p>
  */

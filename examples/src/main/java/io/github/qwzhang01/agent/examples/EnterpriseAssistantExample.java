@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Stage 15 M15.5 acceptance demo: the full enterprise script (blueprint §6).
+ * acceptance demo: the full enterprise script (blueprint §6).
  * <p>
  * T1 login - T2 RAG answer (tenant-scoped retrieval, attributed audit,
  * usage billing) - T3 tool-level approval ride-along - T4 task-level approval

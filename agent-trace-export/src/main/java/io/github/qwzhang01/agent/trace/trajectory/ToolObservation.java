@@ -2,11 +2,11 @@ package io.github.qwzhang01.agent.trace.trajectory;
 
 /**
  * The Observation half of one trajectory step: the result of one tool call
- * (Stage 14 D3).
+ * (D3).
  * <p>
  * {@code content} is recorded VERBATIM - whatever the executor returned is
- * what the model saw on the next call, including Stage 2 "[ERROR] ..." texts
- * and Stage 9 "[DENIED]" governance texts. The trajectory never rewrites or
+ * what the model saw on the next call, including "[ERROR] ..." texts
+ * and "[DENIED]" governance texts. The trajectory never rewrites or
  * interprets observations (D1: record what the policy actually saw).
  * <p>
  * {@code success} has a narrow honest meaning: the executor RETURNED instead
@@ -16,9 +16,9 @@ package io.github.qwzhang01.agent.trace.trajectory;
  * yields success=false.
  *
  * @param toolCallId tool call id the model assigned
- * @param name       tool name
- * @param content    result text exactly as returned to the loop
- * @param success    false only if the executor threw
+ * @param name tool name
+ * @param content result text exactly as returned to the loop
+ * @param success false only if the executor threw
  * @param durationMs wall time of the tool execution
  */
 public record ToolObservation(

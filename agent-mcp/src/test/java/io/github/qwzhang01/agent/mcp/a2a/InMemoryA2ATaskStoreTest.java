@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6.3: pins the {@link InMemoryA2ATaskStore} contract rules the
+ *  pins the {@link InMemoryA2ATaskStore} contract rules the
  * HttpA2AServer relies on — upsert/find, context ordering, cross-instance
  * lease semantics, retention sweeps, live-task dedup.
  */

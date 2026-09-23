@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * Sandbox implementation using process isolation (方案1).
  * <p>
  * Flow:
- * 1. Validate className (legal Java identifier - no path traversal, Stage 4.1)
+ * 1. Validate className (legal Java identifier - no path traversal, )
  * 2. Create a workspace dir under the canonicalized base (containment check)
  * 3. Write source + the in-guest SandboxGuard class (source-injected policy)
  * 4. Compile with javac (subprocess, timeout)
@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  * Pros: true OS-level isolation, secure
  * Cons: slow (JVM startup), needs JDK on PATH
  * <p>
- * Stage 4.1 hardening (see limitations.md for the honest boundary):
+ * hardening (see limitations.md for the honest boundary):
  * <ul>
  *   <li>className whitelist {@code ^[A-Za-z_$][A-Za-z0-9_$]*$} - no separators,
  *       no path fragments, no "..".</li>
@@ -190,11 +190,11 @@ public class ProcessSandbox implements Sandbox {
     /**
      * {@code java [-Xmx<bytes>] -cp <dir> Launcher <GuestClass>}.
      * The launcher installs the in-guest guard first, then invokes the
-     * guest's {@code main} reflectively (Stage 4.1).
+     * guest's {@code main} reflectively .
      * Suffix-less {@code -Xmx} is bytes (HotSpot). Prefer {@code m} when the
      * limit is an exact megabyte so the flag stays readable in process lists.
      * <p>
-     * Stage 8.3: {@code -Djava.security.manager=allow} re-permits
+     *  {@code -Djava.security.manager=allow} re-permits
      * {@code System.setSecurityManager} on JDK 18-23 (JEP 411 moved it to
      * disallow-by-default; JDK 21 throws UnsupportedOperationException without
      * the flag). Harmless on JDK 17 (a warning). On JDK 24+ (JEP 486 removed
@@ -348,7 +348,7 @@ public class ProcessSandbox implements Sandbox {
     }
 
     /**
-     * Kill the direct child and all its descendants. {@code destroyForcibly()}
+     * Kill the direct child and all its descendants. {@code destroyForcibly}
      * on the direct child leaves grandchildren running; the tree walk closes
      * that hole (fork-bomb-shaped escapes die with the tree).
      */

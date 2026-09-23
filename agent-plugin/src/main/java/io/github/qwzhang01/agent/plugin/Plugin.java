@@ -12,7 +12,7 @@ package io.github.qwzhang01.agent.plugin;
  * - Loading is isolated: if onLoad throws, other plugins are unaffected.
  * - Plugins are self-managing: they know what to register and unregister.
  * <p>
- * Security boundary (Stage 6.4, stated honestly — no implied isolation):
+ * Security boundary (, stated honestly — no implied isolation):
  * an SPI plugin runs IN-PROCESS with full JVM permissions. The framework
  * isolates registration surfaces (per-plugin tool namespaces, manifest
  * permission gates) and rolls back registrations on failure — it does NOT

@@ -13,8 +13,8 @@ import java.util.Objects;
  * so a richer spec peer still round-trips the text we understand.
  *
  * @param artifactId spec artifactId (stable within the task)
- * @param name       human-readable name (nullable)
- * @param text       the single TextPart's content
+ * @param name human-readable name (nullable)
+ * @param text the single TextPart's content
  */
 public record A2AArtifact(String artifactId, String name, String text) {
 

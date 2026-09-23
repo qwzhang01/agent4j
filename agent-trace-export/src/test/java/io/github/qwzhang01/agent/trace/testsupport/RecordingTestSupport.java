@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Test fixtures for Stage 14 M14.1 (kept local so the module needs no extra
+ * Test fixtures for (kept local so the module needs no extra
  * test dependencies beyond agent-model's MockModelClient).
  */
 public final class RecordingTestSupport {
@@ -98,7 +98,7 @@ public final class RecordingTestSupport {
      * Independent request capturer sitting between the recording decorator and
      * the mock - proves "step.state == what the model actually saw" WITHOUT
      * trusting the recorder under test (non-circular evidence, same手法 as
-     * Stage 12/13 RecordingModelClient tests).
+     * /13 RecordingModelClient tests).
      */
     public static final class CapturingModelClient implements ModelClient {
         public final List<List<ChatMessage>> requests = new ArrayList<>();

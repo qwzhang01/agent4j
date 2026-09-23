@@ -6,11 +6,11 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Mock MCP transport for testing (Stage 10 M10.2).
+ * Mock MCP transport for testing .
  * <p>
  * Instead of launching a real subprocess, this transport:
  * 1. Parses each sent message to extract the JSON-RPC method
- * 2. Returns a pre-canned response for that method on the next receive()
+ * 2. Returns a pre-canned response for that method on the next receive
  * <p>
  * Register expected responses via {@link #registerResponse(String, String)}.
  */
@@ -29,7 +29,7 @@ public class MockMcpTransport implements McpTransport {
 
     /**
      * Push a raw incoming message (notification or out-of-order response)
-     * that will be returned by {@link #receive()} before any later send() reply.
+     * that will be returned by {@link #receive} before any later send reply.
      */
     public void enqueueIncoming(String json) {
         responseQueue.add(json);

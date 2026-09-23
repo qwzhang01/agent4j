@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.1: pins the provider error taxonomy — nine categories (adds
- * PARSE_ERROR / CANCELED over Stage 1's seven), the accessor surface
+ *  pins the provider error taxonomy — nine categories (adds
+ * PARSE_ERROR / CANCELED over 's seven), the accessor surface
  * (retryAfter / statusCode / providerName), retryability, and the legacy
  * folding rules that keep pre-Stage-6 catch sites working.
  */

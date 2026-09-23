@@ -12,29 +12,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
- * ModelClient boundary decorator (Stage 18 D2): measures latency, reads usage,
+ * ModelClient boundary decorator (D2): measures latency, reads usage,
  * records finish reason - the operations projection of every model call.
  * <p>
  * Fourth generation of the decorator lineage (capability at the boundary, the
- * path stays dumb): Retry/Timeout/Fallback (Stage 1, availability) ->
- * GovernedToolExecutor (Stage 9, governance) -> RecordingModelClient (Stage 14,
- * training data) -> ObservingModelClient (Stage 18, operations metrics).
+ * path stays dumb): Retry/Timeout/Fallback (, availability) ->
+ * GovernedToolExecutor (, governance) -> RecordingModelClient (Stage 14,
+ * training data) -> ObservingModelClient (, operations metrics).
  * {@code ReActAgentLoop} is not touched - one line of wiring gives metrics to
  * every existing agent.
  * <p>
  * Two exception directions, deliberately different (javadoc contract):
  * <ul>
  *   <li>delegate exceptions: recorded as {@code error} metrics, then RETHROWN -
- *       business semantics stay faithful (same discipline as Stage 14
+ *       business semantics stay faithful (same discipline as
  *       RecordingModelClient: record, never swallow)</li>
  *   <li>sink exceptions: caught and logged - metrics are a side channel and must
- *       never break the run they observe (same discipline as Stage 12 listener
+ *       never break the run they observe (same discipline as listener
  *       isolation)</li>
  * </ul>
  * <p>
  * Streaming: metrics are emitted exactly once on the terminal event
  * ({@link StreamEvent.Done} or {@link StreamEvent.Error}) of a CONSUMED stream;
- * latency spans from the {@code stream()} call to the terminal event. A stream
+ * latency spans from the {@code stream} call to the terminal event. A stream
  * abandoned without a terminal event emits nothing (an unconsumed call never
  * happened - lazy semantics preserved).
  * <p>

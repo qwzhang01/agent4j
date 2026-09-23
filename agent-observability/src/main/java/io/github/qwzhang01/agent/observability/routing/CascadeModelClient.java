@@ -56,10 +56,10 @@ public final class CascadeModelClient implements ModelClient {
     private final QualityGate gate;
 
     /**
-     * @param cheap   the first-attempt tier (cost-efficient)
+     * @param cheap the first-attempt tier (cost-efficient)
      * @param premium the escalation tier (reliability); receives the ORIGINAL
      *                request instance on escalation, never the failed response
-     * @param gate    post-call quality judge; its verdict decides escalation
+     * @param gate post-call quality judge; its verdict decides escalation
      */
     public CascadeModelClient(ModelClient cheap, ModelClient premium, QualityGate gate) {
         this.cheap = Objects.requireNonNull(cheap, "cheap");
@@ -204,7 +204,7 @@ public final class CascadeModelClient implements ModelClient {
     }
 
     private static ModelResponse ensureContentPresent(ModelResponse response) {
-        // ModelResponse.error() carries null content; give the gate something
+        // ModelResponse.error carries null content; give the gate something
         // uniform to look at: content "", toolCalls null, finishReason "error".
         if (response.content() == null && !response.hasToolCalls()) {
             return new ModelResponse("", response.toolCalls(), response.finishReason(), response.usage());

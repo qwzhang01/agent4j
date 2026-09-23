@@ -8,14 +8,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * ToolExecutor boundary decorator (Stage 18 D2): measures latency, records
+ * ToolExecutor boundary decorator (D2): measures latency, records
  * success / denial / error per tool call.
  * <p>
- * Denial detection is CONTRACT-based: the Stage 9 {@code GovernedToolExecutor}
+ * Denial detection is CONTRACT-based: the {@code GovernedToolExecutor}
  * blocks calls by returning text prefixed with {@code "[DENIED] "} or
  * {@code "[RATE_LIMITED] "} (the tool never runs). Those prefixes mean
  * "intercepted by governance" and count as {@code denied=true, success=false}.
- * By contrast {@code "[ERROR] ..."} (Stage 2 DefaultToolExecutor wrapping)
+ * By contrast {@code "[ERROR] ..."} (DefaultToolExecutor wrapping)
  * means the tool RAN and its failure text is a normal observation - that is
  * {@code success=true, denied=false}. Distinguishing them matters operationally:
  * a denied spike is a leading indicator of injection attempts (blueprint F7),

@@ -1,20 +1,20 @@
 package io.github.qwzhang01.agent.coding.patch;
 
 /**
- * A single-file change staged in the {@link PatchStore} (Stage 17 M17.2, blueprint D1:
- * "a change is a first-class value - enumerable, auditable, revertable").
+ * A single-file change staged in the {@link PatchStore} (, blueprint D1:
+ * "a change is a first-class value - enumerable, auditable, revertable".
  * <p>
  * Kind is derived from the file system state at staging time: absent file + new content
  * = {@code CREATE}; existing file + new content = {@code MODIFY}; existing file + deletion
  * = {@code DELETE}. {@code oldContent} is the on-disk snapshot taken when the change was
- * staged - it is the <b>drift baseline</b> for {@link PatchStore#apply()} (TOCTOU defense)
+ * staged - it is the <b>drift baseline</b> for {@link PatchStore#apply} (TOCTOU defense)
  * and the "before" side of the diff rendering.
  * <p>
  * Stores the full new content (not a line-level delta) - v1 honest boundary: minimal-edit
  * (Myers) diff computation is deferred, rendering happens on demand.
  *
- * @param path       workspace-relative path (POSIX-style separators on this platform)
- * @param kind       CREATE / MODIFY / DELETE
+ * @param path workspace-relative path (POSIX-style separators on this platform)
+ * @param kind CREATE / MODIFY / DELETE
  * @param newContent full new content; null only for DELETE
  * @param oldContent on-disk snapshot at staging time; null only for CREATE
  */

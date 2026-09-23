@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
  * {@link AgentEvent.ContentDelta} plus {@link AgentEvent.Done}, so stubs and
  * decorators that only implement {@code run} keep compiling.
  * <p>
- * Stage 2: implement ReAct loop via AgentLoop
- * Stage 5+: add workflow graph execution
+ *  implement ReAct loop via AgentLoop
+ * +: add workflow graph execution
  */
 public interface Agent {
 
@@ -48,19 +48,19 @@ public interface Agent {
      * Old checkpoints without the field still start as the entry persona.
      * <p>
      * Step budget: {@code currentStep} is conversation-cumulative and is
-     * not reset between turns. {@link AgentConfig#getMaxSteps()} is the
+     * not reset between turns. {@link AgentConfig#getMaxSteps} is the
      * SSOT for the cap ({@code SimpleAgent} overwrites {@code state.maxSteps}
      * on every prepare). Tighten or raise the cap by changing the config,
      * not by mutating the state.
      *
      * @param userInput user's question or instruction
-     * @param state     existing conversation state (will be mutated)
+     * @param state existing conversation state (will be mutated)
      * @return agent's final response text
      */
     String run(String userInput, AgentState state);
 
     /**
-     * Run with a pre-built USER message (text or multimodal via {@link ChatMessage#parts()}).
+     * Run with a pre-built USER message (text or multimodal via {@link ChatMessage#parts}).
      */
     default String run(ChatMessage userMessage) {
         return run(userMessage, new AgentState());
@@ -70,7 +70,7 @@ public interface Agent {
      * Continue a conversation with a pre-built USER message (text or multimodal).
      * <p>
      * Default: degrade to {@link #run(String, AgentState)} using
-     * {@code content()}, or concatenated text parts if content is blank.
+     * {@code content}, or concatenated text parts if content is blank.
      * Image-only parts are dropped — override this method to keep them.
      * Agents that only implement the String overloads stay callable
      * through {@code run(ChatMessage)} / default {@code stream} without
@@ -145,14 +145,14 @@ public interface Agent {
 
 
     /**
-     * Run with an explicit {@link RunContext} (Stage 1.2 of the harness
+     * Run with an explicit {@link RunContext} (of the harness
      * roadmap): identity, tenant, deadline, cancellation and budget ride
      * one immutable context instead of scattered parameters. Legacy
      * {@code run} methods keep working unchanged (context-free path).
      *
      * @param userMessage user's question or instruction
-     * @param state       existing conversation state (will be mutated)
-     * @param ctx         the run context (null falls back to the legacy path)
+     * @param state existing conversation state (will be mutated)
+     * @param ctx the run context (null falls back to the legacy path)
      * @return agent's final response text
      */
     default String run(ChatMessage userMessage, AgentState state, RunContext ctx) {

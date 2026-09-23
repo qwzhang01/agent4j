@@ -23,7 +23,7 @@ class RetryPolicyTest {
 
     private static final ChatPersona LUNA = ChatPersona.of("luna", "You are Luna.");
 
-    // RetryPolicy.never() contract
+    // RetryPolicy.never contract
 
     @Test
     void neverPolicy_neverRetries() {

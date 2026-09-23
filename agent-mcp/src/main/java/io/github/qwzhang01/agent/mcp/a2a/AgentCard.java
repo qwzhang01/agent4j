@@ -12,20 +12,20 @@ import java.util.Objects;
  * <p>
  * The canonical 7-arg shape carries the spec's {@code url} (where the
  * endpoint actually lives; in-process agents have none) and
- * {@link A2ACapabilities}. The legacy 5-arg shape (Stage 10/11 callers)
+ * {@link A2ACapabilities}. The legacy 5-arg shape (/11 callers)
  * delegates with url = endpoint and capabilities = none, so every existing
  * construction site compiles and behaves unchanged.
  * <p>
- * Trust note (Stage 11 D7): a remote card is a self-report. It is a ROUTING
+ * Trust note (D7): a remote card is a self-report. It is a ROUTING
  * input, never a TRUST input.
  *
- * @param name         Agent's display name
- * @param description  What this Agent does
- * @param skills       List of capabilities (e.g. ["code-review", "deployment"])
- * @param endpoint     How to reach this Agent (URL or identifier; for
+ * @param name Agent's display name
+ * @param description What this Agent does
+ * @param skills List of capabilities (e.g. ["code-review", "deployment"])
+ * @param endpoint How to reach this Agent (URL or identifier; for
  *                     in-process agents an "in-process:name" handle)
- * @param version      Protocol version
- * @param url          Spec url: the agent's real http(s) base (nullable)
+ * @param version Protocol version
+ * @param url Spec url: the agent's real http(s) base (nullable)
  * @param capabilities Spec capability flags (streaming / push / history)
  */
 public record AgentCard(
@@ -48,7 +48,7 @@ public record AgentCard(
     }
 
     /**
-     * Legacy 5-arg shape (Stage 10/11 callers): url mirrors endpoint,
+     * Legacy 5-arg shape (/11 callers): url mirrors endpoint,
      * capabilities default to none.
      */
     public AgentCard(String name, String description, List<String> skills,

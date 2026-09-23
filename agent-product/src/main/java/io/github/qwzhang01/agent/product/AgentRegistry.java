@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Live agent instances started from definitions (Stage 13 M13.1).
+ * Live agent instances started from definitions .
  * <p>
  * "Adding an agent = dropping a YAML file" - the registry is what
  * {@code ProductBootstrapper.startAll} fills and what callers (HTTP handlers,

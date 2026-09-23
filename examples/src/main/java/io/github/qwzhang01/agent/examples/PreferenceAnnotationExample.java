@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Stage 14 acceptance demo #2: same-prompt double rollout -> console
+ * acceptance demo #2: same-prompt double rollout -> console
  * preference annotation -> DPO-format export (the rejection-sampling
  * RLHF/DPO data route).
  * <p>

@@ -11,7 +11,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 10 M10.1 tests: StdioTransport with `cat` as an echo subprocess.
+ * tests: StdioTransport with `cat` as an echo subprocess.
  * <p>
  * `cat` reads lines from stdin and echoes them to stdout -- perfect as a mock
  * MCP server for transport-level testing (no real protocol needed).

@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
 
 /**
- * Tool definition received from an MCP server via {@code tools/list} (Stage 10).
+ * Tool definition received from an MCP server via {@code tools/list} .
  * <p>
  * This is what the server tells us about a tool it exposes. We then wrap it
  * in {@link McpToolAdapter} to implement our local {@code Tool} interface.
  *
- * @param name        tool name (e.g. "get_weather")
+ * @param name tool name (e.g. "get_weather"
  * @param description human-readable description
  * @param inputSchema JSON Schema for the tool's input parameters
  */

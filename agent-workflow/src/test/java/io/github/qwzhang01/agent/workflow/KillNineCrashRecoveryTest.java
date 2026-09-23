@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *       at approval, persists the checkpoint, writes a paused.marker with the
  *       runId, then idles.</li>
  *   <li>The test JVM — a DIFFERENT OS process — calls
- *       {@link Process#destroyForcibly()} (SIGKILL on POSIX). No shutdown
+ *       {@link Process#destroyForcibly} (SIGKILL on POSIX). No shutdown
  *       hooks, no in-memory residue: everything the recovery can use must
  *       already be on disk.</li>
  *   <li>The test JVM builds a brand-new RunManager over the dead process's
@@ -97,15 +97,15 @@ class KillNineCrashRecoveryTest {
         // Anchor classes covering the child's ENTIRE dependency closure,
         // one anchor per artifact (FQCN strings so a missing jar degrades
         // to a skipped anchor, not a compile-time coupling):
-        // - this test class              -> agent-workflow test-classes
-        // - RunManager                   -> agent-workflow target/classes
-        // - Agent (agent-core)           -> agent-core jar
-        // - ObjectMapper (databind)      -> jackson-databind + its dir siblings
-        // - JsonFactory (jackson-core)   -> jackson-core
-        // - JsonProperty (annotations)   -> jackson-annotations
-        // - LoggerFactory (slf4j-api)    -> slf4j-api
-        // - SimpleLogger (slf4j-simple)  -> slf4j-simple (test-scope, Child uses it)
-        // - JavaTimeModule (jsr310)      -> jackson-datatype-jsr310 (via agent-core)
+        // - this test class -> agent-workflow test-classes
+        // - RunManager -> agent-workflow target/classes
+        // - Agent (agent-core) -> agent-core jar
+        // - ObjectMapper (databind) -> jackson-databind + its dir siblings
+        // - JsonFactory (jackson-core) -> jackson-core
+        // - JsonProperty (annotations) -> jackson-annotations
+        // - LoggerFactory (slf4j-api) -> slf4j-api
+        // - SimpleLogger (slf4j-simple) -> slf4j-simple (test-scope, Child uses it)
+        // - JavaTimeModule (jsr310) -> jackson-datatype-jsr310 (via agent-core)
         String[] anchorClasses = {
                 KillNineCrashRecoveryTest.class.getName(),
                 RunManager.class.getName(),

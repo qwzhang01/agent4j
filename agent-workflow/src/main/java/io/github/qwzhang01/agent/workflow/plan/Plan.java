@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A structured, validated, versioned execution plan (Stage 9
+ * A structured, validated, versioned execution plan (
  * Planner/Executor).
  * <p>
  * A {@code Plan} is a linear list of {@link Step steps} with explicit
@@ -18,10 +18,10 @@ import java.util.Set;
  *   <li>at least one step exists.</li>
  * </ul>
  * <p>
- * Versioning: {@link #planVersion()} increments on every structural
+ * Versioning: {@link #planVersion} increments on every structural
  * mutation (adding/removing steps, editing a step's command or deps).
  * Executors that checkpoint a plan can detect a changed plan on resume
- * ({@code planVersion() != checkpoint.planVersion} → plan drift, surface
+ * ({@code planVersion != checkpoint.planVersion} → plan drift, surface
  * to the caller instead of silently executing a different plan).
  * <p>
  * Recovery contract: a plan plus a completed-step set is enough to resume:
@@ -85,7 +85,7 @@ public final class Plan {
      * plan carries {@code planVersion + 1} — versioning that actually
      * increments (the class javadoc promised this; before this method the
      * version was always 1, so drift was undetectable). A resumed
-     * executor compares {@code planVersion()} against its checkpoint and
+     * executor compares {@code planVersion} against its checkpoint and
      * refuses to run a drifted plan.
      */
     public Plan rebuildWith(List<Step> newSteps) {

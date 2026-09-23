@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Stage 7.2 acceptance for the orphan queries: boundary events arriving
+ * acceptance for the orphan queries: boundary events arriving
  * OUTSIDE any run context are counted separately - a rising orphan counter
  * is a wiring bug, not traffic, and operations must be able to see it.
  */

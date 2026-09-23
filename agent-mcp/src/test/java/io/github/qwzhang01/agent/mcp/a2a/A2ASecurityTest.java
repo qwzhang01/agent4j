@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6.3: pins the {@link A2ASecurity} primitives — constant-time bearer,
+ *  pins the {@link A2ASecurity} primitives — constant-time bearer,
  * push HMAC round-trip, tamper / window / replay rejection. These are the
  * wire-integrity guarantees the signed-push path of HttpA2AServer depends on.
  */

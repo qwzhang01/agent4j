@@ -13,19 +13,19 @@ import java.util.function.Consumer;
 /**
  * {@link ContextBuilder} decorator that enforces a {@link ContextWindowBudget} (KP2).
  * <p>
- * The loop's {@code buildRequest()} assembles four components into the final model request:
+ * The loop's {@code buildRequest} assembles four components into the final model request:
  * <ol>
  *   <li>System prompt — prepended by the loop AFTER this builder runs.</li>
  *   <li>Tool / handoff schemas — appended by the loop AFTER this builder runs.</li>
  *   <li>History — produced by this builder (via the delegate).</li>
  *   <li>Output headroom — reserved for the model's reply; never explicitly placed.</li>
  * </ol>
- * Because (1) and (2) are added after {@code build()} returns, this class must
+ * Because (1) and (2) are added after {@code build} returns, this class must
  * estimate their cost from the config and deduct them from the total budget to
  * compute the history budget.
  * <p>
  * Truncation strategy (v1): drop the oldest messages until the estimated history
- * cost fits within {@link ContextWindowBudget#historyBudget()}.
+ * cost fits within {@link ContextWindowBudget#historyBudget}.
  * <ul>
  *   <li>Pairs are preserved: if a TOOL_RESULT is the oldest message, the preceding
  *       ASSISTANT+tool_calls message is dropped together with it to maintain the
@@ -36,16 +36,16 @@ import java.util.function.Consumer;
  * A WARN log is emitted every time truncation occurs, naming the messages dropped
  * and the estimated token savings.
  * <p>
- * When the delegate is {@code null}, the enforcer operates on {@code state.getMessages()}
+ * When the delegate is {@code null}, the enforcer operates on {@code state.getMessages}
  * directly (same passthrough-then-enforce semantics).
  * <p>
  * <b>Usage:</b>
  * <pre>{@code
- * ContextWindowBudget budget = ContextWindowBudget.window128k();
- * ContextBuilder base = new MyMemoryContextBuilder();
+ * ContextWindowBudget budget = ContextWindowBudget.window128k;
+ * ContextBuilder base = new MyMemoryContextBuilder;
  * ContextBuilder enforced = new ContextWindowEnforcer(base, budget);
  *
- * AgentConfig config = new AgentConfig("demo", systemPrompt, model, tools, 10, enforced);
+ * AgentConfig config = new AgentConfig"demo", systemPrompt, model, tools, 10, enforced);
  * }</pre>
  */
 public class ContextWindowEnforcer implements ContextBuilder {
@@ -58,21 +58,21 @@ public class ContextWindowEnforcer implements ContextBuilder {
 
     /**
      * @param delegate the underlying context builder; {@code null} means use raw state messages
-     * @param budget   the four-account window budget to enforce
+     * @param budget the four-account window budget to enforce
      */
     public ContextWindowEnforcer(ContextBuilder delegate, ContextWindowBudget budget) {
         this(delegate, budget, null);
     }
 
     /**
-     * Stage 5.1: full constructor with a trim listener. Every truncation the
+     *  full constructor with a trim listener. Every truncation the
      * enforcer performs emits one {@link ContextTrimRecord} to the listener
      * (who / when / before-after counts), making the "who got cut" decision
      * queryable telemetry instead of a warn log only. {@code null} listener
      * = legacy behaviour exactly (warn log, no record).
      *
-     * @param delegate     underlying context builder; {@code null} = raw state passthrough
-     * @param budget       the four-account window budget to enforce
+     * @param delegate underlying context builder; {@code null} = raw state passthrough
+     * @param budget the four-account window budget to enforce
      * @param trimListener optional consumer of trim records; may be null
      */
     public ContextWindowEnforcer(ContextBuilder delegate, ContextWindowBudget budget,
@@ -209,7 +209,7 @@ public class ContextWindowEnforcer implements ContextBuilder {
     /**
      * Estimate the combined token cost of all tool and handoff schemas.
      * Used for informational logging only; not deducted from historyBudget at runtime
-     * (that is the job of {@link ContextWindowBudget#toolSchemaReserve()}).
+     * (that is the job of {@link ContextWindowBudget#toolSchemaReserve}).
      */
     static int estimateToolSchemas(ToolRegistry registry, List<HandoffSpec> handoffs) {
         int chars = 0;

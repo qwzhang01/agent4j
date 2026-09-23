@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.2: the world as an immutable domain blackboard.
+ *  the world as an immutable domain blackboard.
  * <p>
  * Blueprint D3 under test: changes are instructions (sealed effects), apply
  * returns a new state, and there is no other mutation path.

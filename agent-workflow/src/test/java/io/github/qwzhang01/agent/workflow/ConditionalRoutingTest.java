@@ -97,7 +97,7 @@ class ConditionalRoutingTest {
 
     @Test
     void edgeWithoutWhenOrOtherwiseIsUnconditional() {
-        // .edge(a, b) with neither when() nor otherwise() resolves to unconditional
+        // .edge(a, b) with neither when nor otherwise resolves to unconditional
         Workflow wf = Workflow.builder("implicit")
                 .node(ActionNode.of("a", ctx -> "1"))
                 .node(ActionNode.of("b", ctx -> "2"))

@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Fulfills the promise written in {@link StepRecord}'s javadoc since Stage 5:
- * "Stage 14 (RL trajectory export) consumes these records directly."
+ * Fulfills the promise written in {@link StepRecord}'s javadoc since
+ * "(RL trajectory export) consumes these records directly."
  * <p>
  * HONEST granularity: a workflow run has no model calls, so this is a
  * NODE-LEVEL projection, not a per-model-call trajectory:

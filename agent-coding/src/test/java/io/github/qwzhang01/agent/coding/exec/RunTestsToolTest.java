@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 17 M17.3 (+ M17.4 evolution): the fixed-referee tool - the test command is
+ * (+ M17.4 evolution): the fixed-referee tool - the test command is
  * assembly-injected and takes no arguments (D3: the referee cannot be chosen by the
- * refereed). {@code run()} returns the structured verdict for the session's fix-loop
+ * refereed). {@code run} returns the structured verdict for the session's fix-loop
  * wiring (the M17.3 onTestFailure listener was superseded by it).
  */
 class RunTestsToolTest {

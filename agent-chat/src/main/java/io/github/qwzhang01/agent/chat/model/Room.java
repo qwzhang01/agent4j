@@ -49,7 +49,7 @@ public final class Room {
     }
 
     /**
-     * Opaque scopes from {@link #identity()}; empty when the host set none.
+     * Opaque scopes from {@link #identity}; empty when the host set none.
      */
     public List<String> scopes() {
         return identity.scopes();

@@ -11,7 +11,7 @@ import java.util.Objects;
  * <p>
  * Produced by every supersede-capable write path (extract pipeline, save_memory
  * tool, admin approve) so audits can answer "who changed my memory, and why" —
- * the evidence chain the reconciliation design calls for. It is a value
+ * the evidence chain the reconciliation design calls . It is a value
  * object, not a store entity: hosts that need persistence subscribe to the
  * {@code MemoryDecisionListener} hook or poll their store's audit view.
  * <p>
@@ -23,18 +23,18 @@ import java.util.Objects;
  * decidedAt/appliedAt pair separates "when the judgment was made" from "when it
  * landed in the store" (they differ under async extraction and admin review).
  *
- * @param operation   what the write path did with the candidate
- * @param subject     the subject key the decision was made under — the reconciled
+ * @param operation what the write path did with the candidate
+ * @param subject the subject key the decision was made under — the reconciled
  *                    key when the pipeline corrected a drifted key, so audits can
  *                    see key corrections, not just content changes
- * @param lifecycle   EVOLVE / CONFLICT / null (null = not judged -> CONFLICT)
- * @param oldEntryId  the ACTIVE entry this decision replaced (null = ADD)
- * @param newEntryId  the entry this decision wrote (null = REJECT)
- * @param evidence    the recalled old entries visible to the decision maker
+ * @param lifecycle EVOLVE / CONFLICT / null (null = not judged -> CONFLICT)
+ * @param oldEntryId the ACTIVE entry this decision replaced (null = ADD)
+ * @param newEntryId the entry this decision wrote (null = REJECT)
+ * @param evidence the recalled old entries visible to the decision maker
  *                    (empty for ADD decisions with no recalled evidence)
- * @param approvedBy  identity owning the decision: model id, user id, or admin id
- * @param decidedAt   when the judgment was made (decision time)
- * @param appliedAt   when the write landed in the store (application time)
+ * @param approvedBy identity owning the decision: model id, user id, or admin id
+ * @param decidedAt when the judgment was made (decision time)
+ * @param appliedAt when the write landed in the store (application time)
  */
 public record MemoryDecision(
         Operation operation,
@@ -111,7 +111,7 @@ public record MemoryDecision(
     }
 
     /**
-     * Render evidence as prompt-friendly lines ("- subject: content"), or an
+     * Render evidence as prompt-friendly lines "- subject: content", or an
      * "empty" marker line. Used when building the reconciliation prompt.
      */
     public static String renderEvidence(Evidence evidence) {

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Durable row for one workflow Run (Stage 3.1, harness roadmap).
+ * Durable row for one workflow Run (, harness roadmap).
  * <p>
  * The RunStore is the <b>source of truth</b> for run metadata — not the JVM
  * active map. A restarted process reconstructs its recovery candidates from
@@ -22,22 +22,22 @@ import java.util.Objects;
  * unattributed). Both are immutable after create; updates never rewrite
  * them.
  *
- * @param runId           unique run id
- * @param workflowName    Workflow.name() at start time
- * @param workflowVersion Workflow.version() at start time ("" = unversioned legacy)
- * @param workflowHash    Workflow.fingerprint() at start time ("" = legacy)
- * @param status          RunState name
- * @param cursor          next node to execute (null = none / terminal)
- * @param stepsExecuted   steps consumed so far (maxSteps across resume)
- * @param lastEventSeq    last applied event/checkpoint sequence (0 = none)
- * @param checkpointId    last durable checkpoint id (null = none yet)
- * @param errorMessage    failure reason (null unless FAILED)
- * @param createdAt       epoch ms
- * @param updatedAt       epoch ms of last transition
- * @param version         optimistic lock, incremented on every update
- * @param lastTrace       trailing StepRecords for diagnostics (bounded)
- * @param tenantId        run-context tenant (null = unattributed)
- * @param versions        component-version snapshot string ("" = unattributed)
+ * @param runId unique run id
+ * @param workflowName Workflow.name at start time
+ * @param workflowVersion Workflow.version at start time "" = unversioned legacy)
+ * @param workflowHash Workflow.fingerprint at start time "" = legacy)
+ * @param status RunState name
+ * @param cursor next node to execute (null = none / terminal)
+ * @param stepsExecuted steps consumed so far (maxSteps across resume)
+ * @param lastEventSeq last applied event/checkpoint sequence (0 = none)
+ * @param checkpointId last durable checkpoint id (null = none yet)
+ * @param errorMessage failure reason (null unless FAILED)
+ * @param createdAt epoch ms
+ * @param updatedAt epoch ms of last transition
+ * @param version optimistic lock, incremented on every update
+ * @param lastTrace trailing StepRecords for diagnostics (bounded)
+ * @param tenantId run-context tenant (null = unattributed)
+ * @param versions component-version snapshot string "" = unattributed)
  */
 public record RunRecord(
         String runId,

@@ -2,7 +2,7 @@ package io.github.qwzhang01.agent.chat.retry;
 
 /**
  * Default no-op implementation. Always accepted on the first attempt; zero retries.
- * Returned by {@link RetryPolicy#never()}.
+ * Returned by {@link RetryPolicy#never}.
  */
 final class NeverRetryPolicy implements RetryPolicy {
 

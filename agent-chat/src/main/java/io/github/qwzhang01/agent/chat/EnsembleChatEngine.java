@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 /**
  * Ensemble turn: one user line may produce several persona replies
- * ("beats"). The first speaker is picked by the wrapped engine's
+ * "beats". The first speaker is picked by the wrapped engine's
  * {@code SpeakerPolicy}; after each beat, the {@link BeatPolicy} decides
  * whether another persona speaks next (no immediate self-followup) or the
  * turn stops.

@@ -46,8 +46,8 @@ public final class RuleBasedQualityGate implements QualityGate {
 
     /**
      * @param checkStructuredOutput fail responses whose JSON output cannot be parsed
-     * @param checkFinishReason     fail responses finishing with "error" or "length"
-     * @param checkEmptyContent     fail responses with no content and no tool calls
+     * @param checkFinishReason fail responses finishing with "error" or "length"
+     * @param checkEmptyContent fail responses with no content and no tool calls
      */
     public RuleBasedQualityGate(boolean checkStructuredOutput, boolean checkFinishReason, boolean checkEmptyContent) {
         this.checkStructuredOutput = checkStructuredOutput;

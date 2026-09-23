@@ -21,7 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 7 completion: agent-driven scheduling.
+ * completion: agent-driven scheduling.
  * The LLM (mocked) produces the scheduling intent at runtime; the
  * DynamicSchedulerNode reads it from the blackboard and registers the trigger.
  */

@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * {@code run_tests} - the fixed-referee tool (Stage 17 M17.3, blueprint D3:
- * "the referee cannot be chosen by the refereed").
+ * {@code run_tests} - the fixed-referee tool (, blueprint D3:
+ * "the referee cannot be chosen by the refereed".
  * <p>
  * The test command is <b>injected at assembly time</b> and takes no arguments: the
  * model cannot pick its own judge ({@code mvn test -DskipTests} would 'pass' anything).
@@ -20,7 +20,7 @@ import java.util.Optional;
  * Two entry points: {@link #execute(JsonNode)} is the Tool contract (JSON text for the
  * model); {@link #run(JsonNode)} returns the structured {@link TestResult} verdict for
  * the session's fix-loop wiring (M17.4) - the verdict consumer no longer needs a
- * callback pipe, it simply calls {@code run()} and reads the verdict. The M17.3
+ * callback pipe, it simply calls {@code run} and reads the verdict. The M17.3
  * {@code onTestFailure} listener was superseded by this (honest evolution note).
  */
 public final class RunTestsTool implements Tool {
@@ -41,8 +41,8 @@ public final class RunTestsTool implements Tool {
 
     /**
      * @param testCommand fixed test command, e.g. {@code [mvn, test]} - the referee
-     * @param whitelist   the command whitelist (the test command must be granted in it)
-     * @param runner      the no-shell executor
+     * @param whitelist the command whitelist (the test command must be granted in it)
+     * @param runner the no-shell executor
      */
     public RunTestsTool(List<String> testCommand, CommandWhitelist whitelist, CommandRunner runner) {
         this.testCommand = List.copyOf(Objects.requireNonNull(testCommand, "testCommand must not be null"));
@@ -96,7 +96,7 @@ public final class RunTestsTool implements Tool {
 
     /**
      * Execute the fixed test command and return the structured verdict.
-     * Assumes the whitelist has been granted (see {@link #whitelistRejection()}).
+     * Assumes the whitelist has been granted (see {@link #whitelistRejection}).
      */
     public TestResult run(JsonNode arguments) {
         long start = System.nanoTime();

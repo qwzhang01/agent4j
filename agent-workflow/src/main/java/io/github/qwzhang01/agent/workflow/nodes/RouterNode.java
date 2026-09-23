@@ -15,11 +15,11 @@ import java.util.function.Function;
  * (> 5-6 branches would clutter the graph). The complementary style -
  * plain conditional edges - remains the default (design decision D4).
  * <pre>{@code
- * .node(RouterNode.of("route", ctx -> switch (intentOf(ctx)) {
+ * .node(RouterNode.of"route", ctx -> switch (intentOf(ctx)) {
  *     case "A" -> "branchA";
  *     default -> "fallback";
  * }))
- * .edge("route", "branchA").when(s -> "branchA".equals(s.get("route")))
+ * .edge"route", "branchA".when(s -> "branchA".equals(s.get"route"))
  * }</pre>
  */
 public final class RouterNode implements WorkflowNode {

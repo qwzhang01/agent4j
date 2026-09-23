@@ -5,9 +5,9 @@ package io.github.qwzhang01.agent.plugin;
  * <p>
  * State transitions:
  * <pre>{@code
- *   DETECTED --load()--> LOADED --unload()--> UNLOADED --load()--> LOADED
+ *   DETECTED --load--> LOADED --unload--> UNLOADED --load--> LOADED
  *                                    |
- *                          load() failed  --> FAILED
+ *                          load failed --> FAILED
  * }</pre>
  * <p>
  * DETECTED: discovered by ServiceLoader but not yet loaded.

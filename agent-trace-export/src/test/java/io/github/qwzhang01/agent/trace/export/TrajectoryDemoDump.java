@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * NOT a unit test - a dump tool with a main(): runs three scripted agents
+ * NOT a unit test - a dump tool with a main: runs three scripted agents
  * (two successes, one model failure), records and exports trajectories, then
  * prints the file path plus the Java-side statistics. Run python3
  * examples/scripts/consume_trajectory.py against the same file and the

@@ -21,7 +21,7 @@ import io.github.qwzhang01.agent.security.ToolPolicy;
 import java.util.Objects;
 
 /**
- * Assembles the Coding Agent (Stage 17 M17.5) - the third Profile on the shared
+ * Assembles the Coding Agent - the third Profile on the shared
  * Runtime, and the fifth assembly of the same parts (core + security + domain).
  * <p>
  * What lands where (blueprint D8): the permission tiers follow <b>real side effects</b> -
@@ -29,7 +29,7 @@ import java.util.Objects;
  * {@code write_file} is AUTO (staging only, disk untouched - the real write is the
  * human-gated apply), {@code run_command} and {@code run_tests} are REQUIRES_APPROVAL
  * (process execution has immediate side effects). The apply gate itself is
- * {@link CodingSession#approveAndApply()} - a human reading a diff, not a tool call.
+ * {@link CodingSession#approveAndApply} - a human reading a diff, not a tool call.
  * <p>
  * The system prompt is the coding behavior contract (blueprint: read before change /
  * small staged patches / the test is the judge / [LIMIT] means report honestly).
@@ -85,11 +85,11 @@ public final class CodingAgentFactory {
      * Assemble the agent: five tools from the session, the governance chain
      * (D8 tiers + approval + audit), the coding system prompt, a governed ReAct loop.
      *
-     * @param session         the governance shell (tools, patch store, fix budget)
-     * @param model           the model client (Mock in tests/examples, real LLM in prod)
-     * @param approvalService REQUIRES_APPROVAL handler ({@code ConsoleApprovalService.autoApprove()}
-     *                        for demos, {@code console()} for a human in the terminal)
-     * @param auditLogger     the audit trail (InMemoryAuditLogger in demos)
+     * @param session the governance shell (tools, patch store, fix budget)
+     * @param model the model client (Mock in tests/examples, real LLM in prod)
+     * @param approvalService REQUIRES_APPROVAL handler ({@code ConsoleApprovalService.autoApprove}
+     *                        for demos, {@code console} for a human in the terminal)
+     * @param auditLogger the audit trail (InMemoryAuditLogger in demos)
      */
     public static Agent create(CodingSession session, ModelClient model,
                                ToolApprovalService approvalService, AuditLogger auditLogger) {

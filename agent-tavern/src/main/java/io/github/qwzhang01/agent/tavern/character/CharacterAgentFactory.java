@@ -14,16 +14,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Translates a {@link CharacterCard} into a runnable {@link Agent} (Stage 16 M16.1).
+ * Translates a {@link CharacterCard} into a runnable {@link Agent} .
  * <p>
  * This is the "character = Agent" translation point (blueprint D2): persona becomes
  * the systemPrompt, the memory whitelist becomes the ContextBuilder, game tools are
  * registered like any other tool. Nothing here is game-specific machinery -
- * it is assembly over Stage 1-8 primitives, which is why Stage 16 needs zero
+ * it is assembly over -8 primitives, which is why Stage 16 needs zero
  * changes to existing modules (blueprint D1).
  * <p>
  * M16.3 adds the governance plug point: an optional {@code executorFactory}
- * wraps each character's tool executor - the Stage 9 chain (permission +
+ * wraps each character's tool executor - the chain (permission +
  * audit) becomes the game's GM backend. Null factory = plain direct execution
  * (M16.1/M16.2 behavior, unchanged).
  * <p>
@@ -79,8 +79,8 @@ public final class CharacterAgentFactory {
     /**
      * Create the Agent for a character in a game.
      *
-     * @param card      the character's persona card
-     * @param gameId     which game this instance plays in (session scope id)
+     * @param card the character's persona card
+     * @param gameId which game this instance plays in (session scope id)
      * @param gameTools tools the character may use (game-state tools land in M16.2;
      *                  null = an empty registry, plain conversation)
      */

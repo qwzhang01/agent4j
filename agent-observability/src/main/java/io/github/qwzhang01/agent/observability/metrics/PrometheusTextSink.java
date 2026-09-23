@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Prometheus text-exposition sink (Stage 7.2) - zero-dependency metrics
+ * Prometheus text-exposition sink - zero-dependency metrics
  * outlet in the 0.0.4 text format. Deployments scrape it from a servlet,
  * a plain HTTP handler, or a scheduled file write; the framework never
  * takes a Micrometer dependency to stay embeddable (same discipline as

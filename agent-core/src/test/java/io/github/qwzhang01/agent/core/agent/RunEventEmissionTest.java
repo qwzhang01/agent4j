@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 7.1 acceptance: the loop emits lifecycle facts to the ctx's
+ * acceptance: the loop emits lifecycle facts to the ctx's
  * eventSink, in order, with run/trace correlation; legacy paths (no ctx,
  * or ctx without sink) stay bit-for-bit unchanged.
  */

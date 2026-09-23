@@ -7,20 +7,20 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * The identity snapshot of one request (Stage 15 M15.1).
+ * The identity snapshot of one request .
  * <p>
  * This is the single carrier that flows through the whole enterprise chain:
  * permission checks (M15.3), audit attribution, memory/knowledge retrieval
  * scopes and cost accounting all read from the same context. It is passed
  * explicitly (per-request assembly, blueprint D2) - never via ThreadLocal.
  * <p>
- * {@link #memoryScopes()} is the SSOT of the retrieval whitelist: it lists
+ * {@link #memoryScopes} is the SSOT of the retrieval whitelist: it lists
  * exactly {@code tenant:{tid}} and {@code user:{uid}} - the store's scope
- * whitelist (Stage 8 D3) then guarantees that nothing outside this list can
+ * whitelist (D3) then guarantees that nothing outside this list can
  * ever be retrieved. Isolation is mechanism, not convention.
  *
- * @param tenant    the tenant the request belongs to
- * @param user      the authenticated user issuing the request
+ * @param tenant the tenant the request belongs to
+ * @param user the authenticated user issuing the request
  * @param sessionId conversation/session identifier (null = auto-generated)
  */
 public record RequestContext(
@@ -50,8 +50,8 @@ public record RequestContext(
     }
 
     /**
-     * Audit attribution of the requesting actor (e.g. "user:u-alice").
-     * Combined with the service identity (Stage 12, wired in v2) this forms
+     * Audit attribution of the requesting actor (e.g. "user:u-alice".
+     * Combined with the service identity (, wired in v2) this forms
      * the dual attribution "executed by svc:x on behalf of user:y".
      */
     public String actor() {

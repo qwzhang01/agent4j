@@ -1,11 +1,11 @@
 package io.github.qwzhang01.agent.observability.metrics;
 
 /**
- * Operations-metrics outlet (Stage 18 D1: one run, three projections).
+ * Operations-metrics outlet (D1: one run, three projections).
  * <p>
  * The same decorator boundaries (Model call / Tool execution) already feed two
- * other projection systems - {@code Trajectory} (training format, Stage 14) and
- * {@code AuditEvent} (governance format, Stage 9). This sink is the third
+ * other projection systems - {@code Trajectory} (training format, ) and
+ * {@code AuditEvent} (governance format, ). This sink is the third
  * projection, the operations one: its reader is the on-call engineer who asks
  * "what happened on last night's failing run - which model, how many tokens,
  * how slow, at what cost". The three projections differ by READER, not by data

@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Stage 9 acceptance example 1: tool governance (permission + approval + audit).
+ * acceptance example 1: tool governance (permission + approval + audit).
  * <p>
  * Demonstrates:
  * - Three permission tiers: AUTO (get_time) / REQUIRES_APPROVAL (delete_file) / DENY (format_disk)

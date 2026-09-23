@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * M6.3: run-level and node-level timeout. Timeout fails the run
- * (FAILED + message contains "timed out") and does not take onError edges.
+ * (FAILED + message contains "timed out" and does not take onError edges.
  */
 class TimeoutPolicyTest {
 

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 16 M16.1: card -&gt; Agent translation, verified at the model boundary.
+ *  card -&gt; Agent translation, verified at the model boundary.
  * <p>
  * The persona claim is only proven where it matters: in the messages the model
  * actually sees (the CapturingModelClient pattern used across Stages 12-15).

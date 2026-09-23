@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Partition / outage tolerance for the Stage 8.1 JDBC spine (roadmap 8.1:
- * "network partition, worker crash, database briefly unavailable tests").
+ * Partition / outage tolerance for the JDBC spine
+ * "network partition, worker crash, database briefly unavailable tests".
  * <p>
  * H2's {@code SHUTDOWN} is the database outage: the schema survives (it is
  * in-memory per named database), the connections break. A store hitting a

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 6.1: pins the capability declaration against the client's actual
+ *  pins the capability declaration against the client's actual
  * behavior branches. If {@link OpenAiModelClient}'s flavor switch changes,
  * this table must change with it — that coupling is the point.
  */

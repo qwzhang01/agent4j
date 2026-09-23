@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 7.2 acceptance for the persisted RunRegistry: every append lands as
+ * acceptance for the persisted RunRegistry: every append lands as
  * one JSONL line, {@code load} rebuilds a fresh registry (time travel), and
  * the append-only discipline (duplicate runIds rejected) survives persistence.
  */

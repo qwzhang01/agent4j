@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 9 Replay/Time Travel contract tests: fold an event history into a
+ * Replay/Time Travel contract tests: fold an event history into a
  * state WITHOUT re-executing tools; anomalies flagged, not papered over.
  */
 class EventReplayerTest {

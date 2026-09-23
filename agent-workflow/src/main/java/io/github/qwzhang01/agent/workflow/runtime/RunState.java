@@ -5,14 +5,14 @@ package io.github.qwzhang01.agent.workflow.runtime;
  * <p>
  * Transitions:
  * <pre>{@code
- * RUNNING -> SUCCEEDED        (reached END)
- * RUNNING -> FAILED           (node error, no onError edge)
- * RUNNING -> PAUSED           (node threw PauseException)
- * RUNNING -> CANCELLED        (caller called cancel())
- * RUNNING -> WAITING_APPROVAL (Stage 3.4: durable approval pending)
+ * RUNNING -> SUCCEEDED (reached END)
+ * RUNNING -> FAILED (node error, no onError edge)
+ * RUNNING -> PAUSED (node threw PauseException)
+ * RUNNING -> CANCELLED (caller called cancel)
+ * RUNNING -> WAITING_APPROVAL durable approval pending)
  * WAITING_APPROVAL -> RUNNING (approval landed APPROVED)
- * WAITING_APPROVAL -> FAILED  (approval REJECTED / EXPIRED / REVOKED)
- * PAUSED  -> RUNNING          (resume)
+ * WAITING_APPROVAL -> FAILED (approval REJECTED / EXPIRED / REVOKED)
+ * PAUSED -> RUNNING (resume)
  * }</pre>
  * Terminal states: SUCCEEDED, FAILED, CANCELLED.
  */

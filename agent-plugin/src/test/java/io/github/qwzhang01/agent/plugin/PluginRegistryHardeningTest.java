@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stage 6.4: registry hardening — concurrent load/unload, load-failure
+ *  registry hardening — concurrent load/unload, load-failure
  * rollback, manifest permission gate, namespace isolation, unload kills
  * old tools (verifiable, not assumed).
  */

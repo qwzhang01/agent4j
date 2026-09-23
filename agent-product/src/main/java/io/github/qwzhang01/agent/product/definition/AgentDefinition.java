@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Declarative agent definition parsed from YAML/JSON (Stage 13 M13.1, D1: "names in the
- * definition, implementations in the registry").
+ * Declarative agent definition parsed from YAML/JSON (, D1: "names in the
+ * definition, implementations in the registry".
  * <p>
  * Every non-trivial value in this record is a <b>name reference</b> resolved against
  * {@link io.github.qwzhang01.agent.product.ProductContext} at bind time:
@@ -22,27 +22,27 @@ import java.util.Objects;
  * apiVersion: v1
  * kind: Agent
  * metadata:
- *   name: support-bot          # required
- *   tenant: acme               # optional
+ *   name: support-bot # required
+ *   tenant: acme # optional
  * spec:
  *   persona:
- *     systemPrompt: "..."      # required (promptRef arrives in M13.4)
- *     temperature: 0.3         # optional, 0-2
+ *     systemPrompt: "..." # required (promptRef arrives in M13.4)
+ *     temperature: 0.3 # optional, 0-2
  *   model:
- *     provider: openai         # required, registered model name
- *     fallback: deepseek       # optional, registered model name
+ *     provider: openai # required, registered model name
+ *     fallback: deepseek # optional, registered model name
  *   tools:
- *     - ref: order-query       # optional, registered tool names (subset semantics)
+ *     - ref: order-query # optional, registered tool names (subset semantics)
  *   memory:
- *     shortTerm: { strategy: window, maxMessages: 20 }   # built-in windowing
+ *     shortTerm: { strategy: window, maxMessages: 20 } # built-in windowing
  *     # or
- *     contextBuilder: rich-memory                          # named ContextBuilder
+ *     contextBuilder: rich-memory # named ContextBuilder
  * }</pre>
  *
  * @param apiVersion schema version envelope, must be "v1"
- * @param kind       resource kind envelope, must be "Agent"
- * @param metadata   definition identity (name + optional tenant)
- * @param spec       the four-section agent spec
+ * @param kind resource kind envelope, must be "Agent"
+ * @param metadata definition identity (name + optional tenant)
+ * @param spec the four-section agent spec
  */
 public record AgentDefinition(String apiVersion, String kind, Metadata metadata, Spec spec) {
 
@@ -69,8 +69,8 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
     /**
      * Definition identity.
      *
-     * @param name   unique agent name (registry key)
-     * @param tenant optional tenant id (isolation/partitioning, Stage 13 D7)
+     * @param name unique agent name (registry key)
+     * @param tenant optional tenant id (isolation/partitioning, D7)
      */
     public record Metadata(String name, String tenant) {
     }
@@ -78,12 +78,12 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
     /**
      * The agent spec.
      *
-     * @param persona        personality: inline system prompt + sampling defaults
-     * @param model          model wiring: primary provider + optional fallback
-     * @param tools          tool references (subset of the registry; null = no tools)
-     * @param memory         context/memory wiring; null = passthrough (Stage 1-7 behavior)
-     * @param workflow       optional registered workflow name (DAG export target)
-     * @param ambient        optional standing instructions (Stage 12 wiring, M13.5)
+     * @param persona personality: inline system prompt + sampling defaults
+     * @param model model wiring: primary provider + optional fallback
+     * @param tools tool references (subset of the registry; null = no tools)
+     * @param memory context/memory wiring; null = passthrough (-7 behavior)
+     * @param workflow optional registered workflow name (DAG export target)
+     * @param ambient optional standing instructions (wiring, M13.5)
      */
     public record Spec(Persona persona, Model model, List<ToolRef> tools, Memory memory,
                        String workflow, List<AmbientDecl> ambient) {
@@ -94,8 +94,8 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
      * (validated by DefinitionValidator).
      *
      * @param systemPrompt inline system prompt (simple agents)
-     * @param promptRef    reference into the PromptManager (versioned asset, M13.4)
-     * @param temperature  sampling temperature default, 0-2, null = provider default
+     * @param promptRef reference into the PromptManager (versioned asset, M13.4)
+     * @param temperature sampling temperature default, 0-2, null = provider default
      */
     public record Persona(String systemPrompt, PromptRef promptRef, Double temperature) {
     }
@@ -113,7 +113,7 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
      * A tool entry: EITHER a reference to a registered tool ({@code ref}) OR an
      * inline HTTP API declaration ({@code http}, M13.3). Exactly one must be set.
      *
-     * @param ref  registered tool name (D1 reference indirection)
+     * @param ref registered tool name (D1 reference indirection)
      * @param http inline HTTP API tool declaration (M13.3)
      */
     public record ToolRef(String ref, HttpApiDecl http) {
@@ -147,7 +147,7 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
      * Memory/context wiring. {@code shortTerm} and {@code contextBuilder} are mutually
      * exclusive (validated); long-term memory configuration arrives in later milestones.
      *
-     * @param shortTerm      built-in windowing strategy
+     * @param shortTerm built-in windowing strategy
      * @param contextBuilder named ContextBuilder (rich strategies stay in Java, D1)
      */
     public record Memory(ShortTerm shortTerm, String contextBuilder) {
@@ -155,23 +155,23 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
         /**
          * Built-in short-term strategy.
          *
-         * @param strategy     only "window" is supported in v1
-         * @param maxMessages  messages kept verbatim (system prompt excluded), &gt; 0
+         * @param strategy only "window" is supported in v1
+         * @param maxMessages messages kept verbatim (system prompt excluded), &gt; 0
          */
         public record ShortTerm(String strategy, Integer maxMessages) {
         }
     }
 
     /**
-     * A declarative standing instruction (M13.5, Stage 12 wiring): trigger +
+     * A declarative standing instruction (M13.5, wiring): trigger +
      * importance + message template. The CONDITION predicate stays a Java
      * extension point - YAML declares when to check, not how to judge
      * (declaring judgment in YAML is how you invent a DSL you will regret).
      *
-     * @param instructionId   unique instruction id
-     * @param description     human-readable description
-     * @param trigger         {@code {onEvent: key}} or {@code {schedule: PT10M}}
-     * @param importance      INFO / WARN / CRITICAL (Stage 12 D7 noise tiers)
+     * @param instructionId unique instruction id
+     * @param description human-readable description
+     * @param trigger {@code {onEvent: key}} or {@code {schedule: PT10M}}
+     * @param importance INFO / WARN / CRITICAL (D7 noise tiers)
      * @param messageTemplate {@code {$.path}} template against the event payload
      */
     public record AmbientDecl(String instructionId, String description,
@@ -180,7 +180,7 @@ public record AgentDefinition(String apiVersion, String kind, Metadata metadata,
         /**
          * Exactly one of onEvent / schedule.
          *
-         * @param onEvent  event key to react to
+         * @param onEvent event key to react to
          * @param schedule ISO-8601 duration, e.g. "PT10M" (every 10 minutes)
          */
         public record TriggerDecl(String onEvent, String schedule) {

@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Race-style aggregation: return the FIRST successful output, ignore the rest
- * (Stage 11 M11.2). Use when several workers can produce an equivalent answer
+ * . Use when several workers can produce an equivalent answer
  * and speed matters more than completeness (e.g. three mirrors of the same
  * retrieval, first one back wins).
  * <p>

@@ -4,32 +4,32 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * Stage 6.1: provider error taxonomy, one exception carrying everything the
+ *  provider error taxonomy, one exception carrying everything the
  * recovery machinery needs.
  * <p>
- * Stage 1's {@link ModelException} already fixed the seven-category taxonomy
+ * 's {@link ModelException} already fixed the seven-category taxonomy
  * (auth / rate-limit / invalid request / server / network / timeout /
- * unknown) — every concrete client maps HTTP failures onto it. What Stage 1
+ * unknown) — every concrete client maps HTTP failures onto it. What
  * did NOT carry: the provider's <b>Retry-After</b> hint (429 responses tell
  * you how long to wait; the info was dropped), a <b>parse</b> category
  * (garbage JSON from a flaky gateway used to collapse into MODEL_ERROR),
  * and a <b>canceled</b> category (caller-initiated aborts used to look like
  * network noise, and retried — the worst possible outcome).
  * <p>
- * This exception extends the Stage 1 type so every existing catch site,
+ * This exception extends the type so every existing catch site,
  * {@code RetryModelClient} policy table, and {@code FallbackModelClient}
  * keep working unchanged. New knobs are additive:
  * <ul>
- *   <li>{@link #retryAfter()} — the provider's wait hint, null when absent.
+ *   <li>{@link #retryAfter} — the provider's wait hint, null when absent.
  *       Retry policies SHOULD respect it when present (they MAY cap it).</li>
- *   <li>{@link #statusCode()} — the HTTP status that triggered the mapping
+ *   <li>{@link #statusCode} — the HTTP status that triggered the mapping
  *       (0 = not an HTTP failure), for dashboards and alert routing.</li>
- *   <li>{@link #providerName()} — which client threw, for multi-provider
+ *   <li>{@link #providerName} — which client threw, for multi-provider
  *       setups and credential-rotation decisions.</li>
  * </ul>
  * <p>
- * New categories extend the enum where Stage 1 left off. The full Stage 6.1
- * taxonomy (roadmap wording "认证、限流、参数、服务端、网络、解析、取消"):
+ * New categories extend the enum where left off. The full Stage 6.1
+ * taxonomy (roadmap wording "认证、限流、参数、服务端、网络、解析、取消":
  * AUTH_ERROR(认证), RATE_LIMITED(限流), INVALID_REQUEST(参数),
  * MODEL_ERROR(服务端), NETWORK_ERROR(网络), PARSE_ERROR(解析),
  * CANCELED(取消), TIMEOUT, UNKNOWN.
@@ -50,8 +50,8 @@ public class ProviderCallException extends ModelException {
         UNKNOWN;
 
         /**
-         * Map a Stage 1 {@link ModelException.ErrorCode} onto the Stage 6.1
-         * taxonomy. PARSE_ERROR has no Stage 1 counterpart (it used to be
+         * Map a {@link ModelException.ErrorCode} onto the Stage 6.1
+         * taxonomy. PARSE_ERROR has no counterpart (it used to be
          * MODEL_ERROR); CANCELED has none either (it used to be
          * NETWORK_ERROR).
          */
@@ -68,7 +68,7 @@ public class ProviderCallException extends ModelException {
         }
 
         /**
-         * Fold back onto the Stage 1 taxonomy for pre-Stage-6 catch sites.
+         * Fold back onto the taxonomy for pre-Stage-6 catch sites.
          * PARSE_ERROR folds to MODEL_ERROR and CANCELED to NETWORK_ERROR
          * (their closest legacy buckets); everything else maps 1:1.
          */
@@ -95,12 +95,12 @@ public class ProviderCallException extends ModelException {
     /**
      * Full form.
      *
-     * @param providerCode Stage 6.1 taxonomy code (required)
-     * @param message      human-readable cause (required)
-     * @param cause        underlying throwable (nullable)
-     * @param retryAfter   provider's Retry-After hint (null = none given)
-     * @param statusCode   HTTP status that triggered the mapping (0 = none)
-     * @param providerName which client threw (null = "unknown")
+     * @param providerCode taxonomy code (required)
+     * @param message human-readable cause (required)
+     * @param cause underlying throwable (nullable)
+     * @param retryAfter provider's Retry-After hint (null = none given)
+     * @param statusCode HTTP status that triggered the mapping (0 = none)
+     * @param providerName which client threw (null = "unknown"
      */
     public ProviderCallException(ProviderErrorCode providerCode, String message, Throwable cause,
                                  Duration retryAfter, int statusCode, String providerName) {
@@ -141,7 +141,7 @@ public class ProviderCallException extends ModelException {
         return statusCode;
     }
 
-    /** Which client threw this exception ("unknown" when not set). */
+    /** Which client threw this exception "unknown" when not set). */
     public String getProviderName() {
         return providerName;
     }

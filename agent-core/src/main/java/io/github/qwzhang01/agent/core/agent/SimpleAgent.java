@@ -16,7 +16,7 @@ import java.util.function.Consumer;
  * <p>
  * Combines AgentConfig (static blueprint) with AgentLoop (dynamic execution).
  * Accepts plain text or a multimodal {@link ChatMessage} (vision via {@code parts}).
- * Memory ({@link AgentConfig#getContextBuilder()}), tool governance
+ * Memory ({@link AgentConfig#getContextBuilder}), tool governance
  * ({@link ReActAgentLoop} + {@code GovernedToolExecutor}) and checkpoints
  * plug in from the outside — this class stays a thin entry point.
  */

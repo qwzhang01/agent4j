@@ -28,7 +28,7 @@ import java.util.List;
  * </table>
  *
  * <p>
- * Reasoning is deliberately never merged into {@link #content()}: it is the
+ * Reasoning is deliberately never merged into {@link #content}: it is the
  * model's scratchpad, not its answer.
  */
 final class ChatDelta {

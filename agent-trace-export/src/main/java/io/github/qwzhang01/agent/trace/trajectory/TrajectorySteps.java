@@ -23,7 +23,7 @@ public final class TrajectorySteps {
     /**
      * Rebuild the logical conversation from steps: step 1's leading state
      * plus every action (as assistant message) and observation (as tool
-     * message). Deliberately NOT AgentState.getMessages() - derived purely
+     * message). Deliberately NOT AgentState.getMessages - derived purely
      * from what the boundaries recorded (see M14.1 RecordingSession).
      */
     public static List<ChatMessage> logicalMessages(List<TrajectoryStep> steps) {

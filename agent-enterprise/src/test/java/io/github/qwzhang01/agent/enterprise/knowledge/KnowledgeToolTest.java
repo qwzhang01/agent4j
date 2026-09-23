@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Stage 15 M15.2: the model-facing knowledge retrieval tool.
+ *  the model-facing knowledge retrieval tool.
  * <p>
  * The contract under test: the tenant binding is immutable and invisible to
  * the model - even with fully attacker-controlled arguments the tool cannot

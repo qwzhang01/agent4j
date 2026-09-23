@@ -5,24 +5,24 @@ import java.util.Objects;
 
 /**
  * A service account: the credential-and-configuration holder for an
- * {@link AgentIdentity} (Stage 12 D4).
+ * {@link AgentIdentity} (D4).
  * <p>
  * One agent identity maps to exactly one active service account. The
  * account is what an admin provisions: it carries the granted
  * {@link IdentityScope}, an optional validity window, and a token budget
- * placeholder (reserved for Stage 18 cost governance, not enforced in v1).
+ * placeholder (reserved for cost governance, not enforced in v1).
  * <p>
  * The identity layer deliberately does NOT depend on agent-security:
- * there is no token, no secret here. Bridging to Stage 9's
+ * there is no token, no secret here. Bridging to 's
  * PermissionChecker / AuditLogger happens at the assembly layer.
  *
- * @param accountId          account identifier, e.g. "svc-eng-bot-01" (distinct from agentId)
- * @param identity           the agent identity this account belongs to
- * @param grantedScope       the explicitly granted minimal resource scope
+ * @param accountId account identifier, e.g. "svc-eng-bot-01" (distinct from agentId)
+ * @param identity the agent identity this account belongs to
+ * @param grantedScope the explicitly granted minimal resource scope
  * @param monthlyTokenBudget monthly token budget, {@link #UNLIMITED_BUDGET} = unlimited
- *                           (reserved for Stage 18; not enforced in v1)
- * @param validFrom          validity start, null = immediately valid
- * @param validUntil         validity end (exclusive), null = never expires
+ *                           (reserved for ; not enforced in v1)
+ * @param validFrom validity start, null = immediately valid
+ * @param validUntil validity end (exclusive), null = never expires
  */
 public record ServiceAccount(
         String accountId,

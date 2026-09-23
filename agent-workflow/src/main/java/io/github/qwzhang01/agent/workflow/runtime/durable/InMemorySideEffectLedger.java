@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Reference in-memory {@link SideEffectLedger} (Stage 3.2). Same contract
+ * Reference in-memory {@link SideEffectLedger} . Same contract
  * as the file/JDBC backends; the crash tests exercise it through the
  * interface so the port keeps semantics identical.
  */

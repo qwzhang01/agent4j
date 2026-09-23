@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The assembly-level approval channel between workflows and task managers
- * (Stage 15 M15.4).
+ * .
  * <p>
  * Two sides meet here: the workflow side ({@link HumanApprovalNode} wired
  * with this service) asks for decisions as runs pause; the manager side
@@ -74,7 +74,7 @@ public final class TaskApprovalBridge implements ApprovalService {
 
     /**
      * Forget every pending request and decision (test/reset semantics; also
-     * models "fresh table after restart").
+     * models "fresh table after restart".
      */
     public void reset() {
         decisions.clear();

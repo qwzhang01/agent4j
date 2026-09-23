@@ -12,7 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the {@link NoisePolicy} gates (Stage 12 M12.4, D7).
+ * Unit tests for the {@link NoisePolicy} gates (, D7).
  * All times use UTC so the quiet-window clock is deterministic:
  * window 22:00-08:00, "outside" = 12:00Z, "inside" = 23:00Z.
  */

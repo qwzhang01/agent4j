@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Stage 13 acceptance: an external system drives an agent through a webhook -
+ * acceptance: an external system drives an agent through a webhook -
  * HMAC-verified, idempotent, 202-answered (D8's three-piece contract).
  * <p>
  * Run this class, then deliver two webhooks from the "monitoring system"
@@ -60,7 +60,7 @@ public final class WebhookExample {
         server.createContext("/webhooks/", exchange -> {
             String source = exchange.getRequestURI().getPath().substring("/webhooks/".length());
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            // A missing header maps to null - Map.of() rejects null values,
+            // A missing header maps to null - Map.of rejects null values,
             // so build the header view defensively (a probe without the
             // signature must get 401, not a 500 NPE).
             String signature = exchange.getRequestHeaders().getFirst("X-Signature");

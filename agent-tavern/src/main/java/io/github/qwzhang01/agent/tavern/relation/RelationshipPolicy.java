@@ -1,7 +1,7 @@
 package io.github.qwzhang01.agent.tavern.relation;
 
 /**
- * The game's numeric balance, as one value (Stage 16, blueprint D4).
+ * The game's numeric balance, as one value (, blueprint D4).
  * <p>
  * {@code maxChangePerTurn} bounds the <b>net</b> relationship change per
  * character per turn - the accumulated sum of all adjustments in one turn,

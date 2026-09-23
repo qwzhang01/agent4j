@@ -3,7 +3,7 @@ package io.github.qwzhang01.agent.core.event;
 import java.time.Instant;
 
 /**
- * Boundary telemetry events (harness 4.4, roadmap 1.3 deferred batch:
+ * Boundary telemetry events (harness 4.4, deferred batch:
  * Model / Memory / Approval / Sandbox get start/finish/failure facts).
  * <p>
  * These are BYPASS TELEMETRY, not fact events: they observe what a
@@ -14,7 +14,7 @@ import java.time.Instant;
  * cover. A throwing sink is the publisher's side-channel problem, never
  * the boundary's.
  * <p>
- * Discipline (same as Stage 7's content red line): events carry STRUCTURE
+ * Discipline (same as 's content red line): events carry STRUCTURE
  * only — ids, scopes, counts, durations, kinds. Never memory content, never
  * approval payloads, never sandboxed code. What crossed the boundary is
  * the audit ledger's business; how long it took and whether it failed is
@@ -53,10 +53,10 @@ public sealed interface BoundaryEvent permits
     }
 
     /**
-     * @param operation  "query" or "write"
-     * @param purpose    the declared purpose string (audit ledger's twin)
+     * @param operation "query" or "write"
+     * @param purpose the declared purpose string (audit ledger's twin)
      * @param resultCount entries returned (query) or 1 (write)
-     * @param masked     whether redaction changed consumer-visible content
+     * @param masked whether redaction changed consumer-visible content
      * @param durationMs wall-clock duration of the governed access
      */
     record MemoryAccessed(String operation, String purpose, int resultCount,
@@ -71,7 +71,7 @@ public sealed interface BoundaryEvent permits
      * refuses is governance that never engages.
      *
      * @param operation "query" or "write"
-     * @param reason    the refusal message
+     * @param reason the refusal message
      */
     record MemoryAccessFailed(String operation, String reason, Instant occurredAt)
             implements MemoryBoundaryEvent {
@@ -86,9 +86,9 @@ public sealed interface BoundaryEvent permits
 
     /**
      * @param approvalId the request's durable id
-     * @param runId      the run the request belongs to
-     * @param decision   "APPROVED" / "REJECTED" / "EXPIRED" / "REVOKED"
-     * @param decidedBy  the decider identity (never the payload)
+     * @param runId the run the request belongs to
+     * @param decision "APPROVED" / "REJECTED" / "EXPIRED" / "REVOKED"
+     * @param decidedBy the decider identity (never the payload)
      */
     record ApprovalDecided(String approvalId, String runId, String decision,
                            String decidedBy, Instant occurredAt)
@@ -101,7 +101,7 @@ public sealed interface BoundaryEvent permits
      * is the store's own exception text — structure, not payload.
      *
      * @param approvalId the request the decision targeted
-     * @param reason     the refusal reason
+     * @param reason the refusal reason
      */
     record ApprovalRefused(String approvalId, String reason, Instant occurredAt)
             implements ApprovalBoundaryEvent {
@@ -115,10 +115,10 @@ public sealed interface BoundaryEvent permits
     }
 
     /**
-     * @param tier      which tier served the execution ("CLASSLOADER",
+     * @param tier which tier served the execution "CLASSLOADER",
      *                  "PROCESS", ...)
      * @param className the guest class name (an id, not content)
-     * @param success   whether the guest code completed successfully
+     * @param success whether the guest code completed successfully
      * @param durationMs wall-clock duration
      */
     record SandboxExecuted(String tier, String className, boolean success,
@@ -139,11 +139,11 @@ public sealed interface BoundaryEvent permits
 
     /**
      * Execution was refused: policy block, budget exhaustion, invalid
-     * input. Refusal kind is structural ("BLOCKED_BY_POLICY",
+     * input. Refusal kind is structural "BLOCKED_BY_POLICY",
      * "BUDGET_SPENT", ...), never guest output.
      *
      * @param refusalKind structural refusal classification
-     * @param className   what was refused
+     * @param className what was refused
      */
     record SandboxRefused(String refusalKind, String className, Instant occurredAt)
             implements SandboxBoundaryEvent {
@@ -166,11 +166,11 @@ public sealed interface BoundaryEvent permits
     }
 
     /**
-     * @param modelId      the model identity that served
-     * @param latencyMs    wall-clock duration of the serving call
-     * @param tokenCount   total tokens when known, -1 when not reported
-     * @param failed       whether the call failed
-     * @param failureKind  structural failure classification when failed
+     * @param modelId the model identity that served
+     * @param latencyMs wall-clock duration of the serving call
+     * @param tokenCount total tokens when known, -1 when not reported
+     * @param failed whether the call failed
+     * @param failureKind structural failure classification when failed
      */
     record ModelServingFinished(String modelId, long latencyMs, int tokenCount,
                                 boolean failed, String failureKind, Instant occurredAt)
@@ -195,8 +195,8 @@ public sealed interface BoundaryEvent permits
 
     /**
      * @param serverName the MCP server's name (descriptor identity, an id)
-     * @param toolName   the tool that was called (an id, never args/results)
-     * @param latencyMs  wall-clock duration of the call
+     * @param toolName the tool that was called (an id, never args/results)
+     * @param latencyMs wall-clock duration of the call
      */
     record McpToolCallFinished(String serverName, String toolName, long latencyMs,
                                Instant occurredAt)
@@ -206,11 +206,11 @@ public sealed interface BoundaryEvent permits
     /**
      * The call never completed: schema refusal before the wire, transport
      * death mid-call, protocol error, or a cancellation signal. The
-     * failureKind is structural ("SCHEMA_INVALID", "TRANSPORT", "TIMEOUT",
-     * "CANCELLED", "PROTOCOL"), never tool output or args content.
+     * failureKind is structural "SCHEMA_INVALID", "TRANSPORT", "TIMEOUT",
+     * "CANCELLED", "PROTOCOL", never tool output or args content.
      *
-     * @param serverName  the MCP server's name
-     * @param toolName    the tool that was attempted
+     * @param serverName the MCP server's name
+     * @param toolName the tool that was attempted
      * @param failureKind structural failure classification
      */
     record McpToolCallFailed(String serverName, String toolName, String failureKind,
@@ -225,14 +225,14 @@ public sealed interface BoundaryEvent permits
      * of the MCP family, covering both the in-process and HTTP transports
      * (which transport carried the task is the client's business; the
      * boundary fact is "a task crossed the A2A protocol line and how it
-     * went").
+     * went".
      */
     sealed interface A2ABoundaryEvent extends BoundaryEvent permits
             A2ATaskSent, A2ATaskFailed {
     }
 
     /**
-     * @param taskId    the task's id (sender-assigned pre-wire, an id)
+     * @param taskId the task's id (sender-assigned pre-wire, an id)
      * @param recipient the recipient agent's name (an id, never payload)
      * @param latencyMs wall-clock duration of the delegation
      */
@@ -244,11 +244,11 @@ public sealed interface BoundaryEvent permits
     /**
      * The delegation never completed: unknown recipient, the peer agent
      * ended in an error state, transport/protocol failure. The failureKind
-     * is structural ("UNKNOWN_RECIPIENT", "AGENT_FAILED", "TRANSPORT",
-     * "PROTOCOL"), never task payload.
+     * is structural "UNKNOWN_RECIPIENT", "AGENT_FAILED", "TRANSPORT",
+     * "PROTOCOL", never task payload.
      *
-     * @param taskId      the task that was attempted
-     * @param recipient   the intended recipient
+     * @param taskId the task that was attempted
+     * @param recipient the intended recipient
      * @param failureKind structural failure classification
      */
     record A2ATaskFailed(String taskId, String recipient, String failureKind,

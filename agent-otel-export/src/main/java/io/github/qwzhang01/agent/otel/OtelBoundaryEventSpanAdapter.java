@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * BoundaryEvent-to-span adapter (harness 4.4, roadmap 7.1's five spans:
+ * BoundaryEvent-to-span adapter (harness 4.4, 's five spans:
  * Workflow / Memory / Sandbox / MCP / A2A on top of the existing
  * run/step/model/tool four).
  * <p>
@@ -46,7 +46,7 @@ import java.util.function.Consumer;
  * or sandboxed code.
  * <p>
  * Side-channel discipline: a throwing sink is swallowed and counted
- * ({@link #sinkFailures()}), never propagated to the boundary that emitted.
+ * ({@link #sinkFailures}), never propagated to the boundary that emitted.
  */
 public final class OtelBoundaryEventSpanAdapter implements Consumer<BoundaryEvent> {
 

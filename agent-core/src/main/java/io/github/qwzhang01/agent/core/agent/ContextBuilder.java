@@ -12,7 +12,7 @@ import java.util.List;
  * Transient SYSTEM context (for example host-authored retry guidance) may be returned,
  * but must never be written into AgentState. Role alone does not identify a persona.
  * <p>
- * This is the extension point for memory and context management (Stage 8):
+ * This is the extension point for memory and context management :
  * - retrieval of long-term memories to inject into context
  * - token budget enforcement
  * - compaction / compression of old messages (pi-style)
@@ -33,7 +33,7 @@ import java.util.List;
  * enforcement mechanism of this contract, not a type-system check.
  * <p>
  * When an {@link AgentConfig} has no context builder ({@code null}),
- * {@link ReActAgentLoop} falls back to passing {@code state.getMessages()}
+ * {@link ReActAgentLoop} falls back to passing {@code state.getMessages}
  * through, then prepends the current system prompt at the model boundary.
  */
 public interface ContextBuilder {
@@ -41,28 +41,28 @@ public interface ContextBuilder {
     /**
      * Build the messages for the next model request.
      * <p>
-     * Implementations MAY mutate {@code state.getMessages()} in place
+     * Implementations MAY mutate {@code state.getMessages} in place
      * (e.g. a compressing builder rewrites history to stay within budget).
      * Checkpoints retain conversation state, not the final model request.
      * Model-boundary recording is responsible for the full request, including
      * instructions and transient retrieval. Budgeting builders must reserve space
-     * for config.getSystemPrompt(), tool schemas and model output separately.
+     * for config.getSystemPrompt, tool schemas and model output separately.
      *
      * @param config agent configuration
-     * @param state  current agent state (mutable)
+     * @param state current agent state (mutable)
      * @return history/transient context without persona; may be immutable or state-backed
      */
     List<ChatMessage> build(AgentConfig config, AgentState state);
 
     /**
-     * Build with the run context (Stage 1.2). Default: legacy path.
+     * Build with the run context . Default: legacy path.
      * Memory-side implementations override this to read tenant/user
-     * identity from the context for scope filtering (Stage 5 governance
+     * identity from the context for scope filtering (governance
      * hook; today the scopes list is fixed at construction time).
      *
      * @param config agent configuration
-     * @param state  current agent state (mutable)
-     * @param ctx    the run context (may be null on the legacy path)
+     * @param state current agent state (mutable)
+     * @param ctx the run context (may be null on the legacy path)
      * @return history/transient context without persona
      */
     default List<ChatMessage> build(AgentConfig config, AgentState state, RunContext ctx) {
