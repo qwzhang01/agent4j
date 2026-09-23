@@ -17,8 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ParallelToolExecutorTest {
 
-    // ============ Ordering ============
-
     @Test
     @DisplayName("dispatchAll joins in declaration order even when completion order differs")
     void declarationOrderJoin() throws Exception {
@@ -43,8 +41,6 @@ class ParallelToolExecutorTest {
         assertTrue(System.currentTimeMillis() - start < 150,
                 "tools actually ran in parallel (not sequentially 80ms+0ms)");
     }
-
-    // ============ Bounded width ============
 
     @Test
     @DisplayName("maxConcurrent clamps width: surplus runs sequentially after a slot frees")
@@ -74,8 +70,6 @@ class ParallelToolExecutorTest {
                 "width clamped at maxConcurrent=2, saw " + maxConcurrentSeen.get());
     }
 
-    // ============ Failure isolation ============
-
     @Test
     @DisplayName("one tool failing converts to a readable error string; siblings keep results")
     void failureBecomesReadableErrorString() throws Exception {
@@ -98,8 +92,6 @@ class ParallelToolExecutorTest {
                 "failure surfaces as a model-readable error string");
         assertEquals("fine", results.get(2));
     }
-
-    // ============ Concurrency proof ============
 
     @Test
     @DisplayName("independent tools genuinely overlap (latch rendezvous)")

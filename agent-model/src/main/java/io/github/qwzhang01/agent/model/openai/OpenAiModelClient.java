@@ -424,7 +424,6 @@ public class OpenAiModelClient implements ModelClient {
                         reasoning.length());
             }
 
-            // Parse tool calls
             List<ToolCall> toolCalls = null;
             JsonNode toolCallsNode = message.path("tool_calls");
             if (toolCallsNode.isArray() && !toolCallsNode.isEmpty()) {
@@ -443,7 +442,6 @@ public class OpenAiModelClient implements ModelClient {
                 }
             }
 
-            // Parse usage
             ModelResponse.TokenUsage usage = null;
             JsonNode usageNode = root.path("usage");
             if (!usageNode.isMissingNode()) {

@@ -39,8 +39,6 @@ public final class TemplateRegistry {
 
     private final Map<String, AgentTemplate> templates = new LinkedHashMap<>();
 
-    // ============ Built-ins ============
-
     /**
      * A registry pre-loaded with the built-in templates
      * (support-agent + knowledge-assistant).
@@ -52,8 +50,6 @@ public final class TemplateRegistry {
         }
         return registry;
     }
-
-    // ============ Registration ============
 
     /**
      * Register a template under its metadata name.
@@ -90,8 +86,6 @@ public final class TemplateRegistry {
         return this;
     }
 
-    // ============ Lookup ============
-
     public Optional<AgentTemplate> get(String name) {
         return Optional.ofNullable(templates.get(name));
     }
@@ -99,8 +93,6 @@ public final class TemplateRegistry {
     public Set<String> names() {
         return Set.copyOf(templates.keySet());
     }
-
-    // ============ Instantiation ============
 
     /**
      * Look up a template and instantiate it (delegates parameter validation
@@ -118,8 +110,6 @@ public final class TemplateRegistry {
         }
         return template.instantiate(instanceName, tenant, params);
     }
-
-    // ============ File loading ============
 
     /**
      * Load every template file from a directory (.yaml / .yml / .json).

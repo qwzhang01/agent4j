@@ -45,8 +45,6 @@ class AgentTemplateTest {
                   maxMessages: 20
             """;
 
-    // ============ Parsing discipline ============
-
     @Test
     void parsesTemplateWithVariablesAndSpecTree() {
         AgentTemplate template = AgentTemplate.parse(TEMPLATE_YAML);
@@ -113,8 +111,6 @@ class AgentTemplateTest {
                 spec: {}
                 """));
     }
-
-    // ============ Instantiation ============
 
     @Test
     void substitutesParamsAndDefaults() {
@@ -186,7 +182,7 @@ class AgentTemplateTest {
                 () -> template.instantiate(" ", null, Map.of("tenantId", "t")));
     }
 
-    // ============ D6: fork snapshot ============
+    // D6: fork snapshot
 
     @Test
     void instantiationIsAForkSnapshotNotALiveView() {

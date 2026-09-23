@@ -13,8 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ChannelMessageTest {
 
-    // ============ ChannelContext ============
-
     @Test
     @DisplayName("ChannelContext: membership check + defensive copy")
     void context_membershipAndCopy() {
@@ -35,8 +33,6 @@ class ChannelMessageTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ChannelContext.of(" ", "alice"));
     }
-
-    // ============ Factories ============
 
     @Test
     @DisplayName("of/mention factories set the mention flag and a timestamp")
@@ -62,8 +58,6 @@ class ChannelMessageTest {
         ChannelMessage m3 = ChannelMessage.autoDetect("team-eng", "alice", "@eng-bots are cool", "eng-bot");
         assertFalse(m3.mentionsAgent(), "longer agent id must not half-match");
     }
-
-    // ============ Mention stripping ============
 
     @Test
     @DisplayName("textWithoutMention strips the @prefix and one separator")

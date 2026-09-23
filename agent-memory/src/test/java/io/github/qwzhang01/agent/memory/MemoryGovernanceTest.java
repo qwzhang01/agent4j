@@ -38,7 +38,7 @@ class MemoryGovernanceTest {
         return RunContext.builder().tenantId(tenantId).userId(userId).build();
     }
 
-    // ============ Scope derivation (identity-bound) ============
+    // Scope derivation (identity-bound)
 
     @Test
     void scopesFor_derivesFromIdentity() {
@@ -52,8 +52,6 @@ class MemoryGovernanceTest {
     void scopesFor_emptyIdentityYieldsEmptyList() {
         assertTrue(MemoryGovernance.scopesFor(RunContext.create()).isEmpty());
     }
-
-    // ============ Governed read ============
 
     @Test
     void query_scopesFromContext_notFromQuery() {
@@ -126,8 +124,6 @@ class MemoryGovernanceTest {
                 "rawOnly policy: legacy passthrough behaviour, byte-for-byte");
     }
 
-    // ============ Governed write ============
-
     @Test
     void write_scopeMustBeInsideWhitelist() {
         MemoryEntry crossTenant = new MemoryEntry(null, "user:u2", MemoryType.FACT, "x", "poison", 0.9,
@@ -159,8 +155,6 @@ class MemoryGovernanceTest {
                 Instant.now(), null);
         assertThrows(IllegalArgumentException.class, () -> gov.write(ok, ctxOf("acme", "u1"), ""));
     }
-
-    // ============ Deletion propagation ============
 
     @Test
     void purgeForUser_deletesAndPropagates() {

@@ -27,8 +27,6 @@ public interface ImageGenerationClient {
      */
     ImageResult generate(ImageGenRequest request);
 
-    // ============ Request / Response ============
-
     /**
      * Image generation request.
      *
@@ -54,8 +52,6 @@ public interface ImageGenerationClient {
         public static Builder builder() {
             return new Builder();
         }
-
-        // ============ Builder ============
 
         public static class Builder {
             private String model;

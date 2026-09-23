@@ -211,8 +211,6 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         return sb.toString();
     }
 
-    // ============ Async + Sampling ============
-
     /**
      * Runs the full extract-and-store pipeline asynchronously.
      * <p>
@@ -252,8 +250,6 @@ public class LlmMemoryExtractor implements MemoryExtractor {
         long hash = sessionId == null ? 0L : (long) sessionId.hashCode();
         return Math.floorMod(hash ^ seed, 100L) < sampleRate;
     }
-
-    // ============ Transcript + Parse ============
 
     static String renderTranscript(List<ChatMessage> messages) {
         StringBuilder sb = new StringBuilder();

@@ -87,8 +87,6 @@ public final class ConsoleAnnotator {
         return feedback;
     }
 
-    // ============ rendering ============
-
     private void printRollout(char label, Trajectory trajectory) {
         out.println("---- rollout " + label + " (" + trajectory.runId() + ") ----");
         out.println("  status=" + trajectory.status() + "  reward=" + trajectory.reward()
@@ -108,8 +106,6 @@ public final class ConsoleAnnotator {
     private static String abbreviate(String text) {
         return text.length() <= 72 ? text : text.substring(0, 72) + "...";
     }
-
-    // ============ sidecar ============
 
     private ObjectNode sidecarJson(PreferencePair pair) {
         ObjectNode node = codec.createObjectNode();

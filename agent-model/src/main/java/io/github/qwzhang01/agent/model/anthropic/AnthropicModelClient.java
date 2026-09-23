@@ -303,7 +303,6 @@ public class AnthropicModelClient implements ModelClient {
             }
         }
 
-        // Set system prompt if any
         if (!systemPrompt.isEmpty()) {
             body.put("system", systemPrompt.toString());
         }
@@ -317,7 +316,6 @@ public class AnthropicModelClient implements ModelClient {
                     ObjectNode toolNode = tools.addObject();
                     toolNode.put("name", schemaNode.path("name").asText());
                     toolNode.put("description", schemaNode.path("description").asText());
-                    // Convert "parameters" -> "input_schema"
                     JsonNode parameters = schemaNode.path("parameters");
                     if (!parameters.isMissingNode()) {
                         toolNode.set("input_schema", parameters);
@@ -400,7 +398,6 @@ public class AnthropicModelClient implements ModelClient {
         try {
             JsonNode root = mapper.readTree(responseBody);
 
-            // Check for error
             JsonNode errorNode = root.path("error");
             if (!errorNode.isMissingNode()) {
                 String errorMsg = errorNode.path("message").asText("Unknown error");
@@ -408,7 +405,6 @@ public class AnthropicModelClient implements ModelClient {
                         "Anthropic API error: " + errorMsg);
             }
 
-            // Parse content blocks
             JsonNode contentArray = root.path("content");
             if (contentArray.isMissingNode() || !contentArray.isArray() || contentArray.isEmpty()) {
                 throw new ModelException(ModelException.ErrorCode.MODEL_ERROR,
@@ -437,7 +433,6 @@ public class AnthropicModelClient implements ModelClient {
                 }
             }
 
-            // Parse stop reason
             String stopReason = root.path("stop_reason").asText("end_turn");
             String finishReason = mapStopReason(stopReason);
 

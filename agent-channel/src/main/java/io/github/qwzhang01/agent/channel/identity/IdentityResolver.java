@@ -53,8 +53,6 @@ public class IdentityResolver {
         this.auditSink = auditSink;
     }
 
-    // ============ Registration ============
-
     /**
      * Register a service account. One agentId maps to one active account;
      * double registration is a configuration error and fails loudly.
@@ -71,8 +69,6 @@ public class IdentityResolver {
                 account.accountId(), account.identity().agentId());
         return this;
     }
-
-    // ============ Resolution ============
 
     /**
      * Resolve the effective identity for a channel run, or fail closed.
@@ -131,8 +127,6 @@ public class IdentityResolver {
     public Set<String> registeredAgents() {
         return Set.copyOf(accountsByAgentId.keySet());
     }
-
-    // ============ Internals ============
 
     private ResolvedIdentity deny(String channelId, String userId, String agentId,
                                   IdentityDecision.DenialReason reason,

@@ -138,7 +138,7 @@ public final class CacheSimulatingModelClient implements ModelClient {
         return rewrittenEvents.stream();
     }
 
-    // ============ Queries (for the harness / notes) ============
+    // Queries (for the harness / notes)
 
     /** Total cache-read tokens observed so far, across all domains. */
     public long totalCachedReadTokens() {
@@ -159,8 +159,6 @@ public final class CacheSimulatingModelClient implements ModelClient {
     public double hitRate() {
         return statsPromptTotal == 0 ? 0.0 : (double) statsCacheReadTotal / statsPromptTotal;
     }
-
-    // ============ Internals ============
 
     private long statsCacheReadTotal;
     private long statsCacheWriteTotal;

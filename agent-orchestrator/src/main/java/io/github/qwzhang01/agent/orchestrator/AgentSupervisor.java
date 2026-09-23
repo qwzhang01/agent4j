@@ -72,8 +72,6 @@ public class AgentSupervisor implements AutoCloseable {
         this.ownsExecutor = ownsExecutor;
     }
 
-    // ============ Worker pool ============
-
     /**
      * Register a worker. Duplicate names are rejected -- a worker's name is
      * its routing address.
@@ -106,8 +104,6 @@ public class AgentSupervisor implements AutoCloseable {
     public int workerCount() {
         return workers.size();
     }
-
-    // ============ Dispatch ============
 
     /**
      * Dispatch with the default BEST_EFFORT policy, no retry, no timeout --
@@ -222,7 +218,7 @@ public class AgentSupervisor implements AutoCloseable {
         return SupervisorResult.of(results, aggregated, elapsed);
     }
 
-    // ============ Per-task execution: retry + timeout (M11.3) ============
+    // Per-task execution: retry + timeout (M11.3)
 
     /**
      * Run one task honoring its retry budget and timeout. Fast path: a task
@@ -309,7 +305,7 @@ public class AgentSupervisor implements AutoCloseable {
         }
     }
 
-    // ============ Skill routing (M11.4, D7) ============
+    // Skill routing (M11.4, D7)
 
     /**
      * Find the first worker (registration order) whose {@link AgentCard}

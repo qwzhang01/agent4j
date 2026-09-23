@@ -28,7 +28,7 @@ class DockerSandboxAdapterTest {
     private static final String CMD_JAVA = "java";
     private static final String WORKSPACE = "/workspace";
 
-    // ============ Command assembly (pure) ============
+    // Command assembly (pure)
 
     @Test
     void commandCarriesEveryHardeningRow() {
@@ -115,7 +115,7 @@ class DockerSandboxAdapterTest {
         assertEquals(DockerSandboxAdapter.DEFAULT_IMAGE, blank.imageReference());
     }
 
-    // ============ Execution path (loud-fail stub) ============
+    // Execution path (loud-fail stub)
 
     @Test
     void invalidClassNameIsRefusedBeforeAnyDaemonProbe() {
@@ -147,7 +147,7 @@ class DockerSandboxAdapterTest {
                 "never a CLASSLOADER/PROCESS-shaped fallback message");
     }
 
-    // ============ Report integration (placeholder stays honest) ============
+    // Report integration (placeholder stays honest)
 
     @Test
     void dockerTierReportStillClaimsZeroGuarantees() {

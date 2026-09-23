@@ -58,7 +58,7 @@ class ProcessSandboxRedTeamTest {
         return all.contains("[SANDBOX_POLICY]");
     }
 
-    // ============ Attack 1: path traversal write ============
+    // Attack 1: path traversal write
 
     @Test
     @DisplayName("RED-1 path traversal write: BLOCKED")
@@ -85,7 +85,7 @@ class ProcessSandboxRedTeamTest {
                 "no side effect may land outside the workspace");
     }
 
-    // ============ Attack 2: host env var read ============
+    // Attack 2: host env var read
 
     @Test
     @DisplayName("RED-2 host env read: BLOCKED (allowlist drops secrets)")
@@ -110,7 +110,7 @@ class ProcessSandboxRedTeamTest {
                 "host secret must not be inherited: got " + r.stdout());
     }
 
-    // ============ Attack 3: read outside workspace ============
+    // Attack 3: read outside workspace
 
     @Test
     @DisplayName("RED-3 read outside workspace: BLOCKED")
@@ -131,7 +131,7 @@ class ProcessSandboxRedTeamTest {
         assertTrue(deniedByPolicy(r), "must be a policy denial, got: " + r.stderr());
     }
 
-    // ============ Attack 4: network access ============
+    // Attack 4: network access
 
     @Test
     @DisplayName("RED-4 outbound network: BLOCKED")
@@ -155,7 +155,7 @@ class ProcessSandboxRedTeamTest {
         }
     }
 
-    // ============ Attack 5: spawn child process / fork bomb ============
+    // Attack 5: spawn child process / fork bomb
 
     @Test
     @DisplayName("RED-5 child process spawn: BLOCKED")
@@ -174,7 +174,7 @@ class ProcessSandboxRedTeamTest {
         assertTrue(deniedByPolicy(r), "must be a policy denial, got: " + r.stderr());
     }
 
-    // ============ Attack 6: stdout flood ============
+    // Attack 6: stdout flood
 
     @Test
     @DisplayName("RED-6 stdout flood: capped at outputLimitBytes")
@@ -205,7 +205,7 @@ class ProcessSandboxRedTeamTest {
                 "truncation marker must be present");
     }
 
-    // ============ Attack 7: timeout kill of process tree ============
+    // Attack 7: timeout kill of process tree
 
     @Test
     @DisplayName("RED-7 timeout kills the whole tree (busy-wait guest dies at deadline)")
@@ -243,7 +243,7 @@ class ProcessSandboxRedTeamTest {
         assertTrue(r.timedOut(), "the sleepy guest must be killed at timeout");
     }
 
-    // ============ Attack 8: className path traversal (host side) ============
+    // Attack 8: className path traversal (host side)
 
     @Test
     @DisplayName("RED-8 className traversal: BLOCKED at the door")
@@ -263,7 +263,7 @@ class ProcessSandboxRedTeamTest {
         }
     }
 
-    // ============ Env allowlist mechanics (host side) ============
+    // Env allowlist mechanics (host side)
 
     @Test
     @DisplayName("env allowlist: overlay + filtered inheritance, SANDBOX_WORKSPACE injected")
@@ -295,8 +295,6 @@ class ProcessSandboxRedTeamTest {
                 "explicit inherit-all opt-in keeps the pre-Stage-4 behavior");
     }
 
-    // ============ Honest NOT-BLOCKED recording ============
-
     @Test
     @DisplayName("honest limitation: same-OS-user file reads outside JDK are NOT blocked at UNRESTRICTED")
     void unrestrictedFileAccessIsHonestlyNotBlocked() {
@@ -322,7 +320,7 @@ class ProcessSandboxRedTeamTest {
         assertTrue(r.stdout().contains("user.home="));
     }
 
-    // ============ Attack 9: System.exit hijack (exit-code forgery) ============
+    // Attack 9: System.exit hijack (exit-code forgery)
 
     @Test
     @DisplayName("RED-9 System.exit forgery: exit is sandbox-owned, guest exit(0) is BLOCKED")
@@ -349,7 +347,7 @@ class ProcessSandboxRedTeamTest {
                 "output before the exit attempt must be captured");
     }
 
-    // ============ Attack 10: degraded-guard mode still host-constrained ============
+    // Attack 10: degraded-guard mode still host-constrained
 
     @Test
     @DisplayName("RED-10 guard-degraded JDK: host-side constraints still bind")

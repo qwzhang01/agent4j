@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class E3CacheExperimentTest {
 
-    // ============ calibrated prices (microUSD per 1M tokens) ============
+    // calibrated prices (microUSD per 1M tokens)
 
     private static final long INPUT_MICROS = 3_000_000;      // $3.00/M
     private static final long COMPLETION_MICROS = 15_000_000; // $15.00/M
@@ -54,8 +54,6 @@ class E3CacheExperimentTest {
 
     private static final String ANSWER_TEXT =
             "answer with enough length to be a plausible model answer for this turn";
-
-    // ============ mock tier ============
 
     /**
      * Deterministic answering client: usage filled with the ROUGH tokenizer's
@@ -120,7 +118,7 @@ class E3CacheExperimentTest {
         }
     }
 
-    // ============ conversation builder (per-policy contexts) ============
+    // conversation builder (per-policy contexts)
 
     /** One turn's user input + the "model answer" that lands in history. */
     private static final int TURNS = 10;
@@ -209,8 +207,6 @@ class E3CacheExperimentTest {
     private static final String FIXED_SUMMARY =
             "summary of turns 1..4 condensed into one block that stays frozen";
 
-    // ============ measurement ============
-
     record ScenarioResult(String name, double costUsd, long promptTokens, long cachedReadTokens,
                           double hitRate, double noCacheCostUsd) {}
 
@@ -247,8 +243,6 @@ class E3CacheExperimentTest {
         return new ScenarioResult(name, costUsd, promptTotal, readTotal,
                 cacheClient.hitRate(), noCacheCostUsd);
     }
-
-    // ============ the experiment ============
 
     @Test
     @DisplayName("E3: context policies vs cache hit rate - cost table + structural invariants")
@@ -379,8 +373,6 @@ class E3CacheExperimentTest {
                 r.name(), r.costUsd(), r.promptTokens(), r.cachedReadTokens(), r.hitRate(),
                 r.noCacheCostUsd());
     }
-
-    // ============ scenario D internals ============
 
     record CascadeD(double cheapHitRate, long cheapCached, long cheapPrompt,
                     double premiumHitRate, long premiumCached, long premiumPrompt,

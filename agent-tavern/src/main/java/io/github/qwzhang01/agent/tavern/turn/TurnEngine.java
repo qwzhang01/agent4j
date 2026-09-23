@@ -201,8 +201,6 @@ public final class TurnEngine {
         this(agentFactory, cards, gameId, initialWorld, null, null, relationshipDescriber);
     }
 
-    // ============ The Pipeline ============
-
     /**
      * Play one turn of the game.
      */
@@ -249,8 +247,6 @@ public final class TurnEngine {
         turnLog.append(turn);
         return new TurnResult.Completed(turn);
     }
-
-    // ============ Views ============
 
     /** Which game this engine is playing (save-file index, M16.4). */
     public String gameId() {
@@ -320,8 +316,6 @@ public final class TurnEngine {
     public List<String> characterIds() {
         return List.copyOf(agents.keySet());
     }
-
-    // ============ Internals ============
 
     /**
      * The single point where world effects are applied AND recorded.

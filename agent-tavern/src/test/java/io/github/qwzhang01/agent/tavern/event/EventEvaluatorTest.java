@@ -105,8 +105,6 @@ class EventEvaluatorTest {
         assertEquals(8, facts.turnNo());
     }
 
-    // ============ Manual Trigger ============
-
     @Test
     @DisplayName("manual trigger bypasses the condition but not the once bookkeeping")
     void manualTriggerSemantics() {
@@ -136,8 +134,6 @@ class EventEvaluatorTest {
         assertTrue(evaluator.triggerManually("nope").isEmpty());
         assertTrue(evaluator.triggerManually(null).isEmpty());
     }
-
-    // ============ TriggerEventTool ============
 
     @Test
     @DisplayName("the trigger_event tool queues to the sink and reports the delay")

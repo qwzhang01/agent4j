@@ -94,8 +94,6 @@ public class DurableRunManager {
         }
     }
 
-    // ============ Start ============
-
     /** Start a durable run: RunStore row created before execution begins. */
     public ExecutionResult start(Workflow workflow, Object input) {
         String runId = java.util.UUID.randomUUID().toString();
@@ -138,7 +136,7 @@ public class DurableRunManager {
         return result;
     }
 
-    // ============ Resume (guarded, leased) ============
+    // Resume (guarded, leased)
 
     /**
      * Resume a paused/waiting run with all Stage 3 guarantees:
@@ -244,8 +242,6 @@ public class DurableRunManager {
         return hb;
     }
 
-    // ============ Restart sweep ============
-
     /**
      * After a process restart: list recovery candidates from the store
      * (RUNNING / PAUSED / WAITING_APPROVAL rows), optionally filtering out
@@ -291,8 +287,6 @@ public class DurableRunManager {
         return control;
     }
 
-    // ============ Accessors ============
-
     public RunStore runStore() {
         return runStore;
     }
@@ -308,8 +302,6 @@ public class DurableRunManager {
     public RunManager delegate() {
         return delegate;
     }
-
-    // ============ Internal ============
 
     private void createRow(Workflow workflow, String runId, String status) {
         createRow(workflow, runId, status, null);

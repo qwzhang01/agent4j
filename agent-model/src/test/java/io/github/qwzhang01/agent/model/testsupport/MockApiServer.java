@@ -56,8 +56,6 @@ public class MockApiServer implements AutoCloseable {
         server.start();
     }
 
-    // ============ Scripting ============
-
     /**
      * Enqueues a response for the given path (FIFO per path).
      */
@@ -72,8 +70,6 @@ public class MockApiServer implements AutoCloseable {
     public void enqueue(String path, String responseBody) {
         enqueue(path, 200, responseBody);
     }
-
-    // ============ Capture ============
 
     /**
      * Returns the request bodies captured for the given path, in arrival order.
@@ -97,8 +93,6 @@ public class MockApiServer implements AutoCloseable {
         return capturedBodies(path).size();
     }
 
-    // ============ Addressing ============
-
     /**
      * Base URL of the mock server, e.g. "http://localhost:12345".
      */
@@ -110,8 +104,6 @@ public class MockApiServer implements AutoCloseable {
     public void close() {
         server.stop(0);
     }
-
-    // ============ Internals ============
 
     private void respond(HttpExchange exchange, int status, String body) throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);

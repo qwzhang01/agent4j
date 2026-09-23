@@ -113,8 +113,6 @@ public final class BudgetedModelClient implements ModelClient {
         });
     }
 
-    // ============ Ledger plumbing ============
-
     /** Pre-flight gate across all five dimensions derivable from the ctx. */
     private void requireAll(RunContext ctx, long estimate) {
         requireOne(BudgetDimension.RUN, ctx.runId(), estimate);

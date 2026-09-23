@@ -41,8 +41,6 @@ class ProductBootstrapperTest {
         }
     }
 
-    // ============ Happy path ============
-
     @Test
     void startAllStartsEveryDefinitionFile() {
         write("support-bot.yaml", """
@@ -122,8 +120,6 @@ class ProductBootstrapperTest {
 
         assertEquals(1, bootstrapper().startAll(agentsDir).size());
     }
-
-    // ============ All-or-nothing ============
 
     @Test
     void anyBrokenFileStopsTheWholeStartup() {
@@ -219,8 +215,6 @@ class ProductBootstrapperTest {
         assertTrue(e.getMessage().contains("duplicate"), e.getMessage());
     }
 
-    // ============ Argument guards ============
-
     @Test
     void missingDirectoryIsRejected() {
         assertThrows(IllegalArgumentException.class,
@@ -234,7 +228,7 @@ class ProductBootstrapperTest {
         assertTrue(bootstrapper.context().model("primary").isPresent());
     }
 
-    // ============ M13.2: template directory ============
+    // M13.2: template directory
 
     @Test
     void templateDirLoadsTemplatesForLaterInstantiation() {
@@ -283,7 +277,7 @@ class ProductBootstrapperTest {
         assertEquals(0, bootstrapper().templates().names().size());
     }
 
-    // ============ M13.4: prompt manager integration ============
+    // M13.4: prompt manager integration
 
     @Test
     void promptRefDefinitionsStartAndRunThroughStartAll() {

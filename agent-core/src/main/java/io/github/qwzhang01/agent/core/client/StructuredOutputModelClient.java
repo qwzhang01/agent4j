@@ -57,8 +57,6 @@ public class StructuredOutputModelClient implements ModelClient {
         return delegate.stream(request);
     }
 
-    // ============ Private Helpers ============
-
     private ModelResponse chatWithValidation(ModelRequest request) {
         ModelResponse lastResponse = null;
 

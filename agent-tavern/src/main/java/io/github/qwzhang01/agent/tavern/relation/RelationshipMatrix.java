@@ -99,8 +99,6 @@ public final class RelationshipMatrix {
         }
     }
 
-    // ============ Result ============
-
     /** Sealed two-state outcome: rejection is game flow, not an error. */
     public sealed interface ApplyResult {
 

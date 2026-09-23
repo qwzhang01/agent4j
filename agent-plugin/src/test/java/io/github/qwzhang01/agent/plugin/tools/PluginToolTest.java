@@ -42,8 +42,6 @@ class PluginToolTest {
         unloadTool = new PluginUnloadTool(pluginManager);
     }
 
-    // ============ PluginInspectTool ============
-
     @Test
     @DisplayName("inspect returns empty plugins when nothing loaded")
     void testInspectEmpty() throws Exception {
@@ -67,8 +65,6 @@ class PluginToolTest {
         assertEquals("echo-test", first.path("name").asText());
         assertEquals("LOADED", first.path("state").asText());
     }
-
-    // ============ PluginListTool ============
 
     @Test
     @DisplayName("list shows discovered plugins with available_to_load count")
@@ -95,8 +91,6 @@ class PluginToolTest {
         assertEquals(0, json.path("available_to_load").asInt());
     }
 
-    // ============ PluginLoadTool ============
-
     @Test
     @DisplayName("load non-existent plugin returns error")
     void testLoadNonExistent() throws Exception {
@@ -118,8 +112,6 @@ class PluginToolTest {
         assertFalse(json.path("success").asBoolean());
     }
 
-    // ============ PluginUnloadTool ============
-
     @Test
     @DisplayName("unload non-existent plugin returns error")
     void testUnloadNonExistent() throws Exception {
@@ -139,8 +131,6 @@ class PluginToolTest {
 
         assertFalse(json.path("success").asBoolean());
     }
-
-    // ============ Full Self-Evolution Cycle ============
 
     @Test
     @DisplayName("Full cycle: inspect -> list -> load -> inspect -> unload -> inspect")
@@ -166,8 +156,6 @@ class PluginToolTest {
         assertEquals("UNLOADED", json3.path("plugins").get(0).path("state").asText());
     }
 
-    // ============ Tool Metadata ============
-
     @Test
     @DisplayName("All 4 tools have correct names and valid schemas")
     void testToolMetadata() {
@@ -182,8 +170,6 @@ class PluginToolTest {
         assertDoesNotThrow(() -> mapper.readTree(loadTool.getParametersSchema()));
         assertDoesNotThrow(() -> mapper.readTree(unloadTool.getParametersSchema()));
     }
-
-    // ============ Test Plugin ============
 
     /**
      * Simple test plugin that registers an echo tool.

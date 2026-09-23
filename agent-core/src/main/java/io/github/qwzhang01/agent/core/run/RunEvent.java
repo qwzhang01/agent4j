@@ -45,8 +45,6 @@ public sealed interface RunEvent permits
         return SCHEMA_VERSION;
     }
 
-    // ============ Event Types ============
-
     /** The run began executing (after entry validation). */
     record RunStarted(String runId, String traceId, Instant occurredAt) implements RunEvent {
     }

@@ -26,8 +26,6 @@ class PluginLifecycleTest {
         registry = new PluginRegistry(toolRegistry);
     }
 
-    // ============ Load / Unload ============
-
     @Test
     @DisplayName("Load plugin -> tool appears in registry")
     void testLoadRegistersTools() {
@@ -79,8 +77,6 @@ class PluginLifecycleTest {
         assertThrows(PluginException.class, () -> registry.unload("echo-tool"));
     }
 
-    // ============ Failure Isolation ============
-
     @Test
     @DisplayName("Plugin onLoad throws -> state = FAILED, does not crash registry")
     void testLoadFailureIsolated() {
@@ -94,9 +90,7 @@ class PluginLifecycleTest {
     @Test
     @DisplayName("One plugin fails -> other plugins still load successfully")
     void testFailureIsolationBetweenPlugins() {
-        // Load a failing plugin first
         registry.load(new FailingPlugin("failing-1"));
-        // Load a healthy plugin
         registry.load(new EchoToolPlugin());
 
         assertEquals(PluginState.FAILED, registry.getState("failing-1").orElse(null));
@@ -117,8 +111,6 @@ class PluginLifecycleTest {
         assertEquals(0, toolRegistry.listTools().size(),
                 "tools registered by the plugin must be removed even if onUnload throws");
     }
-
-    // ============ Query ============
 
     @Test
     @DisplayName("listPlugins returns all plugins with states")
@@ -151,8 +143,6 @@ class PluginLifecycleTest {
         assertEquals(1, loaded.size());
         assertEquals("echo-tool", loaded.get(0).descriptor().name());
     }
-
-    // ============ Test Plugins ============
 
     /**
      * Healthy plugin that registers an echo tool.

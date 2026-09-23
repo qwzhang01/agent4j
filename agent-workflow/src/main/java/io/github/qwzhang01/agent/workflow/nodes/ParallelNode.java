@@ -117,8 +117,6 @@ public final class ParallelNode implements WorkflowNode {
         return output;
     }
 
-    // ============ Builder ============
-
     public static final class Builder {
         private final String id;
         private final Map<String, List<WorkflowNode>> branches = new LinkedHashMap<>();

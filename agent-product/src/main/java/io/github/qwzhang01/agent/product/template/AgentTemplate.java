@@ -104,8 +104,6 @@ public record AgentTemplate(
         }
     }
 
-    // ============ Parsing ============
-
 
 
     /**
@@ -124,7 +122,7 @@ public record AgentTemplate(
         }
     }
 
-    // ============ Instantiation (D6 fork snapshot) ============
+    // Instantiation (D6 fork snapshot)
 
     /**
      * Produce a complete, independent agent definition from this template.
@@ -186,8 +184,6 @@ public record AgentTemplate(
         return new AgentDefinition("v1", "Agent",
                 new AgentDefinition.Metadata(instanceName, tenant), specRecord);
     }
-
-    // ============ Placeholder machinery ============
 
     /**
      * All placeholder names referenced anywhere in the tree.

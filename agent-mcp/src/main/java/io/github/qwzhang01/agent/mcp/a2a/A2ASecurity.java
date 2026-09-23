@@ -41,7 +41,7 @@ public final class A2ASecurity {
     private A2ASecurity() {
     }
 
-    // ============ Bearer auth (wire gate) ============
+    // Bearer auth (wire gate)
 
     /**
      * Constant-time bearer check. Timing leaks in token compares are a real
@@ -56,8 +56,6 @@ public final class A2ASecurity {
                 normalized.getBytes(StandardCharsets.UTF_8),
                 expected.getBytes(StandardCharsets.UTF_8));
     }
-
-    // ============ Push notification signing ============
 
     /** A signed push envelope: body + the headers a receiver verifies. */
     public record PushEnvelope(String signature, String timestamp, String nonce, String body) {
@@ -108,8 +106,6 @@ public final class A2ASecurity {
     public record Verification(boolean valid, String reason) {
     }
 
-    // ============ Replay cache ============
-
     /** Bounded in-memory nonce cache; a real deployment shares it (e.g. Redis). */
     public static final class ReplayCache {
         private final java.util.concurrent.ConcurrentHashMap<String, Long> seen =
@@ -142,8 +138,6 @@ public final class A2ASecurity {
             seen.values().removeIf(seenAt -> now - seenAt > windowMs);
         }
     }
-
-    // ============ Internals ============
 
     private static String hmac(String taskId, String timestamp, String nonce,
                                String body, String secret) {

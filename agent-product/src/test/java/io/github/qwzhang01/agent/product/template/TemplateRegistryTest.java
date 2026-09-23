@@ -39,8 +39,6 @@ class TemplateRegistryTest {
                 - ref: order-query
             """;
 
-    // ============ Registration discipline ============
-
     @Test
     void duplicateRegistrationFailsFast() {
         TemplateRegistry registry = new TemplateRegistry()
@@ -84,8 +82,6 @@ class TemplateRegistryTest {
         assertTrue(e.getMessage().contains("support-agent"), e.getMessage());
     }
 
-    // ============ Built-ins ============
-
     @Test
     void builtinsShipSupportAndKnowledgeTemplates() {
         TemplateRegistry registry = TemplateRegistry.builtins();
@@ -120,7 +116,7 @@ class TemplateRegistryTest {
         assertTrue(kb.spec().persona().systemPrompt().contains("小知"));
     }
 
-    // ============ Acceptance: template + params -> runnable agent, zero Java per agent ============
+    // Acceptance: template + params -> runnable agent, zero Java per agent
 
     @Test
     void instantiatedDefinitionValidatesBindsAndRuns() {
@@ -143,8 +139,6 @@ class TemplateRegistryTest {
         // Tool subset from the template is wired.
         assertEquals(2, agent.getConfig().getToolRegistry().listTools().size());
     }
-
-    // ============ Test doubles ============
 
     private record FakeTool(String name) implements Tool {
         @Override

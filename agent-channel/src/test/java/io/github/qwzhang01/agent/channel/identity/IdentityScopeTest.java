@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class IdentityScopeTest {
 
-    // ============ Construction ============
-
     @Test
     @DisplayName("of stores defensive immutable copies - mutating the source set has no effect")
     void construction_defensiveCopy() {
@@ -39,8 +37,6 @@ class IdentityScopeTest {
                 () -> new IdentityScope(Set.of(), null, Set.of()));
     }
 
-    // ============ Factories ============
-
     @Test
     @DisplayName("capabilities(...) factory grants capabilities only")
     void factory_capabilities() {
@@ -61,8 +57,6 @@ class IdentityScopeTest {
         assertFalse(scope.canReadMemoryScope("channel:team-eng"));
     }
 
-    // ============ Predicates ============
-
     @Test
     @DisplayName("canReadMemoryScope matches granted namespace strings exactly")
     void predicates_memoryScope() {
@@ -74,8 +68,6 @@ class IdentityScopeTest {
         assertFalse(scope.canReadMemoryScope(null));
         assertFalse(scope.canReadMemoryScope("channel:team-e"));  // no prefix semantics
     }
-
-    // ============ Intersect ============
 
     @Test
     @DisplayName("intersect intersects all three sets element-wise")

@@ -69,12 +69,10 @@ public class SandboxClassLoader extends ClassLoader {
      * Check if a class should be blocked.
      */
     private boolean isBlocked(String name) {
-        // Check exact class name
         if (blockedClasses.contains(name)) {
             return true;
         }
 
-        // Check package prefix
         for (String prefix : blockedPackages) {
             if (name.startsWith(prefix)) {
                 return true;

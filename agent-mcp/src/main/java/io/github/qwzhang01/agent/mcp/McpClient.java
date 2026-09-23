@@ -117,8 +117,6 @@ public class McpClient {
         return () -> new StdioTransport(descriptor.command());
     }
 
-    // ============ Connection Lifecycle ============
-
     /**
      * Initialize handshake with the MCP server (D5, batch 3 capability record).
      * <p>
@@ -182,8 +180,6 @@ public class McpClient {
         McpServerCapabilities caps = serverCapabilities;
         return caps == null || caps.tools();
     }
-
-    // ============ Tool Operations ============
 
     /**
      * List all tools exposed by the server.
@@ -342,7 +338,7 @@ public class McpClient {
         }
     }
 
-    // ============ Health & Reconnect (process management) ============
+    // Health & Reconnect (process management)
 
     /**
      * MCP-standard liveness probe: send a {@code ping} request; a healthy server
@@ -378,8 +374,6 @@ public class McpClient {
     public McpTransport getTransport() {
         return transport;
     }
-
-    // ============ Internal Helpers ============
 
     public McpClient setMaxStrayMessages(int maxStrayMessages) {
         if (maxStrayMessages < 1) {
@@ -468,8 +462,6 @@ public class McpClient {
             log.warn("Error closing transport: {}", e.getMessage());
         }
     }
-
-    // ============ Accessors ============
 
     public McpServerDescriptor getDescriptor() { return descriptor; }
     public boolean isConnected() { return initialized; }

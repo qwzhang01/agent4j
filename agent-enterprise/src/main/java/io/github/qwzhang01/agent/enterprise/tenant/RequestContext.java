@@ -37,8 +37,6 @@ public record RequestContext(
         }
     }
 
-    // ============ Derived Accessors ============
-
     /**
      * The retrieval whitelist for this request: tenant scope (shared knowledge
      * of the tenant) plus the user's own scope (personal memories). Feeds

@@ -67,8 +67,6 @@ public class ManagedMcpClient extends McpClient {
         this.policy = Objects.requireNonNull(policy, "policy must not be null");
     }
 
-    // ============ Self-healing operations ============
-
     @Override
     public List<McpToolSchema> listTools() throws IOException {
         try {
@@ -87,8 +85,6 @@ public class ManagedMcpClient extends McpClient {
                     () -> super.callTool(toolName, args));
         }
     }
-
-    // ============ Health ============
 
     /**
      * Liveness check: connection initialized + transport open (process alive)
@@ -122,8 +118,6 @@ public class ManagedMcpClient extends McpClient {
     public long getLastRestartAt() {
         return lastRestartAt;
     }
-
-    // ============ Recovery internals ============
 
     /**
      * Core recovery path: dead-server check -> budget check -> reconnect -> single retry.

@@ -50,8 +50,6 @@ class VisionRequestFormatTest {
         api.close();
     }
 
-    // ============ OpenAI ============
-
     @Test
     void openAiSendsMultimodalContentArray() throws Exception {
         api.enqueue("/chat/completions", OPENAI_RESPONSE);
@@ -108,8 +106,6 @@ class VisionRequestFormatTest {
         assertFalse(content.isArray(), "pure text messages must stay a string");
         assertEquals("Hello", content.asText());
     }
-
-    // ============ Anthropic ============
 
     @Test
     void anthropicSendsUrlImageBlock() throws Exception {

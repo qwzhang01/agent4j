@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SandboxEscalatorTest {
 
-    // ============ SEMI_TRUSTED + single-tenant: optimistic path ============
+    // SEMI_TRUSTED + single-tenant: optimistic path
 
     @Test
     @DisplayName("SEMI_TRUSTED + safe code: ClassLoader fast path succeeds")
@@ -81,7 +81,7 @@ class SandboxEscalatorTest {
                 "SEMI_TRUSTED single-tenant must use optimistic escalation");
     }
 
-    // ============ UNTRUSTED: direct to Process ============
+    // UNTRUSTED: direct to Process
 
     @Test
     @DisplayName("UNTRUSTED + safe code: routes directly to ProcessSandbox")
@@ -109,7 +109,7 @@ class SandboxEscalatorTest {
                 "UNTRUSTED must not use optimistic escalation");
     }
 
-    // ============ ADVERSARIAL: direct to Process ============
+    // ADVERSARIAL: direct to Process
 
     @Test
     @DisplayName("ADVERSARIAL: routes directly to ProcessSandbox")
@@ -120,7 +120,7 @@ class SandboxEscalatorTest {
                 "ADVERSARIAL must map to PROCESS tier");
     }
 
-    // ============ SEMI_TRUSTED + multi-tenant: Decision 21 boundary ============
+    // SEMI_TRUSTED + multi-tenant: Decision 21 boundary
 
     @Test
     @DisplayName("SEMI_TRUSTED + multi-tenant: Decision 21 broken, routes to Process")
@@ -131,8 +131,6 @@ class SandboxEscalatorTest {
                 escalator.getPolicy().tierFor(SandboxRiskLevel.SEMI_TRUSTED, true),
                 "multi-tenant SEMI_TRUSTED must map to PROCESS");
     }
-
-    // ============ Factory / accessor ============
 
     @Test
     @DisplayName("forRisk() creates escalator with the specified risk level")

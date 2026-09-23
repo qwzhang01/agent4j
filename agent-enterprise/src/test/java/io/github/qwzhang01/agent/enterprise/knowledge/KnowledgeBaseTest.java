@@ -35,8 +35,6 @@ class KnowledgeBaseTest {
         return new KnowledgeEntry(title, content, "doc.pdf", Set.of("faq"));
     }
 
-    // ============ Ingest -> Search Round-Trip ============
-
     @Test
     @DisplayName("ingest then keyword search returns the matching entry")
     void ingestSearchRoundTrip() {
@@ -82,8 +80,6 @@ class KnowledgeBaseTest {
         assertEquals(1, knowledge.count("globex"));
     }
 
-    // ============ Cross-Tenant Zero Leakage ============
-
     @Test
     @DisplayName("searching acme never returns globex entries (and vice versa)")
     void crossTenantZeroLeakage() {
@@ -115,8 +111,6 @@ class KnowledgeBaseTest {
         assertEquals(1, knowledge.search("acme", "secret", 10).size());
     }
 
-    // ============ KNOWLEDGE Type Purity ============
-
     @Test
     @DisplayName("search never returns non-KNOWLEDGE entries even in the same tenant scope")
     void knowledgeTypePurity() {
@@ -136,8 +130,6 @@ class KnowledgeBaseTest {
         assertEquals("Return Policy", hits.get(0).title());
     }
 
-    // ============ topK ============
-
     @Test
     @DisplayName("topK truncates results; non-positive topK falls back to default")
     void topKTruncation() {
@@ -150,8 +142,6 @@ class KnowledgeBaseTest {
         assertEquals(KnowledgeEntry.DEFAULT_TOP_K,
                 knowledge.search("acme", "policy", 0).size());
     }
-
-    // ============ Entry Validation ============
 
     @Test
     @DisplayName("KnowledgeEntry rejects blank title/content; null tags tolerated")
@@ -176,8 +166,6 @@ class KnowledgeBaseTest {
         assertEquals(null, back.source());
         assertEquals(Set.of(), back.tags());
     }
-
-    // ============ Argument Validation ============
 
     @Test
     @DisplayName("blank tenantId fails fast")

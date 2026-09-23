@@ -125,7 +125,7 @@ public class McpExample {
         System.out.println("\n=== Acceptance: MCP tools transparently governed by Stage 9 (D1+D6) ===");
     }
 
-    // ============ Inline Mock Transport (for self-contained demo) ============
+    // Inline Mock Transport (for self-contained demo)
 
     /**
      * A minimal mock MCP transport for the example. Not for production use.

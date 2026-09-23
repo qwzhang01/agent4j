@@ -56,8 +56,6 @@ class AnthropicModelClientContractTest extends ModelClientContract {
                 NEVER, null, null, fakeClient(status, body));
     }
 
-    // ============ Canned Anthropic bodies ============
-
     @Override
     protected String syncBody() {
         return """
@@ -140,8 +138,6 @@ class AnthropicModelClientContractTest extends ModelClientContract {
                 data: {"type":"message_stop"}
                 """;
     }
-
-    // ============ Fake HttpClient ============
 
     /**
      * Minimal fake HttpClient answering every request with the canned

@@ -36,8 +36,6 @@ class InMemoryMemoryStoreTest {
         );
     }
 
-    // ============ Scope Isolation ============
-
     @Test
     void userScopeIsolation_otherUserCannotSee() {
         store.write(entry("user:u1", "diet", "allergic to peanuts", MemoryStatus.ACTIVE));
@@ -78,8 +76,6 @@ class InMemoryMemoryStoreTest {
         assertEquals(3, result.size(), "should aggregate from all listed scopes");
     }
 
-    // ============ Status Filtering ============
-
     @Test
     void query_onlyReturnsActive() {
         store.write(entry("user:u1", "s1", "active one", MemoryStatus.ACTIVE));
@@ -106,8 +102,6 @@ class InMemoryMemoryStoreTest {
         assertEquals(1, result.size());
     }
 
-    // ============ TTL ============
-
     @Test
     void expiredEntry_lazilyFiltered() {
         Instant past = Instant.now().minus(1, ChronoUnit.HOURS);
@@ -127,7 +121,7 @@ class InMemoryMemoryStoreTest {
         assertEquals("new news", result.get(0).content());
     }
 
-    // ============ dueAt window (no scheduler, no product meaning) ============
+    // dueAt window (no scheduler, no product meaning)
 
     @Test
     void write_preservesDueAt() {
@@ -182,7 +176,7 @@ class InMemoryMemoryStoreTest {
                 MemoryStatus.ACTIVE, Instant.now(), null, dueAt));
     }
 
-    // ============ Filters: type / subject / keyword / limit ============
+    // Filters: type / subject / keyword / limit
 
     @Test
     void filters_typeSubjectKeywordLimit() {
@@ -206,8 +200,6 @@ class InMemoryMemoryStoreTest {
         assertEquals(1, store.query(MemoryQuery.builder().scopes(List.of("user:u1")).limit(1).build()).size());
     }
 
-    // ============ Conflict / Supersede ============
-
     @Test
     void findActiveBySubject_returnsLatestActive() {
         store.write(entry("user:u1", "diet", "first claim", MemoryStatus.SUPERSEDED));
@@ -230,7 +222,7 @@ class InMemoryMemoryStoreTest {
         assertEquals("right", found.get().content());
     }
 
-    // ============ HISTORICAL status (evolved memories) ============
+    // HISTORICAL status (evolved memories)
 
     @Test
     void historical_notReturnedByDefault_visibleWithExplicitStatuses() {
@@ -275,8 +267,6 @@ class InMemoryMemoryStoreTest {
         assertEquals("new", found.get().content());
     }
 
-    // ============ CRUD ============
-
     @Test
     void update_nonExistentThrows() {
         assertThrows(IllegalArgumentException.class, () ->
@@ -303,8 +293,6 @@ class InMemoryMemoryStoreTest {
         assertEquals(1, store.listByScope("channel:c1").size());
     }
 
-    // ============ Provenance ============
-
     @Test
     void provenance_preservedThroughWrite() {
         MemoryProvenance prov = MemoryProvenance.modelDerived("gpt-4", "run-99", Instant.parse("2026-08-19T10:00:00Z"));
@@ -317,8 +305,6 @@ class InMemoryMemoryStoreTest {
         assertEquals("gpt-4", loaded.provenance().actor());
         assertEquals("run-99", loaded.provenance().runId());
     }
-
-    // ============ MemoryScope ============
 
     @Test
     void scope_parsing() {

@@ -26,7 +26,6 @@ public record ChatMessage(
         String toolCallId,
         String name
 ) {
-    // ============ Compact Constructor ============
 
     public ChatMessage {
         // Normalize empty parts to null so providers can rely on a simple null check
@@ -34,8 +33,6 @@ public record ChatMessage(
             parts = null;
         }
     }
-
-    // ============ Backward-compatible Constructor ============
 
     /**
      * Five-arg constructor kept for source compatibility with existing callers
@@ -45,8 +42,6 @@ public record ChatMessage(
                        String toolCallId, String name) {
         this(role, content, null, toolCalls, toolCallId, name);
     }
-
-    // ============ Factory Methods ============
 
     public static ChatMessage system(String content) {
         return new ChatMessage(ChatRole.SYSTEM, content, null, null, null, null);
@@ -71,8 +66,6 @@ public record ChatMessage(
     public static ChatMessage tool(String toolCallId, String name, String result) {
         return new ChatMessage(ChatRole.TOOL, result, null, null, toolCallId, name);
     }
-
-    // ============ Multimodal Factory Methods ============
 
     /**
      * Creates a user message from multimodal parts (text and/or images).

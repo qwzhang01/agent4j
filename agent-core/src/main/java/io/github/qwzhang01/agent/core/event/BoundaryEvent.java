@@ -43,8 +43,6 @@ public sealed interface BoundaryEvent permits
         return SCHEMA_VERSION;
     }
 
-    // ============ Memory boundary ============
-
     /**
      * The memory boundary served (or failed) one governed access. One
      * event per {@code MemoryGovernance.query/write} call — the audit
@@ -80,8 +78,6 @@ public sealed interface BoundaryEvent permits
             implements MemoryBoundaryEvent {
     }
 
-    // ============ Approval boundary ============
-
     /**
      * The approval boundary produced a decision (or refused to).
      */
@@ -111,8 +107,6 @@ public sealed interface BoundaryEvent permits
     record ApprovalRefused(String approvalId, String reason, Instant occurredAt)
             implements ApprovalBoundaryEvent {
     }
-
-    // ============ Sandbox boundary ============
 
     /**
      * The sandbox boundary executed (or refused) guest code.
@@ -156,7 +150,7 @@ public sealed interface BoundaryEvent permits
             implements SandboxBoundaryEvent {
     }
 
-    // ============ Model boundary (host-facing aggregate) ============
+    // Model boundary (host-facing aggregate)
 
     /**
      * The model boundary as the host sees it (the loop-facing twin is
@@ -184,7 +178,7 @@ public sealed interface BoundaryEvent permits
             implements ModelBoundaryEvent {
     }
 
-    // ============ MCP boundary (harness batch 7: the emitter batch) ============
+    // MCP boundary (harness batch 7: the emitter batch)
 
     /**
      * The MCP boundary called (or failed to call) a remote tool. One event
@@ -226,7 +220,7 @@ public sealed interface BoundaryEvent permits
             implements McpBoundaryEvent {
     }
 
-    // ============ A2A boundary (harness batch 7: the emitter batch) ============
+    // A2A boundary (harness batch 7: the emitter batch)
 
     /**
      * The A2A boundary delegated (or failed to delegate) a task. One event

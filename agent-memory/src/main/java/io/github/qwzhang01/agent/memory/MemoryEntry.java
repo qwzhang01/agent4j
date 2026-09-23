@@ -112,7 +112,7 @@ public record MemoryEntry(
                 createdAt, expireAt, dueAt, lifecycle, embedding, null, null, null);
     }
 
-    // ============ With Methods (for governance transitions) ============
+    // With Methods (for governance transitions)
 
     public MemoryEntry withStatus(MemoryStatus newStatus) {
         return new MemoryEntry(id, scope, type, subject, content, importance,
@@ -142,7 +142,7 @@ public record MemoryEntry(
                 validFrom, validAt, invalidAt);
     }
 
-    // ============ Bi-temporal transitions (reconciliation step 2) ============
+    // Bi-temporal transitions (reconciliation step 2)
 
     /**
      * Close this entry on both axes: business axis ends at the replacing fact's

@@ -35,7 +35,6 @@ public class TavernGameExample {
         ObjectMapper mapper = new ObjectMapper();
         Path saveRoot = Files.createTempDirectory("tavern-saves");
 
-        // ============ T0. Assembly ============
         System.out.println("=== T0 · Assembling the Golden Oak tavern ===");
 
         CharacterCard marcus = new CharacterCard("marcus", "Marcus",
@@ -107,35 +106,29 @@ public class TavernGameExample {
         System.out.println("  policy:     max ±5 net per character per turn");
         System.out.println("  GM backend: governance chain ON, audit ON");
 
-        // ============ T1. Opening ============
         System.out.println("\n=== T1 · Opening: the world greets through a persona ===");
         play(game, "@marcus Good evening! What's the mood tonight?");
         System.out.println("  world now:        " + game.world().describe());
         System.out.println("  marcus relation:  " + game.relationships().view("marcus").describe());
 
-        // ============ T2. Dialogue changes the world ============
         System.out.println("\n=== T2 · Dialogue changes the world: a relationship moves ===");
         play(game, "@marcus Keep one for yourself, you've earned it.");
         System.out.println("  marcus relation:  " + game.relationships().view("marcus").describe());
 
-        // ============ T3. Multi-character switching ============
         System.out.println("\n=== T3 · Another character, another persona, another state ===");
         play(game, "@lyra That song earlier was genuinely lovely.");
         System.out.println("  world now:        " + game.world().describe());
 
-        // ============ T4. A story event fires ============
         System.out.println("\n=== T4 · The world talks back: an event fires at settlement ===");
         play(game, "@brawn Quiet corner tonight?");
         System.out.println("  triggered events: " + game.eventEvaluator().firedEventIds());
         System.out.println("  world now:        " + game.world().describe());
 
-        // ============ T5. The limiter ============
         System.out.println("\n=== T5 · Governance is balance: an oversized move is rejected ===");
         play(game, "@marcus You're the finest barkeep in the realm, truly!");
         System.out.println("  marcus relation:  " + game.relationships().view("marcus").describe()
                 + "  (still 53 - the +10 was rejected, the scene continued)");
 
-        // ============ T6. Save and reload ============
         System.out.println("\n=== T6 · Save and reload: the game is a state you can keep ===");
         game.save();
         System.out.println("  saved to: " + saveRoot.resolve("golden-oak"));
@@ -160,7 +153,6 @@ public class TavernGameExample {
         System.out.println("  reloaded world:       " + reloaded.world().describe());
         System.out.println("  reloaded marcus rel:  " + reloaded.relationships().view("marcus").describe());
 
-        // ============ T7. Replay ============
         System.out.println("\n=== T7 · Replay: walk the recording, never re-run the model ===");
         GameReplay replay = reloaded.replayFromDisk();
         for (int t = 1; t <= replay.turnCount(); t++) {
@@ -171,7 +163,6 @@ public class TavernGameExample {
         System.out.println("  replay final == save: "
                 + (replay.finalState().world().equals(reloaded.world()) ? "YES" : "NO"));
 
-        // ============ GM backend ============
         System.out.println("\n=== GM backend: every world change has an audit trail ===");
         System.out.println("  audited tool calls: " + gmAudit.getAll().size());
         gmAudit.getAll().forEach(e -> System.out.println("  [" + e.status() + "] " + e.toolName()

@@ -40,8 +40,6 @@ public final class RedactionPolicy {
         this.masker = masker;
     }
 
-    // ============ Queries ============
-
     /** Raw plaintext may be persisted on this surface (forensic / encrypted stores). */
     public boolean keepsRaw() {
         return keepRaw;
@@ -71,8 +69,6 @@ public final class RedactionPolicy {
     public String apply(String text) {
         return masker == null ? text : masker.mask(text);
     }
-
-    // ============ Factories ============
 
     /**
      * Permissive default: raw kept, nothing masked - identical to the

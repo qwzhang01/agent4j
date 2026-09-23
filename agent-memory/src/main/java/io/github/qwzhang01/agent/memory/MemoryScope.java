@@ -41,8 +41,6 @@ public record MemoryScope(String value) {
         TENANT
     }
 
-    // ============ Factory Methods ============
-
     public static MemoryScope agent(String name) {
         return new MemoryScope("agent:" + name);
     }
@@ -81,8 +79,6 @@ public record MemoryScope(String value) {
         }
         return new MemoryScope(value.trim());
     }
-
-    // ============ Accessors ============
 
     /**
      * The namespace kind (the part before the colon).

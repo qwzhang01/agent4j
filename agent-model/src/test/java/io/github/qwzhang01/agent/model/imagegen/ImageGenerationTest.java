@@ -42,8 +42,6 @@ class ImageGenerationTest {
         api.close();
     }
 
-    // ============ OpenAiImageClient protocol ============
-
     @Test
     void sendsModelPromptAndParams() throws Exception {
         api.enqueue("/images/generations", IMAGE_RESPONSE);
@@ -100,8 +98,6 @@ class ImageGenerationTest {
         assertTrue(image.isArray(), "Ark Seedream image-to-image uses the image array");
         assertEquals("https://example.com/scene.png", image.get(0).asText());
     }
-
-    // ============ ImageGenerationTool ============
 
     @Test
     void toolReturnsImageUrl() throws Exception {

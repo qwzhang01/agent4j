@@ -64,7 +64,7 @@ public final class CodingSession {
         return new Builder();
     }
 
-    // ============ Tool factories (consumed by CodingAgentFactory, M17.5) ============
+    // Tool factories (consumed by CodingAgentFactory, M17.5)
 
     public ReadFileTool readFileTool() {
         return new ReadFileTool(workspace);
@@ -89,8 +89,6 @@ public final class CodingSession {
     public Tool runTestsTool() {
         return new LimitedTestsTool();
     }
-
-    // ============ Human gates & review ============
 
     /** What the reviewer reads before approving: summary + per-file unified diff. */
     public String reviewPatch() {
@@ -139,8 +137,6 @@ public final class CodingSession {
         return patchStore.snapshot();
     }
 
-    // ============ Fix-loop observation ============
-
     /** Failed test runs so far - the fix budget's consumed amount. */
     public int failedTestRuns() {
         return failedTestRuns;
@@ -149,8 +145,6 @@ public final class CodingSession {
     public FixLoopPolicy fixLoopPolicy() {
         return fixLoopPolicy;
     }
-
-    // ============ Internals ============
 
     private void onVerdict(TestResult verdict) {
         if (!verdict.passed()) {
@@ -213,8 +207,6 @@ public final class CodingSession {
             return verdict.toJson();
         }
     }
-
-    // ============ Builder ============
 
     public static final class Builder {
         private Workspace workspace;

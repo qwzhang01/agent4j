@@ -59,8 +59,6 @@ public class FallbackModelClient implements ModelClient {
         }
     }
 
-    // ============ Private Helpers ============
-
     private ModelResponse fallbackChat(ModelRequest request, int index) {
         if (index >= fallbacks.size()) {
             throw new ModelException(ModelException.ErrorCode.MODEL_ERROR,

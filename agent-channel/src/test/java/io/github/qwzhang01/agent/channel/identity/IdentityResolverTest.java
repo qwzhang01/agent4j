@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class IdentityResolverTest {
 
-    // ============ Fixtures ============
-
     private static final String CHANNEL = "team-eng";
     private static final String USER_A = "user-a";
 
@@ -52,7 +50,7 @@ class IdentityResolverTest {
         }
     }
 
-    // ============ Happy path + intersection semantics ============
+    // Happy path + intersection semantics
 
     @Test
     @DisplayName("resolve succeeds: effective capabilities are the intersection, never the union")
@@ -116,8 +114,6 @@ class IdentityResolverTest {
         assertFalse(sales.canReadMemoryScope("channel:eng"), "scope isolation: no cross-channel memory");
         assertFalse(eng.canReadMemoryScope("channel:sales"));
     }
-
-    // ============ Fail-closed denials ============
 
     @Test
     @DisplayName("UNKNOWN_AGENT: unregistered agentId is denied with the decision attached")
@@ -188,8 +184,6 @@ class IdentityResolverTest {
         assertEquals(Set.of("calendar.read"), ex.decision().role());
     }
 
-    // ============ Audit sink ============
-
     @Test
     @DisplayName("audit sink receives BOTH allowed and denied decisions (denied is intelligence)")
     void audit_bothOutcomesEmitted() {
@@ -225,8 +219,6 @@ class IdentityResolverTest {
                 () -> resolver.resolve(CHANNEL, USER_A, "eng-bot"));
         assertEquals(IdentityDecision.DenialReason.USER_NOT_IN_CHANNEL, ex.reason());
     }
-
-    // ============ Registration ============
 
     @Test
     @DisplayName("double registration of the same agentId fails loudly")

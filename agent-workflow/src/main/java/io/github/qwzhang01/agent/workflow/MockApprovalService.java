@@ -34,7 +34,7 @@ public final class MockApprovalService implements ApprovalService {
         return new MockApprovalService(false);
     }
 
-    // ============ Sync (Stage 5) ============
+    // Sync (Stage 5)
 
     @Override
     public boolean approve(Request request) {
@@ -46,7 +46,7 @@ public final class MockApprovalService implements ApprovalService {
         return syncCalls.get();
     }
 
-    // ============ Async (Stage 6) ============
+    // Async (Stage 6)
 
     @Override
     public void requestApproval(String runId, String nodeId, String summary, Object payload) {

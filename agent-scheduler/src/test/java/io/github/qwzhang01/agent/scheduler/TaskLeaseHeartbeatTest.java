@@ -66,8 +66,6 @@ class TaskLeaseHeartbeatTest {
         }
     }
 
-    // ============ Queue primitives ============
-
     @Test
     void claimInitializesTheLeaseClock() throws SQLException {
         JdbcTaskQueue.TaskRow t = queue.enqueue(null, "flow", TaskPriority.NORMAL, "p");
@@ -158,8 +156,6 @@ class TaskLeaseHeartbeatTest {
                 "the new claim restarts the lease clock");
     }
 
-    // ============ Holder ============
-
     @Test
     void claimedTaskHeartbeatKeepsTheLeaseAlive() throws Exception {
         JdbcTaskQueue.TaskRow t = queue.enqueue(null, "flow", TaskPriority.NORMAL, "p");
@@ -214,8 +210,6 @@ class TaskLeaseHeartbeatTest {
         }
     }
 
-    // ============ Sweeper ============
-
     @Test
     void sweeperRequeuesPeriodically() throws Exception {
         JdbcTaskQueue.TaskRow t = queue.enqueue(null, "flow", TaskPriority.NORMAL, "p");
@@ -248,8 +242,6 @@ class TaskLeaseHeartbeatTest {
             assertEquals(0, sweeper.totalRequeued());
         }
     }
-
-    // ============ Construction guards ============
 
     @Test
     void constructorRejectsNonPositiveIntervals() {

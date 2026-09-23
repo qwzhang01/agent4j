@@ -36,8 +36,6 @@ class TenantRegistryTest {
                 new User("u-carol", "globex", "Carol", Set.of(User.ROLE_CSR)), "key-carol");
     }
 
-    // ============ Login Success ============
-
     @Test
     @DisplayName("successful login produces a fully attributed RequestContext")
     void loginSuccess() {
@@ -72,7 +70,7 @@ class TenantRegistryTest {
         assertEquals("user:u-alice", ctx.actor());
     }
 
-    // ============ Login Fail-Closed (five forms) ============
+    // Login Fail-Closed (five forms)
 
     @Test
     @DisplayName("unknown tenant fails closed")
@@ -124,8 +122,6 @@ class TenantRegistryTest {
         assertTrue(ex.getMessage().contains("Invalid api key"), ex.getMessage());
     }
 
-    // ============ Registration Fail-Closed ============
-
     @Test
     @DisplayName("registering a user under an unregistered tenant fails closed")
     void userOfUnregisteredTenantRejected() {
@@ -172,8 +168,6 @@ class TenantRegistryTest {
         assertTrue(ex.getMessage().contains("Tenant already registered"), ex.getMessage());
     }
 
-    // ============ Record Validation ============
-
     @Test
     @DisplayName("Tenant/User records reject blank identifiers")
     void recordValidation() {
@@ -208,8 +202,6 @@ class TenantRegistryTest {
         assertEquals("sess-42", explicit.sessionId());
         assertTrue(generated.sessionId().startsWith("sess-"));
     }
-
-    // ============ Lookups ============
 
     @Test
     @DisplayName("lookups return entities but never credentials")

@@ -33,7 +33,7 @@ class A2AWireFuzzTest {
 
     private final SplittableRandom random = new SplittableRandom(20260917L);
 
-    // ============ Property: valid cards/tasks round-trip ============
+    // Property: valid cards/tasks round-trip
 
     @Test
     void property_cardJsonRoundTrips() throws Exception {
@@ -107,7 +107,7 @@ class A2AWireFuzzTest {
         }
     }
 
-    // ============ Mutation fuzz: hostile cards/tasks never break the codec ============
+    // Mutation fuzz: hostile cards/tasks never break the codec
 
     @Test
     void fuzz_mutatedTaskJson_yieldsTaskOrControlledFailure() throws Exception {
@@ -180,8 +180,6 @@ class A2AWireFuzzTest {
             }
         }
     }
-
-    // ============ Generators ============
 
     private AgentCard randomCard() {
         int skillCount = random.nextInt(4);

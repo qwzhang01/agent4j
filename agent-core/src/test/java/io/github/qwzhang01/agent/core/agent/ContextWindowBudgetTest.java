@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ContextWindowBudgetTest {
 
-    // ============ historyBudget() arithmetic ============
+    // historyBudget() arithmetic
 
     @Test
     @DisplayName("historyBudget() = total - system - tools - output")
@@ -26,7 +26,7 @@ class ContextWindowBudgetTest {
         assertEquals(0, budget.historyBudget());
     }
 
-    // ============ forWindow() preset ============
+    // forWindow() preset
 
     @Test
     @DisplayName("forWindow(128_000): historyBudget is ~55% of total")
@@ -53,8 +53,6 @@ class ContextWindowBudgetTest {
         assertTrue(budget.historyBudget() > 0);
     }
 
-    // ============ Validation ============
-
     @Test
     @DisplayName("negative totalWindowTokens is rejected at construction")
     void of_negativeTotalTokens_throws() {
@@ -75,8 +73,6 @@ class ContextWindowBudgetTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ContextWindowBudget.of(1_000, -1, 100, 100));
     }
-
-    // ============ toString ============
 
     @Test
     @DisplayName("toString includes all five numbers")

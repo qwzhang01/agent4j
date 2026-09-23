@@ -144,8 +144,6 @@ public final class TrajectoryCodec {
         return new Trajectory(trajectoryId, runId, metadata, status, steps, messages, reward, rewardSource);
     }
 
-    // ============ metadata ============
-
     private ObjectNode metadataToJson(TrajectoryMetadata metadata) {
         ObjectNode node = mapper.createObjectNode();
         setIfNotBlank(node, "agent_name", metadata.agentName());
@@ -187,8 +185,6 @@ public final class TrajectoryCodec {
                 textOrNull(node, "last_error"),
                 custom);
     }
-
-    // ============ step / action / observation ============
 
     private ObjectNode stepToJson(TrajectoryStep step) {
         ObjectNode node = mapper.createObjectNode();
@@ -269,8 +265,6 @@ public final class TrajectoryCodec {
                 node.path("duration_ms").asLong(0));
     }
 
-    // ============ shared shapes ============
-
     private ObjectNode usageToJson(ModelResponse.TokenUsage usage) {
         ObjectNode node = mapper.createObjectNode();
         if (usage == null) {
@@ -334,7 +328,7 @@ public final class TrajectoryCodec {
                 textOrNull(node, "name"));
     }
 
-    // ============ shared shapes (public for feedback-side reuse) ============
+    // shared shapes (public for feedback-side reuse)
 
     /** Fresh object node on this codec's mapper (feedback sidecar / DPO rows). */
     public ObjectNode createObjectNode() {
@@ -349,8 +343,6 @@ public final class TrajectoryCodec {
         }
         return array;
     }
-
-    // ============ small helpers ============
 
     private static void setIfNotBlank(ObjectNode node, String field, String value) {
         if (value != null && !value.isBlank()) {

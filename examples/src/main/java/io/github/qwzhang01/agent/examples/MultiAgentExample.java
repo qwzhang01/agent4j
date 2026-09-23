@@ -48,7 +48,7 @@ public class MultiAgentExample {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Stage 11: Multi-Agent Orchestration (2 internal + 1 external A2A) ===\n");
 
-        // ===== 1. Assemble the team: three specialists, each with its own loop =====
+        // 1. Assemble the team: three specialists, each with its own loop
         Agent researcher = new SimpleAgent(new AgentConfig("researcher",
                 "You are a library research specialist.",
                 MockModelClient.scripted()
@@ -93,7 +93,6 @@ public class MultiAgentExample {
                     return sr.sanitized();
                 });
 
-        // ===== 2. Supervisor + registration =====
         try (AgentSupervisor supervisor = new AgentSupervisor()) {
             supervisor.register(InternalAgentWorker.of("researcher", researcher, "research"));
             supervisor.register(InternalAgentWorker.of("executor", executor, "code"));
@@ -105,7 +104,7 @@ public class MultiAgentExample {
                         + "  endpoint=" + card.endpoint());
             }
 
-            // ===== 3. Parallel dispatch: three tasks at once =====
+            // 3. Parallel dispatch: three tasks at once
             System.out.println("\n[2] Parallel dispatch (BEST_EFFORT + ConcatAggregator):");
             List<WorkerTask> tasks = List.of(
                     WorkerTask.of("researcher", "research", "调研 Java MCP 生态"),
@@ -122,19 +121,17 @@ public class MultiAgentExample {
             System.out.println("    sum of individual times: " + sumOfIndividual + "ms");
             System.out.println("    wall clock (parallel!):   " + result.durationMs() + "ms  <- ~= max, not sum");
 
-            // ===== 4. Aggregated result =====
             System.out.println("\n[3] Aggregated result:");
             for (String line : result.aggregated().split("\n\n")) {
                 System.out.println("    " + line.replace("\n", "\n    "));
             }
 
-            // ===== 5. Skill routing =====
             System.out.println("\n[4] Skill routing: dispatchBySkill(\"review\") -- external worker, same API:");
             WorkerResult routed = supervisor.dispatchBySkill("review", "再审一次");
             System.out.println("    routed to '" + routed.workerName()
                     + "' -> " + brief(routed.output()));
 
-            // ===== 6. Failure + retry (D4) =====
+            // 6. Failure + retry (D4)
             System.out.println("\n[5] Failure isolation + retry: a worker that fails once, then recovers:");
             supervisor.register(InternalAgentWorker.of("flaky", flakyAgent(), "misc"));
             WorkerTask flakyTask = new WorkerTask(

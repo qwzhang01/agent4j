@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ContextCompressorTest {
 
-    // ============ ContextBudget ============
-
     @Test
     void budget_estimateRoughlyCharsDiv4() {
         List<ChatMessage> msgs = List.of(
@@ -45,8 +43,6 @@ class ContextCompressorTest {
         assertFalse(ContextBudget.exceeds(msgs, 100));
         assertTrue(ContextBudget.exceeds(msgs, 50));
     }
-
-    // ============ ContextCompressor ============
 
     @Test
     void compress_underBudget_noAction() {
@@ -136,8 +132,6 @@ class ContextCompressorTest {
                 || result.compressed().get(1).content().contains("Summary"));
     }
 
-    // ============ CompressingContextBuilder ============
-
     @Test
     void builder_rewritesStateAndArchives() {
         MockModelClient mc = MockModelClient.scripted().respondText("archived summary");
@@ -195,8 +189,6 @@ class ContextCompressorTest {
         assertEquals(1, result.size());
         assertEquals(state.getMessages(), result);
     }
-
-    // ============ Backward Compatibility ============
 
     @Test
     void agentConfig_contextBuilderDefaultsNull() {

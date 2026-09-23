@@ -364,7 +364,6 @@ public class ReActAgentLoop implements AgentLoop {
                         log.info("[{}] Executing tool: {}", currentConfig.getName(), toolCall.name());
                         sink.accept(new AgentEvent.ToolStarted(toolCall));
                         String result = executePlainTool(config, currentConfig, toolCall, ctx);
-                        // Add tool result to conversation
                         state.addMessage(ChatMessage.tool(toolCall.id(), toolCall.name(), result));
                         sink.accept(new AgentEvent.ToolFinished(toolCall.id(), toolCall.name(), result));
                         AgentEvent.ToolValidationRejected rejected = governanceRejectionOf(toolCall, result);

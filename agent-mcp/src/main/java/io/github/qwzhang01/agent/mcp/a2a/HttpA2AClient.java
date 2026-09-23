@@ -101,8 +101,6 @@ public class HttpA2AClient implements A2AClient {
                 ? java.util.Set.of() : java.util.Set.copyOf(cardTrustStore);
     }
 
-    // ============ Discovery ============
-
     /**
      * Fetch the peer's agent card from {@code /.well-known/agent.json}.
      * One endpoint = one card (the spec's rule), so this returns a
@@ -192,8 +190,6 @@ public class HttpA2AClient implements A2AClient {
                     "agent card fetch " + url + " failed: " + e.getMessage(), e);
         }
     }
-
-    // ============ Task delegation ============
 
     /**
      * Delegate a task via {@code message/send}. The task's recipient field
@@ -360,8 +356,6 @@ public class HttpA2AClient implements A2AClient {
         return A2AJson.taskFrom(resultTask).status();
     }
 
-    // ============ Messages ============
-
     /**
      * v1: not supported over HTTP. The spec has no fire-and-forget message
      * method -- mapping this onto message/send would silently CREATE a task
@@ -374,8 +368,6 @@ public class HttpA2AClient implements A2AClient {
                 "v1 HTTP transport implements task delegation (message/send, tasks/get) only; "
                 + "fire-and-forget messages are not in the A2A subset this version speaks");
     }
-
-    // ============ Transport ============
 
     private JsonNode rpc(JsonNode request) {
         try {

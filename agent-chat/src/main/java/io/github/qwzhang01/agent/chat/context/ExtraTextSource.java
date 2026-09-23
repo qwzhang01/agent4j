@@ -101,8 +101,6 @@ public class ExtraTextSource implements ContextSource {
         return List.of(ChatMessage.system(out));
     }
 
-    // ============ Truncation ============
-
     /**
      * Applies the token budget to {@code raw}.
      * Drops newline-delimited segments from the tail, keeping the head.

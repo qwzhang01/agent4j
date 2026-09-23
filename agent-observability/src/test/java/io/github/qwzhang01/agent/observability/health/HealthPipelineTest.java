@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class HealthPipelineTest {
 
-    // ============ fixtures ============
-
     private static RunMetrics run(String id, AgentState.Status status, long durationMs,
                                   long denied, long errors, long costMicros) {
         return new RunMetrics(id, "support", status, null, durationMs,
@@ -39,8 +37,6 @@ class HealthPipelineTest {
             pipeline.onRun(r);
         }
     }
-
-    // ============ window discipline ============
 
     @Test
     @DisplayName("snapshot without runs is rejected - an empty window is not an eval")
@@ -71,8 +67,6 @@ class HealthPipelineTest {
         assertThrows(IllegalArgumentException.class, () -> new HealthPipeline(0));
     }
 
-    // ============ two-layer completion ============
-
     @Test
     @DisplayName("process completion counts DONE only - ERROR and MAX_STEPS are not completed")
     void processCompletionCountsDoneOnly() {
@@ -88,8 +82,6 @@ class HealthPipelineTest {
         assertEquals(3, report.completedRuns());
         assertEquals(0.6, report.processCompletionRate(), 1e-9);
     }
-
-    // ============ percentiles ============
 
     @Test
     @DisplayName("nearest-rank percentiles on an even window (n=20)")
@@ -119,8 +111,6 @@ class HealthPipelineTest {
         assertEquals(30, report.latencyP50Ms());
         assertEquals(50, report.latencyP95Ms());
     }
-
-    // ============ cost and safety ============
 
     @Test
     @DisplayName("cost aggregates across the window and averages per task")
@@ -156,8 +146,6 @@ class HealthPipelineTest {
         assertEquals(3, report.deniedToolCalls());
         assertEquals(4, report.modelCallErrors());
     }
-
-    // ============ content projection / drift ============
 
     @Test
     @DisplayName("only Done events feed drift - deltas and tool results are not answers")
@@ -248,7 +236,7 @@ class HealthPipelineTest {
         assertEquals(HealthReport.Drift.Status.SUSPECTED, outputAppeared.drift().status());
     }
 
-    // ============ reconciliation and reproducibility ============
+    // reconciliation and reproducibility
 
     @Test
     @DisplayName("snapshot is a reconciliation point: re-snapshotting without data is STABLE at 1.0")
@@ -292,8 +280,6 @@ class HealthPipelineTest {
         }
         assertEquals(first.snapshot(), second.snapshot());
     }
-
-    // ============ side-channel discipline ============
 
     @Test
     @DisplayName("call-level sink methods are no-ops - they do not touch the report")

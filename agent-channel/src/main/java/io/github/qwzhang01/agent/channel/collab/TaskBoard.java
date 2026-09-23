@@ -30,7 +30,7 @@ public class TaskBoard implements ExecutionVisibility.Listener {
 
     private final Map<String, ChannelTask> tasks = new ConcurrentHashMap<>();
 
-    // ============ Listener (the only write path) ============
+    // Listener (the only write path)
 
     @Override
     public void onEvent(VisibilityEvent event) {
@@ -47,8 +47,6 @@ public class TaskBoard implements ExecutionVisibility.Listener {
             case AGENT_REPLIED, NOTIFICATION_SENT -> { /* conversation-level, no board change */ }
         }
     }
-
-    // ============ Read-only views ============
 
     /**
      * One task by id.
@@ -86,8 +84,6 @@ public class TaskBoard implements ExecutionVisibility.Listener {
     public int size() {
         return tasks.size();
     }
-
-    // ============ Internals ============
 
     private void upsert(ChannelTask task) {
         tasks.put(task.taskId(), task);

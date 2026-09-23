@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ParallelToolLoopTest {
 
-    // ============ Stubs ============
-
     /** Scripted chat-only client (the loop's stream path drives it). */
     static final class ScriptedMock implements io.github.qwzhang01.agent.core.client.ModelClient {
         final Queue<ModelResponse> script = new LinkedBlockingQueue<>();
@@ -115,7 +113,7 @@ class ParallelToolLoopTest {
     private static final java.util.concurrent.ExecutorService TOOL_POOL =
             java.util.concurrent.Executors.newFixedThreadPool(8);
 
-    // ============ Parallel dispatch through the loop ============
+    // Parallel dispatch through the loop
 
     @Test
     @DisplayName("multi-tool response fans out, joins in declaration order, history paired")

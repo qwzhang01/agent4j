@@ -86,8 +86,6 @@ public interface NodeContext {
         return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(in, type);
     }
 
-    // ============ Factories ============
-
     /** Stage 5 compat: no runId, not resuming. */
     static NodeContext of(WorkflowState state, Object input) {
         return new Impl(state, input, null, false, null, null);

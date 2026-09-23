@@ -102,8 +102,6 @@ class TurnEngineM16_3Test {
         }
     }
 
-    // ============ Relationship Tools ============
-
     @Test
     @DisplayName("adjust_relationship changes the matrix and lands in the turn record")
     void relationshipToolFullChain() {
@@ -177,8 +175,6 @@ class TurnEngineM16_3Test {
         assertEquals("Whoa, let's not get ahead of ourselves. What'll it be?",
                 turn.turn().responses().get(0).text());
     }
-
-    // ============ Event Settlement ============
 
     @Test
     @DisplayName("a rule fires at settlement: effects apply and the respondCharacter answers")
@@ -317,7 +313,7 @@ class TurnEngineM16_3Test {
         assertTrue(engine.world().flag("second-fired").isPresent());
     }
 
-    // ============ Governance Chain (GM Backend) ============
+    // Governance Chain (GM Backend)
 
     @Test
     @DisplayName("the Stage 9 governance chain audits every game-tool call - the GM backend")

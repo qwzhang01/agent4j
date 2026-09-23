@@ -49,8 +49,6 @@ class DynamicSchedulerNodeTest {
         scheduler.shutdown();
     }
 
-    // ============ LLM-driven event wait ============
-
     @Test
     void llmDecidedEventKeyDrivesRegistrationAndResume() throws Exception {
         // The "LLM" outputs a structured intent: wait for this CI event
@@ -83,8 +81,6 @@ class DynamicSchedulerNodeTest {
         var run = runManager.getRun(r1.resumeToken().runId());
         assertEquals(RunState.SUCCEEDED, run.getStatus());
     }
-
-    // ============ LLM-driven schedule ============
 
     @Test
     void llmDecidedDelayDrivesScheduledResume() throws Exception {
@@ -138,8 +134,6 @@ class DynamicSchedulerNodeTest {
         assertTrue(r2.isPaused(), "manual resume before the LLM-chosen delay must re-pause");
         assertNull(runManager.getRun(r1.resumeToken().runId()).getState().get("done"));
     }
-
-    // ============ Governance gates ============
 
     @Test
     void invalidLlmChosenKeyIsRejected() {
@@ -198,7 +192,7 @@ class DynamicSchedulerNodeTest {
         assertTrue(result.errorMessage().contains("No scheduling intent"));
     }
 
-    // ============ LLM-driven task dispatch (composition) ============
+    // LLM-driven task dispatch (composition)
 
     @Test
     void llmProducedSubTasksEnterQueue() {

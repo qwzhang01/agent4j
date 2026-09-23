@@ -27,8 +27,6 @@ class SupervisorFailureTest {
                 new java.util.concurrent.atomic.AtomicLong();
     }
 
-    // ============ Test workers ============
-
     private static AgentCard testCard(String name) {
         return new AgentCard(name, "test " + name, List.of(), "internal:" + name, "1.0");
     }
@@ -99,8 +97,6 @@ class SupervisorFailureTest {
             }
         };
     }
-
-    // ============ Retry ============
 
     @Test
     void retry_transientFailure_recoversWithAttemptCount() {
@@ -174,8 +170,6 @@ class SupervisorFailureTest {
         }
     }
 
-    // ============ Timeout ============
-
     @Test
     void timeout_slowWorker_failsFastWithTimeoutError() {
         try (AgentSupervisor supervisor = new AgentSupervisor()) {
@@ -209,8 +203,6 @@ class SupervisorFailureTest {
             assertEquals(2, result.results().get(0).attempts());
         }
     }
-
-    // ============ FAIL_FAST ============
 
     @Test
     void failFast_firstFailure_cancelsRemainingTasks() {
@@ -253,8 +245,6 @@ class SupervisorFailureTest {
         }
     }
 
-    // ============ BEST_EFFORT isolation ============
-
     @Test
     void bestEffort_failureDoesNotAffectOthers() {
         try (AgentSupervisor supervisor = new AgentSupervisor()) {
@@ -275,8 +265,6 @@ class SupervisorFailureTest {
             assertTrue(result.aggregated().contains("good2 done"));
         }
     }
-
-    // ============ Policy factory sanity ============
 
     @Test
     void failurePolicy_factories_andValidation() {

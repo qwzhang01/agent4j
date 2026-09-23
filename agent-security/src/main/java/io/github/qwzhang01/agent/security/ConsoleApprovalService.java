@@ -100,8 +100,6 @@ public class ConsoleApprovalService implements ToolApprovalService {
         }
     }
 
-    // ============ Test Hook ============
-
     /**
      * Test hook: replaces the shared stdin scanner. Package-private, only for
      * tests that need to script console input without touching real stdin.

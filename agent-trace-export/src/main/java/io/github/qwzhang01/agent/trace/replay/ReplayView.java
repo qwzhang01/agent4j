@@ -93,8 +93,6 @@ public final class ReplayView {
         return trajectory.steps().get(i);
     }
 
-    // ============ Verification ============
-
     private static void verify(Trajectory trajectory) {
         List<TrajectoryStep> steps = trajectory.steps();
         for (int i = 0; i < steps.size(); i++) {

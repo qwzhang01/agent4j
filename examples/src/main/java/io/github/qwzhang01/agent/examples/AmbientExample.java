@@ -59,7 +59,7 @@ public class AmbientExample {
             }
         });
 
-        // ===== 1. Disabled by default: nothing is armed =====
+        // 1. Disabled by default: nothing is armed
         System.out.println("--- 1. disabled by default ---");
         NoisePolicy openPolicy = new NoisePolicy(ZoneId.of("UTC"),
                 LocalTime.MIDNIGHT, LocalTime.MIDNIGHT,   // never quiet: deterministic demo
@@ -75,7 +75,7 @@ public class AmbientExample {
         engine.fireEvent("pr-silent", 4);                  // recorded, NOT armed
         System.out.println("    fireEvent while disabled -> pushes: " + engine.sent().size());
 
-        // ===== 2. Enable: event trigger with condition judgment =====
+        // 2. Enable: event trigger with condition judgment
         System.out.println("\n--- 2. enable + event trigger (condition judged) ---");
         engine.enable();
         engine.fireEvent("pr-silent", 4);
@@ -84,13 +84,13 @@ public class AmbientExample {
         engine.fireEvent("pr-silent", 1);                  // condition false
         System.out.println("    fireEvent with 1-day silence -> total silence (no push, no digest)");
 
-        // ===== 3. Frequency gate: repeat within 1h is swallowed =====
+        // 3. Frequency gate: repeat within 1h is swallowed
         System.out.println("\n--- 3. frequency gate ---");
         engine.fireEvent("pr-silent", 5);
         System.out.println("    repeat within the interval -> swallowed, pushes still: "
                 + engine.sent().size());
 
-        // ===== 4. Quiet window: WARN digests, CRITICAL breaks through =====
+        // 4. Quiet window: WARN digests, CRITICAL breaks through
         System.out.println("\n--- 4. quiet window (D7) ---");
         LocalTime now = LocalTime.now(ZoneId.of("UTC"));
         NoisePolicy nightPolicy = new NoisePolicy(ZoneId.of("UTC"),
@@ -115,7 +115,7 @@ public class AmbientExample {
         runTail(engine, nightEngine, session);
     }
 
-    // ===== 5. Scheduled instruction + digest + wrap-up (split for readability) =====
+    // 5. Scheduled instruction + digest + wrap-up (split for readability)
     private static void runTail(AmbientEngine engine, AmbientEngine nightEngine,
                                 SharedAgentSession session) throws InterruptedException {
         System.out.println("\n--- 5. scheduled instruction (INFO -> digest) ---");

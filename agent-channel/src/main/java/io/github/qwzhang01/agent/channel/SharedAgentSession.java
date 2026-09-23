@@ -116,8 +116,6 @@ public class SharedAgentSession {
                 account.identity().agentId(), channel.channelId(), channel.members());
     }
 
-    // ============ Speaking ============
-
     /**
      * Speak into the channel.
      * <p>
@@ -177,8 +175,6 @@ public class SharedAgentSession {
         return reply;
     }
 
-    // ============ Views ============
-
     /**
      * The channel history so far (all messages, mention or not), in order.
      */
@@ -216,7 +212,7 @@ public class SharedAgentSession {
         return lastResolvedIdentity;
     }
 
-    // ============ Tasks & Collaboration (M12.3) ============
+    // Tasks & Collaboration (M12.3)
 
     /**
      * Put a task on the board (publishes TASK_STARTED; the board follows).
@@ -357,7 +353,7 @@ public class SharedAgentSession {
         return List.copyOf(handoffs);
     }
 
-    // ============ Assembly Helpers (design D2) ============
+    // Assembly Helpers (design D2)
 
     /**
      * Convenience factory for the channel-scoped memory context: a
@@ -384,8 +380,6 @@ public class SharedAgentSession {
         return new MemoryContextBuilder(new MemoryRetriever(store), scopes,
                 null, null, null, 0);
     }
-
-    // ============ Internals ============
 
     private void requireMember(String userId) {
         if (!channel.isMember(userId)) {

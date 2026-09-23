@@ -41,8 +41,6 @@ public final class EnterpriseAssistant {
         this.taskManager = taskManager;
     }
 
-    // ============ Synchronous Path ============
-
     /**
      * Ask a question as an authenticated user.
      *
@@ -69,8 +67,6 @@ public final class EnterpriseAssistant {
             }
         }
     }
-
-    // ============ Long-Running Path ============
 
     /**
      * Submit a long-running business task (workflow with approval nodes).
@@ -111,8 +107,6 @@ public final class EnterpriseAssistant {
         return taskManager.find(taskId);
     }
 
-    // ============ Advanced Access ============
-
     /**
      * Assemble the request-scoped execution chain without running it
      * (testing/inspection and non-facade entry points).
@@ -141,8 +135,6 @@ public final class EnterpriseAssistant {
     public EnterpriseTaskManager taskManager() {
         return taskManager;
     }
-
-    // ============ Internal ============
 
     private void requireTaskManager() {
         if (taskManager == null) {

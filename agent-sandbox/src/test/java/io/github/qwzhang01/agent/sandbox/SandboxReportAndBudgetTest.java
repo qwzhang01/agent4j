@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class SandboxReportAndBudgetTest {
 
-    // ============ SandboxReport: the honest translator ============
+    // SandboxReport: the honest translator
 
     @Test
     @DisplayName("CLASSLOADER success: guarantees the fast path, admits the escape surface")
@@ -87,7 +87,7 @@ class SandboxReportAndBudgetTest {
         }
     }
 
-    // ============ Escalation budget (thinking-question 2) ============
+    // Escalation budget (thinking-question 2)
 
     /** A scripted fast tier: always BLOCKED, never runs anything. */
     static final class AlwaysBlockedSandbox implements Sandbox {

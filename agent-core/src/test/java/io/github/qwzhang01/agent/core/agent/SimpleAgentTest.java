@@ -116,8 +116,6 @@ class SimpleAgentTest {
         assertEquals(2, user.parts().size());
     }
 
-    // ============ Inline Mock ============
-
     /**
      * Minimal mock ModelClient for testing agent-core in isolation.
      */

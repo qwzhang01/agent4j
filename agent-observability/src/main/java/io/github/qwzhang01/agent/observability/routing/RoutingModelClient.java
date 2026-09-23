@@ -114,8 +114,6 @@ public final class RoutingModelClient implements ModelClient {
         return select(request).stream(request);
     }
 
-    // ============ Internals ============
-
     private ModelClient select(ModelRequest request) {
         RouteDecision decision = router.route(request, budgetSource.get());
         ModelClient selected = candidates.get(decision.modelId());

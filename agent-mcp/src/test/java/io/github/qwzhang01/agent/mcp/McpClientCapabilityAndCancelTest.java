@@ -63,8 +63,6 @@ class McpClientCapabilityAndCancelTest {
         if (client != null) client.disconnect();
     }
 
-    // ============ Capability negotiation ============
-
     @Test
     void initializeRecordsTypedServerCapabilities() {
         McpServerCapabilities caps = client.serverCapabilities();
@@ -117,8 +115,6 @@ class McpClientCapabilityAndCancelTest {
         assertEquals(0, c.listTools().size());
         c.disconnect();
     }
-
-    // ============ Cancellation wiring ============
 
     @Test
     void preCancelledTokenThrowsBeforeTheWire() {

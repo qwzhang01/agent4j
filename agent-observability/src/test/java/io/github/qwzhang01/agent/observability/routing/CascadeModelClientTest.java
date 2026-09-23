@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CascadeModelClientTest {
 
-    // ============ Test helpers ============
-
     /** Records what it saw and answers with canned responses / streams. */
     static class RecordingClient implements ModelClient {
         ModelRequest lastRequest;
@@ -52,7 +50,7 @@ class CascadeModelClientTest {
                 new ModelResponse.TokenUsage(prompt, completion, prompt + completion));
     }
 
-    // ============ chat: the cascade contract ============
+    // chat: the cascade contract
 
     @Test
     @DisplayName("cheap passes the gate: cheap's answer returned AS-IS, premium never called")
@@ -135,7 +133,7 @@ class CascadeModelClientTest {
         assertEquals("answer", out.content());
     }
 
-    // ============ chat: failure semantics ============
+    // chat: failure semantics
 
     @Test
     @DisplayName("cheap throwing ModelException propagates - availability is Fallback's job, not quality escalation")
@@ -155,7 +153,7 @@ class CascadeModelClientTest {
         assertEquals(0, premium.calls, "crash is NOT a quality signal - no silent escalation");
     }
 
-    // ============ stream: buffered replay ============
+    // stream: buffered replay
 
     @Test
     @DisplayName("stream: cheap passes the gate -> buffered events replayed to the caller")
@@ -216,8 +214,6 @@ class CascadeModelClientTest {
                 "one answer must reach the caller - premium's, best effort");
     }
 
-    // ============ guards ============
-
     @Test
     @DisplayName("constructor guards: null cheap / premium / gate")
     void constructorGuards() {
@@ -229,7 +225,7 @@ class CascadeModelClientTest {
                 () -> new CascadeModelClient(new RecordingClient(), new RecordingClient(), null));
     }
 
-    // ============ composition: availability stays inside the tier ============
+    // composition: availability stays inside the tier
 
     @Test
     @DisplayName("Cascade(Fallback(...)): cheap tier crashes -> fallback INSIDE the tier recovers, gate still judges the survivor")

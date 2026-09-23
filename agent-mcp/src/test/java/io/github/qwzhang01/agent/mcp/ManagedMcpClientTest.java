@@ -34,8 +34,6 @@ class ManagedMcpClientTest {
         return new McpRestartPolicy(maxRestarts, 0, 60_000);
     }
 
-    // ============ Auto-recovery ============
-
     @Test
     void callTool_recoversAfterServerCrash() throws IOException {
         CrashyTransport.crashGenerations = Set.of(1);  // only the 1st process crashes
@@ -78,8 +76,6 @@ class ManagedMcpClientTest {
         assertEquals(1, client.getRestartCount());
         client.disconnect();
     }
-
-    // ============ Restart storm protection ============
 
     @Test
     void callTool_budgetExhausted_stopsRestarting() throws IOException {
@@ -127,8 +123,6 @@ class ManagedMcpClientTest {
         client.disconnect();
     }
 
-    // ============ No restart when server is alive ============
-
     @Test
     void callTool_protocolError_doesNotRestart() throws IOException {
         MockMcpTransport mock = new MockMcpTransport();
@@ -148,8 +142,6 @@ class ManagedMcpClientTest {
         assertEquals(0, client.getRestartCount());
         client.disconnect();
     }
-
-    // ============ Health & reconnect ============
 
     @Test
     void isHealthy_trueWhenAlive_falseAfterCrash() throws IOException {
@@ -180,8 +172,6 @@ class ManagedMcpClientTest {
                 client.callTool("echo", MAPPER.createObjectNode().put("text", "hello")));
         client.disconnect();
     }
-
-    // ============ Scripted crashing transport ============
 
     /**
      * Fake transport with "generations": the factory builds a fresh one per

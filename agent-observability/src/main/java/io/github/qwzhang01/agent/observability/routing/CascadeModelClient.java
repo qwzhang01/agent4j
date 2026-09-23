@@ -126,8 +126,6 @@ public final class CascadeModelClient implements ModelClient {
         return premium.stream(request);
     }
 
-    // ============ Internals ============
-
     private ModelResponse merge(ModelRequest request, ModelResponse cheapResponse,
                                 ModelResponse premiumResponse, QualityGate.Verdict verdict,
                                 long startNanos) {

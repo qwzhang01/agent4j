@@ -55,8 +55,6 @@ class McpClientTest {
         if (client != null) client.disconnect();
     }
 
-    // ============ Connection ============
-
     @Test
     void connect_setsInitializedFlag() {
         assertTrue(client.isConnected());
@@ -75,8 +73,6 @@ class McpClientTest {
         c.disconnect();
     }
 
-    // ============ listTools ============
-
     @Test
     void listTools_returnsAllServerTools() throws IOException {
         List<McpToolSchema> tools = client.listTools();
@@ -94,8 +90,6 @@ class McpClientTest {
         McpClient c = new McpClient(desc, t);
         assertThrows(IOException.class, c::listTools);
     }
-
-    // ============ callTool ============
 
     @Test
     void callTool_returnsTextContent() throws IOException {
@@ -138,8 +132,6 @@ class McpClientTest {
         errClient.disconnect();
     }
 
-    // ============ disconnect ============
-
     @Test
     void disconnect_whenNotConnected_justClosesTransport() {
         McpServerDescriptor desc = McpServerDescriptor.stdio("d", "d");
@@ -149,8 +141,6 @@ class McpClientTest {
         c.disconnect();
         assertFalse(c.isConnected());
     }
-
-    // ============ Stray / timeout guards ============
 
     @Test
     void sendRequest_matchingIdStillSucceedsAfterFewStrays() throws IOException {
@@ -211,8 +201,6 @@ class McpClientTest {
         }
     }
 
-    // ============ McpServerDescriptor ============
-
     @Test
     void descriptor_stdioFactory() {
         McpServerDescriptor d = McpServerDescriptor.stdio("test", "python", "server.py");
@@ -229,8 +217,6 @@ class McpClientTest {
         assertFalse(d.isStdio());
         assertEquals("http://localhost:8080/sse", d.url());
     }
-
-    // ============ McpToolSchema ============
 
     @Test
     void toolSchema_fromJson() {

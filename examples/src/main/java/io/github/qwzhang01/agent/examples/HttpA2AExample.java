@@ -53,7 +53,7 @@ public class HttpA2AExample {
     public static void main(String[] args) throws Exception {
         System.out.println("=== A2A over real HTTP (loopback) ===\n");
 
-        // ===== 1. The "remote" side: wrap an Agent as a protocol endpoint =====
+        // 1. The "remote" side: wrap an Agent as a protocol endpoint
         Agent translator = new SimpleAgent(new AgentConfig("translator",
                 "You are a translation specialist.",
                 MockModelClient.scripted()
@@ -83,7 +83,7 @@ public class HttpA2AExample {
             System.out.println("[1] A2A server up: " + baseUrl + "/  (card: "
                     + HttpA2AServer.WELL_KNOWN_PATH + ")");
 
-            // ===== 2. The caller side: discover, then delegate =====
+            // 2. The caller side: discover, then delegate
             HttpA2AClient client = new HttpA2AClient(baseUrl);
             System.out.println("\n[2] Discovery: GET /.well-known/agent.json");
             for (AgentCard card : client.discoverAgents()) {
@@ -91,7 +91,7 @@ public class HttpA2AExample {
                         + "  url=" + card.url());
             }
 
-            // ===== 3. Task delegation over message/send =====
+            // 3. Task delegation over message/send
             System.out.println("\n[3] message/send: delegate a translation task");
             var task = new io.github.qwzhang01.agent.mcp.a2a.A2ATask(
                     "task-1", "translator", "translation",
@@ -103,7 +103,6 @@ public class HttpA2AExample {
             System.out.println("    remote taskId: " + result.path("taskId").asText());
             System.out.println("    status (poll via tasks/get): " + client.getTaskStatus("task-1"));
 
-            // ===== 4. Supervisor routing over HTTP =====
             System.out.println("\n[4] Supervisor dispatchBySkill over HTTP (external worker, same API):");
             try (AgentSupervisor supervisor = new AgentSupervisor()) {
                 supervisor.register(ExternalAgentWorker.of("translator", client, "translation"));
@@ -113,7 +112,7 @@ public class HttpA2AExample {
                         + "  output=" + brief(routed.output()));
             }
 
-            // ===== 5. Inbound defense: injection text rejected before the agent runs =====
+            // 5. Inbound defense: injection text rejected before the agent runs
             System.out.println("\n[5] Inbound defense: injection text -> task REJECTED (agent never runs)");
             var injectionTask = new io.github.qwzhang01.agent.mcp.a2a.A2ATask(
                     "task-2", "translator", "translation",

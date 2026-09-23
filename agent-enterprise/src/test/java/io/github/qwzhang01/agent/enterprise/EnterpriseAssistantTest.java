@@ -132,7 +132,7 @@ class EnterpriseAssistantTest {
     // keyword retrieval is substring-based (v1): queries use a word that
     // actually appears in the ingested contents ("policy")
 
-    // ============ ask: Full Chain ============
+    // ask: Full Chain
 
     @Test
     @DisplayName("ask runs the full chain: RAG tool call, attributed audit, usage billing")
@@ -190,8 +190,6 @@ class EnterpriseAssistantTest {
         assertEquals(120, ledger.tenantUsed("globex"));
     }
 
-    // ============ Budget Gate ============
-
     @Test
     @DisplayName("ask fails closed when the user budget is exhausted - before any tokens burn")
     void budgetGate() {
@@ -212,8 +210,6 @@ class EnterpriseAssistantTest {
         assertEquals(100, ledger.userUsed("u-alice"),
                 "the rejected request must not have spent anything");
     }
-
-    // ============ Governance Ride-Along ============
 
     @Test
     @DisplayName("a tool outside the CSR matrix rides the fallback: REQUIRES_APPROVAL -> approved -> executed")
@@ -239,8 +235,6 @@ class EnterpriseAssistantTest {
                 "the REQUIRES_APPROVAL gate must fire: " + refundEvents);
         assertTrue(refundEvents.stream().allMatch(e -> "u-alice".equals(e.userId())));
     }
-
-    // ============ Task Path ============
 
     @Test
     @DisplayName("submitTask/approve flow through the facade with the budget gate")
@@ -282,8 +276,6 @@ class EnterpriseAssistantTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> assistant.submitTask(alice, "d", wf));
     }
-
-    // ============ Builder Validation ============
 
     @Test
     @DisplayName("builder requires a model client")

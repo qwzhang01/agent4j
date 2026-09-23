@@ -13,8 +13,6 @@ class JsonRpcTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ============ JsonRpcRequest ============
-
     @Test
     void request_withParams_serializesToJson() {
         ObjectNode params = mapper.createObjectNode().put("city", "Beijing");
@@ -50,8 +48,6 @@ class JsonRpcTest {
     void request_nullId_throws() {
         assertThrows(NullPointerException.class, () -> new JsonRpcRequest(null, "ping", null));
     }
-
-    // ============ JsonRpcResponse ============
 
     @Test
     void response_success_parsesResult() {
@@ -95,8 +91,6 @@ class JsonRpcTest {
     void response_invalidJson_throws() {
         assertThrows(IllegalArgumentException.class, () -> JsonRpcResponse.fromJson("not json"));
     }
-
-    // ============ JsonRpcNotification ============
 
     @Test
     void notification_withParams_serializes() {

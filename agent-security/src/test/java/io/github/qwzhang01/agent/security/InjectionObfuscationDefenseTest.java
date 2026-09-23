@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class InjectionObfuscationDefenseTest {
 
-    // ============ InjectionNormalizer: the wall's new glasses ============
+    // InjectionNormalizer: the wall's new glasses
 
     @Test
     @DisplayName("homoglyph attack: Cyrillic і in 'іgnore previous instructions' normalized to match")
@@ -68,8 +68,6 @@ class InjectionObfuscationDefenseTest {
         String twice = InjectionNormalizer.normalize(once);
         assertEquals(once, twice, "normalizing an already-normalized string changes nothing");
     }
-
-    // ============ The semantic judge slot ============
 
     /** A scripted judge for tests: answers exactly what the scenario needs. */
     static final class ScriptedJudge implements InjectionJudge {
@@ -140,7 +138,7 @@ class InjectionObfuscationDefenseTest {
         assertEquals(List.of("regex-wall(normalized-view)", "semantic-judge(absent)"), layers);
     }
 
-    // ============ Composition fits existing consumers ============
+    // Composition fits existing consumers
 
     @Test
     @DisplayName("LayeredResultSanitizer slots into SanitizerGuardrail's construction path")

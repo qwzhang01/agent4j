@@ -59,8 +59,6 @@ abstract class MemoryStoreContractTest {
         return store.query(MemoryQuery.builder().scopes(List.of(scopes)).build());
     }
 
-    // ============ Scope Isolation ============
-
     @Test
     void scopeIsolation_foreignScopeNeverVisible() {
         store.write(entry("user:u1", "diet", "allergic to peanuts", MemoryStatus.ACTIVE, T0));
@@ -80,7 +78,7 @@ abstract class MemoryStoreContractTest {
         assertEquals("team lunch on Friday", fromA.get(0).content());
     }
 
-    // ============ Default ACTIVE-only view / status opt-in ============
+    // Default ACTIVE-only view / status opt-in
 
     @Test
     void defaultQuery_returnsActiveOnly() {
@@ -108,7 +106,7 @@ abstract class MemoryStoreContractTest {
         assertEquals(2, result.size(), "explicit status list opts into history");
     }
 
-    // ============ TTL (lazy, on retrieval) ============
+    // TTL (lazy, on retrieval)
 
     @Test
     void ttl_entriesPastDeadlineLazilyFiltered() {
@@ -125,8 +123,6 @@ abstract class MemoryStoreContractTest {
         assertEquals(1, result.size());
         assertEquals("still valid", result.get(0).content());
     }
-
-    // ============ Exact filters ============
 
     @Test
     void typeFilter_onlyMatchingTypeReturned() {
@@ -174,8 +170,6 @@ abstract class MemoryStoreContractTest {
         assertEquals("has due", inWindow.get(0).content());
     }
 
-    // ============ Ordering / limit ============
-
     @Test
     void newestFirst_thenLimitTruncates() {
         store.write(entry("user:u1", "s0", "oldest", MemoryStatus.ACTIVE, T0));
@@ -191,8 +185,6 @@ abstract class MemoryStoreContractTest {
         assertEquals(List.of("newest", "middle"),
                 limited.stream().map(MemoryEntry::content).toList());
     }
-
-    // ============ findActiveBySubject ============
 
     @Test
     void findActiveBySubject_ignoresHistoricalAndOtherScopes() {
@@ -210,8 +202,6 @@ abstract class MemoryStoreContractTest {
 
         assertTrue(store.findActiveBySubject("user:u1", "home-city").isEmpty());
     }
-
-    // ============ Update / upsert-write / delete ============
 
     @Test
     void updateNonexistentEntry_throws() {
@@ -252,8 +242,6 @@ abstract class MemoryStoreContractTest {
         assertEquals("new line", all.get(0).content());
     }
 
-    // ============ Supersede ledger move ============
-
     @Test
     void supersede_closesOldWritesNew() {
         MemoryEntry old = store.write(entry("user:u1", "home-city", "Shenzhen", MemoryStatus.ACTIVE, T0));
@@ -274,8 +262,6 @@ abstract class MemoryStoreContractTest {
         assertEquals("Shanghai", active.get(0).content());
         assertEquals(written.id(), active.get(0).id());
     }
-
-    // ============ Round-trips ============
 
     @Test
     void embeddingRoundTrip() {

@@ -60,8 +60,6 @@ public class MemoryRetriever {
         this.strategy = Objects.requireNonNull(strategy, "strategy");
     }
 
-    // ============ Public Recall API ============
-
     /**
      * Recall all active memories visible from the given scopes.
      */

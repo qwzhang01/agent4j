@@ -49,7 +49,7 @@ public class ChannelAgentExample {
     public static void main(String[] args) {
         System.out.println("=== Stage 12: Channel-Scoped Shared Agent (multiplayer) ===\n");
 
-        // ===== T0. Deploy: service identity + channel + roles =====
+        // T0. Deploy: service identity + channel + roles
         ServiceAccount account = ServiceAccount.of("svc-eng-bot-01",
                 new AgentIdentity("eng-bot", "Engineering Bot", "team-eng-leads"),
                 new IdentityScope(Set.of("chat"),
@@ -89,7 +89,7 @@ public class ChannelAgentExample {
                 + " task=" + shortId(e.taskId()) + " actor=" + e.actor()
                 + (e.detail() != null ? " | " + e.detail() : "")));
 
-        // ===== T1. alice starts a task and mentions the agent =====
+        // T1. alice starts a task and mentions the agent
         System.out.println("--- T1: alice starts a task ---");
         String taskId = session.startTask("X 库迁移方案", "alice");
         String reply = session.speak(ChannelMessage.autoDetect(
@@ -98,7 +98,7 @@ public class ChannelAgentExample {
 
         session.waitingHuman(taskId, "选保守方案还是激进方案");
 
-        // ===== T2. alice goes offline, bob takes over (three-part handoff) =====
+        // T2. alice goes offline, bob takes over (three-part handoff)
         System.out.println("--- T2: handoff alice -> bob ---");
         session.handoff(taskId, "alice", "bob", "迁移约束在频道记忆里，按保守方案继续");
         String bobReply = session.speak(ChannelMessage.mention(
@@ -107,7 +107,7 @@ public class ChannelAgentExample {
         System.out.println("    (bob's turn ran in the SAME conversation: the model saw "
                 + "alice's turn + the [handoff] note)\n");
 
-        // ===== T3. The board is visible to every member =====
+        // T3. The board is visible to every member
         System.out.println("--- T3: task board (visible to all) ---");
         for (ChannelTask task : session.board().tasks()) {
             System.out.println("    " + shortId(task.taskId()) + " [" + task.status() + "] owner="
@@ -118,7 +118,7 @@ public class ChannelAgentExample {
 
         session.completeTask(taskId, "按保守方案完成，周四解冻后执行");
 
-        // ===== T5. Identity is fail-closed (D4) =====
+        // T5. Identity is fail-closed (D4)
         System.out.println("\n--- T5: identity denials (fail-closed) ---");
         try {
             session.speak(ChannelMessage.mention("team-eng", "carol", "@eng-bot 帮我查日历"));

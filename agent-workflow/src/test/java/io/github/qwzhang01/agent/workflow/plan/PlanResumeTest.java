@@ -97,7 +97,7 @@ class PlanResumeTest {
                 new Plan.Step("publish", "publish results", java.util.List.of("process"))));
     }
 
-    // ============ Scenario 1: pause mid-plan, resume from a fresh manager ============
+    // Scenario 1: pause mid-plan, resume from a fresh manager
 
     @Test
     @DisplayName("pause mid-plan: checkpoint to disk, fresh RunManager resumes without re-running completed steps")
@@ -128,7 +128,7 @@ class PlanResumeTest {
                 "completed steps never re-execute; the paused step re-enters once");
     }
 
-    // ============ Scenario 2: completedFrom reports the durable truth ============
+    // Scenario 2: completedFrom reports the durable truth
 
     @Test
     @DisplayName("completedFrom on a resumed run's blackboard reports every step done")
@@ -156,7 +156,7 @@ class PlanResumeTest {
         assertEquals("out:publish", board.get("publish"));
     }
 
-    // ============ Scenario 3: version drift refusal ============
+    // Scenario 3: version drift refusal
 
     @Test
     @DisplayName("resume against a drifted plan (rebuildWith bumps planVersion) is refused by the runtime")

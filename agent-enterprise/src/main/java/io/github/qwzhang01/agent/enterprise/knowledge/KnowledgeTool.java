@@ -55,8 +55,6 @@ public final class KnowledgeTool implements Tool {
         return new KnowledgeTool(knowledgeBase, tenantId);
     }
 
-    // ============ Tool Contract ============
-
     @Override
     public String getName() {
         return NAME;
@@ -114,8 +112,6 @@ public final class KnowledgeTool implements Tool {
             throw new ToolException("Failed to search knowledge: " + e.getMessage(), e);
         }
     }
-
-    // ============ Accessors ============
 
     /**
      * The tenant this tool is bound to (visible for assembly/audit purposes;

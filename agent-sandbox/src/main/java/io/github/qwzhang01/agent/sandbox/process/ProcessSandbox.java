@@ -426,7 +426,7 @@ public class ProcessSandbox implements Sandbox {
         }
     }
 
-    // ============ Guard source (source-injected into the guest) ============
+    // Guard source (source-injected into the guest)
 
     /**
      * The guard source text embedded in the guest compilation. Loaded from

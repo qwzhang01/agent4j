@@ -156,7 +156,7 @@ public final class DockerSandboxAdapter implements Sandbox {
         return available;
     }
 
-    // ============ Command assembly (pure, daemon-free, fully tested) ============
+    // Command assembly (pure, daemon-free, fully tested)
 
     /**
      * Assemble the full {@code docker run} argument vector for one guest

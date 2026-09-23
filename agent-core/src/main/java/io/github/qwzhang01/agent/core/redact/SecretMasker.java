@@ -40,8 +40,6 @@ public final class SecretMasker {
         this.rules = List.copyOf(rules);
     }
 
-    // ============ Masking ============
-
     /**
      * Mask every rule hit in {@code text}. Null / blank passes through
      * unchanged. Returns the same reference when nothing matched.
@@ -82,8 +80,6 @@ public final class SecretMasker {
                 hits.values().stream().mapToInt(Integer::intValue).sum());
     }
 
-    // ============ Factories ============
-
     /** Masker with the default secret + PII preset rules. */
     public static SecretMasker withDefaults() {
         return builder().withDefaultRules().build();
@@ -97,8 +93,6 @@ public final class SecretMasker {
     public static Builder builder() {
         return new Builder();
     }
-
-    // ============ Nested ============
 
     /**
      * Masked text plus per-rule hit counts. {@code totalHits} is the sum

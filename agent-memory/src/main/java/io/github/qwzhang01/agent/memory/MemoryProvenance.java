@@ -36,8 +36,6 @@ public record MemoryProvenance(
         ADMIN_EDIT
     }
 
-    // ============ Factory Methods ============
-
     public static MemoryProvenance userSaid(String userId, String runId, Instant at) {
         return new MemoryProvenance(SourceType.USER_SAID, userId, runId, at);
     }

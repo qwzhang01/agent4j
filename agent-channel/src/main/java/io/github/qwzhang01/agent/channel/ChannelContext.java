@@ -28,16 +28,12 @@ public record ChannelContext(String channelId, Set<String> members) {
         members = Set.copyOf(members);
     }
 
-    // ============ Factory Methods ============
-
     /**
      * A channel with the given members.
      */
     public static ChannelContext of(String channelId, String... members) {
         return new ChannelContext(channelId, Set.of(members));
     }
-
-    // ============ Predicates ============
 
     /**
      * Whether the user is a member of this channel.

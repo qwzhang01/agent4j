@@ -21,8 +21,6 @@ class PromptManagerTest {
 
     private final PromptManager manager = new PromptManager(FIXED);
 
-    // ============ Publish ============
-
     @Test
     void publishAppendsMonotonicVersions() {
         PromptVersion v1 = manager.publish("support-system", "v1 content");
@@ -55,7 +53,7 @@ class PromptManagerTest {
                 () -> manager.publish("p", null));
     }
 
-    // ============ Resolve (routing) ============
+    // Resolve (routing)
 
     @Test
     void defaultResolveReturnsStable() {
@@ -100,8 +98,6 @@ class PromptManagerTest {
         assertEquals("stable-1", manager.resolve("p", "acme", null).orElseThrow().content());
     }
 
-    // ============ Rollback ============
-
     @Test
     void rollbackMovesStablePointerOneStepBack() {
         manager.publish("p", "v1");
@@ -143,7 +139,7 @@ class PromptManagerTest {
         assertThrows(IllegalArgumentException.class, () -> manager.rollback("ghost"));
     }
 
-    // ============ Concurrency (runtime asset) ============
+    // Concurrency (runtime asset)
 
     @Test
     void concurrentPublishesAreAllCounted() throws Exception {
@@ -173,8 +169,6 @@ class PromptManagerTest {
         assertEquals(threads * perThread, manager.history("p").size(),
                 "no version may be lost under concurrent publish");
     }
-
-    // ============ History discipline ============
 
     @Test
     void historyIsImmutable() {

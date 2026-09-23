@@ -40,7 +40,7 @@ class SandboxEscapeTest {
     private final ClassLoaderSandbox classLoader = new ClassLoaderSandbox();
     private final ProcessSandbox process = new ProcessSandbox();
 
-    // ============ ClassLoader: safe code runs ============
+    // ClassLoader: safe code runs
 
     @Test
     @DisplayName("ClassLoader: safe arithmetic code executes successfully")
@@ -59,7 +59,7 @@ class SandboxEscapeTest {
         assertTrue(result.stdout().contains("5050"), "arithmetic result must be correct");
     }
 
-    // ============ ClassLoader: blocked paths ============
+    // ClassLoader: blocked paths
 
     @Test
     @DisplayName("ClassLoader: java.lang.Runtime blocked — cannot fork subprocess")
@@ -129,7 +129,7 @@ class SandboxEscapeTest {
                 "reflection escape attempt must not succeed — ClassLoader blocks reflect package");
     }
 
-    // ============ ProcessSandbox: confirms process boundary ============
+    // ProcessSandbox: confirms process boundary
 
     @Test
     @DisplayName("ProcessSandbox: safe code executes and produces correct output")
@@ -176,7 +176,7 @@ class SandboxEscapeTest {
         }
     }
 
-    // ============ SandboxEscalator.isBlocked() helper ============
+    // SandboxEscalator.isBlocked() helper
 
     @Test
     @DisplayName("isBlocked: correctly identifies Blocked result")

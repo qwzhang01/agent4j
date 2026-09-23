@@ -49,8 +49,6 @@ public final class Workflow {
         this.retryPolicies = Collections.unmodifiableMap(retryPolicies);
     }
 
-    // ============ Accessors ============
-
     public static WorkflowBuilder builder(String name) {
         return new WorkflowBuilder(name);
     }
@@ -149,8 +147,6 @@ public final class Workflow {
     public List<Edge> errorEdges(String from) {
         return errorEdges.getOrDefault(from, List.of());
     }
-
-    // ============ Builder ============
 
     /**
      * Retry policy registered for a node; RetryPolicy.NONE by default.

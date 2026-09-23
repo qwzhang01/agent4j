@@ -47,8 +47,6 @@ public final class MetricsCollector implements MetricsSink {
     private long orphanModelCalls;
     private long orphanToolCalls;
 
-    // ============ Construction ============
-
     /**
      * No cost accounting: {@code RunMetrics.costMicros} stays 0 (metrics-only
      * wiring; cost flows through {@code BudgetBook} instead).
@@ -70,8 +68,6 @@ public final class MetricsCollector implements MetricsSink {
     public MetricsCollector(CostMeter costMeter) {
         this.costMeter = costMeter;
     }
-
-    // ============ Run lifecycle ============
 
     /**
      * Open a run context on the current thread; boundary events until
@@ -119,8 +115,6 @@ public final class MetricsCollector implements MetricsSink {
         return acc.finish(status, lastError);
     }
 
-    // ============ MetricsSink ============
-
     @Override
     public synchronized void onModelCall(ModelCallMetrics metrics) {
         String runId = CURRENT_RUN.get();
@@ -146,8 +140,6 @@ public final class MetricsCollector implements MetricsSink {
     public synchronized void onRun(RunMetrics metrics) {
         // producer, not consumer - see class javadoc
     }
-
-    // ============ Queries ============
 
     /** Materialized summary of a FINISHED run; empty while the run is active or unknown. */
     public synchronized Optional<RunMetrics> runMetrics(String runId) {
@@ -203,8 +195,6 @@ public final class MetricsCollector implements MetricsSink {
     public synchronized long orphanToolCalls() {
         return orphanToolCalls;
     }
-
-    // ============ Nested ============
 
     /** Per-agent success-rate statistics (the "task success rate" acceptance metric). */
     public record AgentStats(String agentName, int totalRuns, int succeededRuns,

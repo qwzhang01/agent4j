@@ -57,8 +57,6 @@ public record IdentityDecision(
         role = r;
     }
 
-    // ============ Factory Methods ============
-
     static IdentityDecision allowed(String channelId, String userId, String agentId,
                                     Set<String> granted, Set<String> role) {
         return new IdentityDecision(channelId, userId, agentId, true, null, granted, role, Instant.now());

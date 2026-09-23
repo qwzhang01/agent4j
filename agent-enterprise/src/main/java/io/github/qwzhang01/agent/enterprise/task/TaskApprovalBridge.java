@@ -38,7 +38,7 @@ public final class TaskApprovalBridge implements ApprovalService {
     private final Map<String, Boolean> decisions = new ConcurrentHashMap<>();
     private final Map<String, String> pending = new ConcurrentHashMap<>();
 
-    // ============ Workflow Side (called by HumanApprovalNode) ============
+    // Workflow Side (called by HumanApprovalNode)
 
     @Override
     public boolean approve(Request request) {
@@ -60,7 +60,7 @@ public final class TaskApprovalBridge implements ApprovalService {
         return decisions.get(runId);
     }
 
-    // ============ Manager Side (called by EnterpriseTaskManager) ============
+    // Manager Side (called by EnterpriseTaskManager)
 
     /**
      * Record the decision a manager settled for the run's pending approval

@@ -24,8 +24,6 @@ public class ImageGenerationTool implements Tool {
         this.client = client;
     }
 
-    // ============ Tool ============
-
     @Override
     public String getName() {
         return GenerationTools.GENERATE_IMAGE;

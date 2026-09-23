@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class PlanTest {
 
-    // ============ Construction & validation ============
-
     @Test
     @DisplayName("valid plan builds; declaration order is preserved")
     void validPlanBuilds() {
@@ -57,8 +55,6 @@ class PlanTest {
                 new Plan.Step(" ", "x", List.of()))));
     }
 
-    // ============ Version ============
-
     @Test
     @DisplayName("every plan starts at version 1 (structural mutations bump it via rebuild)")
     void planVersioning() {
@@ -73,8 +69,6 @@ class PlanTest {
         assertEquals(1, rebuilt.planVersion());
         assertNotSame(plan, rebuilt);
     }
-
-    // ============ Resume frontier ============
 
     @Test
     @DisplayName("readySteps: only dep-satisfied, not-yet-done steps are the resume frontier")

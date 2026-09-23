@@ -71,8 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class E8SideEffectGapExperimentTest {
 
-    // ============ Test doubles ============
-
     /**
      * The external world: counts RAW calls per label (no dedupe - an
      * unguarded charge just happens again) and DEDUPED deliveries per
@@ -260,8 +258,6 @@ class E8SideEffectGapExperimentTest {
         }
     }
 
-    // ============ Shared plumbing ============
-
     /** charge -> approval -> END: pause AFTER charge completed. */
     private static Workflow chargeThenApproval(String chargeId, WorkflowNode charge,
                                                ApprovalService approvals) {
@@ -297,7 +293,7 @@ class E8SideEffectGapExperimentTest {
         return new RunManager(new FileCheckpointStore(checkpointDir));
     }
 
-    // ============ Scenario 1: cursor protection (before the cursor) ============
+    // Scenario 1: cursor protection (before the cursor)
 
     /**
      * Framework guarantee (Checkpoint D2): nodes completed BEFORE the
@@ -324,7 +320,7 @@ class E8SideEffectGapExperimentTest {
                         + "resume must not re-execute it");
     }
 
-    // ============ Scenario 2: the gap (after the cursor, unguarded) ============
+    // Scenario 2: the gap (after the cursor, unguarded)
 
     /**
      * The gap made visible. Generation 1: approve and complete - the
@@ -374,7 +370,7 @@ class E8SideEffectGapExperimentTest {
                         + "replays it and the unguarded node charges twice");
     }
 
-    // ============ Scenario 3: isResuming guard (the cursor node itself) ============
+    // Scenario 3: isResuming guard (the cursor node itself)
 
     /**
      * The framework hook for the PAUSING node: a two-phase node fires
@@ -418,7 +414,7 @@ class E8SideEffectGapExperimentTest {
                         + "generation 1; its node instance died with that process)");
     }
 
-    // ============ Scenario 4: idempotency key (the same gap, guarded) ============
+    // Scenario 4: idempotency key (the same gap, guarded)
 
     /**
      * Same crash shape as Scenario 2, but the charge derives its key
@@ -466,7 +462,7 @@ class E8SideEffectGapExperimentTest {
                         + "one logical charge despite the replay");
     }
 
-    // ============ Scenario 5: the retry trap (in-process) ============
+    // Scenario 5: the retry trap (in-process)
 
     /**
      * The textbook key formula runId:nodeId:attempt breaks under

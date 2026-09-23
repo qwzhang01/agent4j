@@ -37,8 +37,6 @@ class VideoGenerationTest {
         api.close();
     }
 
-    // ============ ArkVideoClient protocol ============
-
     @Test
     void arkSubmitBuildsTaskRequestBody() throws Exception {
         api.enqueue("/contents/generations/tasks",
@@ -96,8 +94,6 @@ class VideoGenerationTest {
                 "awaitCompletion must poll until terminal state");
     }
 
-    // ============ OpenAiVideoClient protocol ============
-
     @Test
     void openAiSubmitMapsToUnifiedStatus() throws Exception {
         api.enqueue("/videos", "{\"id\":\"video_1\",\"status\":\"queued\",\"progress\":0}");
@@ -141,8 +137,6 @@ class VideoGenerationTest {
 
         assertArrayEquals("FAKE-MP4-BYTES".getBytes(StandardCharsets.UTF_8), content);
     }
-
-    // ============ VideoGenerationTool ============
 
     @Test
     void toolWaitsAndReturnsVideoUrl() {

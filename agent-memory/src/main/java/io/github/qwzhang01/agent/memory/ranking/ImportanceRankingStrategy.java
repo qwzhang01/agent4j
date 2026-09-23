@@ -41,8 +41,6 @@ public final class ImportanceRankingStrategy implements RankingStrategy {
                 .toList();
     }
 
-    // ============ Extension Points ============
-
     /**
      * Relevance of a memory entry to a user query, in {@code [0.0, 1.0]}.
      *
@@ -63,8 +61,6 @@ public final class ImportanceRankingStrategy implements RankingStrategy {
         long matched = tokens.stream().filter(haystack::contains).count();
         return (double) matched / tokens.size();
     }
-
-    // ============ Internals ============
 
     private Comparator<MemoryEntry> buildComparator(String query) {
         if (query == null || query.isBlank()) {

@@ -86,7 +86,7 @@ public final class TrajectoryFixture {
                 trajectory.status(), trajectory.steps(), trajectory.messages(), reward, "test");
     }
 
-    // ============ same-prompt double rollout (M14.4 preference pairing) ============
+    // same-prompt double rollout (M14.4 preference pairing)
 
     private static final List<ChatMessage> SHARED_PROMPT = List.of(
             ChatMessage.system("You are SupportBot."),

@@ -119,8 +119,6 @@ public final class JdbcCheckpointStore implements CheckpointStore {
         return DDL;
     }
 
-    // ============ CheckpointStore ============
-
     @Override
     public String save(Checkpoint checkpoint) {
         FileCheckpointStore.validateRunId(checkpoint.runId());

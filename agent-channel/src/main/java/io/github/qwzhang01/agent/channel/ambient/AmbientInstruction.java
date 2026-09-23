@@ -75,8 +75,6 @@ public record AmbientInstruction(
         Objects.requireNonNull(message, "message must not be null");
     }
 
-    // ============ Factory Methods ============
-
     /**
      * A scheduled standing instruction (check every interval).
      */

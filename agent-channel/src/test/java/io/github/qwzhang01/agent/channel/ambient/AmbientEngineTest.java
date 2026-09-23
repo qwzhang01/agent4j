@@ -61,7 +61,7 @@ class AmbientEngineTest {
         }
     }
 
-    // ============ Disabled by default (safety default) ============
+    // Disabled by default (safety default)
 
     @Test
     @DisplayName("disabled engine: register records but fireEvent does NOTHING")
@@ -83,8 +83,6 @@ class AmbientEngineTest {
         assertTrue(engine.sent().isEmpty());
         assertTrue(engine.drainDigest().isEmpty());
     }
-
-    // ============ Event-triggered pipeline ============
 
     @Test
     @DisplayName("event trigger: condition true + WARN -> realtime push attributed to the AGENT identity")
@@ -141,8 +139,6 @@ class AmbientEngineTest {
         assertDoesNotThrow(() -> engine.fireEvent("nobody-home", null));
     }
 
-    // ============ Noise gates through the engine ============
-
     @Test
     @DisplayName("INFO instruction: realtime sink silent, digest gets the entry")
     void infoGoesToDigest() {
@@ -181,8 +177,6 @@ class AmbientEngineTest {
         assertEquals(1, pushed.size(), "the repeat within one hour is swallowed");
     }
 
-    // ============ Scheduled trigger ============
-
     @Test
     @DisplayName("scheduled instruction fires periodically once enabled")
     void scheduledTrigger_fires() throws InterruptedException {
@@ -200,8 +194,6 @@ class AmbientEngineTest {
         assertTrue(pushed.size() >= 2, "expected >= 2 firings, got: " + pushed.size());
     }
 
-    // ============ Visibility stream integration ============
-
     @Test
     @DisplayName("NOTIFICATION_SENT lands in the session visibility stream (whole channel sees it)")
     void notificationSentEvent_published() {
@@ -217,8 +209,6 @@ class AmbientEngineTest {
 
         assertTrue(seen.contains(VisibilityEvent.Type.NOTIFICATION_SENT));
     }
-
-    // ============ Sink isolation ============
 
     @Test
     @DisplayName("a throwing sink does not break other sinks")
@@ -236,8 +226,6 @@ class AmbientEngineTest {
         assertDoesNotThrow(() -> engine.fireEvent("k", "x"));
         assertEquals(1, healthy.size(), "the healthy sink still got the push");
     }
-
-    // ============ Registration guards ============
 
     @Test
     @DisplayName("duplicate instructionId is rejected")

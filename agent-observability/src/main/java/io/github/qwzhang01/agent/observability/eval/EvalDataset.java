@@ -53,8 +53,6 @@ public final class EvalDataset {
 
     private final List<EvalCase> cases = new ArrayList<>();
 
-    // ============ Construction ============
-
     public static EvalDataset empty() {
         return new EvalDataset();
     }
@@ -86,7 +84,7 @@ public final class EvalDataset {
         return cases.size();
     }
 
-    // ============ Failure mining (D7) ============
+    // Failure mining (D7)
 
     /**
      * Mine failure trajectories into regression cases.
@@ -158,8 +156,6 @@ public final class EvalDataset {
         return false;
     }
 
-    // ============ JSONL persistence ============
-
     /** One case per line, UTF-8. Overwrites the target file. */
     public void save(Path jsonlFile) throws IOException {
         Objects.requireNonNull(jsonlFile, "jsonlFile");
@@ -194,7 +190,7 @@ public final class EvalDataset {
         return dataset;
     }
 
-    // ============ Case JSON (hand-built, TrajectoryCodec discipline) ============
+    // Case JSON (hand-built, TrajectoryCodec discipline)
 
     ObjectNode toJson(EvalCase evalCase) {
         ObjectNode node = MAPPER.createObjectNode();
@@ -224,8 +220,6 @@ public final class EvalDataset {
         return new EvalCase(caseId, prompt, expectation, originRunId);
     }
 
-    // ============ Expectation JSON ============
-
     private ObjectNode expectationToJson(Expectation expectation) {
         ObjectNode node = MAPPER.createObjectNode();
         if (expectation instanceof Expectation.ExactMatch e) {
@@ -252,8 +246,6 @@ public final class EvalDataset {
             default -> throw new IllegalArgumentException("unknown expectation type: " + type);
         };
     }
-
-    // ============ Field helpers ============
 
     private static JsonNode requiredField(JsonNode node, String name) {
         JsonNode field = node.get(name);

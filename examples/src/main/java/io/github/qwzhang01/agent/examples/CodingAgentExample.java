@@ -61,7 +61,6 @@ public class CodingAgentExample {
     public static void main(String[] args) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
-        // ============ T0. Assembly ============
         System.out.println("=== T0 · Assembling a governed coding session ===");
         Path root = Files.createTempDirectory("calc-project");
         Files.writeString(root.resolve("Calculator.java"),
@@ -118,7 +117,7 @@ public class CodingAgentExample {
         System.out.println("  governance: read/list/write AUTO - run_command/run_tests "
                 + "REQUIRES_APPROVAL (auto-approved for the demo) - apply is a human gate");
 
-        // ============ T1-T4. The agent runs the whole loop ============
+        // T1-T4. The agent runs the whole loop
         System.out.println("\n=== T1-T4 · Read -> stage -> test RED -> fix -> test GREEN ===");
         String summary = agent.run("Add a divide method with a zero guard, verify with tests.");
         System.out.println("  agent:      " + firstLine(summary));
@@ -126,7 +125,6 @@ public class CodingAgentExample {
         System.out.println("  patch:      " + session.activePatch().orElseThrow().status()
                 + " (passing the referee validates the staged patch)");
 
-        // ============ T5. The human gate ============
         System.out.println("\n=== T5 · The human gate: review the diff, then apply ===");
         System.out.println(session.reviewPatch());
         ApplyResult applied = session.approveAndApply();
@@ -136,18 +134,15 @@ public class CodingAgentExample {
         System.out.println("  on disk:    divide guarded = "
                 + Files.readString(root.resolve("Calculator.java")).contains("guard"));
 
-        // ============ T6. The delivered summary ============
         System.out.println("\n=== T6 · The deliverable is a reviewable change, not a claim ===");
         System.out.println("  " + summary);
 
-        // ============ T7. Governance replay ============
         System.out.println("\n=== T7 · Every action has an audit trail ===");
         for (AuditEvent event : audit.getAll()) {
             System.out.println("  [" + event.status() + "] " + event.toolName()
                     + " " + brief(event.args()));
         }
 
-        // ============ F1/F3/F7. The three rejections ============
         System.out.println("\n=== Rejections · deny-read / whitelist / injection-inert ===");
 
         // F1: reading is a privilege too - .git internals are deny-listed

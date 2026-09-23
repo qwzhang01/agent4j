@@ -38,7 +38,7 @@ public class SchedulerExample {
         System.out.println("=== Done ===");
     }
 
-    // ============ Demo 1: Scheduled Resume ============
+    // Demo 1: Scheduled Resume
 
     private static void demoScheduledResume() throws Exception {
         System.out.println("─".repeat(60));
@@ -73,7 +73,7 @@ public class SchedulerExample {
         scheduler.shutdown();
     }
 
-    // ============ Demo 2: Event-Driven Resume ============
+    // Demo 2: Event-Driven Resume
 
     private static void demoEventResume() throws Exception {
         System.out.println("─".repeat(60));
@@ -118,7 +118,7 @@ public class SchedulerExample {
         scheduler.shutdown();
     }
 
-    // ============ Demo 3: Async Task Queue ============
+    // Demo 3: Async Task Queue
 
     private static void demoTaskQueue() {
         System.out.println("─".repeat(60));

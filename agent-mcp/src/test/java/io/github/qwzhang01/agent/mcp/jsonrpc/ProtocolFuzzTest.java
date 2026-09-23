@@ -39,7 +39,7 @@ class ProtocolFuzzTest {
     private final com.fasterxml.jackson.databind.ObjectMapper mapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    // ============ Property: valid envelopes round-trip ============
+    // Property: valid envelopes round-trip
 
     @Test
     void property_validRequestsRoundTrip() {
@@ -72,7 +72,7 @@ class ProtocolFuzzTest {
         }
     }
 
-    // ============ Mutation fuzz: the border never escapes its contract ============
+    // Mutation fuzz: the border never escapes its contract
 
     @Test
     void fuzz_mutatedResponseJson_neverEscapesExceptionContract() {
@@ -125,8 +125,6 @@ class ProtocolFuzzTest {
             }
         }
     }
-
-    // ============ Generators ============
 
     private String randomMethod() {
         String[] methods = {"tools/list", "tools/call", "ping", "initialize",

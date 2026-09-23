@@ -36,8 +36,6 @@ class BudgetBookTest {
         }
     }
 
-    // ============ unconfigured ============
-
     @Test
     @DisplayName("unconfigured (dimension, key): Ok + limitOf -1 + remainingOf MAX_VALUE (unlimited by absence)")
     void unconfiguredIsUnlimited() {
@@ -54,8 +52,6 @@ class BudgetBookTest {
         book.recordUsage(BudgetDimension.CHANNEL, "eng", 500);
         assertEquals(500L, book.usedOf(BudgetDimension.CHANNEL, "eng"));
     }
-
-    // ============ the three-state gate ============
 
     @Test
     @DisplayName("healthy budget: Ok, no alarm")
@@ -136,8 +132,6 @@ class BudgetBookTest {
         assertEquals(650L, book.usedOf(BudgetDimension.RUN, "run-1"));
     }
 
-    // ============ five dimensions, five gates ============
-
     @Test
     @DisplayName("all five dimensions gate independently (RUN/USER/TENANT/CHANNEL/AGENT)")
     void fiveIndependentGates() {
@@ -161,8 +155,6 @@ class BudgetBookTest {
         assertInstanceOf(BudgetCheck.Denied.class, book.requireBudget(BudgetDimension.USER, "alice", 1L));
         assertInstanceOf(BudgetCheck.Ok.class, book.requireBudget(BudgetDimension.USER, "bob", 50L));
     }
-
-    // ============ warning behaviour ============
 
     @Test
     @DisplayName("custom warnAtPercent=50: alarm fires earlier")
@@ -238,8 +230,6 @@ class BudgetBookTest {
         assertInstanceOf(BudgetCheck.Warn.class,
                 assertDoesNotThrow(() -> book.requireBudget(BudgetDimension.USER, "alice", 5L)));
     }
-
-    // ============ guards ============
 
     @Test
     @DisplayName("builder guards: non-positive limits and out-of-range warn percent rejected at assembly")

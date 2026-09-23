@@ -113,8 +113,6 @@ class GameReplayerTest {
         return store.loadReplay("game-1");
     }
 
-    // ============ stateAt ============
-
     @Test
     @DisplayName("stateAt(n) rebuilds the world and relationships at each point in history")
     void stateAtTimePoints() throws Exception {
@@ -196,7 +194,7 @@ class GameReplayerTest {
         assertThrows(IllegalArgumentException.class, () -> replay.describeTurn(4));
     }
 
-    // ============ Integrity (fail loud, with line numbers) ============
+    // Integrity (fail loud, with line numbers)
 
     private Path writeLog(String... lines) throws Exception {
         Path file = dir.resolve("broken.jsonl");

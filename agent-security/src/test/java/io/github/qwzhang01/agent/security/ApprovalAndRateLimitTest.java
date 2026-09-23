@@ -52,7 +52,7 @@ class ApprovalAndRateLimitTest {
                 .build();
     }
 
-    // ============ Approval (M9.2) ============
+    // Approval (M9.2)
 
     @Test
     void requiresApproval_approved_executes() {
@@ -119,7 +119,7 @@ class ApprovalAndRateLimitTest {
         assertTrue(executor.execute(call("dangerous_op")).startsWith("[DENIED]"));
     }
 
-    // ============ Rate Limiting (M9.3) ============
+    // Rate Limiting (M9.3)
 
     @Test
     void rateLimiter_allowsUpToLimit() {
@@ -172,13 +172,12 @@ class ApprovalAndRateLimitTest {
         ToolPolicy policy = new ToolPolicy(ToolPermission.AUTO);
         GovernedToolExecutor executor = buildExecutor(policy, null, null);
 
-        // Call many times - no rate limiting
         for (int i = 0; i < 10; i++) {
             assertTrue(executor.execute(call("get_time")).startsWith("ok:"));
         }
     }
 
-    // ============ Combined: permission + approval + rate limit ============
+    // Combined: permission + approval + rate limit
 
     @Test
     void combined_allGovernanceActive() {

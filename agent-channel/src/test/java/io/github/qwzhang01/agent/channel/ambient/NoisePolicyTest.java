@@ -27,7 +27,7 @@ class NoisePolicyTest {
                 dailyBudget, minInterval);
     }
 
-    // ============ Gate 1: frequency ============
+    // Gate 1: frequency
 
     @Test
     @DisplayName("gate 1 frequency: repeat within the interval is SUPPRESSED (even CRITICAL)")
@@ -47,7 +47,7 @@ class NoisePolicyTest {
                 "past the interval it flows again");
     }
 
-    // ============ Gate 2: daily budget ============
+    // Gate 2: daily budget
 
     @Test
     @DisplayName("gate 2 budget: realtime pushes beyond the daily cap are SUPPRESSED; CRITICAL exempt")
@@ -83,7 +83,7 @@ class NoisePolicyTest {
                 "next day: budget is fresh");
     }
 
-    // ============ Gate 3: quiet window ============
+    // Gate 3: quiet window
 
     @Test
     @DisplayName("gate 3 quiet window: at 23:00 WARN digests, CRITICAL still pushes; noon WARN pushes")
@@ -101,7 +101,7 @@ class NoisePolicyTest {
                 "outside the window: WARN pushes in realtime");
     }
 
-    // ============ Gate 4: importance tiering ============
+    // Gate 4: importance tiering
 
     @Test
     @DisplayName("gate 4 tiering: INFO always digests, even outside the quiet window")
@@ -112,8 +112,6 @@ class NoisePolicyTest {
                 AmbientInstruction.Importance.INFO, NOON),
                 "noon INFO still goes to the digest - summaries, not drips");
     }
-
-    // ============ Quiet-window math ============
 
     @Test
     @DisplayName("quiet window crosses midnight correctly")
@@ -127,8 +125,6 @@ class NoisePolicyTest {
         assertFalse(policy.inQuietWindow(Instant.parse("2026-08-22T12:00:00Z"))); // noon
         assertFalse(policy.inQuietWindow(Instant.parse("2026-08-22T21:59:59Z"))); // just before 22:00
     }
-
-    // ============ Digest queue ============
 
     @Test
     @DisplayName("digest queue: enqueue then drain returns everything and clears")
@@ -145,8 +141,6 @@ class NoisePolicyTest {
         assertEquals("one", drained.get(0).content());
         assertTrue(policy.drainDigest().isEmpty(), "drained once, empty after");
     }
-
-    // ============ Validation ============
 
     @Test
     @DisplayName("constructor rejects a zero budget")

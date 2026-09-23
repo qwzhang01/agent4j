@@ -105,8 +105,6 @@ public class EmbeddingMemoryStore implements MemoryStore {
         return delegate.listByScope(scope);
     }
 
-    // ============ Internals ============
-
     /**
      * Embeds {@code subject + content} and attaches the vector. A failed call
      * logs a warn and returns the entry with a null embedding — the write

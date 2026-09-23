@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class EvalDatasetTest {
 
-    // ============ Trajectory fixture (minimal, both channels consistent) ============
+    // Trajectory fixture (minimal, both channels consistent)
 
     private static Trajectory trajectory(String runId, DoneReason doneReason, Double reward, String userPrompt) {
         ChatMessage user = userPrompt == null ? null : ChatMessage.user(userPrompt);
@@ -40,8 +40,6 @@ class EvalDatasetTest {
                 new TrajectoryMetadata(null, null, List.of(), null, null, null, 0, null, null, Map.of()),
                 AgentState.Status.DONE, List.of(step), messages, reward, "rule");
     }
-
-    // ============ dataset basics ============
 
     @Test
     @DisplayName("add/cases/size: order preserved, cases() is a defensive copy")
@@ -74,7 +72,7 @@ class EvalDatasetTest {
                 () -> EvalCase.of("c1", "p", null));
     }
 
-    // ============ failure mining: the three sources ============
+    // failure mining: the three sources
 
     @Test
     @DisplayName("importFailures: ERROR / MAX_STEPS_EXCEEDED / low reward all become cases; healthy DONE excluded")
@@ -143,8 +141,6 @@ class EvalDatasetTest {
 
         assertEquals("case-0002", dataset.cases().get(1).caseId());
     }
-
-    // ============ JSONL round-trip ============
 
     @Test
     @DisplayName("JSONL round-trip: all four expectation types, with and without lineage")

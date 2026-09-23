@@ -21,7 +21,7 @@ public final class InjectionPattern {
     private InjectionPattern() {
     }
 
-    // ============ Category 1: Role Spoofing ============
+    // Category 1: Role Spoofing
 
     /**
      * Patterns that attempt to inject fake system/assistant messages.
@@ -36,7 +36,7 @@ public final class InjectionPattern {
             Pattern.compile("^\\s*System\\s*:", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE)
     );
 
-    // ============ Category 2: Instruction Override ============
+    // Category 2: Instruction Override
 
     /**
      * Patterns that attempt to override the model's instructions.
@@ -54,7 +54,7 @@ public final class InjectionPattern {
             Pattern.compile("忽略(以上|之前|前面)(所有|全部)?指令")
     );
 
-    // ============ Category 3: Sensitive Exfiltration ============
+    // Category 3: Sensitive Exfiltration
 
     /**
      * Patterns that attempt to exfiltrate data to external URLs.

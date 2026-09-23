@@ -196,8 +196,6 @@ class LlmMemoryExtractorTest {
         assertTrue(entries.isEmpty());
     }
 
-    // ============ extractAsync + sampling ============
-
     /** sampleRate=100 → extracts every session; result is stored asynchronously. */
     @Test
     void extractAsync_sampleRate100_alwaysExtracts() throws ExecutionException, InterruptedException {

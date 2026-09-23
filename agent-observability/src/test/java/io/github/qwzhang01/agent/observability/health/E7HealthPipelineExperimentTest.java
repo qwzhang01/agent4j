@@ -129,8 +129,6 @@ class E7HealthPipelineExperimentTest {
         assertEquals(first.snapshot(), second.snapshot());
     }
 
-    // ============ fixtures ============
-
     private static RunMetrics run(String id, AgentState.Status status, long durationMs,
                                   long denied, long errors) {
         return new RunMetrics(id, "support", status, null, durationMs,

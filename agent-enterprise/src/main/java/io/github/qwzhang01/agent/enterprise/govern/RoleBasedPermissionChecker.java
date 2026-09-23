@@ -64,8 +64,6 @@ public final class RoleBasedPermissionChecker extends PermissionChecker {
         return new RoleBasedPermissionChecker(roleMatrix, fallbackPolicy, roles);
     }
 
-    // ============ Decision ============
-
     @Override
     public ToolPermission check(String toolName) {
         Objects.requireNonNull(toolName, "toolName must not be null");
@@ -84,8 +82,6 @@ public final class RoleBasedPermissionChecker extends PermissionChecker {
         // 3. fallback decides (AUTO / REQUIRES_APPROVAL)
         return fallback;
     }
-
-    // ============ Accessors ============
 
     /**
      * The roles bound to this request-scoped checker (assembly/audit view).

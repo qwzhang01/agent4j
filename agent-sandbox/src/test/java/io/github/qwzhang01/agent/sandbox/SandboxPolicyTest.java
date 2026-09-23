@@ -15,8 +15,6 @@ class SandboxPolicyTest {
 
     private final SandboxPolicy policy = SandboxPolicy.defaultPolicy();
 
-    // ============ TRUSTED ============
-
     @Test
     @DisplayName("TRUSTED always maps to CLASSLOADER (same trust domain)")
     void trusted_alwaysClassLoader() {
@@ -25,7 +23,7 @@ class SandboxPolicyTest {
         assertEquals(SandboxTier.CLASSLOADER, policy.tierFor(SandboxRiskLevel.TRUSTED, false));
     }
 
-    // ============ SEMI_TRUSTED — Decision 21 boundary ============
+    // SEMI_TRUSTED — Decision 21 boundary
 
     @Test
     @DisplayName("SEMI_TRUSTED + single-tenant maps to CLASSLOADER (Decision 21 holds)")
@@ -45,16 +43,12 @@ class SandboxPolicyTest {
         assertEquals(SandboxTier.CLASSLOADER, policy.tierFor(SandboxRiskLevel.SEMI_TRUSTED));
     }
 
-    // ============ UNTRUSTED ============
-
     @Test
     @DisplayName("UNTRUSTED always maps to PROCESS regardless of tenancy")
     void untrusted_alwaysProcess() {
         assertEquals(SandboxTier.PROCESS, policy.tierFor(SandboxRiskLevel.UNTRUSTED, false));
         assertEquals(SandboxTier.PROCESS, policy.tierFor(SandboxRiskLevel.UNTRUSTED, true));
     }
-
-    // ============ ADVERSARIAL ============
 
     @Test
     @DisplayName("ADVERSARIAL always maps to PROCESS regardless of tenancy")
@@ -63,7 +57,7 @@ class SandboxPolicyTest {
         assertEquals(SandboxTier.PROCESS, policy.tierFor(SandboxRiskLevel.ADVERSARIAL, true));
     }
 
-    // ============ Optimistic escalation eligibility ============
+    // Optimistic escalation eligibility
 
     @Test
     @DisplayName("SEMI_TRUSTED + single-tenant enables optimistic escalation")

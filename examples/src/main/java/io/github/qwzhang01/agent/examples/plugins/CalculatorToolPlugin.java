@@ -28,8 +28,6 @@ public class CalculatorToolPlugin implements ToolPlugin {
         context.getToolRegistry().unregister("calculate");
     }
 
-    // ============ The actual tool ============
-
     public static class CalculatorTool implements Tool {
 
         @Override

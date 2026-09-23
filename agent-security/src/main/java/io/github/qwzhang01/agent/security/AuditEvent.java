@@ -48,8 +48,6 @@ public record AuditEvent(
         SANITIZED
     }
 
-    // ============ Factory Methods ============
-
     public static AuditEvent denied(String runId, ToolCall toolCall, String reason) {
         return new AuditEvent(UUID.randomUUID().toString(), runId, toolCall.name(),
                 truncate(toolCall.arguments() != null ? toolCall.arguments().toString() : "{}"),

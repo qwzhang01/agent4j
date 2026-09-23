@@ -29,7 +29,6 @@ public record ModelRequest(
         ResponseFormat responseFormat,
         ReasoningConfig reasoning
 ) {
-    // ============ Backward-compatible Constructor ============
 
     /**
      * Seven-arg constructor kept for source compatibility with the
@@ -44,8 +43,6 @@ public record ModelRequest(
     public static Builder builder() {
         return new Builder();
     }
-
-    // ============ Response Format ============
 
     /**
      * Specifies the desired output format.
@@ -67,8 +64,6 @@ public record ModelRequest(
             return new ResponseFormat("json_schema", schema);
         }
     }
-
-    // ============ Builder ============
 
     public static class Builder {
         private String model;

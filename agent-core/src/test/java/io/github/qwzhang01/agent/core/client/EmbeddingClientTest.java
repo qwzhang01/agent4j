@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class EmbeddingClientTest {
 
-    // ============ cosineSimilarity ============
-
     @Test
     void cosine_identicalVectors_isOne() {
         float[] v = {1.0f, 2.0f, 3.0f};
@@ -58,8 +56,6 @@ class EmbeddingClientTest {
         float[] b = {1.0f, 0.0f};
         assertEquals(1.0 / Math.sqrt(2.0), EmbeddingClient.cosineSimilarity(a, b), 1e-9);
     }
-
-    // ============ embedAll default ============
 
     @Test
     void embedAll_defaultLoopsIndexAligned() {

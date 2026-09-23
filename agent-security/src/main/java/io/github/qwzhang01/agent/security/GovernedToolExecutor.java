@@ -151,8 +151,6 @@ public class GovernedToolExecutor implements ToolExecutor {
         }
     }
 
-    // ============ Builder ============
-
     public static Builder builder(ToolExecutor delegate) {
         return new Builder(delegate);
     }

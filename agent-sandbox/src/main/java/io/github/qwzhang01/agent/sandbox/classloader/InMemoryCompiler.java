@@ -65,15 +65,11 @@ public class InMemoryCompiler {
         return fileManager.getClassBytes();
     }
 
-    // ============ Exceptions ============
-
     public static class CompilationException extends RuntimeException {
         public CompilationException(String message) {
             super(message);
         }
     }
-
-    // ============ In-Memory Source ============
 
     /**
      * Represents a Java source file in memory.
@@ -92,8 +88,6 @@ public class InMemoryCompiler {
             return code;
         }
     }
-
-    // ============ In-Memory File Manager ============
 
     /**
      * Collects compiled bytecode in memory instead of writing .class files.

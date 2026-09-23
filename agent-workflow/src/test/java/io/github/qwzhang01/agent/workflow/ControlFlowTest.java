@@ -15,8 +15,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ControlFlowTest {
 
-    // ============ Retry ============
-
     @Test
     void retryPolicyRecoversFlakyNode() {
         FlakyNode flaky = new FlakyNode("flaky", 2);
@@ -71,8 +69,6 @@ class ControlFlowTest {
         assertEquals("recover", result.trace().get(1).nodeId());
     }
 
-    // ============ onError edges ============
-
     @Test
     void parallelAllOfJoinsEveryBranch() {
         ParallelNode fanout = ParallelNode.builder("fanout")
@@ -110,8 +106,6 @@ class ControlFlowTest {
         // 2 x 100ms branches ran concurrently: must be faster than sequential
         assertTrue(elapsed < 190, "branches did not run in parallel (elapsed=" + elapsed + "ms)");
     }
-
-    // ============ Parallel ============
 
     @Test
     void parallelAnyOfTakesFirstFinished() {

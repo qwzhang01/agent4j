@@ -47,8 +47,6 @@ class EnterpriseTaskManagerTest {
         }
     }
 
-    // ============ Workflow Fixtures ============
-
     /** prepare -> approval -> execute, with execution counters on both ends. */
     private Workflow refundWorkflow(ApprovalService svc,
                                      AtomicInteger prepareCount,
@@ -103,8 +101,6 @@ class EnterpriseTaskManagerTest {
                 .build();
     }
 
-    // ============ Submit -> WAITING_APPROVAL ============
-
     @Test
     @DisplayName("submit pauses at the approval node: task lands in WAITING_APPROVAL")
     void submitPausesAtApproval() {
@@ -126,7 +122,7 @@ class EnterpriseTaskManagerTest {
         assertEquals(0, exec.get());
     }
 
-    // ============ Approve: Resume Without Re-Execution ============
+    // Approve: Resume Without Re-Execution
 
     @Test
     @DisplayName("approve resumes from the checkpoint: completed nodes run exactly once")
@@ -173,8 +169,6 @@ class EnterpriseTaskManagerTest {
         assertEquals(2, second.approvals().size(), "both decisions are recorded");
     }
 
-    // ============ Reject -> CANCELLED ============
-
     @Test
     @DisplayName("reject cancels the paused run: downstream nodes never execute")
     void rejectCancels() {
@@ -195,8 +189,6 @@ class EnterpriseTaskManagerTest {
         assertEquals("u-bob", record.approverId());
     }
 
-    // ============ FAILED Mapping ============
-
     @Test
     @DisplayName("a node failing after approval maps the task to FAILED")
     void failureAfterApprovalMapsToFailed() {
@@ -211,8 +203,6 @@ class EnterpriseTaskManagerTest {
         assertEquals(1, boom.get());
         assertEquals(TaskApprovalRecord.Decision.APPROVED, failed.approvals().get(0).decision());
     }
-
-    // ============ Crash Recovery ============
 
     @Test
     @DisplayName("crash recovery: a NEW RunManager over the same files resumes the run")
@@ -248,8 +238,6 @@ class EnterpriseTaskManagerTest {
         assertEquals(1, prep.get(), "prepare still ran exactly once across the whole lifecycle");
         assertEquals(1, exec.get());
     }
-
-    // ============ Fail-Closed Validation ============
 
     @Test
     @DisplayName("deciding a task that is not WAITING_APPROVAL fails closed")
@@ -297,8 +285,6 @@ class EnterpriseTaskManagerTest {
         assertEquals(BusinessTask.Status.DONE, task.status());
         assertEquals(1, task.runIds().size(), "terminal runs still get their id captured");
     }
-
-    // ============ Bridge & Queries ============
 
     @Test
     @DisplayName("the bridge rejects sync-mode approval (this profile always runs via RunManager)")

@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ObservingModelClientTest {
 
-    // ============ Test helpers ============
-
     /** Sink that records every event into lists for exact assertions. */
     static final class RecordingSink implements MetricsSink {
         final List<ModelCallMetrics> modelCalls = new ArrayList<>();
@@ -74,8 +72,6 @@ class ObservingModelClientTest {
         return new ModelResponse("answer", null, "stop",
                 new ModelResponse.TokenUsage(prompt, completion, prompt + completion));
     }
-
-    // ============ chat ============
 
     @Test
     @DisplayName("chat: full passthrough - same response instance, identical request seen by delegate")
@@ -150,8 +146,6 @@ class ObservingModelClientTest {
         assertNull(m.finishReason());
     }
 
-    // ============ stream ============
-
     @Test
     @DisplayName("stream: event sequence passes through untouched; metrics emitted once on Done with its usage")
     void streamPassthroughAndDoneMetrics() {
@@ -209,8 +203,6 @@ class ObservingModelClientTest {
 
         assertEquals(0, sink.modelCalls.size(), "no Done/Error consumed -> no metrics");
     }
-
-    // ============ sink isolation ============
 
     @Test
     @DisplayName("sink throwing must not break the observed call (metrics are a side channel)")

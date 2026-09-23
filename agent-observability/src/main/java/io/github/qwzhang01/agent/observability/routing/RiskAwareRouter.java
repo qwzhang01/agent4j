@@ -99,8 +99,6 @@ public final class RiskAwareRouter implements ModelRouter {
                         + " classified) - read-shaped turn, cheap");
     }
 
-    // ============ Internals ============
-
     /**
      * Extract the declared tool names from the request's JSON schemas. A
      * schema is the registry's tool definition JSON; its {@code "name"}

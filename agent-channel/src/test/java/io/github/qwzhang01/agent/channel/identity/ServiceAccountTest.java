@@ -17,8 +17,6 @@ class ServiceAccountTest {
         return new AgentIdentity("eng-bot", "Engineering Bot", "team-eng-leads");
     }
 
-    // ============ Validation ============
-
     @Test
     @DisplayName("blank accountId is rejected")
     void validation_blankAccountId() {
@@ -37,8 +35,6 @@ class ServiceAccountTest {
                 () -> new ServiceAccount("svc-1", identity(), IdentityScope.empty(),
                         ServiceAccount.UNLIMITED_BUDGET, t.plusSeconds(1), t));
     }
-
-    // ============ Validity window ============
 
     @Test
     @DisplayName("open-ended window (null bounds) is valid at any time")
@@ -61,8 +57,6 @@ class ServiceAccountTest {
         assertFalse(account.isValidAt(until), "validUntil is exclusive: expired at the boundary");
         assertTrue(account.isValidAt(until.minusSeconds(1)), "last instant inside the window");
     }
-
-    // ============ Budget placeholder ============
 
     @Test
     @DisplayName("budget placeholder: of() defaults to unlimited, hasBudgetCap() flips when set")

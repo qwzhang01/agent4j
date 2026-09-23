@@ -14,8 +14,6 @@ class RuleBasedQualityGateTest {
         return new ModelResponse(content, null, finishReason, null);
     }
 
-    // ============ passes ============
-
     @Test
     @DisplayName("plain good text passes - no defect signal fires")
     void goodTextPasses() {
@@ -41,7 +39,7 @@ class RuleBasedQualityGateTest {
         assertTrue(v.passed(), v.reason());
     }
 
-    // ============ signal 1: structured output broken ============
+    // signal 1: structured output broken
 
     @Test
     @DisplayName("JSON-looking but broken content fails with a parse defect")
@@ -62,7 +60,7 @@ class RuleBasedQualityGateTest {
         assertTrue(v.passed());
     }
 
-    // ============ signal 2: abnormal finish reason ============
+    // signal 2: abnormal finish reason
 
     @Test
     @DisplayName("finish reason 'length' fails - truncated output is defective")
@@ -89,7 +87,7 @@ class RuleBasedQualityGateTest {
         assertFalse(gate.judge(of(null, "tool_calls")).passed());
     }
 
-    // ============ signal 3: empty content ============
+    // signal 3: empty content
 
     @Test
     @DisplayName("empty content with no tool calls fails")
@@ -107,8 +105,6 @@ class RuleBasedQualityGateTest {
         assertTrue(v.reason().contains("empty"), v.reason());
     }
 
-    // ============ combined signals ============
-
     @Test
     @DisplayName("multiple defects are all named in one verdict, separated by '; '")
     void multipleDefectsAllNamed() {
@@ -120,16 +116,12 @@ class RuleBasedQualityGateTest {
         assertTrue(v.reason().contains("; "), "defects joined with '; '");
     }
 
-    // ============ configurability ============
-
     @Test
     @DisplayName("all signals off: even a garbage response passes (escape hatch for experiments)")
     void allOffPassesEverything() {
         RuleBasedQualityGate off = new RuleBasedQualityGate(false, false, false);
         assertTrue(off.judge(of("", "error")).passed());
     }
-
-    // ============ guards ============
 
     @Test
     @DisplayName("Verdict factories reject blank reasons - verdicts are auditable")
@@ -139,8 +131,6 @@ class RuleBasedQualityGateTest {
         assertEquals("why", QualityGate.Verdict.fail("why").reason());
         assertTrue(QualityGate.Verdict.pass("fine").passed());
     }
-
-    // ============ fence / JSON edge cases ============
 
     @Test
     @DisplayName("fenced but broken JSON fails; unclosed fence degrades gracefully")

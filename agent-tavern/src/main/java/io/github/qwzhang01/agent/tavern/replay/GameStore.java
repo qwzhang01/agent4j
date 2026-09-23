@@ -92,8 +92,6 @@ public final class GameStore {
         return new GameReplayer().load(file);
     }
 
-    // ============ Snapshot Assembly ============
-
     private SaveGame snapshotOf(TurnEngine engine) {
         Map<String, Relationship> relationships = engine.relationships() != null
                 ? engine.relationships().snapshot()
@@ -107,8 +105,6 @@ public final class GameStore {
                         ? engine.eventEvaluator().firedEventIds()
                         : java.util.Set.of());
     }
-
-    // ============ save.json ============
 
     private void writeSave(Path file, SaveGame save) throws IOException {
         ObjectNode root = mapper.createObjectNode();
@@ -136,8 +132,6 @@ public final class GameStore {
         root.path("fired_event_ids").forEach(id -> fired.add(id.asText()));
         return new SaveGame(gameId, world, relationships, histories, fired);
     }
-
-    // ============ turn-log.jsonl ============
 
     private void writeTurnLog(Path file, TurnEngine engine) throws IOException {
         List<String> lines = new ArrayList<>();

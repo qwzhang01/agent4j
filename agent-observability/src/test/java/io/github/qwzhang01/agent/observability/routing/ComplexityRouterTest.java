@@ -26,7 +26,7 @@ class ComplexityRouterTest {
                 .build();
     }
 
-    // ============ signal 1: message count ============
+    // signal 1: message count
 
     @Test
     @DisplayName("short thread routes cheap")
@@ -46,7 +46,7 @@ class ComplexityRouterTest {
         assertTrue(d.reason().contains("8 messages >= 8"), d.reason());
     }
 
-    // ============ signal 2: complexity marker ============
+    // signal 2: complexity marker
 
     @Test
     @DisplayName("complexity marker in the last user message forces premium even on a short thread")
@@ -80,8 +80,6 @@ class ComplexityRouterTest {
         assertTrue(d.reason().contains("审查"), d.reason());
     }
 
-    // ============ custom configuration ============
-
     @Test
     @DisplayName("custom threshold and markers are honored")
     void customConfig() {
@@ -91,8 +89,6 @@ class ComplexityRouterTest {
         // 2 messages: threshold is >= 2
         assertEquals("premium", router.route(ofMessages(2, "still"), ModelRouter.BudgetSnapshot.unlimited()).modelId());
     }
-
-    // ============ guards ============
 
     @Test
     @DisplayName("constructor guards: blank model ids, bad threshold, null markers")
@@ -107,7 +103,7 @@ class ComplexityRouterTest {
                 () -> new ComplexityRouter("premium", "cheap", 5, null));
     }
 
-    // ============ budget view is accepted but ignored ============
+    // budget view is accepted but ignored
 
     @Test
     @DisplayName("capped budget snapshot does not change complexity routing (signals only, no economics)")

@@ -47,8 +47,6 @@ public final class FakeHttpClient extends HttpClient {
         this.body = body;
     }
 
-    // ============ HttpClient surface ============
-
     @Override
     public <T> HttpResponse<T> send(HttpRequest request,
                                     HttpResponse.BodyHandler<T> responseBodyHandler) {
@@ -68,8 +66,6 @@ public final class FakeHttpClient extends HttpClient {
             HttpResponse.PushPromiseHandler<T> pushPromiseHandler) {
         return CompletableFuture.completedFuture(respond(responseBodyHandler));
     }
-
-    // ============ Canned plumbing ============
 
     private <T> HttpResponse<T> respond(HttpResponse.BodyHandler<T> handler) {
         HttpResponse.BodySubscriber<T> subscriber = handler.apply(new HttpResponse.ResponseInfo() {
@@ -159,8 +155,6 @@ public final class FakeHttpClient extends HttpClient {
             return HttpClient.Version.HTTP_1_1;
         }
     }
-
-    // ============ Unused HttpClient config surface ============
 
     @Override
     public Optional<CookieHandler> cookieHandler() {

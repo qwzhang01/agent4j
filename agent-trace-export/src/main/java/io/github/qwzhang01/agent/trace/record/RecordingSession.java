@@ -57,7 +57,7 @@ final class RecordingSession implements RunSession {
         this.trajectoryId = "traj-" + UUID.randomUUID();
     }
 
-    // ============ Boundary Events (package-visible, called by decorators) ============
+    // Boundary Events (package-visible, called by decorators)
 
     void onModelCall(ModelRequest request, ModelResponse response, long durationMs) {
         requireNotFinished();
@@ -90,8 +90,6 @@ final class RecordingSession implements RunSession {
         }
         pendingObservations.add(new ToolObservation(call.id(), call.name(), result, success, durationMs));
     }
-
-    // ============ RunSession API ============
 
     @Override
     public void attach(AgentConfig config) {
@@ -150,8 +148,6 @@ final class RecordingSession implements RunSession {
             finish(AgentState.Status.ERROR, "session closed without explicit finish");
         }
     }
-
-    // ============ Assembly Helpers ============
 
     private void flushPendingStep(boolean done, DoneReason reason) {
         if (pendingAction == null) {

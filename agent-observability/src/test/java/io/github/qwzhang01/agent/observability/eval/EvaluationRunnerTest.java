@@ -28,8 +28,6 @@ class EvaluationRunnerTest {
     private static final Expectation.Outcome GOOD = new Expectation.Outcome("回答得好", 100, 1);
     private static final Expectation.Outcome BAD = new Expectation.Outcome("回答崩了", 100, 1);
 
-    // ============ aggregation + verdicts ============
-
     @Test
     @DisplayName("all pass: first run BASELINE_ABSENT (establishes), rerun against baseline PASS")
     void allPass() {
@@ -151,8 +149,6 @@ class EvaluationRunnerTest {
         assertEquals(first, second.baseline());
     }
 
-    // ============ subject failure semantics ============
-
     @Test
     @DisplayName("subject crash: the case FAILS with the error in its detail, the eval continues")
     void subjectCrashIsCaseFailure() {
@@ -186,7 +182,7 @@ class EvaluationRunnerTest {
         assertTrue(report.results().get(0).detail().contains("NullPointerException"));
     }
 
-    // ============ reproducibility (the gate's lifeline) ============
+    // reproducibility (the gate's lifeline)
 
     @Test
     @DisplayName("reproducible: same dataset + same deterministic subject = equals-identical reports")
@@ -198,8 +194,6 @@ class EvaluationRunnerTest {
 
         assertEquals(first, second, "record equality field by field - gate output must be a function of its inputs");
     }
-
-    // ============ guards ============
 
     @Test
     @DisplayName("guards: empty dataset, minPassRate bounds, empty results")

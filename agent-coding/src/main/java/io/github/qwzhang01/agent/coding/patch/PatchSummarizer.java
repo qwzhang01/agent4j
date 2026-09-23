@@ -116,8 +116,6 @@ public final class PatchSummarizer {
         return oldLines.size() - prefix - suffix;
     }
 
-    // ============ Internals ============
-
     private static int commonPrefix(List<String> a, List<String> b) {
         int n = Math.min(a.size(), b.size());
         for (int i = 0; i < n; i++) {

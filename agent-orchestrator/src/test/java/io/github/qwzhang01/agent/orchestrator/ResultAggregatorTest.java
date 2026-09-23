@@ -24,8 +24,6 @@ class ResultAggregatorTest {
         return WorkerResult.failure(task, error, 1, 1);
     }
 
-    // ============ ConcatAggregator ============
-
     @Test
     void concat_mixedResults_marksFailuresInline() {
         String aggregated = new ConcatAggregator().aggregate(List.of(
@@ -45,8 +43,6 @@ class ResultAggregatorTest {
         assertEquals("", new ConcatAggregator().aggregate(List.of()));
         assertEquals("", new ConcatAggregator().aggregate(null));
     }
-
-    // ============ FirstSuccessAggregator ============
 
     @Test
     void firstSuccess_returnsFirstSuccessfulInTaskOrder() {

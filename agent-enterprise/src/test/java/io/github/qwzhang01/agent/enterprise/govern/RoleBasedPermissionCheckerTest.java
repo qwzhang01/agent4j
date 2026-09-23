@@ -41,8 +41,6 @@ class RoleBasedPermissionCheckerTest {
         return RoleBasedPermissionChecker.forRequest(roleMatrix, fallback, Set.of(ROLE_CSR));
     }
 
-    // ============ Blueprint Verification Case ============
-
     @Test
     @DisplayName("blueprint case: CSR gets query_order=AUTO, refund_order=REQUIRES_APPROVAL, delete_order=DENY")
     void blueprintThreeTierCase() {
@@ -51,8 +49,6 @@ class RoleBasedPermissionCheckerTest {
         assertEquals(ToolPermission.REQUIRES_APPROVAL, checker.check("refund_order"));
         assertEquals(ToolPermission.DENY, checker.check("delete_order"));
     }
-
-    // ============ Deny-First ============
 
     @Test
     @DisplayName("deny-first: a hard DENY in the fallback cannot be lifted by a role grant")
@@ -66,8 +62,6 @@ class RoleBasedPermissionCheckerTest {
         assertEquals(ToolPermission.DENY, checker.check("delete_order"),
                 "the matrix restricts, it never overrides governance");
     }
-
-    // ============ Multi-Role Union ============
 
     @Test
     @DisplayName("multiple roles union: any granted role makes the tool AUTO")
@@ -92,8 +86,6 @@ class RoleBasedPermissionCheckerTest {
                 "the supervisor matrix explicitly grants what the fallback would gate");
     }
 
-    // ============ No Roles / Unknown Tools ============
-
     @Test
     @DisplayName("no roles: everything falls back to the policy")
     void noRolesFallback() {
@@ -111,8 +103,6 @@ class RoleBasedPermissionCheckerTest {
         RoleBasedPermissionChecker checker = csr();
         assertEquals(ToolPermission.AUTO, checker.check("some_new_tool"));
     }
-
-    // ============ Accessors & Validation ============
 
     @Test
     @DisplayName("bound roles and matrix are visible for assembly/audit")

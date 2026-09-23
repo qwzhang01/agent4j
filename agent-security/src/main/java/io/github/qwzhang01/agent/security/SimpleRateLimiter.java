@@ -63,8 +63,6 @@ public class SimpleRateLimiter implements RateLimiter {
         counters.clear();
     }
 
-    // ============ Inner ============
-
     private static class WindowCounter {
         private final AtomicInteger count = new AtomicInteger(0);
         private volatile long windowStart = System.currentTimeMillis();

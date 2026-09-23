@@ -96,7 +96,7 @@ public final class ObservabilityExample {
     private static final String AGENT_KEY = "assist";
 
     public static void main(String[] args) throws Exception {
-        // ================= T0: assembly (one-time) =================
+        // T0: assembly (one-time)
         section("T0 assembly: pricing, four-dimension budgets, routing, observing decorators");
 
         PricingTable pricing = PricingTable.builder()
@@ -201,7 +201,7 @@ public final class ObservabilityExample {
         printf("    assembled: Routing(premium=NAMED(OBS(mock)), cheap=NAMED(OBS(FALLBACK(cheap, backup))))");
         printf("              + OBS(GOVERNED(tools)) - the loop itself: untouched");
 
-        // ================= T1: normal run, fully visible =================
+        // T1: normal run, fully visible
         section("T1 normal run: metrics at the boundary, honest ledger after");
         premiumMock.respondToolCalls(ToolCall.of("c1", "echo", "{}"));
         premiumMock.respond(new ModelResponse("Summary: the report covers three items.",
@@ -218,14 +218,14 @@ public final class ObservabilityExample {
                 book.usedOf(BudgetDimension.CHANNEL, CHANNEL_KEY), book.limitOf(BudgetDimension.CHANNEL, CHANNEL_KEY),
                 book.usedOf(BudgetDimension.AGENT, AGENT_KEY), book.limitOf(BudgetDimension.AGENT, AGENT_KEY));
 
-        // ================= T2: warning fires, run proceeds =================
+        // T2: warning fires, run proceeds
         section("T2 warn at 83%: the alarm is SEEN, nothing is blocked");
         book.recordUsage(BudgetDimension.USER, USER_KEY, 7_300);   // -> 8300/10000 = 83%
         BudgetCheck t2 = book.requireBudget(BudgetDimension.USER, USER_KEY, 600);
         check("T2 WARN, not DENIED - the warning line never blocks", t2 instanceof BudgetCheck.Warn);
         printf("    (the [BUDGET-WARN] line above was printed by the alarm sink, not by this printf)");
 
-        // ================= T3: budget-driven downgrade =================
+        // T3: budget-driven downgrade
         section("T3 downgrade: 17% remaining < 25% threshold -> cheap, with a reason");
         cheapMock.respond(new ModelResponse("Cheap model: summary ready.",
                 null, "stop", new ModelResponse.TokenUsage(500, 150, 650)));
@@ -235,7 +235,7 @@ public final class ObservabilityExample {
         bookUsage(book, t3);
         printf("    downgrade is not denial of service - it is lower cost density for what remains");
 
-        // ================= T4: exhausted -> honest refusal =================
+        // T4: exhausted -> honest refusal
         section("T4 exhausted: fail-closed, refuse rather than overdraft");
         book.recordUsage(BudgetDimension.USER, USER_KEY,
                 book.limitOf(BudgetDimension.USER, USER_KEY) - book.usedOf(BudgetDimension.USER, USER_KEY));
@@ -261,7 +261,7 @@ public final class ObservabilityExample {
         }
         printf("    honest failure: cheap cannot help when the budget is GONE - any call overdrafts");
 
-        // ================= T5: three projections + failure mining =================
+        // T5: three projections + failure mining
         section("T5 one denied tool call, three projections (governance / operations / training)");
         TrajectoryRecorder recorder = new TrajectoryRecorder();
         MockModelClient projMock = MockModelClient.scripted();
@@ -317,7 +317,7 @@ public final class ObservabilityExample {
                 failed.runId().equals(mined.originRunId()));
         printf("    dataset: %d cases; mined case originRunId=%s", dataset.size(), mined.originRunId());
 
-        // ================= T6: regression gate =================
+        // T6: regression gate
         section("T6 gate: publish the fix, replay the dataset, the verdict decides promotion");
         PromptVersion fix = prompts.publish("support-system",
                 "You are a careful support agent. Answer concisely, always include a summary.",
@@ -345,7 +345,7 @@ public final class ObservabilityExample {
         printf("    counterfactual: %s (0.50 >= floor 0.50, but < baseline 1.00) - promotion blocked",
                 regressed.verdict());
 
-        // ================= T7: closure =================
+        // T7: closure
         section("T7 closure: time-travel query + four-angle cost dashboard");
         Optional<io.github.qwzhang01.agent.observability.version.RunRecord> runT1 =
                 runRegistry.byRunId("run-t1");
@@ -370,7 +370,7 @@ public final class ObservabilityExample {
         printf("    exported %s (+ tenant JSONL) - the dashboard UI is a frontend concern",
                 csv.toAbsolutePath());
 
-        // ================= F-series: failure branches =================
+        // F-series: failure branches
         section("F1/F3/F6 branches (F2 reasons print at every [routing] line; F7 shown in T5)");
         // F1: single-run budget gate - the economic twin of Stage 17's behavioral [LIMIT]
         book.recordUsage(BudgetDimension.RUN, "run-f1", 2_000);
@@ -397,8 +397,6 @@ public final class ObservabilityExample {
 
         section("done: T0-T7 + F-series all green - the Stage 18 acceptance script");
     }
-
-    // ============ assembly helpers ============
 
     /** Stamp a tier name onto every request - providers need it, pricing keys on it (M18.3 deviation 5). */
     private static ModelClient named(String modelName, ModelClient delegate) {

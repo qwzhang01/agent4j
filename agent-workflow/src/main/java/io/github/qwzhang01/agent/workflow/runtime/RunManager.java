@@ -295,7 +295,6 @@ public class RunManager {
             String cpId = store.save(run.toCheckpoint());
             log.info("[{}] Paused at node '{}', checkpoint saved: {}", 
                     run.getRunId(), run.getCursor(), cpId);
-            // Return result with the resume token
             return ExecutionResult.paused(
                     new ResumeToken(run.getRunId(), cpId, run.getCursor()),
                     run.getState());

@@ -20,8 +20,6 @@ class InternalAgentWorkerTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    // ============ Test agents ============
-
     /** A fake agent that returns a fixed answer. */
     private static Agent fixedAgent(String output) {
         return new Agent() {
@@ -54,8 +52,6 @@ class InternalAgentWorkerTest {
             @Override public AgentConfig getConfig() { return null; }
         };
     }
-
-    // ============ execute contract ============
 
     @Test
     void execute_success_returnsResultWithOutputAndMetrics() {
@@ -98,8 +94,6 @@ class InternalAgentWorkerTest {
         assertEquals("w1", result.workerName());
     }
 
-    // ============ Prompt extraction ============
-
     @Test
     void execute_promptFieldBecomesAgentInput() {
         List<String> inputs = new ArrayList<>();
@@ -136,8 +130,6 @@ class InternalAgentWorkerTest {
         assertEquals("prefix:research", inputs.get(0));
     }
 
-    // ============ AgentCard ============
-
     @Test
     void card_declaresNameAndSkills() {
         InternalAgentWorker worker =
@@ -151,8 +143,6 @@ class InternalAgentWorkerTest {
         assertEquals("researcher", worker.name());
     }
 
-    // ============ WorkerTask factory ============
-
     @Test
     void workerTask_ofFactory_generatesIdAndPromptPayload() {
         WorkerTask task = WorkerTask.of("w", "research", "do it");
@@ -165,7 +155,7 @@ class InternalAgentWorkerTest {
         assertEquals(0, task.maxRetries());
     }
 
-    // ============ Integration: real SimpleAgent via MockModelClient ============
+    // Integration: real SimpleAgent via MockModelClient
 
     @Test
     void execute_realSimpleAgent_fullLoop() {

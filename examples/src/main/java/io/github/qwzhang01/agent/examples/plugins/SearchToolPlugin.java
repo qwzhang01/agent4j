@@ -29,8 +29,6 @@ public class SearchToolPlugin implements ToolPlugin {
         context.getToolRegistry().unregister("search_web");
     }
 
-    // ============ The actual tool ============
-
     /**
      * A mock web search tool that returns canned results.
      */

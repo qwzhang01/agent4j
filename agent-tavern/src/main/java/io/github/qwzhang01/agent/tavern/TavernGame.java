@@ -65,14 +65,10 @@ public final class TavernGame {
         return new Builder();
     }
 
-    // ============ Play ============
-
     /** Play one turn: "@name what you say". */
     public TurnResult playerSay(String playerInput) {
         return engine.playTurn(playerInput);
     }
-
-    // ============ Views ============
 
     public String gameId() {
         return engine.gameId();
@@ -113,8 +109,6 @@ public final class TavernGame {
                 engine.turnLog().turns());
     }
 
-    // ============ Persistence ============
-
     /** Save the game under the configured store root ({@code {root}/{gameId}/}). */
     public Path save() throws IOException {
         requireStore();
@@ -133,8 +127,6 @@ public final class TavernGame {
                     "no storeRoot configured on the builder - save()/replayFromDisk() need one");
         }
     }
-
-    // ============ Builder ============
 
     /**
      * Assembles a game: model + memory + roster + world + policy + rules +
@@ -257,8 +249,6 @@ public final class TavernGame {
             engine.restoreHistories(save.characterHistories());
             return new TavernGame(engine, store);
         }
-
-        // ============ Internals ============
 
         private void validate() {
             if (modelClient == null) {

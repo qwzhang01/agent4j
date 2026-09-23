@@ -82,8 +82,6 @@ class HttpApiToolTest {
         return new HttpApiToolFactory().create(decl);
     }
 
-    // ============ Happy paths ============
-
     @Test
     void getWithQueryParamAndExtraction() throws Exception {
         String result = tool(weatherDecl()).execute(JSON.readTree("{\"city\":\"上海\"}"));
@@ -144,7 +142,7 @@ class HttpApiToolTest {
         assertEquals("26", result); // server answers regardless; encoding must not blow up the URL
     }
 
-    // ============ Error mapping (never blows up the loop) ============
+    // Error mapping (never blows up the loop)
 
     @Test
     void httpErrorStatusBecomesToolException() {

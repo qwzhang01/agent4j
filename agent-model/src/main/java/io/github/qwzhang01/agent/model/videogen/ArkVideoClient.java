@@ -140,7 +140,6 @@ public class ArkVideoClient implements VideoGenerationClient {
         try {
             JsonNode root = mapper.readTree(responseBody);
 
-            // Check for API-level error envelope
             JsonNode errorNode = root.path("error");
             if (!errorNode.isMissingNode() && !errorNode.isNull()) {
                 String errorMsg = errorNode.path("message").asText("Unknown error");

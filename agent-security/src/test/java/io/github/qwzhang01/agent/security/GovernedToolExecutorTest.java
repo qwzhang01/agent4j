@@ -52,8 +52,6 @@ class GovernedToolExecutorTest {
         };
     }
 
-    // ============ Permission Tiers ============
-
     @Test
     void autoTool_executesDirectly() {
         registry.register(echoTool("get_time"));
@@ -107,8 +105,6 @@ class GovernedToolExecutorTest {
         assertTrue(result.contains("no approval service"));
         assertEquals(AuditEvent.AuditStatus.DENIED, audit.getAll().get(0).status());
     }
-
-    // ============ Audit ============
 
     @Test
     void audit_recordsExecutionWithDuration() {
@@ -189,8 +185,6 @@ class GovernedToolExecutorTest {
         assertEquals(1, audit.getByTool("echo").size());
     }
 
-    // ============ Backward Compatibility ============
-
     @Test
     void noGovernance_behavesLikeDefaultExecutor() {
         registry.register(echoTool("get_time"));
@@ -216,8 +210,6 @@ class GovernedToolExecutorTest {
         assertTrue(result.startsWith("[DENIED]")); // no approval service
     }
 
-    // ============ ToolPolicy ============
-
     @Test
     void policy_setAndRemovePermission() {
         ToolPolicy policy = new ToolPolicy(ToolPermission.AUTO);
@@ -242,8 +234,6 @@ class GovernedToolExecutorTest {
         assertEquals(ToolPermission.REQUIRES_APPROVAL, policy.permissionFor("b"));
         assertEquals(2, policy.getAllPermissions().size());
     }
-
-    // ============ PermissionChecker ============
 
     @Test
     void checker_helpers() {

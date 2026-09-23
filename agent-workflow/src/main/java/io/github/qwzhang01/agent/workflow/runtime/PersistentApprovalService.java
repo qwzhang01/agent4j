@@ -65,7 +65,7 @@ public final class PersistentApprovalService implements ApprovalService {
         this(store, "UNSPECIFIED", 0);
     }
 
-    // ============ Sync mode (Stage 5 compat) ============
+    // Sync mode (Stage 5 compat)
 
     @Override
     public boolean approve(Request request) {
@@ -80,7 +80,7 @@ public final class PersistentApprovalService implements ApprovalService {
         return decided.status() == ApprovalStatus.APPROVED;
     }
 
-    // ============ Async mode (Stage 6 pause/resume) ============
+    // Async mode (Stage 6 pause/resume)
 
     @Override
     public void requestApproval(String runId, String nodeId, String summary, Object payload) {
@@ -116,7 +116,7 @@ public final class PersistentApprovalService implements ApprovalService {
         };
     }
 
-    // ============ Typed facade for operators / tests ============
+    // Typed facade for operators / tests
 
     /** Land an APPROVED decision (operator action). */
     public ApprovalRequest approve(String runId, String nodeId, String decidedBy, String reason) {
@@ -150,8 +150,6 @@ public final class PersistentApprovalService implements ApprovalService {
     public ApprovalStore store() {
         return store;
     }
-
-    // ============ Internal ============
 
     private ApprovalRequest submit(String approvalId, String runId, String nodeId,
                                    String toolCallHash, String summary) {

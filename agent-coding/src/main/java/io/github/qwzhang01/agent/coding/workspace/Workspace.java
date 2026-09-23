@@ -77,7 +77,7 @@ public final class Workspace {
         return policy;
     }
 
-    // ============ Path Resolution (lexical safety) ============
+    // Path Resolution (lexical safety)
 
     /**
      * Resolve a workspace-relative path to an absolute path under the root.
@@ -109,7 +109,7 @@ public final class Workspace {
         return root.relativize(resolve(relative));
     }
 
-    // ============ Read (real-path safety + policy + budget) ============
+    // Read (real-path safety + policy + budget)
 
     /**
      * Read a file as UTF-8 text.
@@ -173,7 +173,7 @@ public final class Workspace {
         }
     }
 
-    // ============ Listing (deterministic, policy-filtered, budgeted) ============
+    // Listing (deterministic, policy-filtered, budgeted)
 
     /**
      * List the tree under {@code relative} (blank/null means the root itself).

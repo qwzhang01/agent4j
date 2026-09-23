@@ -53,7 +53,7 @@ public final class BudgetBook {
         return new Builder();
     }
 
-    // ============ Phase 1: pre-flight gate ============
+    // Phase 1: pre-flight gate
 
     /**
      * Pre-flight check: may this call proceed under (dimension, key)?
@@ -90,7 +90,7 @@ public final class BudgetBook {
         return new BudgetCheck.Ok();
     }
 
-    // ============ Phase 2: honest ledger ============
+    // Phase 2: honest ledger
 
     /** Record actual usage (replace-the-estimate accounting). Unconfigured keys are counted too. */
     public synchronized void recordUsage(BudgetDimension dimension, String key, long actualTokens) {
@@ -103,8 +103,6 @@ public final class BudgetBook {
         }
         used.computeIfAbsent(dimension, d -> new HashMap<>()).merge(key, actualTokens, Long::sum);
     }
-
-    // ============ Queries ============
 
     /** Tokens recorded so far against (dimension, key); 0 when nothing recorded. */
     public synchronized long usedOf(BudgetDimension dimension, String key) {
@@ -128,8 +126,6 @@ public final class BudgetBook {
         }
         return Math.max(0L, limit - usedOf(dimension, key));
     }
-
-    // ============ Internals ============
 
     private void emitAlarm(BudgetAlarmEvent alarm) {
         if (alarmSink == null) {

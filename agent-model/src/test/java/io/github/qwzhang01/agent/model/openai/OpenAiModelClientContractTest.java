@@ -36,8 +36,6 @@ class OpenAiModelClientContractTest extends ModelClientContract {
                 null, null, null, FakeHttpClient.error(status, body));
     }
 
-    // ============ Canned OpenAI bodies ============
-
     @Override
     protected String syncBody() {
         return """

@@ -100,8 +100,6 @@ class TurnEngineTest {
         return args;
     }
 
-    // ============ Mention Routing ============
-
     @Test
     @DisplayName("a hit mention routes the turn to that character")
     void mentionRoutingHit() {
@@ -143,8 +141,6 @@ class TurnEngineTest {
         assertEquals(0, model.requests().size());
     }
 
-    // ============ Sticky-Note Injection ============
-
     @Test
     @DisplayName("[world] and [player] sticky notes land in the message the model sees")
     void worldStickyNoteInjection() {
@@ -179,8 +175,6 @@ class TurnEngineTest {
                 "relationship snapshot sits between world and player, actual: " + text);
     }
 
-    // ============ Tool -> World ============
-
     @Test
     @DisplayName("a tool call during the turn changes the world and lands in the turn record")
     void toolChangesWorld() {
@@ -205,8 +199,6 @@ class TurnEngineTest {
         // the character still got its final line out after the tool call
         assertEquals("The bard starts playing.", completed.turn().responses().get(0).text());
     }
-
-    // ============ Turn Record & Advancement ============
 
     @Test
     @DisplayName("the settled turn carries complete, verbatim fields")
@@ -270,8 +262,6 @@ class TurnEngineTest {
         assertTrue(lyraRequest.get(1).content().contains("[player] @lyra what do you think?"));
     }
 
-    // ============ Log ============
-
     @Test
     @DisplayName("the engine's log is append-only and shared with the facade (M16.5)")
     void engineLogAppendOnly() {
@@ -287,8 +277,6 @@ class TurnEngineTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> log.turns().remove(0));
     }
-
-    // ============ Construction Guards ============
 
     @Test
     @DisplayName("an empty roster is rejected fail-fast")

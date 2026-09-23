@@ -187,8 +187,6 @@ public final class RedTeamHarness {
         return payloads;
     }
 
-    // ============ Report rendering ============
-
     /** Human-readable report to stdout. */
     public void printReport(RunReport report) {
         System.out.println("==== KP10 Red Team Report ====");
@@ -212,8 +210,6 @@ public final class RedTeamHarness {
             report.generationsFailed().forEach(cat -> System.out.println("  " + cat));
         }
     }
-
-    // ============ Entry point ============
 
     /**
      * Demo wiring: scripted attacker (no API cost) against the layered stack.

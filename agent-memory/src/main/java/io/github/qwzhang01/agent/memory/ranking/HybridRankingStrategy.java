@@ -126,8 +126,6 @@ public final class HybridRankingStrategy implements RankingStrategy {
         return candidates.stream().sorted(comparator).toList();
     }
 
-    // ============ Internals ============
-
     /**
      * Lexical relevance via the default strategy's protected hook, so the two
      * strategies never drift apart on the token-overlap formula.

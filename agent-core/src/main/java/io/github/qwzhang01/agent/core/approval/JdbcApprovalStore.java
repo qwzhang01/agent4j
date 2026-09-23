@@ -295,8 +295,6 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
         }
     }
 
-    // ============ Internal ============
-
     private static String selectAll() {
         return "SELECT approval_id, run_id, step_id, tool_call_hash, requested_by, "
                 + "risk_level, summary, expires_at, created_at, status, decided_by, "

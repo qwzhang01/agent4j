@@ -32,8 +32,6 @@ class ClassLoaderSandboxTest {
         sandbox = new ClassLoaderSandbox();
     }
 
-    // ============ Normal Execution ============
-
     @Test
     @DisplayName("Simple arithmetic code executes successfully")
     void testSimpleCode() {
@@ -95,8 +93,6 @@ class ClassLoaderSandboxTest {
         assertTrue(result.success());
         assertTrue(result.stdout().contains("count=2"));
     }
-
-    // ============ Blocking Dangerous Classes ============
 
     @Test
     @DisplayName("java.io.File access is blocked")
@@ -170,8 +166,6 @@ class ClassLoaderSandboxTest {
         assertFalse(result.success());
     }
 
-    // ============ Compilation Errors ============
-
     @Test
     @DisplayName("Compilation error is reported")
     void testCompilationError() {
@@ -208,8 +202,6 @@ class ClassLoaderSandboxTest {
         assertTrue(result.error().contains("ArrayIndexOutOfBoundsException"));
     }
 
-    // ============ stdout Capture ============
-
     @Test
     @DisplayName("System.out.println output is captured")
     void testStdoutCapture() {
@@ -228,8 +220,6 @@ class ClassLoaderSandboxTest {
         assertTrue(result.stdout().contains("hello from stdout"));
         assertTrue(result.stdout().contains("return value"));
     }
-
-    // ============ Timeout ============
 
     @Test
     @DisplayName("Infinite loop is terminated by timeout")

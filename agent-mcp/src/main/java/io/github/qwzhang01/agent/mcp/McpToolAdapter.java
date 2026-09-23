@@ -161,8 +161,6 @@ public class McpToolAdapter implements Tool {
         }
     }
 
-    // ============ Accessors ============
-
     public McpClient getClient() { return client; }
     public McpToolSchema getSchema() { return schema; }
 }

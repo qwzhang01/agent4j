@@ -19,8 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ProductContextTest {
 
-    // ============ Minimal doubles ============
-
     private static final ModelClient CLIENT_A = new ThrowingModelClient();
     private static final ModelClient CLIENT_B = new ThrowingModelClient();
 
@@ -57,8 +55,6 @@ class ProductContextTest {
             throw new UnsupportedOperationException("not called");
         }
     }
-
-    // ============ Tests ============
 
     @Test
     void registerAndLookup() {

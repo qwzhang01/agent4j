@@ -91,8 +91,6 @@ public class RetryModelClient implements ModelClient {
         throw lastException;
     }
 
-    // ============ Private Helpers ============
-
     private boolean shouldRetry(ModelException.ErrorCode code) {
         return switch (code) {
             case TIMEOUT, RATE_LIMITED, NETWORK_ERROR, MODEL_ERROR, UNKNOWN -> true;

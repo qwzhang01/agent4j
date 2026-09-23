@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class GovernanceRejectionEventTest {
 
-    // ============ Stubs ============
-
     /** Scripted chat-only client: first response demands a tool, then text. */
     static final class ScriptedMock implements ModelClient {
         final Queue<ModelResponse> script = new LinkedBlockingQueue<>();
@@ -103,8 +101,6 @@ class GovernanceRejectionEventTest {
         agent.stream("use the tool", new AgentState(), events::add);
         return events;
     }
-
-    // ============ Permission boundary ============
 
     @Test
     @DisplayName("DENY policy emits ToolValidationRejected; [DENIED] maps to stage=approval")
@@ -177,8 +173,6 @@ class GovernanceRejectionEventTest {
         assertTrue(rejected.reason().contains("no approval service"));
     }
 
-    // ============ Rate-limit boundary ============
-
     @Test
     @DisplayName("rate gate exceeded emits ToolValidationRejected stage=permission")
     void rateLimited_emitsTypedRejection() {
@@ -209,8 +203,6 @@ class GovernanceRejectionEventTest {
         assertEquals("permission", rejected.stage());
         assertTrue(rejected.reason().startsWith("[RATE_LIMITED]"));
     }
-
-    // ============ Legacy compatibility ============
 
     @Test
     @DisplayName("AUTO tool through governed executor: no rejection events, plain execution")

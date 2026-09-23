@@ -22,8 +22,6 @@ class DefinitionValidatorTest {
 
     private final DefinitionValidator validator = new DefinitionValidator();
 
-    // ============ Fixtures ============
-
     /** A context with one model, two tools, one context builder - names to miss on purpose. */
     private ProductContext context() {
         return new ProductContext()
@@ -60,15 +58,11 @@ class DefinitionValidatorTest {
                 """;
     }
 
-    // ============ Happy path ============
-
     @Test
     void validDefinitionProducesNoErrors() {
         List<ValidationError> errors = validator.validate(definition(validYaml()), context());
         assertTrue(errors.isEmpty(), () -> "expected no errors, got: " + errors);
     }
-
-    // ============ Structure rules ============
 
     @Test
     void missingSystemPromptIsReported() {
@@ -87,7 +81,7 @@ class DefinitionValidatorTest {
         assertEquals("spec.persona", errors.get(0).path());
     }
 
-    // ============ M13.4: promptRef ============
+    // M13.4: promptRef
 
     @Test
     void promptRefAloneIsValidWhenPromptIsPublished() {
@@ -175,7 +169,7 @@ class DefinitionValidatorTest {
         assertTrue(errors.get(0).message().contains("beta"));
     }
 
-    // ============ promptRef routing must match the binder ============
+    // promptRef routing must match the binder
 
     @Test
     void canaryOnlyPromptPassesValidationWhenDeclared() {
@@ -247,7 +241,7 @@ class DefinitionValidatorTest {
                 "error should name the tenant-routed channel, got: " + errors.get(0).message());
     }
 
-    // ============ M13.5: workflow + ambient validation ============
+    // M13.5: workflow + ambient validation
 
     @Test
     void danglingWorkflowReferenceListsAvailable() {
@@ -409,7 +403,7 @@ class DefinitionValidatorTest {
         assertEquals(1, errors.size());
     }
 
-    // ============ Reference rules (D1: names -> registry) ============
+    // Reference rules (D1: names -> registry)
 
     @Test
     void danglingModelProviderListsAvailableModels() {
@@ -508,8 +502,6 @@ class DefinitionValidatorTest {
         assertTrue(errors.get(0).message().contains("rich-memory"));
     }
 
-    // ============ All errors in one pass ============
-
     @Test
     void multipleErrorsAreAllReported() {
         List<ValidationError> errors = validator.validate(definition("""
@@ -530,7 +522,7 @@ class DefinitionValidatorTest {
         assertEquals(6, errors.size(), () -> "all errors in one pass, got: " + errors);
     }
 
-    // ============ M13.3: inline http tool declarations ============
+    // M13.3: inline http tool declarations
 
     @Test
     void validHttpDeclProducesNoErrors() {
@@ -643,8 +635,6 @@ class DefinitionValidatorTest {
         assertEquals(1, errors.size());
         assertTrue(errors.get(0).message().contains("GET"));
     }
-
-    // ============ Test doubles ============
 
     private record NoopModelClient() implements ModelClient {
         @Override

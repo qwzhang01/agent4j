@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class E2RoutingComparisonExperimentTest {
 
-    // ============ calibrated prices (USD per 1M tokens) ============
+    // calibrated prices (USD per 1M tokens)
 
     private static final double PREMIUM_PROMPT = 2.50;
     private static final double PREMIUM_COMPLETION = 10.00;
@@ -49,8 +49,6 @@ class E2RoutingComparisonExperimentTest {
     /** The cheap tier's known-bad list: these JSON tasks get broken JSON. */
     private static final java.util.Set<String> CHEAP_FAILS_JSON_ON =
             java.util.Set.of("j2", "j3", "j5");
-
-    // ============ tier simulator ============
 
     /**
      * Deterministic priced tier: computes token usage from request/response
@@ -114,8 +112,6 @@ class E2RoutingComparisonExperimentTest {
         }
     }
 
-    // ============ task set ============
-
     record Task(String id, ModelRequest request, boolean structured, boolean deepThread) {}
 
     private static List<Task> taskSet() {
@@ -151,8 +147,6 @@ class E2RoutingComparisonExperimentTest {
         return tasks;
     }
 
-    // ============ measurement ============
-
     record ConfigResult(String name, double costUsd, int premiumCalls, int cheapCalls,
                         int defectsDelivered, int escalations) {}
 
@@ -187,8 +181,6 @@ class E2RoutingComparisonExperimentTest {
                 0);
     }
 
-    // ============ the experiment ============
-
     @Test
     @DisplayName("E2: three configurations on one task set - cost table + structural invariants")
     void comparison() {
@@ -212,7 +204,7 @@ class E2RoutingComparisonExperimentTest {
         ConfigResult cascadeResult = runConfig("cascade", cascade, premiumC, cheapC);
         int escalations = premiumC.ledger.size() - premiumBefore;
 
-        // ============ print the table (goes into the experiment notes) ============
+        // print the table (goes into the experiment notes)
 
         System.out.println();
         System.out.println("=== E2 routing comparison (14 tasks, calibrated prices, deterministic sim) ===");
@@ -224,7 +216,7 @@ class E2RoutingComparisonExperimentTest {
                 "cascade", escalations);
         System.out.println();
 
-        // ============ structural invariants (must hold regardless of prices) ============
+        // structural invariants (must hold regardless of prices)
 
         // 1. all-premium: zero defects, everything paid at premium price
         assertEquals(0, allPremium.defectsDelivered(), "premium tier never fails in this simulation");

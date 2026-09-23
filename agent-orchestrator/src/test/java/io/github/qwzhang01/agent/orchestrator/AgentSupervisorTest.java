@@ -12,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AgentSupervisorTest {
 
-    // ============ Test workers ============
-
     private static AgentCard testCard(String name) {
         return new AgentCard(name, "test " + name, List.of(), "internal:" + name, "1.0");
     }
@@ -49,7 +47,7 @@ class AgentSupervisorTest {
         };
     }
 
-    // ============ Parallelism: the whole point of M11.2 ============
+    // Parallelism: the whole point of M11.2
 
     @Test
     void dispatchAll_runsInParallel_totalTimeApproachesMaxNotSum() {
@@ -73,8 +71,6 @@ class AgentSupervisorTest {
                     "should be clearly faster than the sum (600ms), was " + result.durationMs());
         }
     }
-
-    // ============ Result ordering & bookkeeping ============
 
     @Test
     void dispatchAll_resultsFollowTaskOrder() {
@@ -120,8 +116,6 @@ class AgentSupervisorTest {
         }
     }
 
-    // ============ Failure-as-data contract ============
-
     @Test
     void dispatchAll_unknownWorker_failsAsDataNeverThrows() {
         try (AgentSupervisor supervisor = new AgentSupervisor()) {
@@ -148,8 +142,6 @@ class AgentSupervisorTest {
             assertEquals("", result.aggregated());
         }
     }
-
-    // ============ Worker pool ============
 
     @Test
     void register_duplicateName_throws() {

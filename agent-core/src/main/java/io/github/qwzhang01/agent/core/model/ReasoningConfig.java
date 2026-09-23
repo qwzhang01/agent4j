@@ -68,15 +68,11 @@ public record ReasoningConfig(
         DISABLED
     }
 
-    // ============ Compact Constructor ============
-
     public ReasoningConfig {
         if (mode == null) {
             mode = Mode.AUTO;
         }
     }
-
-    // ============ Factory Methods ============
 
     /**
      * Inherit the provider default. This is the framework default when no
@@ -106,8 +102,6 @@ public record ReasoningConfig(
     public static ReasoningConfig enabled(String effort) {
         return new ReasoningConfig(Mode.ENABLED, effort);
     }
-
-    // ============ Derived Accessors ============
 
     public boolean isDisabled() {
         return mode == Mode.DISABLED;

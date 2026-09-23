@@ -40,7 +40,7 @@ public final class A2AJson {
         return MAPPER;
     }
 
-    // ============ AgentCard (/.well-known/agent.json) ============
+    // AgentCard (/.well-known/agent.json)
 
     /**
      * Card to spec JSON. {@code urlOverride} (nullable) wins over the card's
@@ -111,7 +111,7 @@ public final class A2AJson {
                 capabilities);
     }
 
-    // ============ Task (server-side shape) ============
+    // Task (server-side shape)
 
     /**
      * Task to spec JSON: {@code id / contextId / status{state,message} /
@@ -172,7 +172,7 @@ public final class A2AJson {
                 textOrNull(node, "contextId"), status, artifacts);
     }
 
-    // ============ JSON-RPC requests (client -> server) ============
+    // JSON-RPC requests (client -> server)
 
     /**
      * Build a {@code message/send} request from our task. The prompt rides a
@@ -260,7 +260,7 @@ public final class A2AJson {
         return request;
     }
 
-    // ============ JSON-RPC envelopes (server -> client) ============
+    // JSON-RPC envelopes (server -> client)
 
     /** Success envelope. {@code id} is echoed from the request. */
     public static ObjectNode rpcResult(JsonNode id, JsonNode result) {
@@ -283,8 +283,6 @@ public final class A2AJson {
         error.put("message", message);
         return node;
     }
-
-    // ============ Shared helpers ============
 
     /**
      * Extract the first text part of a message/artifact parts array. v1
@@ -312,8 +310,6 @@ public final class A2AJson {
         }
         return payload == null ? "" : payload.toString();
     }
-
-    // ============ Internal ============
 
     private static String textOrNull(JsonNode node, String field) {
         JsonNode value = node.get(field);

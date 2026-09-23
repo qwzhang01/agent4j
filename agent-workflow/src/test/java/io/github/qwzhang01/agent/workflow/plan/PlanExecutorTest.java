@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class PlanExecutorTest {
 
-    // ============ Lowering & execution ============
-
     @Test
     @DisplayName("plan lowers to a runtime workflow: chain runs in topological declaration order")
     void diamondPlanExecutesOnExistingRuntime() {
@@ -70,8 +68,6 @@ class PlanExecutorTest {
         assertEquals("ok-out", result.state().get("ok"));
         assertNull(result.state().get("boom"));
     }
-
-    // ============ Resume frontier from blackboard ============
 
     @Test
     @DisplayName("completedFrom: a step is done when the blackboard holds its output")

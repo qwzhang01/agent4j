@@ -142,8 +142,6 @@ try (CloseGuard g = guard(); Statement st = g.get().createStatement()) {
         return DDL;
     }
 
-    // ============ RunStore ============
-
     @Override
     public RunRecord create(RunRecord record) {
         String sql = """
@@ -281,8 +279,6 @@ try (CloseGuard g = guard(); PreparedStatement ps = g.get().prepareStatement(sql
                 FROM agent4j_runs ORDER BY created_at
                 """);
     }
-
-    // ============ Internal ============
 
     private List<RunRecord> queryList(String sql) {
         try (CloseGuard g = guard();

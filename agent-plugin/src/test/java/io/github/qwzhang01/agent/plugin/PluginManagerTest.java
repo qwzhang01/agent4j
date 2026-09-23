@@ -90,7 +90,6 @@ class PluginManagerTest {
         assertFalse(manager.getDiscoveredPlugins().isEmpty(),
                 "TestSpiPlugin must be discoverable from agent-plugin test resources");
 
-        // Load all
         manager.loadAll();
 
         // Tools should be in registry

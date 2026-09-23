@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class DriftAndUnifiedReportTest {
 
-    // ============ DriftDetector ============
-
     @Test
     void healthyWindowFiresNothing() {
         OnlineMetrics healthy = new OnlineMetrics(100, 95, 0.95, 1000, 500, 900, 950, 0.005, 0.01, null);
@@ -78,8 +76,6 @@ class DriftAndUnifiedReportTest {
         assertEquals(1, alarms.size());
         assertEquals("taskCompletionRate", alarms.get(0).metric());
     }
-
-    // ============ UnifiedEvalReport ============
 
     @Test
     void oneDocumentCarriesAllThreeSectionsPlusVersions() {

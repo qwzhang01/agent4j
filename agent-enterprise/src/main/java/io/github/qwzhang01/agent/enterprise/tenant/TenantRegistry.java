@@ -32,8 +32,6 @@ public final class TenantRegistry {
     /** userId -> api key. Never exposed through accessors. */
     private final Map<String, String> credentials = new ConcurrentHashMap<>();
 
-    // ============ Registration ============
-
     /**
      * Register a tenant. Duplicate tenantId fails fast.
      */
@@ -81,8 +79,6 @@ public final class TenantRegistry {
         credentials.put(user.userId(), apiKey);
     }
 
-    // ============ Login ============
-
     /**
      * Authenticate and produce the {@link RequestContext} for one request.
      * <p>
@@ -120,8 +116,6 @@ public final class TenantRegistry {
         return new RequestContext(tenant, user, null);
     }
 
-    // ============ Tenant Lifecycle ============
-
     /**
      * Suspend a registered tenant (admin action). Subsequent logins and user
      * registrations under this tenant fail closed; already-issued contexts are
@@ -136,8 +130,6 @@ public final class TenantRegistry {
         }
         tenants.put(tenantId, current.suspended());
     }
-
-    // ============ Lookups ============
 
     /**
      * Look up a registered tenant.

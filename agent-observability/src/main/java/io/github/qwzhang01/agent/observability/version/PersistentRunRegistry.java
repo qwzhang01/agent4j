@@ -106,8 +106,6 @@ public final class PersistentRunRegistry implements AutoCloseable {
         return out;
     }
 
-    // ============ JSON round-trip ============
-
     private static ObjectNode toJson(RunRecord record) {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("runId", record.runId());

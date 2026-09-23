@@ -18,8 +18,6 @@ class RunRegistryTest {
                 2, 0, 1, 0, new ModelResponse.TokenUsage(100, 40, 140), 2_150);
     }
 
-    // ============ ComponentVersion ============
-
     @Test
     @DisplayName("ComponentVersion: channel is nullable for kinds without a channel concept")
     void componentVersionChannel() {
@@ -36,8 +34,6 @@ class RunRegistryTest {
         assertThrows(NullPointerException.class,
                 () -> new ComponentVersion(null, "core", "f1", null));
     }
-
-    // ============ RunRecord ============
 
     @Test
     @DisplayName("RunRecord.of derives runId/agentName from the metrics row (they travel together)")
@@ -74,8 +70,6 @@ class RunRegistryTest {
         assertThrows(NullPointerException.class,
                 () -> new RunRecord("r", "a", List.of(), null));
     }
-
-    // ============ RunRegistry ============
 
     @Test
     @DisplayName("add/byRunId: the time-travel query answers 'what combination served this run'")

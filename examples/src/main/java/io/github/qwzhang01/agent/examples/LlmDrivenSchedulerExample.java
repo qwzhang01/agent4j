@@ -41,7 +41,7 @@ public class LlmDrivenSchedulerExample {
         System.out.println("=== Done ===");
     }
 
-    // ============ Demo 1: LLM chooses WHAT to wait for ============
+    // Demo 1: LLM chooses WHAT to wait for
 
     private static void demoLlmChosenEvent() throws Exception {
         System.out.println("─".repeat(60));
@@ -93,7 +93,7 @@ public class LlmDrivenSchedulerExample {
         scheduler.shutdown();
     }
 
-    // ============ Demo 2: LLM chooses HOW LONG to wait ============
+    // Demo 2: LLM chooses HOW LONG to wait
 
     private static void demoLlmChosenDelay() throws Exception {
         System.out.println("─".repeat(60));

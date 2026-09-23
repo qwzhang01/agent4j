@@ -33,7 +33,7 @@ class MemoryAdminTest {
         retriever = new MemoryRetriever(store);
     }
 
-    // ============ Channel scope defaults to PENDING_REVIEW ============
+    // Channel scope defaults to PENDING_REVIEW
 
     @Test
     void channelWrite_defaultsToPendingReview() {
@@ -56,7 +56,7 @@ class MemoryAdminTest {
         assertTrue(retriever.recall(List.of("channel:c1")).isEmpty());
     }
 
-    // ============ Approve flow (A stores, admin approves, B sees) ============
+    // Approve flow (A stores, admin approves, B sees)
 
     @Test
     void approveFlow_userAStores_adminApproves_userBSees() {
@@ -97,7 +97,7 @@ class MemoryAdminTest {
         assertTrue(retriever.recall(List.of("channel:c1")).isEmpty());
     }
 
-    // ============ Supersede (correction) ============
+    // Supersede (correction)
 
     @Test
     void supersede_correctionOldBecomesSuperseded() {
@@ -131,8 +131,6 @@ class MemoryAdminTest {
         assertEquals(2, all.size(), "both old (SUPERSEDED) and new (ACTIVE) kept for audit");
     }
 
-    // ============ Admin content edit ============
-
     @Test
     void updateContent_changesContentWithAdminProvenance() {
         MemoryEntry entry = admin.addEntry("user:u1", MemoryType.PREFERENCE, "ui", "dark mode", "admin1");
@@ -144,7 +142,7 @@ class MemoryAdminTest {
         assertEquals("admin2", edited.provenance().actor());
     }
 
-    // ============ Stage 5.2: field fidelity on updates ============
+    // Stage 5.2: field fidelity on updates
 
     @Test
     void updateContent_preservesAllGovernanceFields() {
@@ -202,13 +200,10 @@ class MemoryAdminTest {
                 "TTL change keeps original provenance");
     }
 
-    // ============ TTL ============
-
     @Test
     void setTtl_entryExpiresAndBecomesInvisible() {
         MemoryEntry entry = admin.addEntry("user:u1", MemoryType.FACT, "temp", "temporary fact", "admin1");
 
-        // Set TTL to 1 hour ago -> already expired
         admin.setTtl(entry.id(), Instant.now().minus(1, ChronoUnit.HOURS));
 
         assertTrue(retriever.recall(List.of("user:u1")).isEmpty(), "expired entry not retrievable");
@@ -223,8 +218,6 @@ class MemoryAdminTest {
         assertEquals(1, retriever.recall(List.of("user:u1")).size());
     }
 
-    // ============ listPending ============
-
     @Test
     void listPending_onlyReturnsPendingEntries() {
         extractor.extractAndStore(List.of(
@@ -238,8 +231,6 @@ class MemoryAdminTest {
         assertEquals(2, pending.size(), "2 extracted entries pending, admin entry is active");
         assertTrue(pending.stream().allMatch(e -> e.status() == MemoryStatus.PENDING_REVIEW));
     }
-
-    // ============ Delete ============
 
     @Test
     void delete_hardRemovesEntry() {
@@ -256,7 +247,7 @@ class MemoryAdminTest {
         assertTrue(admin.findById("nonexistent").isEmpty());
     }
 
-    // ============ Non-channel scopes default to ACTIVE ============
+    // Non-channel scopes default to ACTIVE
 
     @Test
     void userScope_defaultsToActive() {

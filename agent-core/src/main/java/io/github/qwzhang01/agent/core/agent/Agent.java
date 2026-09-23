@@ -143,7 +143,7 @@ public interface Agent {
      */
     AgentConfig getConfig();
 
-    // ============ Stage 1.2: RunContext-aware overloads ============
+    // Stage 1.2: RunContext-aware overloads
 
     /**
      * Run with an explicit {@link RunContext} (Stage 1.2 of the harness

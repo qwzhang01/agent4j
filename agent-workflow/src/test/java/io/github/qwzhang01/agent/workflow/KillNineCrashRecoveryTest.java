@@ -64,7 +64,7 @@ class KillNineCrashRecoveryTest {
     @TempDir
     Path shared;
 
-    // ============ Classpath derivation (launcher-proof) ============
+    // Classpath derivation (launcher-proof)
 
     /**
      * Derives the child JVM's classpath from concrete {@link CodeSource}
@@ -162,8 +162,6 @@ class KillNineCrashRecoveryTest {
         return List.copyOf(entries);
     }
 
-    // ============ The test ============
-
     @Test
     @Timeout(90)
     @EnabledOnOs({OS.MAC, OS.LINUX})
@@ -235,8 +233,6 @@ class KillNineCrashRecoveryTest {
                 "recovered trace must contain exactly one SUCCESS record for charge");
     }
 
-    // ============ Workflow under test ============
-
     /**
      * charge (side effect + blackboard write) &rarr; approval (pause point)
      * &rarr; payout. The SAME static builder is used in BOTH processes; the
@@ -279,8 +275,6 @@ class KillNineCrashRecoveryTest {
             return "<unreadable: " + e + ">";
         }
     }
-
-    // ============ Cross-process approval service ============
 
     /**
      * File-backed ApprovalService so the decision survives process death:
@@ -325,8 +319,6 @@ class KillNineCrashRecoveryTest {
             }
         }
     }
-
-    // ============ Child process entry point ============
 
     /**
      * The process that gets killed. Runs the workflow to the pause point,

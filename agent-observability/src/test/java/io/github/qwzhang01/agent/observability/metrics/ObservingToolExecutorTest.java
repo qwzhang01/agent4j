@@ -12,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ObservingToolExecutorTest {
 
-    // ============ Test helpers ============
-
     static final class RecordingSink implements MetricsSink {
         final List<ModelCallMetrics> modelCalls = new ArrayList<>();
         final List<ToolCallMetrics> toolCalls = new ArrayList<>();
@@ -51,8 +49,6 @@ class ObservingToolExecutorTest {
     private static ToolCall call(String tool) {
         return ToolCall.of("c1", tool, (com.fasterxml.jackson.databind.JsonNode) null);
     }
-
-    // ============ success / failure ============
 
     @Test
     @DisplayName("success: result passes through untouched, metrics success=true denied=false")
@@ -93,7 +89,7 @@ class ObservingToolExecutorTest {
         assertTrue(m.error().contains("tool exploded"));
     }
 
-    // ============ governance denial contract (Stage 9 prefixes) ============
+    // governance denial contract (Stage 9 prefixes)
 
     @Test
     @DisplayName("[DENIED] prefix from the governance chain -> denied=true, success=false (tool never ran)")
@@ -137,8 +133,6 @@ class ObservingToolExecutorTest {
         assertFalse(m.denied(), "the tool RAN and failed - that is a quality signal, not a governance signal");
         assertTrue(m.success(), "error-wrapped text is a normal observation the model saw");
     }
-
-    // ============ sink isolation ============
 
     @Test
     @DisplayName("sink throwing must not break tool execution (metrics are a side channel)")

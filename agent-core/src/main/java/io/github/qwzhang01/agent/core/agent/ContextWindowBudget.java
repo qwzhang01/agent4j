@@ -38,8 +38,6 @@ public record ContextWindowBudget(
         int outputHeadroom
 ) {
 
-    // ============ Validation ============
-
     public ContextWindowBudget {
         if (totalWindowTokens <= 0) {
             throw new IllegalArgumentException("totalWindowTokens must be positive: " + totalWindowTokens);
@@ -58,8 +56,6 @@ public record ContextWindowBudget(
         }
     }
 
-    // ============ Core query ============
-
     /**
      * Tokens available for conversation history.
      * <p>
@@ -75,8 +71,6 @@ public record ContextWindowBudget(
     private int historyBudgetUnchecked() {
         return totalWindowTokens - systemReserve - toolSchemaReserve - outputHeadroom;
     }
-
-    // ============ Factories ============
 
     /**
      * Explicit four-slot constructor.

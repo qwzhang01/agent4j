@@ -49,16 +49,12 @@ public record ServiceAccount(
         }
     }
 
-    // ============ Factory Methods ============
-
     /**
      * An account with no validity window and unlimited budget placeholder.
      */
     public static ServiceAccount of(String accountId, AgentIdentity identity, IdentityScope grantedScope) {
         return new ServiceAccount(accountId, identity, grantedScope, UNLIMITED_BUDGET, null, null);
     }
-
-    // ============ Predicates ============
 
     /**
      * Whether the account is valid at the given instant (validity window check).

@@ -178,8 +178,6 @@ public class ContextWindowEnforcer implements ContextBuilder {
         return 1;
     }
 
-    // ============ Token estimation ============
-
     /**
      * Estimate the token cost of a list of messages using the {@code chars / 4} heuristic.
      * This is intentionally approximate and consistent with {@code ContextBudget} in agent-memory.
@@ -229,8 +227,6 @@ public class ContextWindowEnforcer implements ContextBuilder {
         }
         return chars / 4;
     }
-
-    // ============ Accessors ============
 
     /** Returns the budget this enforcer is configured with. */
     public ContextWindowBudget getBudget() {

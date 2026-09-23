@@ -52,7 +52,7 @@ class TaskSchedulerTest {
         scheduler.shutdown();
     }
 
-    // ============ M7.1: Scheduled Resume ============
+    // M7.1: Scheduled Resume
 
     @Test
     void scheduledResumeAutomaticallyResumesRun() throws Exception {
@@ -72,7 +72,7 @@ class TaskSchedulerTest {
         awaitRunStatus(runManager, r1.resumeToken().runId(), RunState.SUCCEEDED, 2000);
     }
 
-    // ============ M7.2: Event-Driven Resume ============
+    // M7.2: Event-Driven Resume
 
     @Test
     void eventFiredResumesRun() throws Exception {
@@ -150,7 +150,7 @@ class TaskSchedulerTest {
                 () -> runManager.resume(pid));
     }
 
-    // ============ M7.3: Async Task Queue ============
+    // M7.3: Async Task Queue
 
     @Test
     void taskQueueConsumesByPriority() {
@@ -187,7 +187,7 @@ class TaskSchedulerTest {
         assertEquals(TaskPriority.HIGH, first.priority());
     }
 
-    // ============ M7.4: Token Budget ============
+    // M7.4: Token Budget
 
     @Test
     void tokenBudgetTracksConsumption() {

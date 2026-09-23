@@ -42,8 +42,6 @@ class EnterpriseAuditTrailTest {
                 new User("u-carol", "globex", "Carol", Set.of(User.ROLE_CSR)), null);
     }
 
-    // ============ Attribution Completion ============
-
     @Test
     @DisplayName("governance-chain events get attributed: byUser finds alice's events")
     void eventsGetAttributed() {
@@ -70,7 +68,7 @@ class EnterpriseAuditTrailTest {
         assertEquals(0, trail.byUser("u-bob").size());
     }
 
-    // ============ Cross-Request / Cross-Tenant Cuts ============
+    // Cross-Request / Cross-Tenant Cuts
 
     @Test
     @DisplayName("byTenant separates tenants; byUser separates users within a tenant")
@@ -110,8 +108,6 @@ class EnterpriseAuditTrailTest {
                 .anyMatch(e -> e.userId().equals("u-alice") && e.status() == AuditEvent.AuditStatus.DENIED));
     }
 
-    // ============ Request-Scoped View Isolation ============
-
     @Test
     @DisplayName("the request-scoped logger sees only its own events (AuditLogger contract)")
     void requestViewIsolation() {
@@ -132,8 +128,6 @@ class EnterpriseAuditTrailTest {
         // but the shared ledger sees everything
         assertEquals(3, trail.size());
     }
-
-    // ============ Validation ============
 
     @Test
     @DisplayName("forRequest rejects null context and blank agent name")

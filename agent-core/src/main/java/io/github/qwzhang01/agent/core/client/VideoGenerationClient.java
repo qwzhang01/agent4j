@@ -86,8 +86,6 @@ public interface VideoGenerationClient {
                 "This provider returns public video URLs; use VideoTask.videoUrl() instead");
     }
 
-    // ============ Request / Task ============
-
     /**
      * Video generation request.
      *
@@ -110,8 +108,6 @@ public interface VideoGenerationClient {
         public static Builder builder() {
             return new Builder();
         }
-
-        // ============ Builder ============
 
         public static class Builder {
             private String model;

@@ -92,8 +92,6 @@ public class ResilientModelClient implements ModelClient {
         this(delegate, maxRetries, initialBackoff, null, null, Integer.MAX_VALUE, Duration.ZERO);
     }
 
-    // ============ ModelClient ============
-
     @Override
     public ModelResponse chat(ModelRequest request) {
         return callWithResilience("chat", () -> delegate.chat(request));
@@ -105,8 +103,6 @@ public class ResilientModelClient implements ModelClient {
         // the stream's own Error events (same as RetryModelClient's stance).
         return callWithResilience("stream", () -> delegate.stream(request));
     }
-
-    // ============ Resilience core ============
 
     private <T> T callWithResilience(String op, Supplier<T> call) {
         checkBreakerBeforeCall(op);
@@ -231,8 +227,6 @@ public class ResilientModelClient implements ModelClient {
         }
     }
 
-    // ============ Observability ============
-
     public BreakerState getBreakerState() {
         return breakerState.get();
     }
@@ -240,8 +234,6 @@ public class ResilientModelClient implements ModelClient {
     public int getConsecutiveFailures() {
         return consecutiveFailures.get();
     }
-
-    // ============ Rotation SPI ============
 
     /**
      * Supplies replacement credentials on AUTH_ERROR. Implementations own

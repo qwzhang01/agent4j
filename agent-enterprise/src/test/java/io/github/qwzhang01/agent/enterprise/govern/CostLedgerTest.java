@@ -43,8 +43,6 @@ class CostLedgerTest {
         return new CostLedger(Map.of("u-alice", 200L));
     }
 
-    // ============ Pre-Gate ============
-
     @Test
     @DisplayName("within budget: the gate passes silently")
     void withinBudgetPasses() {
@@ -90,8 +88,6 @@ class CostLedgerTest {
         assertDoesNotThrow(() -> ledger.requireBudget(carol));
     }
 
-    // ============ Post-Recording ============
-
     @Test
     @DisplayName("record accumulates prompt+completion into both dimensions")
     void recordAccumulates() {
@@ -124,8 +120,6 @@ class CostLedgerTest {
         assertThrows(IllegalArgumentException.class, () -> ledger.record(alice, 0, -5));
         assertThrows(NullPointerException.class, () -> ledger.record(null, 1, 1));
     }
-
-    // ============ Dimensions Independent ============
 
     @Test
     @DisplayName("tenants bill independently: globex usage never counts toward acme")

@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SecretMaskerTest {
 
-    // ============ default preset ============
-
     @Test
     @DisplayName("default rules mask api keys, emails, phones, JWTs; plain text untouched")
     void defaultRulesMaskCommonSecrets() {
@@ -61,8 +59,6 @@ class SecretMaskerTest {
         assertFalse(r.masked().contains("a@b.com"));
     }
 
-    // ============ tenant custom rules ============
-
     @Test
     @DisplayName("tenant custom rule: named replacement, first registered wins overlaps")
     void tenantCustomRules() {
@@ -88,8 +84,6 @@ class SecretMaskerTest {
         assertThrows(IllegalArgumentException.class, () -> b.rule("broken", "(unclosed"));
     }
 
-    // ============ noop ============
-
     @Test
     @DisplayName("noop masker is identity")
     void noopIsIdentity() {
@@ -97,8 +91,6 @@ class SecretMaskerTest {
         String text = "sk-abcdefghijklmnopqrstuv raw";
         assertSame(text, masker.mask(text));
     }
-
-    // ============ cross-surface consistency ============
 
     @Test
     @DisplayName("same masker instance produces identical output for memory, audit, export surfaces")

@@ -43,8 +43,6 @@ public class PluginManager {
         this.registry = new PluginRegistry(toolRegistry);
     }
 
-    // ============ Discovery ============
-
     /**
      * Scan classpath for ToolPlugin implementations via ServiceLoader.
      * <p>
@@ -74,8 +72,6 @@ public class PluginManager {
     public List<Plugin> getDiscoveredPlugins() {
         return List.copyOf(discovered.values());
     }
-
-    // ============ Batch Operations ============
 
     /**
      * Discover (if not already) and load all plugins.
@@ -128,8 +124,6 @@ public class PluginManager {
         return unloaded;
     }
 
-    // ============ Single Plugin Operations ============
-
     /**
      * Load a specific plugin by name.
      *
@@ -160,8 +154,6 @@ public class PluginManager {
     public void reload(String name) {
         registry.reload(name);
     }
-
-    // ============ Query ============
 
     /**
      * List all plugins with their current states.

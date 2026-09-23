@@ -57,8 +57,6 @@ class CharacterMemoryTest {
         );
     }
 
-    // ============ Scope Format ============
-
     @Test
     @DisplayName("scopesFor produces [agent:{charId}, session:{gameId}] with existing kinds")
     void scopesFormat() {
@@ -75,8 +73,6 @@ class CharacterMemoryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> CharacterMemory.scopesFor("marcus", null));
     }
-
-    // ============ Whitelist Semantics ============
 
     @Test
     @DisplayName("both scopes are visible: cross-game character memory + this game's plot")
@@ -138,8 +134,6 @@ class CharacterMemoryTest {
         assertFalse(newGameView.stream().anyMatch(e -> e.content().contains("dice")),
                 "the old game's session scope is gone with the game");
     }
-
-    // ============ Context Builder Injection ============
 
     @Test
     @DisplayName("memory builder returns retrieval and history; the loop owns persona injection")

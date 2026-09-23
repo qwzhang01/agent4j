@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class RelationshipMatrixTest {
 
-    // ============ View ============
-
     @Test
     @DisplayName("unseen characters read as neutral 50, tracked ones as applied")
     void viewSemantics() {
@@ -30,8 +28,6 @@ class RelationshipMatrixTest {
         assertEquals(55, matrix.view("marcus").value());
         assertEquals(50, matrix.view("lyra").value(), "other characters untouched");
     }
-
-    // ============ The Limiter ============
 
     @Test
     @DisplayName("a legal single adjustment applies")
@@ -120,8 +116,6 @@ class RelationshipMatrixTest {
         assertEquals(55, matrix.view("lyra").value());
     }
 
-    // ============ Clamping ============
-
     @Test
     @DisplayName("values clamp to 0-100 but the budget is charged by the request")
     void clampingChargesFullRequest() {
@@ -143,8 +137,6 @@ class RelationshipMatrixTest {
         assertEquals(100, applied.after().value(), "clamped at the ceiling");
         assertEquals(100, matrix.view("marcus").value());
     }
-
-    // ============ Snapshot & Guards ============
 
     @Test
     @DisplayName("snapshot is an immutable copy of tracked relationships")

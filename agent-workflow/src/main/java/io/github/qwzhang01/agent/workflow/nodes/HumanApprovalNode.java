@@ -58,7 +58,7 @@ public final class HumanApprovalNode implements WorkflowNode {
         }
     }
 
-    // ============ Sync (Stage 5) ============
+    // Sync (Stage 5)
 
     private NodeResult executeSync(NodeContext ctx) {
         boolean approved = approvalService.approve(
@@ -69,7 +69,7 @@ public final class HumanApprovalNode implements WorkflowNode {
         return NodeResult.of(ctx.input());
     }
 
-    // ============ Async (Stage 6) ============
+    // Async (Stage 6)
 
     private NodeResult executeAsync(NodeContext ctx) throws PauseException {
         if (ctx.isResuming()) {

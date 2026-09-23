@@ -73,7 +73,7 @@ class WebhookControllerTest {
         }
     }
 
-    // ============ Verify (HMAC) ============
+    // Verify (HMAC)
 
     @Test
     void validSignatureIsAccepted() throws Exception {
@@ -114,7 +114,7 @@ class WebhookControllerTest {
         assertEquals(WebhookResult.Status.UNAUTHORIZED, result.status());
     }
 
-    // ============ Idempotent (eventId) ============
+    // Idempotent (eventId)
 
     @Test
     void sameEventIdIsAnsweredDuplicateWithoutRerunning() {
@@ -144,7 +144,7 @@ class WebhookControllerTest {
         assertEquals(WebhookResult.Status.NO_EVENT_ID, result.status());
     }
 
-    // ============ Idempotency slot release (retry safety) ============
+    // Idempotency slot release (retry safety)
 
     @Test
     void eventIdIsReleasedWhenAgentIsMissingSoRetryCanDeliver() throws Exception {
@@ -204,8 +204,6 @@ class WebhookControllerTest {
                 "handle() never throws for delivery-level problems");
     }
 
-    // ============ Routing ============
-
     @Test
     void unknownSourceIsAnsweredNotFound() {
         WebhookResult result = controller().handle("ghost", Map.of(), "{}");
@@ -231,8 +229,6 @@ class WebhookControllerTest {
                 Map.of("X-Signature", sign(body)), body);
         assertEquals(WebhookResult.Status.BAD_PAYLOAD, result.status());
     }
-
-    // ============ 202 semantics ============
 
     @Test
     void handleReturnsBeforeTheRunOnARealExecutor() throws Exception {
@@ -279,8 +275,6 @@ class WebhookControllerTest {
                 "handle() must return fast (202 semantics), took " + handleLatency + "ms");
         assertTrue(finished.await(2, TimeUnit.SECONDS), "the run completes asynchronously");
     }
-
-    // ============ Route discipline ============
 
     @Test
     void duplicateRouteSourceIsRejected() {

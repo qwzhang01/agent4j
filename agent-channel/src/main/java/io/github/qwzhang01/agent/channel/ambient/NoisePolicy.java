@@ -90,8 +90,6 @@ public class NoisePolicy {
                 5, Duration.ofHours(1));
     }
 
-    // ============ The gates ============
-
     /**
      * Run one attempt through the four gates; records state on
      * NOTIFY/DIGEST verdicts.
@@ -134,8 +132,6 @@ public class NoisePolicy {
         return verdict;
     }
 
-    // ============ Digest queue ============
-
     /**
      * Queue a digest verdict's notification (called by AmbientEngine).
      */
@@ -154,8 +150,6 @@ public class NoisePolicy {
         digestQueue.clear();
         return drained;
     }
-
-    // ============ Views ============
 
     /**
      * Whether the given instant falls inside the quiet window.

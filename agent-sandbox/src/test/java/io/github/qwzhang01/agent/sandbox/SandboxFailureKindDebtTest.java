@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class SandboxFailureKindDebtTest {
 
-    // ============ Typed factories: the producer states the kind ============
+    // Typed factories: the producer states the kind
 
     @Test
     @DisplayName("sandboxFailure() carries SANDBOX_FAILURE regardless of message wording")
@@ -61,7 +61,7 @@ class SandboxFailureKindDebtTest {
                 "compat path: same behavior as before the typed factories existed");
     }
 
-    // ============ Real producers pin the kind at the failure site ============
+    // Real producers pin the kind at the failure site
 
     @Test
     @DisplayName("ClassLoaderSandbox's blocked path is typed even if the error text changes")

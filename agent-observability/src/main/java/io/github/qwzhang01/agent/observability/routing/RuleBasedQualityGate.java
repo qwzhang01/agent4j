@@ -92,8 +92,6 @@ public final class RuleBasedQualityGate implements QualityGate {
         // cascade returns the premium answer as-is rather than looping.
     }
 
-    // ============ Structured output parsing ============
-
     /**
      * Whether this response came from a request demanding JSON. ModelResponse
      * does not echo the responseFormat back, so we conservatively sniff the

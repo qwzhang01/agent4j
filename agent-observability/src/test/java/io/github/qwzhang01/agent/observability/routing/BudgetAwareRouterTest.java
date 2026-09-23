@@ -17,8 +17,6 @@ class BudgetAwareRouterTest {
 
     private final BudgetAwareRouter router = new BudgetAwareRouter("premium", "cheap", 25);
 
-    // ============ three budget bands ============
-
     @Test
     @DisplayName("healthy budget: premium, reason carries the remaining percent")
     void healthyGoesPremium() {
@@ -88,8 +86,6 @@ class BudgetAwareRouterTest {
         assertEquals("cheap", d.modelId());
         assertTrue(d.reason().contains("24%"));
     }
-
-    // ============ guards ============
 
     @Test
     @DisplayName("constructor guards: blank tier ids, percent out of 1-99")

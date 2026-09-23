@@ -40,8 +40,6 @@ public final class DistributedRunControl {
         this.runStore = runStore;
     }
 
-    // ============ Cross-instance cancel ============
-
     /**
      * Cancel a run from any instance. The durable command is the row
      * transition itself: CAS the row to CANCELLED only when it is still
@@ -96,8 +94,6 @@ public final class DistributedRunControl {
         CANCELLED, ALREADY_TERMINAL, NO_ROW, CONTENDED
     }
 
-    // ============ Resume guard ============
-
     /**
      * Guard for {@code DurableRunManager.resume}: the run row must still
      * be a recovery candidate. A row another instance CAS-cancelled (or
@@ -118,8 +114,6 @@ public final class DistributedRunControl {
                     + " (cross-instance cancel/finalize guard)");
         }
     }
-
-    // ============ Approval callback ============
 
     /**
      * Whether the run row is still awaiting this approval — the

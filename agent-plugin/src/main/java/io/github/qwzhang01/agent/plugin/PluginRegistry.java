@@ -61,8 +61,6 @@ public class PluginRegistry {
         this.toolRegistry = toolRegistry;
     }
 
-    // ============ Load / Unload ============
-
     /**
      * Load a plugin with NO manifest (legacy / trusted-internal path).
      * The plugin may register tools freely — this is the Stage 3 behavior,
@@ -180,8 +178,6 @@ public class PluginRegistry {
         }
     }
 
-    // ============ Query ============
-
     /**
      * Get a plugin's current state.
      */
@@ -221,8 +217,6 @@ public class PluginRegistry {
         PluginEntry entry = plugins.get(pluginName);
         return entry != null ? List.copyOf(entry.context.registeredNames()) : List.of();
     }
-
-    // ============ Inner ============
 
     /**
      * PluginContext that records what the plugin registered, so unload and

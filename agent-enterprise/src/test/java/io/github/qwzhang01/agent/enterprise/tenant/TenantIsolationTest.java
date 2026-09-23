@@ -55,8 +55,6 @@ class TenantIsolationTest {
         );
     }
 
-    // ============ Scope Format ============
-
     @Test
     @DisplayName("MemoryScope.tenant() produces well-formed tenant scopes")
     void tenantScopeFormat() {
@@ -73,8 +71,6 @@ class TenantIsolationTest {
         assertEquals(MemoryScope.Kind.TENANT, parsed.kind());
         assertEquals("globex", parsed.id());
     }
-
-    // ============ Cross-Tenant Zero Leakage ============
 
     @Test
     @DisplayName("globex cannot retrieve acme's tenant-scoped entries (and vice versa)")
@@ -106,8 +102,6 @@ class TenantIsolationTest {
         assertTrue(result.isEmpty(), "empty scope list must not degrade into full-store scan");
     }
 
-    // ============ User Privacy Boundary ============
-
     @Test
     @DisplayName("one user's memories are invisible to another user's whitelist")
     void userPrivacyBoundary() {
@@ -123,7 +117,7 @@ class TenantIsolationTest {
         assertTrue(bobView.get(0).content().contains("loves"));
     }
 
-    // ============ RequestContext Whitelist Semantics ============
+    // RequestContext Whitelist Semantics
 
     @Test
     @DisplayName("the whitelist from login retrieves exactly tenant + own user scopes")
@@ -152,8 +146,6 @@ class TenantIsolationTest {
         assertTrue(visible.stream().noneMatch(e -> e.content().contains("bob prefers phone")));
         assertTrue(visible.stream().noneMatch(e -> e.content().contains("globex secret knowledge")));
     }
-
-    // ============ KNOWLEDGE Type Filter ============
 
     @Test
     @DisplayName("KNOWLEDGE type filters tenant entries without mixing in FACT/PREFERENCE")

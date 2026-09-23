@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RoutingModelClientTest {
 
-    // ============ Test helpers ============
-
     /** Captures the request and answers with canned objects - proves zero-touch forwarding. */
     static final class RecordingClient implements ModelClient {
         ModelRequest lastRequest;
@@ -69,7 +67,7 @@ class RoutingModelClientTest {
                 .build();
     }
 
-    // ============ forwarding: zero-touch contract ============
+    // forwarding: zero-touch contract
 
     @Test
     @DisplayName("chat: forwards to the selected candidate - SAME request instance in, SAME response instance out")
@@ -118,7 +116,7 @@ class RoutingModelClientTest {
         assertEquals(2, premium.calls);
     }
 
-    // ============ the acceptance: two models, automatic switch ============
+    // the acceptance: two models, automatic switch
 
     @Test
     @DisplayName("budget-driven switch: healthy -> premium answers, ledger drains below threshold -> cheap answers")
@@ -163,7 +161,7 @@ class RoutingModelClientTest {
         assertEquals(10_000, e.limit());
     }
 
-    // ============ composition with Stage 1: Routing(Fallback(...)) ============
+    // composition with Stage 1: Routing(Fallback(...))
 
     @Test
     @DisplayName("Routing(Fallback(...)): cheap tier dies -> Stage 1 chain catches (zero-change reuse)")
@@ -192,7 +190,7 @@ class RoutingModelClientTest {
                 "Stage 1's exhaustion message must surface unchanged: " + e.getMessage());
     }
 
-    // ============ failure semantics: routing is the main path ============
+    // failure semantics: routing is the main path
 
     @Test
     @DisplayName("router exception propagates untouched - routing is NOT a side channel, no masking")
@@ -222,8 +220,6 @@ class RoutingModelClientTest {
         assertTrue(e.getMessage().contains("stub decision"), "the decision's reason is included: " + e.getMessage());
         assertTrue(e.getMessage().contains("premium"), e.getMessage());
     }
-
-    // ============ guards / misc ============
 
     @Test
     @DisplayName("constructor guards: empty candidates, null router, null budget source, blank key")

@@ -65,8 +65,6 @@ class CodingSessionTest {
                 .build();
     }
 
-    // ============ Fix-loop counting ============
-
     @Test
     @DisplayName("failed runs count up; passing runs do not")
     void failedRunsCountOnlyFailures() throws Exception {
@@ -115,8 +113,6 @@ class CodingSessionTest {
         assertEquals(Patch.PatchStatus.DRAFT, patch.status(),
                 "the attempted fix is kept as review evidence");
     }
-
-    // ============ Passing is leaving the loop ============
 
     @Test
     @DisplayName("a passing run transitions the staged patch to VALIDATED")
@@ -194,7 +190,7 @@ class CodingSessionTest {
         assertEquals(0, passing.failedTestRuns(), "passing consumed no budget");
     }
 
-    // ============ Human gates & the patch state machine ============
+    // Human gates & the patch state machine
 
     @Test
     @DisplayName("reviewPatch renders the unified diff for the human reviewer")
@@ -261,8 +257,6 @@ class CodingSessionTest {
         assertEquals(Patch.PatchStatus.DISCARDED, discarded.status());
         assertFalse(Files.exists(root.resolve("New.java")));
     }
-
-    // ============ Tool factories & builder ============
 
     @Test
     @DisplayName("tool factories produce the five tools with honest metadata")

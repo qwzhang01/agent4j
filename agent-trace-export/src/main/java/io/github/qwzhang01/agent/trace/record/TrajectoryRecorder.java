@@ -72,8 +72,6 @@ public final class TrajectoryRecorder {
                 : Optional.of(completedTrajectories.get(completedTrajectories.size() - 1));
     }
 
-    // ============ Package-visible plumbing ============
-
     RecordingSession currentSession() {
         return current.get();
     }

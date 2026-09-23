@@ -28,7 +28,7 @@ class ExternalAgentWorkerTest {
         };
     }
 
-    // ============ Full round-trip: WorkerTask -> A2ATask -> agent -> result ============
+    // Full round-trip: WorkerTask -> A2ATask -> agent -> result
 
     @Test
     void execute_fullA2ARoundTrip_succeeds() {
@@ -57,7 +57,7 @@ class ExternalAgentWorkerTest {
         assertTrue(result.error().contains("IllegalArgumentException"));
     }
 
-    // ============ D5: output sanitizer ============
+    // D5: output sanitizer
 
     @Test
     void execute_sanitizerTransformsOutput() {
@@ -108,8 +108,6 @@ class ExternalAgentWorkerTest {
         assertTrue(result.success());
         assertEquals("anything goes", result.output());
     }
-
-    // ============ Card exposure ============
 
     @Test
     void card_declaresSkills_andName() {

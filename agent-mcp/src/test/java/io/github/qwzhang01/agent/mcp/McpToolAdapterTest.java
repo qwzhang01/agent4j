@@ -50,8 +50,6 @@ class McpToolAdapterTest {
         if (client != null) client.disconnect();
     }
 
-    // ============ Basic Adapter Properties ============
-
     @Test
     void adapter_exposesToolSchema() throws IOException {
         List<McpToolSchema> tools = client.listTools();
@@ -74,7 +72,7 @@ class McpToolAdapterTest {
         assertThrows(NullPointerException.class, () -> new McpToolAdapter(client, null));
     }
 
-    // ============ Transparency: Works with DefaultToolExecutor ============
+    // Transparency: Works with DefaultToolExecutor
 
     @Test
     void mcpTool_executedByDefaultToolExecutor() throws IOException {
@@ -97,7 +95,7 @@ class McpToolAdapterTest {
         assertEquals("echoed: hello world", result);
     }
 
-    // ============ Transparency: Works with GovernedToolExecutor (D1 proof) ============
+    // Transparency: Works with GovernedToolExecutor (D1 proof)
 
     @Test
     void mcpTool_governedByGovernedToolExecutor_autoApproval() throws IOException {
@@ -217,8 +215,6 @@ class McpToolAdapterTest {
         assertFalse(result.contains("[SYSTEM]"));
         assertEquals(AuditEvent.AuditStatus.SANITIZED, audit.getAll().get(0).status());
     }
-
-    // ============ ToolRegistry integration ============
 
     @Test
     void mcpTool_registered_alongsideLocalTools() throws IOException {

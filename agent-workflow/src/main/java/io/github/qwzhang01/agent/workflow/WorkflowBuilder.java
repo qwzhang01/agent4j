@@ -41,7 +41,7 @@ public final class WorkflowBuilder {
         this.name = name;
     }
 
-    // ============ Definition identity (Stage 3.1) ============
+    // Definition identity (Stage 3.1)
 
     /**
      * Stage 3.1 (harness roadmap): version this definition (free-form,
@@ -52,8 +52,6 @@ public final class WorkflowBuilder {
         this.version = version == null ? "" : version;
         return this;
     }
-
-    // ============ Nodes ============
 
     public WorkflowBuilder node(WorkflowNode node) {
         return node(node, null);
@@ -71,8 +69,6 @@ public final class WorkflowBuilder {
         }
         return this;
     }
-
-    // ============ Edges ============
 
     /**
      * Start declaring an edge. Call .when(predicate) for a conditional
@@ -92,8 +88,6 @@ public final class WorkflowBuilder {
         errorEdges.add(new Edge(from, to, null));
         return this;
     }
-
-    // ============ Build ============
 
     public Workflow build() {
         // Resolve edges declared without when()/otherwise()
@@ -115,8 +109,6 @@ public final class WorkflowBuilder {
         }
         return new Workflow(name, version, nodes, outgoing, errors, retryPolicies);
     }
-
-    // ============ Validation ============
 
     private void validate() {
         if (nodes.isEmpty()) {
@@ -155,8 +147,6 @@ public final class WorkflowBuilder {
             throw new WorkflowException("Invalid " + kind + " to unknown node: '" + e.to() + "'");
         }
     }
-
-    // ============ EdgeSpec ============
 
     /**
      * Pending edge declaration returned by {@link #edge(String, String)}.

@@ -83,8 +83,6 @@ public final class HealthPipeline implements MetricsSink, Consumer<AgentEvent> {
     // previous snapshot's window average; null until the first reconciliation
     private Double baselineAvgAnswerChars;
 
-    // ============ Construction ============
-
     /** Default window ({@value #DEFAULT_WINDOW} rows per projection). */
     public HealthPipeline() {
         this(DEFAULT_WINDOW);
@@ -100,7 +98,7 @@ public final class HealthPipeline implements MetricsSink, Consumer<AgentEvent> {
         this.windowSize = windowSize;
     }
 
-    // ============ MetricsSink: the numeric projection ============
+    // MetricsSink: the numeric projection
 
     /**
      * No-op by design: this pipeline is a downstream consumer of RUNS. Call
@@ -133,7 +131,7 @@ public final class HealthPipeline implements MetricsSink, Consumer<AgentEvent> {
         }
     }
 
-    // ============ AgentEvent stream: the content projection ============
+    // AgentEvent stream: the content projection
 
     /**
      * Only {@link AgentEvent.Done} is drift material: it carries the final
@@ -152,8 +150,6 @@ public final class HealthPipeline implements MetricsSink, Consumer<AgentEvent> {
             }
         }
     }
-
-    // ============ Snapshot ============
 
     /**
      * Materialize the health report over the current windows.

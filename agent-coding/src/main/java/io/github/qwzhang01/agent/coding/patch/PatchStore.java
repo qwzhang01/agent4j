@@ -63,7 +63,7 @@ public final class PatchStore {
         this.workspace = Objects.requireNonNull(workspace, "workspace must not be null");
     }
 
-    // ============ Staging (never touches the disk) ============
+    // Staging (never touches the disk)
 
     /**
      * Stage a write: create or modify {@code path} with the given full content.
@@ -138,8 +138,6 @@ public final class PatchStore {
                     "cannot read current content of " + relPath + ": " + e.getMessage(), e);
         }
     }
-
-    // ============ State machine ============
 
     /** The active patch (DRAFT or VALIDATED), if any. */
     public Optional<Patch> snapshot() {
@@ -243,8 +241,6 @@ public final class PatchStore {
         }
     }
 
-    // ============ Internals ============
-
     /** Where the disk stands relative to one staged change. */
     private enum OnDiskState {
         /** Disk matches the staging-time snapshot (the change is NOT on disk yet). */
@@ -331,8 +327,6 @@ public final class PatchStore {
         close();
         return rejected;
     }
-
-    // ============ Internals ============
 
     private void writeToDisk(FileChange change) {
         Path abs = workspace.root().resolve(change.path());

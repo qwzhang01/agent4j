@@ -27,8 +27,6 @@ public record ModelResponse(
         return new ModelResponse(null, calls, "tool_calls", null);
     }
 
-    // ============ Factory ============
-
     public static ModelResponse error(String message) {
         return new ModelResponse(null, null, "error", null);
     }
@@ -40,8 +38,6 @@ public record ModelResponse(
     public boolean isFinished() {
         return !"tool_calls".equals(finishReason);
     }
-
-    // ============ Nested ============
 
     /**
      * Token usage as billed by the provider.

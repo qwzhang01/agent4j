@@ -49,8 +49,6 @@ final class ReplayCodec {
     private ReplayCodec() {
     }
 
-    // ============ World ============
-
     static ObjectNode worldToJson(WorldState world, ObjectMapper m) {
         ObjectNode n = m.createObjectNode();
         n.put("turnCount", world.turnCount());
@@ -65,8 +63,6 @@ final class ReplayCodec {
         n.path("flags").fields().forEachRemaining(e -> flags.put(e.getKey(), e.getValue().asText()));
         return new WorldState(n.path("turnCount").asInt(), n.path("location").asText(), flags);
     }
-
-    // ============ Relationship ============
 
     static ObjectNode relationshipToJson(Relationship r, ObjectMapper m) {
         ObjectNode n = m.createObjectNode();
@@ -90,8 +86,6 @@ final class ReplayCodec {
         n.fields().forEachRemaining(e -> out.put(e.getKey(), relationshipFromJson(e.getValue())));
         return out;
     }
-
-    // ============ ChatMessage ============
 
     static ObjectNode messageToJson(ChatMessage msg, ObjectMapper m) {
         if (msg.parts() != null) {
@@ -165,8 +159,6 @@ final class ReplayCodec {
         return out;
     }
 
-    // ============ WorldEffect ============
-
     static ObjectNode effectToJson(WorldEffect e, ObjectMapper m) {
         ObjectNode n = m.createObjectNode();
         if (e instanceof WorldEffect.SetFlag f) {
@@ -198,8 +190,6 @@ final class ReplayCodec {
         }
         throw new IllegalArgumentException("unknown effect type: " + type);
     }
-
-    // ============ Turn ============
 
     static ObjectNode turnToJson(Turn t, ObjectMapper m) {
         ObjectNode n = m.createObjectNode();
@@ -264,8 +254,6 @@ final class ReplayCodec {
                 eventIds,
                 Instant.parse(n.path("timestamp").asText()));
     }
-
-    // ============ Envelope Lines ============
 
     static ObjectNode initialLineToJson(WorldState world,
                                         Map<String, Relationship> relationships,

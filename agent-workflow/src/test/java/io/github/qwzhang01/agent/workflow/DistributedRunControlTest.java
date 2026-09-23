@@ -136,7 +136,7 @@ class DistributedRunControlTest {
                 .build();
     }
 
-    // ============ 1. Cross-instance resume (takeover) ============
+    // 1. Cross-instance resume (takeover)
 
     @Test
     void otherInstanceTakesOverAndFinishes() throws Exception {
@@ -172,8 +172,6 @@ class DistributedRunControlTest {
         assertEquals(1, sentinelB.get(), "B's sentinel must run after the slow node settles");
         assertEquals("SUCCEEDED", runStore.get("run-takeover").orElseThrow().status());
     }
-
-    // ============ 2. Cross-instance cancel ============
 
     @Test
     void cancelFromAnotherInstanceStopsInFlightRun() throws Exception {
@@ -268,7 +266,7 @@ class DistributedRunControlTest {
         assertEquals("CANCELLED", runStore.get("run-live").orElseThrow().status());
     }
 
-    // ============ 3. Approval callback across instances ============
+    // 3. Approval callback across instances
 
     @Test
     void approvalLandedOnOtherInstanceUnblocksWaitingRun() throws Exception {
@@ -380,8 +378,6 @@ class DistributedRunControlTest {
                 "guard must name the refusal: " + ex.getMessage());
         assertEquals(0, sentinel.get());
     }
-
-    // ============ DurableRunManager.cancel facade ============
 
     @Test
     void managerCancelUsesRowChannelForWaitingRun() throws Exception {

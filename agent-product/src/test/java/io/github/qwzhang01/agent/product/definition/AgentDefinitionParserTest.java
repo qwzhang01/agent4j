@@ -17,8 +17,6 @@ class AgentDefinitionParserTest {
 
     private final AgentDefinitionParser parser = new AgentDefinitionParser();
 
-    // ============ Fixtures ============
-
     private static final String VALID_YAML = """
             apiVersion: v1
             kind: Agent
@@ -55,8 +53,6 @@ class AgentDefinitionParserTest {
               }
             }
             """;
-
-    // ============ Legal input ============
 
     @Test
     void parsesFullYamlDefinition() {
@@ -104,7 +100,7 @@ class AgentDefinitionParserTest {
         assertEquals(null, def.spec().model().fallback());
     }
 
-    // ============ Fail-fast: structure ============
+    // Fail-fast: structure
 
     @Test
     void blankNameIsRejected() {
@@ -133,7 +129,7 @@ class AgentDefinitionParserTest {
         assertTrue(e.getMessage().contains("line"), "message should carry a location, got: " + e.getMessage());
     }
 
-    // ============ Fail-fast: envelope ============
+    // Fail-fast: envelope
 
     @Test
     void wrongApiVersionIsRejected() {
@@ -167,7 +163,7 @@ class AgentDefinitionParserTest {
         assertTrue(e.getMessage().contains("Agent"), e.getMessage());
     }
 
-    // ============ Fail-fast: unknown fields ============
+    // Fail-fast: unknown fields
 
     @Test
     void unknownLaterMilestoneFieldGetsTargetedHint() {
@@ -221,8 +217,6 @@ class AgentDefinitionParserTest {
                 """));
     }
 
-    // ============ Defensive copy ============
-
     @Test
     void toolsListIsDefensivelyCopied() {
         AgentDefinition def = parser.parse(VALID_YAML);
@@ -230,7 +224,7 @@ class AgentDefinitionParserTest {
         assertThrows(UnsupportedOperationException.class, () -> tools.add(new AgentDefinition.ToolRef("x")));
     }
 
-    // ============ M13.3: inline http tool entries parse ============
+    // M13.3: inline http tool entries parse
 
     @Test
     void parsesInlineHttpToolEntry() {
@@ -299,7 +293,7 @@ class AgentDefinitionParserTest {
         assertTrue(e.getMessage().contains("exactly one"), e.getMessage());
     }
 
-    // ============ M13.4: promptRef parses ============
+    // M13.4: promptRef parses
 
     @Test
     void parsesPersonaWithPromptRef() {
@@ -339,7 +333,7 @@ class AgentDefinitionParserTest {
         assertEquals(null, def.spec().persona().promptRef().channel());
     }
 
-    // ============ M13.5: workflow + ambient sections parse ============
+    // M13.5: workflow + ambient sections parse
 
     @Test
     void parsesWorkflowAndAmbientSections() {

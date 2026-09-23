@@ -50,8 +50,6 @@ class KnowledgeToolTest {
         return MAPPER.readTree(raw);
     }
 
-    // ============ Output Contract ============
-
     @Test
     @DisplayName("execute returns well-formed JSON with count and results")
     void jsonOutputContract() throws Exception {
@@ -91,8 +89,6 @@ class KnowledgeToolTest {
         assertEquals(KnowledgeEntry.DEFAULT_TOP_K, unlimited.get("count").asInt());
     }
 
-    // ============ Tenant Binding ============
-
     @Test
     @DisplayName("the tool cannot be pointed at another tenant - binding is immutable")
     void tenantBindingImmutable() throws Exception {
@@ -116,8 +112,6 @@ class KnowledgeToolTest {
         assertTrue(!schema.contains("tenant"), "schema must not expose a tenant parameter");
     }
 
-    // ============ Argument Validation ============
-
     @Test
     @DisplayName("missing or blank query fails fast with ToolException")
     void missingQueryRejected() {
@@ -126,8 +120,6 @@ class KnowledgeToolTest {
         assertThrows(ToolException.class,
                 () -> acmeTool.execute(MAPPER.readTree("{\"query\": \"  \"}")));
     }
-
-    // ============ Tool Registration Contract ============
 
     @Test
     @DisplayName("tool metadata is complete for registration")

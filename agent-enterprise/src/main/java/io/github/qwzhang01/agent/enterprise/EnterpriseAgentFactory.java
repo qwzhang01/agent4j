@@ -81,8 +81,6 @@ public final class EnterpriseAgentFactory {
         return new Builder();
     }
 
-    // ============ Request-Scoped Assembly ============
-
     /**
      * Assemble the execution chain bound to one request context.
      *
@@ -133,8 +131,6 @@ public final class EnterpriseAgentFactory {
                 new SimpleAgent(config, new ReActAgentLoop(executor)), tracker);
     }
 
-    // ============ Shared Accessors ============
-
     /**
      * The shared audit trail (never null - the builder defaults to a fresh
      * one; every request-scoped logger feeds the same ledger).
@@ -142,8 +138,6 @@ public final class EnterpriseAgentFactory {
     public EnterpriseAuditTrail sharedAuditTrail() {
         return auditTrail;
     }
-
-    // ============ Request-Scoped Agent ============
 
     /**
      * The execution chain of one request: the underlying Agent plus the
@@ -188,8 +182,6 @@ public final class EnterpriseAgentFactory {
         }
     }
 
-    // ============ Internal Helpers ============
-
     /** Per-request token accumulator. */
     static final class UsageTracker {
         final AtomicLong prompt = new AtomicLong();
@@ -230,8 +222,6 @@ public final class EnterpriseAgentFactory {
             return delegate.stream(request);
         }
     }
-
-    // ============ Builder ============
 
     /**
      * Builder producing the {@link EnterpriseAssistant} facade. Required:

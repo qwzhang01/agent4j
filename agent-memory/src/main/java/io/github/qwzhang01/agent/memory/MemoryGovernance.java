@@ -98,7 +98,7 @@ public class MemoryGovernance {
         }
     }
 
-    // ============ Scope derivation (identity-bound) ============
+    // Scope derivation (identity-bound)
 
     /**
      * Derive the scope whitelist from a run context. The caller's identity
@@ -124,8 +124,6 @@ public class MemoryGovernance {
         }
         return List.copyOf(scopes);
     }
-
-    // ============ Governed read ============
 
     /**
      * Governed query. Scopes come from the run context (never from the query
@@ -184,8 +182,6 @@ public class MemoryGovernance {
         return e.withContent(maskedContent);
     }
 
-    // ============ Governed write ============
-
     /**
      * Governed write. The entry's scope must fall inside the run context's
      * whitelist (a tool cannot write into another tenant's namespace), and
@@ -219,8 +215,6 @@ public class MemoryGovernance {
                 System.currentTimeMillis() - start, Instant.now()));
         return stored;
     }
-
-    // ============ Deletion propagation ============
 
     /**
      * Hard-delete every entry in every scope of one user across tenants —
@@ -269,8 +263,6 @@ public class MemoryGovernance {
             List<String> removedEntryIds,
             Instant at) {
     }
-
-    // ============ Internals ============
 
     private static void requirePurpose(String purpose) {
         if (purpose == null || purpose.isBlank()) {

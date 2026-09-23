@@ -84,8 +84,6 @@ class CharacterAgentFactoryTest {
         return new CharacterCard(id, name, persona, null);
     }
 
-    // ============ Persona Translation ============
-
     @Test
     @DisplayName("persona lands in the system prompt the model actually sees")
     void personaInjectedIntoSystemPrompt() {
@@ -129,8 +127,6 @@ class CharacterAgentFactoryTest {
                 "two characters answering the same line must carry different personas");
     }
 
-    // ============ Config Bound ============
-
     @Test
     @DisplayName("agent name = characterId; maxSteps bound is configurable with a tight default")
     void configBoundToCard() {
@@ -160,7 +156,7 @@ class CharacterAgentFactoryTest {
         assertTrue(marcus.getConfig().getToolRegistry() != null);
     }
 
-    // ============ Memory Through the Full Agent Path ============
+    // Memory Through the Full Agent Path
 
     @Test
     @DisplayName("end-to-end: whitelist memories reach the model, foreign ones never do")
@@ -183,7 +179,7 @@ class CharacterAgentFactoryTest {
         assertFalse(memories.contains("game two"), "another game's plot is invisible");
     }
 
-    // ============ Multi-Turn Continuation (game facade primitive) ============
+    // Multi-Turn Continuation (game facade primitive)
 
     @Test
     @DisplayName("a held AgentState carries the conversation across turns (M16.5 facade primitive)")
