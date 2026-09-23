@@ -37,7 +37,6 @@ public final class ProductContext {
     private final Map<String, ServiceAccount> serviceAccounts = new LinkedHashMap<>();
     private PromptManager promptManager;
 
-    // Registration
 
     /**
      * Register a model client under a name (e.g. "openai", "deepseek").
@@ -135,7 +134,6 @@ public final class ProductContext {
         return this;
     }
 
-    // Lookup
 
     public Optional<ModelClient> model(String name) {
         return Optional.ofNullable(models.get(name));
@@ -197,7 +195,6 @@ public final class ProductContext {
         return List.copyOf(serviceAccounts.keySet());
     }
 
-    // Internals
 
     private static void requireName(String name, String what) {
         if (name == null || name.isBlank()) {

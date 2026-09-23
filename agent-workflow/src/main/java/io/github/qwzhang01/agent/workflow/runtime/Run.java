@@ -23,13 +23,10 @@ import io.github.qwzhang01.agent.workflow.WorkflowState;
  */
 public class Run {
 
-    // Identity
     private final String runId;
     private final Workflow workflow;
 
-    // Mutable State
     private WorkflowState state;
-    // Stage 3 hardening: status/errorMessage are read cross-thread by
     // observers (scheduler timers, recovery sweeps, tests). volatile +
     // "write errorMessage before status" makes FAILED a publication point:
     // anyone who sees FAILED is guaranteed to see the failure reason.
@@ -38,15 +35,12 @@ public class Run {
     private Object pendingInput;     // input for the paused node on resume
     private int stepsExecuted;
     private volatile String errorMessage;
-    /** Stage 3.1: event/checkpoint sequence anchor for resume consistency. */
     private long lastEventSeq;
 
-    // Control
     private volatile boolean cancelled = false;
     private final long startTime;
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.none();
 
-    // Stage 1 (harness roadmap)
     /** Unified run context; null = legacy path (no context bound). */
     private RunContext runContext;
     /** Backs the context's token so RunManager.cancel flips both. */
@@ -104,9 +98,7 @@ public class Run {
     public String getErrorMessage() { return errorMessage; }
     public long getStartTime() { return startTime; }
     public TimeoutPolicy getTimeoutPolicy() { return timeoutPolicy; }
-    /** Stage 3.1: event position anchor carried across pause/resume. */
     public long getLastEventSeq() { return lastEventSeq; }
-    /** Stage 3.1: bump the event position (called on checkpoint persist). */
     public void setLastEventSeq(long seq) { this.lastEventSeq = seq; }
 
     public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
@@ -122,7 +114,6 @@ public class Run {
     public void setStepsExecuted(int steps) { this.stepsExecuted = steps; }
     public void setErrorMessage(String msg) { this.errorMessage = msg; }
 
-    // Cancellation
 
     /**
      * Request cancellation. The run will stop at the next node boundary.
@@ -141,7 +132,6 @@ public class Run {
                         && runContext.cancellationToken().isCancelled());
     }
 
-    // Checkpoint
 
     public Checkpoint toCheckpoint() {
         return Checkpoint.of(this);

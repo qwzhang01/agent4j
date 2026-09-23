@@ -53,7 +53,6 @@ class SseTransportTest {
             // Hold the handler open for the life of the stream; the read
             // below returns only when the client closes/cancels the GET.
             try {
-                // Any client close is surfaced as a read error on the socket
                 exchange.getRequestBody().read();
             } catch (IOException ignored) {
                 // client went away

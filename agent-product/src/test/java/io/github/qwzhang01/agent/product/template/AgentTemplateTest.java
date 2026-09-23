@@ -121,7 +121,6 @@ class AgentTemplateTest {
         assertEquals("acme", def.metadata().tenant());
         // brandName not provided -> default; tenantId provided -> param value
         assertEquals("你是 七七商城 的客服助手，租户 acme。", def.spec().persona().systemPrompt());
-        // Non-string values pass through untouched
         assertEquals(0.3, def.spec().persona().temperature());
         assertEquals("order-query", def.spec().tools().get(0).ref());
     }

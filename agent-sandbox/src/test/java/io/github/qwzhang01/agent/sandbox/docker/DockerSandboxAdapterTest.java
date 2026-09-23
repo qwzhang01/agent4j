@@ -165,7 +165,6 @@ class DockerSandboxAdapterTest {
     void hardeningSurfaceDocumentsEveryMechanism() {
         // The designed-but-not-integrated mechanisms are data, not prose
         // buried in javadoc: the surface map is what a future report
-        // entry will cite, and its keys match the roadmap 4.3 rows.
         var surface = DockerSandboxAdapter.hardeningSurface();
         assertEquals(7, surface.size());
         for (String key : List.of("uidGid", "capabilities", "seccomp", "rootfs",

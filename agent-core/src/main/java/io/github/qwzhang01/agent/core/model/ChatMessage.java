@@ -28,7 +28,6 @@ public record ChatMessage(
 ) {
 
     public ChatMessage {
-        // Normalize empty parts to null so providers can rely on a simple null check
         if (parts != null && parts.isEmpty()) {
             parts = null;
         }

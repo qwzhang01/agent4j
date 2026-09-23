@@ -34,7 +34,6 @@ class AgentDefinitionBinderTest {
     private final AgentDefinitionParser parser = new AgentDefinitionParser();
     private final DefinitionValidator validator = new DefinitionValidator();
 
-    // Test doubles
 
     /**
      * Captures every ModelRequest the agent actually sends (the boundary where
@@ -238,7 +237,6 @@ class AgentDefinitionBinderTest {
         assertEquals(0.7, backupRequests.get(0).temperature());
     }
 
-    // Tool subset semantics
 
     @Test
     void toolsSectionSelectsASubsetOfTheRegistry() {
@@ -266,7 +264,6 @@ class AgentDefinitionBinderTest {
         assertEquals("order-query", config.getToolRegistry().listTools().get(0).getName());
     }
 
-    // Memory wiring
 
     @Test
     void shortTermWindowBindsWindowContextBuilder() {
@@ -448,7 +445,6 @@ class AgentDefinitionBinderTest {
                 () -> new AgentDefinitionBinder(ctx).bind(def));
     }
 
-    // Defensive
 
     @Test
     void bindingUnvalidatedDanglingReferenceFailsFast() {

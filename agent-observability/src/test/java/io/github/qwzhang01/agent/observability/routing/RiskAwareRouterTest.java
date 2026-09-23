@@ -156,12 +156,10 @@ class RiskAwareRouterTest {
         RoutingModelClient client = new RoutingModelClient(
                 Map.of(PREMIUM, premium, CHEAP, cheap), router);
 
-        // Destructive exposure routes to the premium candidate
         io.github.qwzhang01.agent.core.model.ModelResponse routed =
                 client.chat(requestWithTools(schema("delete_file")));
         assertEquals("done", routed.content());
 
-        // Read-shaped turn routes to the cheap candidate
         io.github.qwzhang01.agent.core.model.ModelResponse cheap2 =
                 client.chat(requestWithTools(schema("unclassified")));
         assertEquals("done", cheap2.content());

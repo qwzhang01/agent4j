@@ -81,7 +81,6 @@ public class ContextCompressor {
         List<ChatMessage> toArchive = new ArrayList<>(nonSystem.subList(0, archiveEnd));
         List<ChatMessage> recent = new ArrayList<>(nonSystem.subList(archiveEnd, nonSystem.size()));
 
-        // Summarize the archived segment
         String summary = summarize(toArchive);
         ChatMessage summaryMsg = ChatMessage.user(
                 "[Summary of earlier conversation]\n" + summary);

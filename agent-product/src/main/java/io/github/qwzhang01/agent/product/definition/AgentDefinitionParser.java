@@ -86,7 +86,6 @@ public final class AgentDefinitionParser {
         }
     }
 
-    // Helpers
 
     private static String location(JacksonException e) {
         var loc = e.getLocation();

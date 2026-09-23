@@ -28,7 +28,6 @@ public sealed interface RunEvent permits
         RunEvent.RunPaused, RunEvent.RunResumed, RunEvent.RunCanceled,
         RunEvent.RunFailed, RunEvent.RunCompleted {
 
-    /** Event schema version (1 since Stage 1). */
     int SCHEMA_VERSION = 1;
 
     /** Correlation: the run this fact belongs to. */

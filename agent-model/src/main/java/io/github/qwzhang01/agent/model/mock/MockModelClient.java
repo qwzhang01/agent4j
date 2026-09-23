@@ -28,7 +28,6 @@ public class MockModelClient implements ModelClient {
     private final Queue<ModelResponse> scriptedResponses = new LinkedBlockingQueue<>();
     private boolean ruleBasedMode = false;
 
-    // Builder
 
     public static MockModelClient scripted() {
         return new MockModelClient();
@@ -40,7 +39,6 @@ public class MockModelClient implements ModelClient {
         return client;
     }
 
-    // Configuration
 
     /**
      * Add a scripted response (consumed in order).
@@ -66,7 +64,6 @@ public class MockModelClient implements ModelClient {
         return this;
     }
 
-    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -86,8 +83,6 @@ public class MockModelClient implements ModelClient {
 
     @Override
     public Stream<StreamEvent> stream(ModelRequest request) {
-        // Stage 1: simple implementation - call chat and emit as single event
-        // Stage 1 TODO: implement real token-by-token streaming
         ModelResponse response = chat(request);
         return Stream.of(
                 new StreamEvent.ContentDelta(response.content() != null ? response.content() : ""),
@@ -95,7 +90,6 @@ public class MockModelClient implements ModelClient {
         );
     }
 
-    // Rule-based Logic
 
     private ModelResponse ruleBasedResponse(ModelRequest request) {
         // Get last user message (text content, or text parts for multimodal messages)
@@ -110,9 +104,7 @@ public class MockModelClient implements ModelClient {
 
         String lowerInput = userInput.toLowerCase();
 
-        // Simple keyword matching
         if (lowerInput.contains("tool") || lowerInput.contains("calculate") || lowerInput.contains("time")) {
-            // Simulate a tool call
             String toolName = lowerInput.contains("time") ? "get_current_time" : "echo";
             var args = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
             args.put("input", userInput);

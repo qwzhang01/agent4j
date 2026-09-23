@@ -30,7 +30,6 @@ class ControlFlowTest {
         assertTrue(result.isSucceeded());
         assertEquals("recovered", result.output());
         assertEquals(3, flaky.calls());
-        // Trace records total attempts
         assertEquals(3, result.trace().get(0).attempts());
     }
 
@@ -99,7 +98,6 @@ class ControlFlowTest {
         assertEquals("L", out.get("left"));
         assertEquals("R", out.get("right"));
 
-        // Branch nodes wrote to the blackboard
         assertEquals("L", result.state().get("leftStep"));
         assertEquals("R", result.state().get("rightStep"));
 

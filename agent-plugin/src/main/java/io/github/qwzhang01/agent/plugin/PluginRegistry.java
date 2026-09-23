@@ -114,7 +114,6 @@ public class PluginRegistry {
                 entry.error = e;
                 log.error("Plugin {} failed to load: {}", name, e.getMessage(), e);
                 rollback(context, name, "load failure");
-                // Do NOT rethrow - isolate the failure
             }
         }
     }
@@ -145,7 +144,6 @@ public class PluginRegistry {
                 log.info("Plugin unloaded: {}", name);
             } catch (Exception e) {
                 log.error("Plugin {} failed to unload: {}", name, e.getMessage(), e);
-                // Still mark as unloaded - best effort
             } finally {
                 entry.context.cleanupOrphanTools();
                 entry.state = PluginState.UNLOADED;

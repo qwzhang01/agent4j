@@ -80,7 +80,6 @@ public final class EventReplayer {
                         + cd.delta();
             } else if (event instanceof AgentEvent.Done d) {
                 done = true;
-                // Flush any pending assistant text that streamed via deltas
                 // (text and tool results may share one assistant turn).
                 flushAssistant(state, pendingAssistantText);
                 pendingAssistantText = null;
@@ -99,7 +98,6 @@ public final class EventReplayer {
             pendingAssistantText = null;
             state.setStatus(AgentState.Status.IDLE);
         }
-        // Stamp the reconstructed step count so a resumed loop budgets
         // from where history actually left off.
         while (state.getCurrentStep() < step) {
             state.incrementStep();

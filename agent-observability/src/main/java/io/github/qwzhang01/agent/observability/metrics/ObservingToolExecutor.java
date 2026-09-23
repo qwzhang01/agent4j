@@ -34,7 +34,6 @@ public final class ObservingToolExecutor implements ToolExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(ObservingToolExecutor.class);
 
-    /** Stage 9 governance-chain denial prefixes (results, not exceptions). */
     private static final String[] GOVERNANCE_DENIAL_PREFIXES = {"[DENIED] ", "[RATE_LIMITED] "};
 
     private final ToolExecutor delegate;

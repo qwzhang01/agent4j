@@ -66,7 +66,6 @@ public final class InjectionNormalizer {
      * lands in the semantic judge's territory.
      */
     private static final char[] HOMOGLYPH_FROM = {
-            // Cyrillic small letters that mirror ASCII
             '\u0430', // а -> a
             '\u0435', // е -> e
             '\u043E', // о -> o
@@ -81,7 +80,6 @@ public final class InjectionNormalizer {
             '\u04CF', // ӏ -> l
             '\u0501', // ԁ -> d
             '\u051B', // ԛ -> q
-            // Cyrillic capital letters that mirror ASCII
             '\u0410', // А -> A
             '\u0412', // В -> B
             '\u0415', // Е -> E
@@ -94,7 +92,6 @@ public final class InjectionNormalizer {
             '\u0422', // Т -> T
             '\u0425', // Х -> X
             '\u0423', // У -> Y
-            // Greek letters that mirror ASCII
             '\u0391', // Α -> A
             '\u0392', // Β -> B
             '\u0395', // Ε -> E
@@ -114,7 +111,6 @@ public final class InjectionNormalizer {
             '\u03C3', // σ -> s
             '\u03C5', // υ -> y
             '\u03C7', // χ -> x
-            // Latin Extended that mirror ASCII
             '\u0192', // ƒ -> f
             '\u0261', // ɡ -> g
     };

@@ -68,7 +68,6 @@ public class CompressingContextBuilder implements ContextBuilder {
         messages.clear();
         messages.addAll(result.compressed());
 
-        // Archive the original messages that were folded into the summary
         if (archiveStore != null && archiveScope != null && !result.archived().isEmpty()) {
             String archivedText = renderArchived(result.archived());
             archiveStore.write(new MemoryEntry(

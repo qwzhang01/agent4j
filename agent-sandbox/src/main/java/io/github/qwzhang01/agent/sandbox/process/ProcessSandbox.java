@@ -59,7 +59,6 @@ public class ProcessSandbox implements Sandbox {
 
     private static final Logger log = LoggerFactory.getLogger(ProcessSandbox.class);
 
-    /** Legal simple Java class identifier (Stage 4.1). */
     static final Pattern CLASS_NAME_PATTERN =
             Pattern.compile("^[A-Za-z_$][A-Za-z0-9_$]*$");
 
@@ -95,7 +94,6 @@ public class ProcessSandbox implements Sandbox {
         Path sandboxDir = null;
 
         try {
-            // 0. Validate className BEFORE any filesystem use (Stage 4.1)
             if (className == null || !CLASS_NAME_PATTERN.matcher(className).matches()) {
                 return SandboxResult.error(
                         "[INVALID_CLASS_NAME] className must be a legal Java identifier, got: "
@@ -298,20 +296,17 @@ public class ProcessSandbox implements Sandbox {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(workingDir.toFile());
 
-        // Stage 4.1: allowlist env, not full host inheritance.
         Map<String, String> env = guestEnvironment(pb, spec);
         pb.environment().clear();
         pb.environment().putAll(env);
         pb.environment().put("SANDBOX_WORKSPACE", workingDir.toString());
 
-        // Capture output
         pb.redirectErrorStream(false);
 
         try {
             Process process = pb.start();
 
             // Read stdout and stderr in separate threads (avoid deadlock),
-            // with per-stream caps (Stage 4.1).
             long cap = spec.getOutputLimitBytes();
             CappedBuffer stdoutBuffer = new CappedBuffer(cap);
             CappedBuffer stderrBuffer = new CappedBuffer(cap);
@@ -324,7 +319,6 @@ public class ProcessSandbox implements Sandbox {
             boolean finished = process.waitFor(spec.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
 
             if (!finished) {
-                // Stage 4.1: kill the whole process tree, not just the child.
                 killProcessTree(process);
                 stdoutReader.join(500);
                 stderrReader.join(500);
@@ -382,7 +376,6 @@ public class ProcessSandbox implements Sandbox {
         }
     }
 
-    /** Per-stream capped output capture with truncation marker (Stage 4.1). */
     static final class CappedBuffer {
         private final long capBytes;
         private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();

@@ -74,7 +74,6 @@ class DurableExecutionTest {
         assertTrue(leases.isHeld("run-x"));
         assertEquals(java.util.Optional.of("worker-a"), leases.holder("run-x"));
 
-        // Only the holder may release
         assertFalse(leases.release("run-x", "worker-b"));
         assertTrue(leases.release("run-x", "worker-a"));
         assertTrue(leases.tryAcquire("run-x", "worker-b", 60_000), "freed lease is acquirable");
@@ -108,13 +107,11 @@ class DurableExecutionTest {
         RunManager rm = new RunManager(new InMemoryCheckpointStore());
         DurableRunManager durable = new DurableRunManager(rm, new InMemoryRunStore());
 
-        // Seed a paused row as if the run had paused under v1
         durable.start(wfV1, "input", "run-mismatch", null);
         RunStore store = durable.runStore();
         RunRecord row = store.get("run-mismatch").orElseThrow();
         store.update(withStatus(row, "PAUSED", "a"));
 
-        // Resume with the CHANGED definition must be refused
         WorkflowException ex = assertThrows(WorkflowException.class,
                 () -> durable.resume("run-mismatch", wfV2));
         assertTrue(ex.getMessage().contains("DEFINITION_VERSION_MISMATCH"),
@@ -292,10 +289,8 @@ class DurableExecutionTest {
         assertEquals(0, stored.version(), "idempotent submit keeps the original");
         assertEquals(1, store.allPending().size(), "no duplicate rows");
 
-        // First decision lands
         store.decide(stored, ApprovalDecision.of("alice", "yes", stored.version()),
                 ApprovalStatus.APPROVED);
-        // A second decision on the same request is a conflict
         assertThrows(io.github.qwzhang01.agent.core.approval.ApprovalConflictException.class,
                 () -> store.decide(stored, ApprovalDecision.of("bob", "also yes", stored.version()),
                         ApprovalStatus.APPROVED),
@@ -327,7 +322,6 @@ class DurableExecutionTest {
         svc.requestApproval("run-4", "delete-node", "rm -rf staging", "payload");
         svc.approve("run-4", "delete-node", "ops-bob", "approved by mistake");
 
-        // Withdraw before the run resumes
         svc.revoke("run-4", "delete-node", "ops-bob", "wait, wrong environment!");
 
         assertThrows(PersistentApprovalService.ApprovalRevokedException.class,

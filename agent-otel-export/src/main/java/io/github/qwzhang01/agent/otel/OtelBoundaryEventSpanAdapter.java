@@ -62,9 +62,7 @@ public final class OtelBoundaryEventSpanAdapter implements Consumer<BoundaryEven
     public static final String APPROVAL_SPAN_NAME = "agent.approval";
     /** Span name for the host-facing model serving aggregate. */
     public static final String MODEL_SERVING_SPAN_NAME = "agent.model.serving";
-    /** Span name for the MCP protocol boundary (harness batch 7). */
     public static final String MCP_SPAN_NAME = "agent.mcp";
-    /** Span name for the A2A protocol boundary (harness batch 7). */
     public static final String A2A_SPAN_NAME = "agent.a2a";
 
     private final Tracer tracer;

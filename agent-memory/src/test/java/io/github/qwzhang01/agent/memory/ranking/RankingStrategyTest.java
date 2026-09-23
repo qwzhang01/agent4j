@@ -39,7 +39,6 @@ class RankingStrategyTest {
         store = new InMemoryMemoryStore();
     }
 
-    // ImportanceRankingStrategy
 
     @Test
     void importanceStrategy_noQuery_ranksByImportanceThenRecency() {
@@ -126,7 +125,6 @@ class RankingStrategyTest {
         assertEquals("low",  ranked.get(1).content());
     }
 
-    // MemoryRetriever custom strategy injection
 
     /**
      * A strategy that reverses importance order (lowest first) — used to prove

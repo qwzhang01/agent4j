@@ -160,7 +160,6 @@ class MemoryReconciliationTest {
         assertTrue(evidence.isEmpty(), "other user's old accounts are invisible");
     }
 
-    // History query sees the closed line
 
     @Test
     void historyQuerySeesClosedEntry() {

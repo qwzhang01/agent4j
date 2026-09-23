@@ -144,10 +144,8 @@ public class ContextWindowEnforcer implements ContextBuilder {
      */
     private static void dropOldestUntilFits(List<ChatMessage> messages, int budget) {
         while (messages.size() > 1 && estimateTokens(messages) > budget) {
-            // Identify how many messages form the oldest logical unit
             int unitSize = oldestUnitSize(messages);
             if (unitSize >= messages.size()) {
-                // Cannot drop the last unit without removing the current user message
                 break;
             }
             messages.subList(0, unitSize).clear();

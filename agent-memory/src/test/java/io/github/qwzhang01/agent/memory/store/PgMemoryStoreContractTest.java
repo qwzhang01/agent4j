@@ -56,7 +56,6 @@ class PgMemoryStoreContractTest extends MemoryStoreContractTest {
         return new PgMemoryStore(dataSource, "agent_memory_it_" + TABLE_SEQ.incrementAndGet(), true);
     }
 
-    // Ledger guarantees only a database can give
 
     @Test
     void partialUniqueIndex_rejectsSecondActiveSameSubject() {

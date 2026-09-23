@@ -62,7 +62,6 @@ public class HttpA2AExample {
                 null));
 
         // Inbound defense on the server: wire text is untrusted input to the
-        // agent's prompt. Stage 9's sanitizer; BLOCK means reject the task.
         DefaultResultSanitizer inbound = new DefaultResultSanitizer(
                 DefaultResultSanitizer.Strategy.BLOCK);
 

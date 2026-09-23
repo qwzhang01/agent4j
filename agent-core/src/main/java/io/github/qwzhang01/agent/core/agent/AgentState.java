@@ -36,7 +36,6 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AgentState {
 
-    // Status
 
     private final List<ChatMessage> messages = new ArrayList<>();
 
@@ -160,7 +159,6 @@ public class AgentState {
         return copy;
     }
 
-    // Snapshot (for stage 6 Checkpoint)
 
     public enum Status {
         /**

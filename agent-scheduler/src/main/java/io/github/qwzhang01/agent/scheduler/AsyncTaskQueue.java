@@ -101,7 +101,6 @@ public class AsyncTaskQueue {
         return totalConsumed.get();
     }
 
-    /** Stage 3.5: tasks refused due to backpressure (queue at capacity). */
     public int totalRejected() {
         return totalRejected.get();
     }

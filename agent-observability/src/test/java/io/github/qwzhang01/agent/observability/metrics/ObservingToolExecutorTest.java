@@ -89,7 +89,6 @@ class ObservingToolExecutorTest {
         assertTrue(m.error().contains("tool exploded"));
     }
 
-    // governance denial contract (Stage 9 prefixes)
 
     @Test
     @DisplayName("[DENIED] prefix from the governance chain -> denied=true, success=false (tool never ran)")

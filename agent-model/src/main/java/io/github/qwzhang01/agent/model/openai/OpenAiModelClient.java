@@ -147,7 +147,6 @@ public class OpenAiModelClient implements ModelClient {
                 this.baseUrl, this.flavor, defaultModel);
     }
 
-    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -220,14 +219,12 @@ public class OpenAiModelClient implements ModelClient {
         return defaultReasoning != null ? defaultReasoning : ReasoningConfig.auto();
     }
 
-    // Request Building
 
     private ObjectNode buildRequestBody(ModelRequest request, String model, boolean stream) {
         ObjectNode body = mapper.createObjectNode();
         body.put("model", model);
         body.put("stream", stream);
 
-        // Messages
         ArrayNode messages = body.putArray("messages");
         for (ChatMessage msg : request.messages()) {
             ObjectNode msgNode = messages.addObject();
@@ -257,7 +254,6 @@ public class OpenAiModelClient implements ModelClient {
             }
         }
 
-        // Tools
         if (request.tools() != null && !request.tools().isEmpty()) {
             ArrayNode tools = body.putArray("tools");
             for (String toolSchema : request.tools()) {
@@ -265,7 +261,6 @@ public class OpenAiModelClient implements ModelClient {
                     JsonNode schemaNode = mapper.readTree(toolSchema);
                     ObjectNode toolNode = tools.addObject();
                     toolNode.put("type", "function");
-                    // Move name/description/parameters into function object
                     ObjectNode func = toolNode.putObject("function");
                     func.put("name", schemaNode.path("name").asText());
                     func.put("description", schemaNode.path("description").asText());
@@ -276,7 +271,6 @@ public class OpenAiModelClient implements ModelClient {
             }
         }
 
-        // Optional params
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }
@@ -360,7 +354,6 @@ public class OpenAiModelClient implements ModelClient {
         });
     }
 
-    // Multimodal Content Building
 
     /**
      * Builds the OpenAI multimodal content array:
@@ -398,7 +391,6 @@ public class OpenAiModelClient implements ModelClient {
         return "data:" + mime + ";base64," + ip.base64Data();
     }
 
-    // Response Parsing
 
     private ModelResponse parseResponse(String responseBody) {
         try {
@@ -462,7 +454,6 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // SSE Streaming Parsing
 
     /**
      * Converts raw SSE lines into {@link StreamEvent}s.
@@ -684,7 +675,6 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // Endpoint Flavor
 
     /**
      * Which OpenAI-compatible service we are talking to.
@@ -742,7 +732,6 @@ public class OpenAiModelClient implements ModelClient {
         }
     }
 
-    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

@@ -38,7 +38,6 @@ public class ProviderCallException extends ModelException {
 
     private static final long serialVersionUID = 1L;
 
-    /** Roadmap 6.1 taxonomy, extends the Stage 1 seven. */
     public enum ProviderErrorCode {
         AUTH_ERROR,
         RATE_LIMITED,

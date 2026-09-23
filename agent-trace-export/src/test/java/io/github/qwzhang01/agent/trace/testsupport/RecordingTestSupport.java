@@ -53,7 +53,6 @@ public final class RecordingTestSupport {
         }
     }
 
-    /** Tool that always throws - for "[ERROR] ..." observation tests (Stage 2 error wrapping). */
     public static final class BombTool implements Tool {
         @Override
         public String getName() {

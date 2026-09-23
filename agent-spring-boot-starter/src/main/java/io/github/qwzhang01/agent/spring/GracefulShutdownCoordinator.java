@@ -71,7 +71,6 @@ public class GracefulShutdownCoordinator {
 
     /** Track an in-flight run for the drain phase. */
     public void track(RunHandle handle) {
-        // Runs that slipped in just before the flip are still tracked and
         // drain like any other — never silently dropped from the report.
         inFlight.add(handle);
     }

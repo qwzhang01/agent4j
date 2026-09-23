@@ -82,7 +82,6 @@ public final class WebhookController {
 
         String signature = headers == null ? null : headers.get("X-Signature");
         if (rawBody == null) {
-            // HMAC over null is impossible - reject as a delivery-level problem
             // (this method never throws, per the contract above).
             return new WebhookResult(WebhookResult.Status.BAD_PAYLOAD,
                     "body must not be null");
@@ -115,7 +114,6 @@ public final class WebhookController {
 
         Agent agent = agents.get(route.agentName()).orElse(null);
         if (agent == null) {
-            // The event never started - release the idempotency slot so the
             // sender's retry (after the agent is back) can deliver it.
             seenEventIds.remove(eventId);
             return new WebhookResult(WebhookResult.Status.AGENT_NOT_FOUND,
@@ -146,7 +144,6 @@ public final class WebhookController {
                 + route.agentName() + "' asynchronously");
     }
 
-    // Internals
 
     private static String hmacSha256(String data, String secret) {
         try {
@@ -165,7 +162,6 @@ public final class WebhookController {
         return s.length() > 80 ? s.substring(0, 80) + "..." : s;
     }
 
-    // Builder
 
     /**
      * Assembles a controller: routes in, agent registry and executor in.

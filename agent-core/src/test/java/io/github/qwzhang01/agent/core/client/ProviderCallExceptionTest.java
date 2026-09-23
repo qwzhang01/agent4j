@@ -33,7 +33,6 @@ class ProviderCallExceptionTest {
         assertEquals(Duration.ofSeconds(3), ex.getRetryAfter());
         assertEquals(429, ex.getStatusCode());
         assertEquals("openai", ex.getProviderName());
-        // Legacy view (Stage 1 catch sites) stays coherent:
         assertEquals(ModelException.ErrorCode.RATE_LIMITED, ex.getCode());
     }
 

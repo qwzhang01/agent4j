@@ -188,7 +188,6 @@ class WebhookControllerTest {
                 "a rejected dispatch must not throw and must answer DISPATCH_FAILED");
         assertEquals(1, latch.getCount(), "the run never started");
 
-        // The slot was released - the retry on the SAME controller is
         // answered DISPATCH_FAILED again (executor still down), NOT DUPLICATE.
         assertEquals(WebhookResult.Status.DISPATCH_FAILED,
                 controller.handle("alerting", headers, body).status(),

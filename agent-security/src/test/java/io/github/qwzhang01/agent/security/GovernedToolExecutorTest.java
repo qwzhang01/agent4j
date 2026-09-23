@@ -94,7 +94,6 @@ class GovernedToolExecutorTest {
                 .setPermission("delete_file", ToolPermission.REQUIRES_APPROVAL);
         PermissionChecker checker = new PermissionChecker(policy);
 
-        // No approval service configured
         GovernedToolExecutor executor = GovernedToolExecutor.builder(defaultExecutor)
                 .permissionChecker(checker)
                 .auditLogger(audit)
@@ -188,7 +187,6 @@ class GovernedToolExecutorTest {
     @Test
     void noGovernance_behavesLikeDefaultExecutor() {
         registry.register(echoTool("get_time"));
-        // GovernedToolExecutor with all governance components null
         GovernedToolExecutor executor = GovernedToolExecutor.builder(defaultExecutor).build();
 
         String result = executor.execute(call("get_time"));

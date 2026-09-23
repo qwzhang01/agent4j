@@ -38,7 +38,6 @@ public class InMemoryToolRegistry implements ToolRegistry {
     public List<String> getToolSchemas() {
         List<String> schemas = new ArrayList<>();
         for (Tool tool : tools.values()) {
-            // Build a simple JSON schema string for the model
             String schema = String.format("""
                             {
                               "name": "%s",

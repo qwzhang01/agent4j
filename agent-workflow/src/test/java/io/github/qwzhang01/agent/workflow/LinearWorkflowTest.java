@@ -29,7 +29,6 @@ class LinearWorkflowTest {
         assertTrue(result.isSucceeded());
         assertEquals("C(B(A(in)))", result.output());
 
-        // Blackboard holds each node output under its id
         assertEquals("A(in)", result.state().get("a"));
         assertEquals("B(A(in))", result.state().get("b"));
         assertEquals("C(B(A(in)))", result.state().get("c"));
@@ -81,14 +80,12 @@ class LinearWorkflowTest {
                 .node(ActionNode.of("n", ctx -> "x"))
                 .node(ActionNode.of("n", ctx -> "x")));
 
-        // Edge to unknown node
         var b2 = Workflow.builder("unknown")
                 .node(ActionNode.of("n", ctx -> "x"))
                 .edge(Workflow.START, "n")
                 .edge("n", "ghost");
         assertThrows(WorkflowException.class, b2::build);
 
-        // No START edge
         var b3 = Workflow.builder("nostart")
                 .node(ActionNode.of("n", ctx -> "x"))
                 .edge("n", Workflow.END);

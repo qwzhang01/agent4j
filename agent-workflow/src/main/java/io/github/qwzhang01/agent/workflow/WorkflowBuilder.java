@@ -41,7 +41,6 @@ public final class WorkflowBuilder {
         this.name = name;
     }
 
-    // Definition identity (Stage 3.1)
 
     /**
      * Stage 3.1 (harness roadmap): version this definition (free-form,

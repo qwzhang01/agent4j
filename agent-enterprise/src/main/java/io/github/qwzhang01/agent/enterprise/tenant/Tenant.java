@@ -28,7 +28,6 @@ public record Tenant(
         long monthlyTokenBudget
 ) {
 
-    /** Unlimited budget sentinel (same convention as Stage 12 ServiceAccount). */
     public static final long UNLIMITED_BUDGET = -1L;
 
     /**
@@ -46,7 +45,6 @@ public record Tenant(
         Objects.requireNonNull(status, "status must not be null");
     }
 
-    // Factory Methods
 
     /**
      * An active tenant with unlimited budget.
@@ -55,7 +53,6 @@ public record Tenant(
         return new Tenant(tenantId, displayName, TenantStatus.ACTIVE, UNLIMITED_BUDGET);
     }
 
-    // Accessors
 
     /**
      * Whether the tenant is currently active (registration and login allowed).

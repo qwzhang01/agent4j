@@ -210,7 +210,6 @@ public final class EnterpriseAssistantExample {
         System.out.println("\n=== 剧终：每个请求有主人，每个租户有边界，每次回答有出处，每分钱有归属 ===");
     }
 
-    // Demo Tools
 
     private static Tool orderQueryTool() {
         return new Tool() {

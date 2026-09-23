@@ -81,9 +81,7 @@ class PluginLifecycleTest {
     @DisplayName("Plugin onLoad throws -> state = FAILED, does not crash registry")
     void testLoadFailureIsolated() {
         registry.load(new FailingPlugin("failing-1"));
-        // The failing plugin should be in FAILED state
         assertEquals(PluginState.FAILED, registry.getState("failing-1").orElse(null));
-        // No tools should be registered
         assertEquals(0, toolRegistry.listTools().size());
     }
 
@@ -101,7 +99,6 @@ class PluginLifecycleTest {
     @Test
     @DisplayName("Plugin onUnload throws -> plugin still marked UNLOADED")
     void testUnloadFailureBestEffort() {
-        // Use a plugin that loads OK but throws on unload
         registry.load(new FailOnUnloadPlugin());
         assertEquals(PluginState.LOADED, registry.getState("fail-unload").orElse(null));
 
@@ -186,7 +183,6 @@ class PluginLifecycleTest {
 
         @Override
         public void onUnload(PluginContext context) {
-            // No-op
         }
     }
 

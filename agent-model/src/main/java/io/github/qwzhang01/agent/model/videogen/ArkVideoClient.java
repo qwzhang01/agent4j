@@ -58,7 +58,6 @@ public class ArkVideoClient implements VideoGenerationClient {
                 .build();
     }
 
-    // VideoGenerationClient
 
     @Override
     public VideoTask submit(VideoGenRequest request) {
@@ -108,7 +107,6 @@ public class ArkVideoClient implements VideoGenerationClient {
         }
     }
 
-    // Request Building
 
     private ObjectNode buildRequestBody(VideoGenRequest request, String model) {
         ObjectNode body = mapper.createObjectNode();
@@ -122,7 +120,6 @@ public class ArkVideoClient implements VideoGenerationClient {
             body.put("ratio", request.ratio());
         }
 
-        // First-frame / reference images for image-to-video
         if (request.referenceImageUrls() != null && !request.referenceImageUrls().isEmpty()) {
             ArrayNode images = body.putArray("image");
             request.referenceImageUrls().forEach(images::add);
@@ -131,7 +128,6 @@ public class ArkVideoClient implements VideoGenerationClient {
         return body;
     }
 
-    // Response Parsing
 
     /**
      * Parses an Ark task payload (submit response or status response).
@@ -181,7 +177,6 @@ public class ArkVideoClient implements VideoGenerationClient {
         };
     }
 
-    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

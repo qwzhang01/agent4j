@@ -78,7 +78,6 @@ class TenantOverlayBinderTest {
                 .withPromptManager(prompts);
     }
 
-    // Model overlay
 
     @Test
     void tenantModelOverlayReplacesPrimaryProvider() {
@@ -94,7 +93,6 @@ class TenantOverlayBinderTest {
         assertEquals("p", plain.run("hi"));
     }
 
-    // Tool restriction
 
     @Test
     void tenantDisabledToolsShrinkTheSubset() {
@@ -112,7 +110,6 @@ class TenantOverlayBinderTest {
         assertEquals(2, full.getConfig().getToolRegistry().listTools().size());
     }
 
-    // Prompt channel overlay
 
     @Test
     void tenantPromptChannelOverlayRoutesToCanary() {
@@ -260,7 +257,6 @@ class TenantOverlayBinderTest {
                 io.github.qwzhang01.agent.channel.ChannelMessage.mention("ops-room", "alice", "检查一下"));
         assertEquals("ok", reply);
         // Channel history records the inbound message (agent replies are the
-        // return value, not channel history - Stage 12 contract).
         assertEquals(1, binding.session().history().size());
 
         // Both ambient instructions were built with correct triggers.

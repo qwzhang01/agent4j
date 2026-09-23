@@ -19,7 +19,6 @@ package io.github.qwzhang01.agent.workflow.runtime;
 public enum RunState {
     RUNNING,
     PAUSED,
-    /** Stage 3.4: run is parked on a durable approval decision. */
     WAITING_APPROVAL,
     SUCCEEDED,
     FAILED,

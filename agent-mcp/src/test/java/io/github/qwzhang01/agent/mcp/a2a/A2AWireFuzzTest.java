@@ -119,7 +119,6 @@ class A2AWireFuzzTest {
                 A2ATask task = A2AJson.taskFrom(node);
                 assertNotNull(task);
             } catch (com.fasterxml.jackson.core.JsonProcessingException expected) {
-                // Jackson-level rejection is the controlled path for
                 // non-JSON bytes.
             }
         }

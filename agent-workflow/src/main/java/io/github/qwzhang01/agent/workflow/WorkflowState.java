@@ -48,7 +48,6 @@ public class WorkflowState {
         return state;
     }
 
-    // Input Zone
 
     public Object getInput() {
         return input;
@@ -68,7 +67,6 @@ public class WorkflowState {
         return Map.copyOf(variables);
     }
 
-    // Trace Zone
 
     /**
      * Append one trace entry. The record's {@code visitOrdinal} is assigned

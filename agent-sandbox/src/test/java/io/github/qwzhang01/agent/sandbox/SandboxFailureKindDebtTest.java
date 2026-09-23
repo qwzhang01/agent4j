@@ -61,7 +61,6 @@ class SandboxFailureKindDebtTest {
                 "compat path: same behavior as before the typed factories existed");
     }
 
-    // Real producers pin the kind at the failure site
 
     @Test
     @DisplayName("ClassLoaderSandbox's blocked path is typed even if the error text changes")

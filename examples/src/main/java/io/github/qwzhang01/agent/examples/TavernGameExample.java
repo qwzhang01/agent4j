@@ -64,7 +64,6 @@ public class TavernGameExample {
         InMemoryAuditLogger gmAudit = new InMemoryAuditLogger();
 
         MockModelClient model = MockModelClient.scripted()
-                // T1 marcus opens
                 .respondText("Welcome to the Golden Oak! First drink's on the house, traveler.")
                 // T2 marcus: relationship +3, then reply
                 .respondToolCalls(ToolCall.of("c1", "adjust_relationship",

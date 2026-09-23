@@ -110,7 +110,6 @@ class LayeredInjectionTest {
         assertEquals("Which keyboard should I buy next?", built.get(3).content());
     }
 
-    // Token budget
 
     @Test
     @DisplayName("token budget trims archival, never core")
@@ -144,7 +143,6 @@ class LayeredInjectionTest {
                 "the episode exceeds the remaining budget and is dropped");
     }
 
-    // Soft failure
 
     @Test
     @DisplayName("recall failure degrades to no injection, never breaks the turn")
@@ -168,7 +166,6 @@ class LayeredInjectionTest {
         assertEquals("hello", built.get(0).content());
     }
 
-    // Legacy path bit-for-bit
 
     @Test
     @DisplayName("six-arg constructor keeps the legacy single-block behaviour")

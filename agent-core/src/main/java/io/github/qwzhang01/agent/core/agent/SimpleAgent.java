@@ -57,7 +57,6 @@ public class SimpleAgent implements Agent {
         return run(userMessage, state, RunContext.create());
     }
 
-    /** Stage 1.2: run with a RunContext (cancellation/deadline/identity ride along). */
     @Override
     public String run(ChatMessage userMessage, AgentState state, RunContext ctx) {
         prepare(userMessage, state);
@@ -70,7 +69,6 @@ public class SimpleAgent implements Agent {
         stream(userMessage, state, listener, RunContext.create());
     }
 
-    /** Stage 1.2: stream with a RunContext. */
     @Override
     public void stream(ChatMessage userMessage, AgentState state,
                        Consumer<AgentEvent> listener, RunContext ctx) {
@@ -122,7 +120,6 @@ public class SimpleAgent implements Agent {
     }
 
     private static String extractFinalAnswer(AgentState state) {
-        // Waiting is not a final answer even if the assistant turn carried
         // text alongside tool_calls (real providers often do).
         if (state.getStatus() == AgentState.Status.WAITING_APPROVAL) {
             return "[Agent waiting for approval]";

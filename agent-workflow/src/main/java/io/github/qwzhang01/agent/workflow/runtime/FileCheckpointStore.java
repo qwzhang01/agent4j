@@ -181,7 +181,6 @@ public final class FileCheckpointStore implements CheckpointStore {
         public Object pendingInput;
         public long lastEventSeq;
 
-        /** Widened for {@code JdbcCheckpointStore} (Stage 8.1): one codec, two transports (file / JDBC). */
         public static Snapshot from(Checkpoint cp) {
             Snapshot s = new Snapshot();
             s.schemaVersion = cp.schemaVersion();
@@ -202,7 +201,6 @@ public final class FileCheckpointStore implements CheckpointStore {
             return s;
         }
 
-        /** Widened for {@code JdbcCheckpointStore} (Stage 8.1): decode shared with the JDBC transport. */
         public Checkpoint toCheckpoint() {
             if (schemaVersion > Checkpoint.SCHEMA_VERSION) {
                 throw new IllegalStateException("Checkpoint schema version " + schemaVersion

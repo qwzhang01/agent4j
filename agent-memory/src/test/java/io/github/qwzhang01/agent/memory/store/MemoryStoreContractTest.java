@@ -78,7 +78,6 @@ abstract class MemoryStoreContractTest {
         assertEquals("team lunch on Friday", fromA.get(0).content());
     }
 
-    // Default ACTIVE-only view / status opt-in
 
     @Test
     void defaultQuery_returnsActiveOnly() {

@@ -151,7 +151,6 @@ class SandboxEscapeTest {
     void processSandbox_cannotReachParentJvmHeap() {
         // The subprocess cannot see the parent's Java heap: any attempt to read
         // parent-JVM specific system properties gives child-process values, not parent values.
-        // We verify isolation by confirming that the process PID inside the sandbox
         // differs from this test process's PID (different OS process = different boundary).
         String code = """
                 public class Generated {
@@ -164,7 +163,6 @@ class SandboxEscapeTest {
         assertTrue(result.success(), "PID probe must succeed");
         assertTrue(result.stdout().contains("PID="), "must print a PID");
 
-        // Extract the PID from output and verify it is a different process
         String pidStr = result.stdout().trim().replace("PID=", "");
         try {
             long sandboxPid = Long.parseLong(pidStr.trim());

@@ -35,7 +35,6 @@ public final class EnterpriseAuditTrail {
 
     private final List<EnterpriseAuditEvent> ledger = new CopyOnWriteArrayList<>();
 
-    // Request-Scoped View
 
     /**
      * Create the request-scoped {@link AuditLogger} bound to one context.
@@ -54,7 +53,6 @@ public final class EnterpriseAuditTrail {
         return new RequestAuditLogger(ctx, agentName);
     }
 
-    // Ledger Queries
 
     /**
      * All attributed events, oldest first.

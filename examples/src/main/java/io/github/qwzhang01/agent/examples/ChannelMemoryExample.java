@@ -55,7 +55,6 @@ public class ChannelMemoryExample {
             System.out.println("Approved: " + p.content());
         }
 
-        // Now User B can see it
         List<MemoryEntry> visibleAfter = retriever.recall(List.of("channel:c1"));
         System.out.println("User B sees (after approval): " + visibleAfter.size() + " entries");
         System.out.println("  -> " + visibleAfter.get(0).content() + "\n");
@@ -71,12 +70,10 @@ public class ChannelMemoryExample {
         System.out.println("Old entry status: " + store.findById(active.id()).get().status());
         System.out.println("New entry status: " + corrected.status());
 
-        // User B now sees the corrected version
         List<MemoryEntry> finalVisible = retriever.recall(List.of("channel:c1"));
         System.out.println("User B sees (after correction): " + finalVisible.size() + " entries");
         System.out.println("  -> " + finalVisible.get(0).content());
 
-        // Audit trail
         System.out.println("\nAudit trail (all entries in channel:c1, any status):");
         for (MemoryEntry e : admin.listByScope("channel:c1")) {
             System.out.println("  [" + e.status() + "] " + e.content()

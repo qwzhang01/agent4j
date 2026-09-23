@@ -41,7 +41,6 @@ public class GraphRuntime {
     public static final int DEFAULT_MAX_STEPS = 25;
     private int maxSteps = DEFAULT_MAX_STEPS;
 
-    /** Stage 7: scheduler passed to nodes via NodeContext (null in Stage 5-6). */
     private Object scheduler;
 
     /**
@@ -60,14 +59,12 @@ public class GraphRuntime {
         return s.length() > 120 ? s.substring(0, 117) + "..." : s;
     }
 
-    // Configuration
 
     public GraphRuntime maxSteps(int maxSteps) {
         this.maxSteps = maxSteps;
         return this;
     }
 
-    /** Stage 7: set the scheduler, available to nodes via ctx.scheduler(). */
     public GraphRuntime scheduler(Object scheduler) {
         this.scheduler = scheduler;
         return this;
@@ -79,7 +76,6 @@ public class GraphRuntime {
         return this;
     }
 
-    // Stage 5 Compat (no pause/cancel)
 
     /**
      * Run with a fresh WorkflowState. Delegates to {@link #execute(Run)}
@@ -97,7 +93,6 @@ public class GraphRuntime {
         return run(workflow, WorkflowState.of(input));
     }
 
-    // Stage 6: Execute with Run (pause/cancel/resume)
 
     /**
      * Execute (or resume) a Run. This is the main entry point for
@@ -108,7 +103,6 @@ public class GraphRuntime {
             return doExecute(run);
         } catch (Exception e) {
             log.error("[{}] Runtime error: {}", run.getRunId(), e.getMessage(), e);
-            // Stage 3 hardening: message first, status second - FAILED is
             // the publication point for cross-thread observers.
             run.setErrorMessage(e.getMessage());
             run.setStatus(RunState.FAILED);
@@ -116,7 +110,6 @@ public class GraphRuntime {
         }
     }
 
-    // Main Loop
 
     private ExecutionResult doExecute(Run run) throws Exception {
         Workflow workflow = run.getWorkflow();
@@ -124,7 +117,6 @@ public class GraphRuntime {
         long executeStarted = System.currentTimeMillis();
         TimeoutPolicy timeout = run.getTimeoutPolicy();
 
-        // Resume vs fresh start
         boolean resuming = run.getCursor() != null;
         String cursor = resuming
                 ? run.getCursor()
@@ -135,12 +127,10 @@ public class GraphRuntime {
         log.info("[{}] {} workflow '{}'", run.getRunId(),
                 resuming ? "Resuming" : "Starting", workflow.name());
 
-        // Stage 1.4 (harness roadmap): unified deadline from the run context
         // (structured TIMEOUT, in addition to TimeoutPolicy's string path).
         RunContext runCtx = run.getRunContext();
 
         while (!Workflow.END.equals(cursor)) {
-            // [Stage 6] Cancel check (cooperative)
             if (run.isCancelled()) {
                 state.record(StepRecord.cancelled(cursor));
                 run.setStatus(RunState.CANCELLED);
@@ -148,10 +138,8 @@ public class GraphRuntime {
                 return ExecutionResult.cancelled(state);
             }
 
-            // Stage 1.4: unified deadline (structured TIMEOUT classification;
             // the message carries the marker "[TIMEOUT]" so consumers can
             // classify without parsing free text - full FailureKind mapping
-            // lands with Stage 2.2's ExecutionResult extension).
             if (runCtx != null && runCtx.isDeadlineExceeded()) {
                 String msg = "[TIMEOUT] Run deadline exceeded at node '" + cursor + "'";
                 run.setErrorMessage(msg);
@@ -166,7 +154,6 @@ public class GraphRuntime {
                 return timedOut;
             }
 
-            // Max steps guard (preserved from Stage 5)
             if (++steps > maxSteps) {
                 String msg = "Max steps (" + maxSteps + ") exceeded at node '" + cursor
                         + "' - possible cycle in the graph";
@@ -233,7 +220,6 @@ public class GraphRuntime {
                 return ExecutionResult.failed(te.getMessage(), state);
             }
 
-            // Failure handling (preserved from Stage 5)
             if (outcome.failure() != null) {
                 state.record(StepRecord.failed(node.id(), outcome.durationMs(),
                         outcome.attempts(), outcome.failure().getMessage(),
@@ -322,7 +308,6 @@ public class GraphRuntime {
                 // Propagate immediately - pause is not a failure, don't retry
                 throw pe;
             } catch (NodeTimeoutException te) {
-                // Timeout is not retryable and does not take onError routes
                 throw te;
             } catch (Exception e) {
                 failure = e;
@@ -388,7 +373,6 @@ public class GraphRuntime {
         }
     }
 
-    // Routing (preserved from Stage 5)
 
     private String route(Workflow workflow, String from, String explicitNext, WorkflowState state) {
         // 1. Explicit jump takes priority

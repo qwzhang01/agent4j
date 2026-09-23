@@ -208,7 +208,6 @@ public final class ChatEngine {
             retriesDone++;
             log.info("ChatEngine retry {}/{} in room '{}'",
                     retriesDone, retryPolicy.maxAttempts(), room.roomId());
-            // Tell listeners to discard whatever ContentDelta the just-finished attempt
             // streamed: the next ContentDelta belongs to a brand-new attempt.
             emitHost(listener, new AgentEvent.RetryStarted(
                     finalReply, retriesDone + 1, retryPolicy.maxAttempts()));

@@ -56,7 +56,6 @@ public final class HttpApiTool implements Tool {
                 .build();
     }
 
-    // Tool surface
 
     @Override
     public String getName() {
@@ -95,7 +94,6 @@ public final class HttpApiTool implements Tool {
         return schema.toString();
     }
 
-    // Execution
 
     @Override
     public String execute(JsonNode arguments) throws ToolException {
@@ -172,7 +170,6 @@ public final class HttpApiTool implements Tool {
         return extract(response.body());
     }
 
-    // Internals
 
     private void validateRequiredParams(JsonNode arguments) {
         for (var entry : decl.params().entrySet()) {

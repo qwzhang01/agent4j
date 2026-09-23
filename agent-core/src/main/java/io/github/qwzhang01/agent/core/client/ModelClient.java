@@ -43,7 +43,6 @@ public interface ModelClient {
      */
     Stream<StreamEvent> stream(ModelRequest request);
 
-    // Stage 1.2: RunContext-aware overloads
 
     /**
      * Synchronous chat completion with the run context (Stage 1.2).

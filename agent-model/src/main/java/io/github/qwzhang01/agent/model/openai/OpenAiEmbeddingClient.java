@@ -68,7 +68,6 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
         log.debug("OpenAiEmbeddingClient initialized: baseUrl={}, model={}", this.baseUrl, defaultModel);
     }
 
-    // EmbeddingClient
 
     @Override
     public float[] embed(String text) {
@@ -89,7 +88,6 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
         return List.of(results);
     }
 
-    // Internals
 
     private static void validateText(String text) {
         if (text == null || text.isBlank()) {

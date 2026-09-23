@@ -37,7 +37,6 @@ class SimpleAgentStreamTest {
 
         agent.stream("Hi", state, events::add);
 
-        // Stage 9 contract: every model call is wrapped in a
         // ModelCallStarted/ModelCallFinished pair around the deltas.
         assertEquals(4, events.size());
         AgentEvent.ModelCallStarted started = assertInstanceOf(AgentEvent.ModelCallStarted.class,
@@ -71,7 +70,6 @@ class SimpleAgentStreamTest {
 
         agent.stream("Echo 'test echo'", events::add);
 
-        // Stage 9: 8 events per the stream contract — the invoker emits
         // ContentDelta DURING the model call (before ModelCallFinished):
         // Started, ToolCallCount-in-Finished... but deltas come first.
         // Actual order: [Started, delta, Finished(tool=1)] per call with
@@ -156,7 +154,6 @@ class SimpleAgentStreamTest {
 
         agent.stream("Hi", state, events::add);
 
-        // Stage 9: the stream invoker emits the Error DURING the model
         // call, so order is Started, Error, Finished(failed=true) — the
         // Finished pair still closes the boundary even on failure.
         assertEquals(3, events.size());

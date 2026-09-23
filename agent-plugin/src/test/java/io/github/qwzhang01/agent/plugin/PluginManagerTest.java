@@ -85,20 +85,16 @@ class PluginManagerTest {
     @Test
     @DisplayName("Full cycle: discover -> load -> use tool -> unload -> tool gone")
     void testFullCycle() {
-        // Discover
         manager.discover();
         assertFalse(manager.getDiscoveredPlugins().isEmpty(),
                 "TestSpiPlugin must be discoverable from agent-plugin test resources");
 
         manager.loadAll();
 
-        // Tools should be in registry
         assertFalse(toolRegistry.listTools().isEmpty());
 
-        // Unload all
         manager.unloadAll();
 
-        // Tools should be gone
         assertEquals(0, toolRegistry.listTools().size());
     }
 }

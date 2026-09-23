@@ -119,7 +119,6 @@ public final class WorkflowDagCodec {
         return builder.build();
     }
 
-    // Internals
 
     private String conditionName(Edge edge, ConditionRegistry conditions, Workflow workflow) {
         if (edge.condition() == null) {

@@ -145,7 +145,6 @@ public final class ProductBootstrapper {
         return registry;
     }
 
-    // Helpers
 
     private List<Path> listDefinitionFiles(Path agentsDir) {
         try (Stream<Path> stream = Files.list(agentsDir)) {
@@ -172,7 +171,6 @@ public final class ProductBootstrapper {
                 .toList();
     }
 
-    // Builder
 
     /**
      * Fluent builder for the platform context: implementations in, bootstrapper out.

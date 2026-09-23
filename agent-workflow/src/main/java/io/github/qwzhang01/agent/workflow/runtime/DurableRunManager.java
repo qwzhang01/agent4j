@@ -160,13 +160,11 @@ public class DurableRunManager {
                     + " - refusing concurrent resume");
         }
 
-        // Stage 8.1 cross-instance guard: the row must still be a recovery
         // candidate. Another instance may have CAS-cancelled it (or the run
         // finished elsewhere) while a stale PAUSED checkpoint still exists.
         // Lease + row eligibility must BOTH hold before any node executes.
         control.assertResumable(runId);
 
-        // Stage 8.1 fix: heartbeat. A resume that legitimately runs longer
         // than the TTL previously looked like a crashed holder — another
         // worker took the lease mid-flight and BOTH executed (duplicate
         // execution bug). A daemon heartbeat renews while we hold; if the
@@ -221,7 +219,6 @@ public class DurableRunManager {
                 }
                 return;
             }
-            // Stage 8.1 cross-instance cancel: watch the run row. Another
             // instance's operator CAS-cancels the row; we observe it here and
             // stop the in-flight run within one poll period (the lease alone
             // cannot carry that signal — it only knows ownership, not intent).

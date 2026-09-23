@@ -46,7 +46,6 @@ class EmbeddingMemoryStoreTest {
         }
     }
 
-    // Vectorize on write
 
     @Test
     void write_embedsCanonicalSubjectPlusContent() {
@@ -131,7 +130,6 @@ class EmbeddingMemoryStoreTest {
                 store.findById(stored.id()).orElseThrow().embedding(), 1e-6f);
     }
 
-    // Delegation
 
     @Test
     void query_scopeIsolation_delegateUntouched() {

@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SharedAgentSessionTest {
 
-    // Test doubles
 
     /**
      * Recording decorator: delegates to a scripted MockModelClient and
@@ -70,7 +69,6 @@ class SharedAgentSessionTest {
         }
     }
 
-    // Fixtures
 
     private static final String CHANNEL = "team-eng";
     private static final String AGENT_ID = "eng-bot";
@@ -96,7 +94,6 @@ class SharedAgentSessionTest {
                 model, null, 10, contextBuilder);
     }
 
-    // Multi-user shared context
 
     @Test
     @DisplayName("A and B alternate speak: one shared state, the model sees both speakers")
@@ -127,7 +124,6 @@ class SharedAgentSessionTest {
                 "B's turn must be able to reference A's earlier turn - shared context proof");
     }
 
-    // Mention routing
 
     @Test
     @DisplayName("plain (non-mention) message: history only, agent not invoked, null returned")
@@ -160,7 +156,6 @@ class SharedAgentSessionTest {
                 "mention prefix stripped, speaker attribution added");
     }
 
-    // Fail-closed identity gate
 
     @Test
     @DisplayName("non-member is denied even before history - and never reaches the agent")
@@ -204,7 +199,6 @@ class SharedAgentSessionTest {
                 () -> session.speak(ChannelMessage.mention("other-channel", "alice", "@eng-bot hi")));
     }
 
-    // History
 
     @Test
     @DisplayName("history records every accepted message in order, mention or not")

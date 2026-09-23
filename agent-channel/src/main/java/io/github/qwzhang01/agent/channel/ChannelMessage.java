@@ -39,7 +39,6 @@ public record ChannelMessage(
         }
     }
 
-    // Factory Methods
 
     /**
      * A plain (non-mention) message: human-to-human talk, history only.

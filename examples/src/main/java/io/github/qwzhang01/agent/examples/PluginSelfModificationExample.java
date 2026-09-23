@@ -45,7 +45,6 @@ public class PluginSelfModificationExample {
         PluginManager pluginManager = new PluginManager(registry);
 
         // 2. Discover plugins (SearchToolPlugin + CalculatorToolPlugin via SPI)
-        //    But DO NOT load them yet - let the model decide
         pluginManager.discover();
         System.out.println("Discovered " + pluginManager.getDiscoveredPlugins().size() + " plugins (not loaded yet)\n");
 

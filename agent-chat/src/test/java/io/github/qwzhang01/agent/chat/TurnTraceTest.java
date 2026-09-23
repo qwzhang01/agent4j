@@ -34,7 +34,6 @@ class TurnTraceTest {
     private static final ChatPersona LUNA = ChatPersona.of("luna", "You are Luna.");
     private static final Instant T0 = Instant.parse("2026-08-01T00:00:00Z");
 
-    // Ordering
 
     @Test
     void turnTrace_isEmittedBeforeDone() {

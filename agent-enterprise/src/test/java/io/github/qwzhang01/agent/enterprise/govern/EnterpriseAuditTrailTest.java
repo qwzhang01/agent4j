@@ -68,7 +68,6 @@ class EnterpriseAuditTrailTest {
         assertEquals(0, trail.byUser("u-bob").size());
     }
 
-    // Cross-Request / Cross-Tenant Cuts
 
     @Test
     @DisplayName("byTenant separates tenants; byUser separates users within a tenant")

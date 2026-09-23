@@ -138,7 +138,6 @@ public final class CostDashboard {
         Files.writeString(file, content, StandardCharsets.UTF_8);
     }
 
-    // One-line sink wiring
 
     /**
      * A {@link MetricsSink} that prices every model call and books the

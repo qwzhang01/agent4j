@@ -241,7 +241,6 @@ class InMemoryMemoryStoreTest {
                 .build());
         assertEquals(2, hist.size());
 
-        // Explicit audit view must also be possible
         List<MemoryEntry> supersededOnly = store.query(MemoryQuery.builder()
                 .scopes(List.of("user:u1"))
                 .statuses(MemoryStatus.SUPERSEDED)

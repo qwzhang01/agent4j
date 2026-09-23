@@ -180,7 +180,6 @@ class MemorySourceTest {
         assertTrue(joined(model.requests.get(0).messages()).contains("oat latte"));
     }
 
-    // SUMMARY pool isolation
 
     /**
      * A high-importance SUMMARY must occupy at most 1 slot and must NOT displace
@@ -193,7 +192,6 @@ class MemorySourceTest {
         for (int i = 1; i <= 5; i++) {
             writeType(store, "user:u1", "fact-" + i, "fact content " + i, 0.6, MemoryType.FACT);
         }
-        // SUMMARY has very high importance - should NOT push any FACT out of top-5
         writeType(store, "user:u1", "sum", "session summary", 0.99, MemoryType.SUMMARY);
 
         MemorySource source = new MemorySource(

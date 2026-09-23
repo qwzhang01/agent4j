@@ -43,7 +43,6 @@ public record EnterpriseAuditEvent(
         requireText(agentName, "agentName");
     }
 
-    // Convenience Delegation
 
     /**
      * The tool that was called (delegates to the wrapped fact).

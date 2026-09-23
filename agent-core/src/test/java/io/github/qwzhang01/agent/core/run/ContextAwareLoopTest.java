@@ -158,7 +158,6 @@ class ContextAwareLoopTest {
     @Test
     void legacyPathIsUnchanged() {
         // No-ctx run must hit the legacy chat() and legacy tool.execute()
-        // overloads exactly as before Stage 1.
         RecordingClient client = new RecordingClient();
         client.turnOverride = () -> client.answer; // plain answer, no tool calls
         InMemoryToolRegistry registry = new InMemoryToolRegistry();

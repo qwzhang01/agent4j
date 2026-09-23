@@ -127,7 +127,6 @@ class ApprovalAndRateLimitTest {
         SimpleRateLimiter limiter = new SimpleRateLimiter(3); // 3 calls per minute
         GovernedToolExecutor executor = buildExecutor(policy, null, limiter);
 
-        // First 3 calls succeed
         assertTrue(executor.execute(call("get_time")).startsWith("ok:"));
         assertTrue(executor.execute(call("get_time")).startsWith("ok:"));
         assertTrue(executor.execute(call("get_time")).startsWith("ok:"));

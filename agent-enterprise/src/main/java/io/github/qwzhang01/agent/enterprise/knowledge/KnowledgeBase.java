@@ -33,7 +33,6 @@ public final class KnowledgeBase {
         this.store = Objects.requireNonNull(store, "store must not be null");
     }
 
-    // Ingest
 
     /**
      * Bulk-import knowledge entries for a tenant (admin operation).
@@ -57,7 +56,6 @@ public final class KnowledgeBase {
         }
     }
 
-    // Search
 
     /**
      * Keyword-search the tenant's knowledge (v1 retrieval: case-insensitive
@@ -84,7 +82,6 @@ public final class KnowledgeBase {
                 .toList();
     }
 
-    // Introspection
 
     /**
      * Number of knowledge entries currently stored for the tenant (admin

@@ -73,7 +73,6 @@ public class RunManager {
         return runtime;
     }
 
-    /** Stage 7: allow swapping the runtime (e.g. to inject a scheduler). */
     public void setRuntime(GraphRuntime runtime) {
         this.runtime = runtime;
     }
@@ -270,7 +269,6 @@ public class RunManager {
         return store;
     }
 
-    // Internal
 
     /**
      * Reject a second concurrent execute for the same runId. Does not wait:
@@ -291,7 +289,6 @@ public class RunManager {
         ExecutionResult result = runtime.execute(run);
 
         if (result.isPaused()) {
-            // Save checkpoint for potential crash recovery
             String cpId = store.save(run.toCheckpoint());
             log.info("[{}] Paused at node '{}', checkpoint saved: {}", 
                     run.getRunId(), run.getCursor(), cpId);

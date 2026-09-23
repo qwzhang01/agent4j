@@ -141,7 +141,6 @@ public final class AgentDefinitionBinder {
         }
     }
 
-    // Section assembly
 
     private TenantAgentConfig tenantOverlay(AgentDefinition definition) {
         String tenant = definition.metadata().tenant();
@@ -196,7 +195,6 @@ public final class AgentDefinitionBinder {
         return version.content();
     }
 
-    // Ambient instructions (M13.5, Stage 12 wiring)
 
     /**
      * Build Stage 12 {@link AmbientInstruction}s from declarative ambient
@@ -240,7 +238,6 @@ public final class AgentDefinitionBinder {
         return io.github.qwzhang01.agent.product.trigger.PayloadRenderer.render(template, node);
     }
 
-    // Section assembly
 
     private ModelClient assembleModelClient(String provider, String fallback, Double temperature) {
         ModelClient primary = context.model(provider)

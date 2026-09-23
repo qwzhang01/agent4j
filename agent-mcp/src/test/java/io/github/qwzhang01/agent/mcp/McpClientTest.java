@@ -25,7 +25,6 @@ class McpClientTest {
     void setUp() throws IOException {
         transport = new MockMcpTransport();
 
-        // Register MCP server responses
         // initialize response
         transport.registerResponse("initialize",
                 "{\"jsonrpc\":\"2.0\",\"id\":0,\"result\":{\"serverInfo\":{\"name\":\"mock-server\",\"version\":\"1.0\"},\"capabilities\":{}}}");
@@ -117,7 +116,6 @@ class McpClientTest {
 
     @Test
     void callTool_errorResponse_throws() throws IOException {
-        // Register an error response for tools/call on a separate transport
         MockMcpTransport errTransport = new MockMcpTransport();
         errTransport.registerResponse("initialize",
                 "{\"jsonrpc\":\"2.0\",\"id\":0,\"result\":{}}");
@@ -137,7 +135,6 @@ class McpClientTest {
         McpServerDescriptor desc = McpServerDescriptor.stdio("d", "d");
         MockMcpTransport t = new MockMcpTransport();
         McpClient c = new McpClient(desc, t);
-        // Not connected -- disconnect should not throw
         c.disconnect();
         assertFalse(c.isConnected());
     }

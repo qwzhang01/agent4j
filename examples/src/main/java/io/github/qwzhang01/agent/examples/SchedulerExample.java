@@ -108,7 +108,6 @@ public class SchedulerExample {
 
         var run = mgr.getRun(r1.resumeToken().runId());
         System.out.println("Final run status: " + run.getStatus());
-        // Verify the event payload flowed into the merge node
         var trace = run.getState().getTrace();
         trace.stream()
                 .filter(s -> "merge".equals(s.nodeId()))

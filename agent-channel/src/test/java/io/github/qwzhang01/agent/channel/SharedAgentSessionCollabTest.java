@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SharedAgentSessionCollabTest {
 
-    // Test doubles
 
     private static final class RecordingModelClient implements ModelClient {
         private final ModelClient delegate;
@@ -61,7 +60,6 @@ class SharedAgentSessionCollabTest {
         }
     }
 
-    // Fixtures
 
     private static final String CHANNEL = "team-eng";
     private static final String AGENT_ID = "eng-bot";
@@ -79,7 +77,6 @@ class SharedAgentSessionCollabTest {
                 null);
     }
 
-    // Task lifecycle on the board
 
     @Test
     @DisplayName("startTask puts a RUNNING task on the board owned by the member")

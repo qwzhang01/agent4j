@@ -121,7 +121,6 @@ public class ResilientModelClient implements ModelClient {
                         && credentialRotation != null && attempt < maxRetries) {
                     String rotated = credentialRotation.nextCredential();
                     if (rotated != null) {
-                        // Rotation took effect on the delegate via the
                         // callback; retry IMMEDIATELY — a fresh key deserves
                         // a fresh attempt, not a backoff nap.
                         credentialRotation.apply(rotated);

@@ -175,7 +175,6 @@ class SanitizingContextBuilderTest {
         }
     }
 
-    // Shape preservation
 
     @Test
     void assistantToolCallsAndIdentitySurviveTheRebuild() {

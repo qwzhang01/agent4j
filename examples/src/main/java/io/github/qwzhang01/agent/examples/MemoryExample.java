@@ -48,7 +48,6 @@ public class MemoryExample {
         List<ChatMessage> ctx1 = ctxBuilder.build(null, state1);
         System.out.println("(context has " + ctx1.size() + " messages, no memories yet)");
 
-        // Simulate model response
         state1.addMessage(ChatMessage.assistant("好的，我记住了你喜欢深色模式。"));
         System.out.println("Assistant: 好的，我记住了你喜欢深色模式。\n");
 
@@ -68,13 +67,11 @@ public class MemoryExample {
         List<ChatMessage> ctx2 = ctxBuilder.build(null, state2);
         System.out.println("(context has " + ctx2.size() + " messages)");
 
-        // Show that the memory was injected
         boolean memoryInjected = ctx2.stream()
                 .anyMatch(m -> m.content() != null && m.content().contains("深色模式")
                         && m.content().contains("Known memories"));
         System.out.println("Memory injected into turn 2 context: " + memoryInjected);
 
-        // Print the memory block
         ctx2.stream()
                 .filter(m -> m.content() != null && m.content().contains("Known memories"))
                 .forEach(m -> System.out.println("Injected memory block:\n" + m.content()));

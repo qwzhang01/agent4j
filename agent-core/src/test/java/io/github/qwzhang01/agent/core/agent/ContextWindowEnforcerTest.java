@@ -66,7 +66,6 @@ class ContextWindowEnforcerTest {
 
         List<ChatMessage> result = enforcer.build(minimalConfig(), state);
         assertTrue(result.size() < 4, "truncation should have occurred");
-        // Last message must always be present
         assertEquals("assistant", result.get(result.size() - 1).role().name().toLowerCase());
     }
 
@@ -86,7 +85,6 @@ class ContextWindowEnforcerTest {
         assertEquals("last", result.get(result.size() - 1).content(), "last message survives");
     }
 
-    // Tool-call pair invariant
 
     @Test
     @DisplayName("assistant-with-tool-calls and tool result are dropped as a pair")
@@ -122,17 +120,14 @@ class ContextWindowEnforcerTest {
         }
     }
 
-    // Delegate wiring
 
     @Test
     @DisplayName("with delegate: delegate output is enforced, not raw state")
     void withDelegate_delegateOutputIsEnforced() {
-        // Delegate returns only 1 short message regardless of state
         ContextBuilder delegate = (config, state) -> List.of(ChatMessage.user("short"));
         ContextWindowBudget budget = ContextWindowBudget.of(100, 0, 0, 0);
         ContextWindowEnforcer enforcer = new ContextWindowEnforcer(delegate, budget);
 
-        // State has long messages that would overflow the budget if used directly
         AgentState state = stateWithMessages(
                 ChatMessage.user("a".repeat(2000)),
                 ChatMessage.user("b".repeat(2000))
@@ -143,7 +138,6 @@ class ContextWindowEnforcerTest {
         assertEquals("short", result.get(0).content());
     }
 
-    // Token estimation static helper
 
     @Test
     @DisplayName("estimateTokens: chars/4 heuristic")
@@ -165,7 +159,6 @@ class ContextWindowEnforcerTest {
         assertEquals(0, ContextWindowEnforcer.estimateTokens((String) null));
     }
 
-    // Accessors
 
     @Test
     @DisplayName("getBudget returns the configured budget")

@@ -55,7 +55,6 @@ public record KnowledgeEntry(
         tags = tags == null ? Set.of() : Set.copyOf(tags);
     }
 
-    // Convenience Factory
 
     /**
      * A minimal entry: title + content, no source, no tags.
@@ -64,7 +63,6 @@ public record KnowledgeEntry(
         return new KnowledgeEntry(title, content, null, null);
     }
 
-    // Storage Projection
 
     /**
      * Project this entry into its storage form under the given tenant scope.

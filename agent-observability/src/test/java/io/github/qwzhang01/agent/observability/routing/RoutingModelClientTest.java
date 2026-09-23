@@ -161,7 +161,6 @@ class RoutingModelClientTest {
         assertEquals(10_000, e.limit());
     }
 
-    // composition with Stage 1: Routing(Fallback(...))
 
     @Test
     @DisplayName("Routing(Fallback(...)): cheap tier dies -> Stage 1 chain catches (zero-change reuse)")

@@ -43,7 +43,6 @@ import java.util.Map;
  */
 public final class TrajectoryCodec {
 
-    /** Contract envelope: version of the on-disk schema (D8, aligned with Stage 13 discipline). */
     public static final String API_VERSION = "v1";
     public static final String KIND = "Trajectory";
 
@@ -69,7 +68,6 @@ public final class TrajectoryCodec {
         this(null);
     }
 
-    /** Stage 5.3 constructor: exports carry masked content for all text surfaces. */
     public TrajectoryCodec(io.github.qwzhang01.agent.core.redact.SecretMasker masker) {
         this.masker = masker;
     }

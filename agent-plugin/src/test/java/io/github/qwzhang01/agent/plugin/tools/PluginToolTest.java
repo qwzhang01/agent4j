@@ -164,7 +164,6 @@ class PluginToolTest {
         assertEquals("plugin_load", loadTool.getName());
         assertEquals("plugin_unload", unloadTool.getName());
 
-        // Schemas should be valid JSON
         assertDoesNotThrow(() -> mapper.readTree(inspectTool.getParametersSchema()));
         assertDoesNotThrow(() -> mapper.readTree(listTool.getParametersSchema()));
         assertDoesNotThrow(() -> mapper.readTree(loadTool.getParametersSchema()));

@@ -44,7 +44,6 @@ public final class DefinitionValidator {
         return errors;
     }
 
-    // Section validators
 
     private void validatePersona(String tenantId, AgentDefinition.Persona persona, ProductContext ctx,
                                  List<ValidationError> errors) {

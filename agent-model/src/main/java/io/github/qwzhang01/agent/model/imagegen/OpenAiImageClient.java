@@ -58,7 +58,6 @@ public class OpenAiImageClient implements ImageGenerationClient {
                 .build();
     }
 
-    // ImageGenerationClient
 
     @Override
     public ImageResult generate(ImageGenRequest request) {
@@ -88,7 +87,6 @@ public class OpenAiImageClient implements ImageGenerationClient {
         }
     }
 
-    // Request Building
 
     private ObjectNode buildRequestBody(ImageGenRequest request, String model) {
         ObjectNode body = mapper.createObjectNode();
@@ -120,7 +118,6 @@ public class OpenAiImageClient implements ImageGenerationClient {
         return body;
     }
 
-    // Response Parsing
 
     private ImageResult parseResponse(String responseBody, String model) {
         try {
@@ -149,7 +146,6 @@ public class OpenAiImageClient implements ImageGenerationClient {
         }
     }
 
-    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {

@@ -66,7 +66,6 @@ public final class A2ACardIdentity {
     private A2ACardIdentity() {
     }
 
-    // Key material
 
     /**
      * Generate a signing key pair: Ed25519 when the JCA offers it, RSA-2048
@@ -108,7 +107,6 @@ public final class A2ACardIdentity {
         }
     }
 
-    // Sign / verify
 
     /**
      * Sign the card body bytes with the private key. The algorithm is
@@ -168,7 +166,6 @@ public final class A2ACardIdentity {
                 "unsupported card-signing key algorithm: " + keyAlgorithm);
     }
 
-    // Wire header
 
     /** A parsed card-signature header: who signed, how, and with what value. */
     public record CardSignature(String keyId, String algorithm, String signature) {

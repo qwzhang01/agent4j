@@ -46,7 +46,6 @@ class RetryPolicyTest {
         room.stream("hi", events::add);
 
         // Sequence: ModelCallStarted → ContentDelta → ModelCallFinished → TurnTrace → Done
-        // (same as before A7, plus the Stage 9 model-boundary pair)
         assertEquals(5, events.size());
         assertInstanceOf(AgentEvent.ModelCallStarted.class, events.get(0));
         assertInstanceOf(AgentEvent.ContentDelta.class, events.get(1));
@@ -146,7 +145,6 @@ class RetryPolicyTest {
         assertTrue(secondHasExtra, "retry attempt must contain retryExtraText");
     }
 
-    // RetryStarted event
 
     @Test
     void retryStarted_notEmittedWhenNoRetryHappens() {

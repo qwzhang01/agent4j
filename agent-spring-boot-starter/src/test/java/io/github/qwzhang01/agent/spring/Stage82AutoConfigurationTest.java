@@ -35,7 +35,6 @@ class Stage82AutoConfigurationTest {
                     assertThat(context.getBean(AgentFactory.class).profile())
                             .isEqualTo(AgentProfile.SECURE);
 
-                    // The factory still works end to end under SECURE with a
                     // read-only registry: governance does not break the loop.
                     Agent agent = context.getBean(AgentFactory.class)
                             .create("secure-mock", "you are a test");

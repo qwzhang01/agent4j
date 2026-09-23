@@ -43,7 +43,6 @@ public class InProcessA2AClient implements A2AClient {
     private final Map<String, A2ATaskStatus> taskStatus = new ConcurrentHashMap<>();
     private final Consumer<BoundaryEvent> eventSink;
 
-    /** Legacy wiring: no boundary telemetry (harness batch 7 opt-in). */
     public InProcessA2AClient() {
         this(null);
     }

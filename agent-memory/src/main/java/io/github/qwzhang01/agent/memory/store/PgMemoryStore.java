@@ -138,7 +138,6 @@ public class PgMemoryStore implements MemoryStore {
         }
     }
 
-    // Port methods
 
     @Override
     public MemoryEntry write(MemoryEntry entry) {
@@ -338,7 +337,6 @@ public class PgMemoryStore implements MemoryStore {
         }
     }
 
-    // Internals
 
     private void ensureSchema() {
         String ddl = """

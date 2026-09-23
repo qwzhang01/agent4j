@@ -32,7 +32,6 @@ class ExtraTextSourceTest {
         assertTrue(new ExtraTextSource(null).contribute(ROOM, LUNA, "hi").isEmpty());
     }
 
-    // Budget enforced
 
     /**
      * With 10 000-char input and maxTokens=500, the result must:

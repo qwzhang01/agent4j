@@ -70,7 +70,6 @@ public class StructuredOutputModelClient implements ModelClient {
             log.warn("Structured output validation failed (attempt {}), content not valid JSON", attempt + 1);
 
             if (attempt < maxRetries) {
-                // Retry with a correction hint appended
                 request = appendCorrectionPrompt(request, lastResponse.content());
             }
         }

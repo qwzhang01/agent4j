@@ -42,7 +42,6 @@ public record IdentityScope(
         dataClassifications = immutableCopy(dataClassifications, "dataClassifications");
     }
 
-    // Factory Methods
 
     /**
      * A scope granting only capabilities (no memory / classification access).
@@ -58,7 +57,6 @@ public record IdentityScope(
         return new IdentityScope(Set.of(), Set.of(), Set.of());
     }
 
-    // Predicates
 
     /**
      * Whether this scope grants the given capability.
@@ -75,7 +73,6 @@ public record IdentityScope(
         return scope != null && memoryScopes.contains(scope);
     }
 
-    // Combination
 
     /**
      * Element-wise intersection of all three sets.

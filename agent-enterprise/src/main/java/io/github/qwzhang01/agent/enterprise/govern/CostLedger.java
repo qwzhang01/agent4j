@@ -55,7 +55,6 @@ public final class CostLedger {
         return new CostLedger(Map.of());
     }
 
-    // Pre-Gate
 
     /**
      * The request-entry budget gate. Fail-closed: exhausted tenant OR user
@@ -89,7 +88,6 @@ public final class CostLedger {
         }
     }
 
-    // Post-Recording
 
     /**
      * Record a finished request's token usage into both dimensions.
@@ -108,7 +106,6 @@ public final class CostLedger {
         counter(userCounters, ctx.userId()).addAndGet(total);
     }
 
-    // Queries
 
     /**
      * Total tokens recorded for a tenant (the bill).

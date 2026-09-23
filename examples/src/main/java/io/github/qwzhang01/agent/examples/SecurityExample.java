@@ -24,7 +24,6 @@ public class SecurityExample {
     public static void main(String[] args) {
         System.out.println("=== Stage 9: Tool Governance (Permission + Approval + Audit) ===\n");
 
-        // Setup tools
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         registry.register(safeTool("get_time", "2026-08-19 12:00"));
         registry.register(dangerousTool("delete_file"));

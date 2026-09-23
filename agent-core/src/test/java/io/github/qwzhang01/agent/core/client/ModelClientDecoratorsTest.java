@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class ModelClientDecoratorsTest {
 
-    // RetryModelClient
 
     private static ModelResponse throwResponse(ModelException.ErrorCode code, String message) {
         // Encode error info in a special ModelResponse; CountingMock will throw it
@@ -62,7 +61,6 @@ class ModelClientDecoratorsTest {
         assertEquals(1, mock.callCount.get());
     }
 
-    // TimeoutModelClient
 
     @Test
     void retry_shouldExhaustMaxRetries() {
@@ -88,7 +86,6 @@ class ModelClientDecoratorsTest {
         assertEquals("fast", response.content());
     }
 
-    // FallbackModelClient
 
     @Test
     void timeout_shouldThrowOnExceed() {
@@ -147,7 +144,6 @@ class ModelClientDecoratorsTest {
         assertEquals(1, fallback.callCount.get());
     }
 
-    // StructuredOutputModelClient
 
     @Test
     void fallback_shouldChainMultipleFallbacks() {

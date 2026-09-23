@@ -74,8 +74,6 @@ public class RetryModelClient implements ModelClient {
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 Stream<StreamEvent> stream = delegate.stream(request);
-                // Eagerly check if the stream starts with an error
-                // We use a wrapper to catch initial errors
                 return stream;
             } catch (ModelException e) {
                 lastException = e;
@@ -100,7 +98,6 @@ public class RetryModelClient implements ModelClient {
 
     private Duration computeBackoff(int attempt) {
         long millis = (long) (initialBackoff.toMillis() * Math.pow(backoffMultiplier, attempt));
-        // Cap at 30 seconds
         return Duration.ofMillis(Math.min(millis, 30_000));
     }
 

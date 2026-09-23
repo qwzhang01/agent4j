@@ -71,7 +71,6 @@ public record BusinessTask(
         Objects.requireNonNull(updatedAt, "updatedAt must not be null");
     }
 
-    // Derived Accessors
 
     /**
      * The run currently driving this task (last of the history), or null
@@ -88,7 +87,6 @@ public record BusinessTask(
         return status.isTerminal();
     }
 
-    // Wither Derivations
 
     BusinessTask withRun(String runId) {
         return new BusinessTask(taskId, tenantId, submitterId, description,

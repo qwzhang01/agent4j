@@ -133,7 +133,6 @@ public final class CommandRunner {
         }
     }
 
-    // Output capture with head/tail budget
 
     /**
      * Accumulates stream bytes up to a hard in-memory cap (4x budget) while counting

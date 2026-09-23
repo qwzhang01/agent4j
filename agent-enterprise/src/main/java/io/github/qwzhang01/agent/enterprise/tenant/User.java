@@ -42,7 +42,6 @@ public record User(
         roles = roles == null ? Set.of() : Set.copyOf(roles);
     }
 
-    // Accessors
 
     /**
      * Whether this user holds the given role.

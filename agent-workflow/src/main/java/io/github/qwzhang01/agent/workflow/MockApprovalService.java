@@ -18,7 +18,6 @@ public final class MockApprovalService implements ApprovalService {
     private final boolean syncDecision;
     private final AtomicInteger syncCalls = new AtomicInteger();
 
-    // Async state
     private final List<Request> asyncRequests = new CopyOnWriteArrayList<>();
     private final Map<String, Boolean> asyncDecisions = new ConcurrentHashMap<>();
 
@@ -34,7 +33,6 @@ public final class MockApprovalService implements ApprovalService {
         return new MockApprovalService(false);
     }
 
-    // Sync (Stage 5)
 
     @Override
     public boolean approve(Request request) {
@@ -46,7 +44,6 @@ public final class MockApprovalService implements ApprovalService {
         return syncCalls.get();
     }
 
-    // Async (Stage 6)
 
     @Override
     public void requestApproval(String runId, String nodeId, String summary, Object payload) {

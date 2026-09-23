@@ -82,7 +82,6 @@ public class TaskScheduler {
         log.info("[scheduler] Shut down");
     }
 
-    // Scheduled Resume
 
     /**
      * Schedule a one-time resume after a delay.
@@ -160,7 +159,6 @@ public class TaskScheduler {
         }
     }
 
-    // Event-Driven Resume
 
     /**
      * Register a run to wait for an event. When {@link #fireEvent(String)}
@@ -302,7 +300,6 @@ public class TaskScheduler {
         return n;
     }
 
-    // Async Task Queue
 
     /** Enqueue an async task produced by an Agent. */
     public AsyncTask enqueueTask(AsyncTask task) {
@@ -319,7 +316,6 @@ public class TaskScheduler {
         return taskQueue.peekAll();
     }
 
-    // Token Budget
 
     /** Set a token budget for a run. */
     public TokenBudget setBudget(String runId, long tokenLimit) {
@@ -345,7 +341,6 @@ public class TaskScheduler {
         return runBudgets.get(runId);
     }
 
-    // Inspection
 
     public Map<String, ScheduledResume> getScheduledResumes() {
         return Map.copyOf(scheduledResumes);

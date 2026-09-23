@@ -64,7 +64,6 @@ public class McpExample {
         // 4. Wrap MCP tool as local Tool (D1: transparent adaptation)
         McpToolAdapter mcpTool = new McpToolAdapter(client, tools.get(0));
 
-        // Also register a local tool to show mixing
         Tool localTool = new Tool() {
             @Override public String getName() { return "get_time"; }
             @Override public String getDescription() { return "Returns current time"; }
@@ -80,7 +79,6 @@ public class McpExample {
         System.out.println("\nToolRegistry now has " + registry.listTools().size()
                 + " tools (1 local + 1 MCP)");
 
-        // 5. Set up governance (Stage 9 components, zero changes for MCP tools!)
         ToolPolicy policy = new ToolPolicy(ToolPermission.AUTO)
                 .setPermission("echo", ToolPermission.REQUIRES_APPROVAL); // MCP tool = conservative (D4)
         InMemoryAuditLogger audit = new InMemoryAuditLogger();

@@ -91,7 +91,6 @@ class HybridRankingStrategyTest {
         assertEquals("latte with oat milk", ranked.get(0).content());
     }
 
-    // Degradation chain
 
     /** No query: pure importance-then-recency, identical to the default strategy. */
     @Test
@@ -165,7 +164,6 @@ class HybridRankingStrategyTest {
                 "with α=0 for the mismatched entry, γ importance decides");
     }
 
-    // End-to-end through the retriever
 
     @Test
     void retriever_endToEnd_semanticRecallThroughRecallForContext() {

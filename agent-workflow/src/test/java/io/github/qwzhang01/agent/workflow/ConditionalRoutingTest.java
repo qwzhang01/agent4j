@@ -92,7 +92,6 @@ class ConditionalRoutingTest {
 
         assertFalse(result.isSucceeded());
         assertTrue(result.errorMessage().contains("Max steps"));
-        // It looped exactly until the guard fired
         assertEquals(10, result.trace().size());
     }
 

@@ -37,7 +37,6 @@ public class CompressionExample {
         CompressingContextBuilder builder = new CompressingContextBuilder(
                 model, 50, 4, store, "session:s1");
 
-        // Build a long conversation that exceeds the budget
         AgentState state = new AgentState();
         for (int i = 1; i <= 8; i++) {
             state.addMessage(ChatMessage.user("I tried solution " + i + " but got error code " + (i * 100)
@@ -54,7 +53,6 @@ public class CompressionExample {
         System.out.println("  Messages: " + beforeCount);
         System.out.println("  Estimated tokens: " + beforeTokens + " (budget: 50)");
 
-        // Trigger compaction via the context builder
         List<ChatMessage> result = builder.build(null, state);
 
         int afterTokens = ContextBudget.estimate(result);
@@ -63,7 +61,6 @@ public class CompressionExample {
         System.out.println("  Estimated tokens: " + afterTokens);
         System.out.println("  State messages (rewritten): " + state.getMessages().size());
 
-        // Show the structure
         System.out.println("\nResulting message structure:");
         for (ChatMessage m : result) {
             String preview = m.content() != null
@@ -72,7 +69,6 @@ public class CompressionExample {
             System.out.println("  [" + m.role() + "] " + preview);
         }
 
-        // Check archive
         List<MemoryEntry> archives = store.query(MemoryQuery.builder()
                 .scopes(List.of("session:s1")).type(MemoryType.SUMMARY).build());
         System.out.println("\nArchived summaries: " + archives.size());

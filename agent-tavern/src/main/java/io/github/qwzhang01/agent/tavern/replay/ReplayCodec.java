@@ -137,7 +137,6 @@ final class ReplayCodec {
             }
             return ChatMessage.assistant(content);
         }
-        // TOOL
         String toolCallId = n.path("toolCallId").asText(null);
         String name = n.hasNonNull("name") ? n.get("name").asText() : null;
         return name != null

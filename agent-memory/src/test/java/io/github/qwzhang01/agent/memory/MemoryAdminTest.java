@@ -60,14 +60,12 @@ class MemoryAdminTest {
 
     @Test
     void approveFlow_userAStores_adminApproves_userBSees() {
-        // User A states a fact in channel c1
         extractor.extractAndStore(List.of(ChatMessage.user("记住我对花生过敏")), "channel:c1",
                 MemoryProvenance.userSaid("userA", "r1", Instant.now()), policy, store);
 
         // Before approval: B sees nothing
         assertTrue(retriever.recall(List.of("channel:c1")).isEmpty());
 
-        // Admin approves
         MemoryEntry pending = store.listByScope("channel:c1").get(0);
         admin.approve(pending.id());
 
@@ -101,7 +99,6 @@ class MemoryAdminTest {
 
     @Test
     void supersede_correctionOldBecomesSuperseded() {
-        // Admin adds a fact
         MemoryEntry original = admin.addEntry("channel:c1", MemoryType.FACT, "diet",
                 "user A is allergic to peanuts", "admin1");
 
@@ -109,13 +106,10 @@ class MemoryAdminTest {
         MemoryEntry corrected = admin.supersede(original.id(),
                 "user A is NOT allergic to peanuts", "admin1");
 
-        // Old entry is SUPERSEDED
         assertEquals(MemoryStatus.SUPERSEDED, store.findById(original.id()).get().status());
-        // New entry is ACTIVE
         assertEquals(MemoryStatus.ACTIVE, corrected.status());
         assertEquals("user A is NOT allergic to peanuts", corrected.content());
 
-        // Retrieval returns only the corrected one
         List<MemoryEntry> visible = retriever.recall(List.of("channel:c1"));
         assertEquals(1, visible.size());
         assertEquals(corrected.id(), visible.get(0).id());
@@ -142,7 +136,6 @@ class MemoryAdminTest {
         assertEquals("admin2", edited.provenance().actor());
     }
 
-    // Stage 5.2: field fidelity on updates
 
     @Test
     void updateContent_preservesAllGovernanceFields() {
@@ -247,7 +240,6 @@ class MemoryAdminTest {
         assertTrue(admin.findById("nonexistent").isEmpty());
     }
 
-    // Non-channel scopes default to ACTIVE
 
     @Test
     void userScope_defaultsToActive() {

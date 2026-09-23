@@ -61,7 +61,6 @@ class ImageGenerationTest {
         assertFalse(body.has("quality"), "quality must be omitted when null");
         assertFalse(body.has("image"), "image array must be omitted without references");
 
-        // Response parsing
         assertEquals(1, result.images().size());
         var image = result.images().get(0);
         assertEquals("https://cdn.example.com/img.png", image.url());

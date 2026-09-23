@@ -113,7 +113,6 @@ class ParallelToolLoopTest {
     private static final java.util.concurrent.ExecutorService TOOL_POOL =
             java.util.concurrent.Executors.newFixedThreadPool(8);
 
-    // Parallel dispatch through the loop
 
     @Test
     @DisplayName("multi-tool response fans out, joins in declaration order, history paired")
@@ -172,7 +171,6 @@ class ParallelToolLoopTest {
         assertEquals("c1", f0.toolCallId());
         assertEquals("c2", f1.toolCallId());
 
-        // Final answer landed
         assertEquals(AgentState.Status.DONE, state.getStatus());
     }
 

@@ -86,22 +86,18 @@ public interface NodeContext {
         return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(in, type);
     }
 
-    /** Stage 5 compat: no runId, not resuming. */
     static NodeContext of(WorkflowState state, Object input) {
         return new Impl(state, input, null, false, null, null);
     }
 
-    /** Stage 6: with runId and resume flag. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming) {
         return new Impl(state, input, runId, isResuming, null, null);
     }
 
-    /** Stage 7: with runId, resume flag, and scheduler. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming, Object scheduler) {
         return new Impl(state, input, runId, isResuming, scheduler, null);
     }
 
-    /** Stage 1.2 (harness roadmap): with runId, resume flag, scheduler and run context. */
     static NodeContext of(WorkflowState state, Object input, String runId, boolean isResuming,
                           Object scheduler, RunContext runContext) {
         return new Impl(state, input, runId, isResuming, scheduler, runContext);

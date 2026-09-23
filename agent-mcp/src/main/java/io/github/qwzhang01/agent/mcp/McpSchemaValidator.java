@@ -52,7 +52,6 @@ public final class McpSchemaValidator {
             return violations;
         }
 
-        // Required fields must be present
         JsonNode required = schema.get("required");
         if (required != null && required.isArray()) {
             for (JsonNode req : required) {

@@ -207,7 +207,6 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // Enqueue / claim / complete
 
     /** Enqueue a task row (status PENDING). Payload is an opaque host string. */
     public TaskRow enqueue(String parentRunId, String workflowName,
@@ -257,7 +256,6 @@ public final class JdbcTaskQueue {
         }
     }
 
-    /** Backpressure signal (harness 8.1): the queue table is at capacity. */
     public static final class QueueFullException extends RuntimeException {
         public QueueFullException(int capacity, int size) {
             super("[QUEUE_FULL] Persistent task table at capacity " + capacity
@@ -396,7 +394,6 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // Crash recovery
 
     /**
      * Renew the lease of a claimed (RUNNING) task: stamp the lease clock
@@ -501,7 +498,6 @@ public final class JdbcTaskQueue {
         }
     }
 
-    // Inspection
 
     public java.util.Optional<TaskRow> get(String taskId) {
         String sql = selectAll() + " WHERE task_id = ?";
@@ -539,7 +535,6 @@ public final class JdbcTaskQueue {
         return listByStatus(status).size();
     }
 
-    // Internal
 
     private long nextSeq() {
         // Portable increment without IDENTITY: bump the counter row and

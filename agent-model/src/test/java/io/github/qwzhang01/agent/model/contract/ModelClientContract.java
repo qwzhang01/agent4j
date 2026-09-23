@@ -49,7 +49,6 @@ public abstract class ModelClientContract {
     /** The provider's name for audit/logging records. */
     protected abstract String providerName();
 
-    // Sync happy path
 
     @Test
     @DisplayName("contract: sync text round-trip returns content + usage")
@@ -118,7 +117,6 @@ public abstract class ModelClientContract {
         }
     }
 
-    // Error taxonomy
 
     @Test
     @DisplayName("contract: 401 maps to AUTH_ERROR")

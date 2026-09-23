@@ -144,7 +144,6 @@ public class AmbientEngine {
         log.info("[ambient] Shutdown");
     }
 
-    // Event ingress
 
     /**
      * Fire an external event: all instructions subscribed to the key run
@@ -171,7 +170,6 @@ public class AmbientEngine {
         }
     }
 
-    // The pipeline
 
     /**
      * One firing of one instruction: condition -> noise gates -> push.
@@ -235,7 +233,6 @@ public class AmbientEngine {
                 instruction.instructionId(), instruction.importance(), preview(content));
     }
 
-    // Wiring
 
     /**
      * Register a push sink (chat bridge, webhook, test collector...).
@@ -271,7 +268,6 @@ public class AmbientEngine {
         return enabled;
     }
 
-    // Internals
 
     private void arm(AmbientInstruction instruction) {
         // NB: switch pattern matching is preview-only on JDK 17; if-instanceof it is.

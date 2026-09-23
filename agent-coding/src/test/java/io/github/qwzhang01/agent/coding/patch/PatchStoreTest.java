@@ -216,7 +216,6 @@ class PatchStoreTest {
                 ((ApplyResult.DriftRejected) result).reason());
     }
 
-    // State machine
 
     @Test
     @DisplayName("discard: disk untouched, terminal state DISCARDED, store reopens fresh")

@@ -38,7 +38,6 @@ class HandoffLoopTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // Mock
 
     /**
      * Scripted mock that also records every request it saw, so tests can
@@ -88,7 +87,6 @@ class HandoffLoopTest {
         return ToolCall.of(id, "transfer_to_" + targetName, (com.fasterxml.jackson.databind.JsonNode) null);
     }
 
-    // Tests
 
     @Test
     void shouldTransferThroughAbcChainAndKeepStatePersonaClean() {
@@ -115,7 +113,6 @@ class HandoffLoopTest {
         // A made 1 step, B made 1 step, C answered on step 3: global budget
         assertEquals(3, state.getCurrentStep());
 
-        // Every model call after the handoff runs under the new persona
         assertEquals("You are B.", clientB.requests.get(0).messages().get(0).content());
         assertEquals("You are C.", clientC.requests.get(0).messages().get(0).content());
 
@@ -123,7 +120,6 @@ class HandoffLoopTest {
         assertTrue(state.getMessages().stream().noneMatch(m -> m.role() == ChatRole.SYSTEM),
                 "handoff must not write SYSTEM into AgentState");
 
-        // Every assistant toolCall stays paired with a tool result
         for (ChatMessage m : state.getMessages()) {
             if (m.role() == ChatRole.ASSISTANT && m.toolCalls() != null) {
                 for (ToolCall tc : m.toolCalls()) {

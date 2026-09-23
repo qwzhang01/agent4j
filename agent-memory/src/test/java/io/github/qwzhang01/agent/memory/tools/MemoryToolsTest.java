@@ -65,7 +65,6 @@ class MemoryToolsTest {
 
     @Test
     void saveMemory_supersedesOldSameSubject() throws Exception {
-        // First save
         Tool save = MemoryTools.saveMemory(store, "user:u1", policy, "test-model");
         ObjectNode args1 = mapper.createObjectNode();
         args1.put("subject", "diet");
@@ -175,7 +174,6 @@ class MemoryToolsTest {
 
     @Test
     void searchMemory_returnsMatches() throws Exception {
-        // Pre-populate
         store.write(new MemoryEntry(null, "user:u1", MemoryType.PREFERENCE, "diet", "allergic to peanuts", 0.9,
                 MemoryProvenance.userSaid("u1", "r1", Instant.now()), MemoryStatus.ACTIVE, Instant.now(), null));
         store.write(new MemoryEntry(null, "user:u1", MemoryType.FACT, "tz", "timezone UTC+8", 0.6,

@@ -115,7 +115,6 @@ public class InternalAgentWorker implements AgentWorker {
                         "agent exceeded max steps without a final answer", elapsed, 1);
             }
             // totalTokens = 0: the Agent interface does not expose token stats yet.
-            // Stage 18 observability will wire real accounting here.
             return WorkerResult.success(task, output, elapsed, 1, 0);
         } catch (RuntimeException e) {
             long elapsed = System.currentTimeMillis() - start;

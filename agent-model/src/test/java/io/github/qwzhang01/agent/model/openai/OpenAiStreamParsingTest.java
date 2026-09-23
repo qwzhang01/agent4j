@@ -138,7 +138,6 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("thinking"), "AUTO must not send any reasoning switch");
     }
 
-    // OpenAI classic
 
     @Test
     void openaiClassicShapeStillWorks() {
@@ -169,7 +168,6 @@ class OpenAiStreamParsingTest {
         assertEquals("high", body.path("reasoning_effort").asText());
     }
 
-    // Degenerate streams
 
     @Test
     void streamWithoutFinishReasonSynthesizesDone() {
@@ -214,7 +212,6 @@ class OpenAiStreamParsingTest {
         assertEquals(0, countOf(events, StreamEvent.Done.class));
     }
 
-    // Endpoint flavor detection
 
     @Test
     void flavorAutoDetectedFromBaseUrl() {
@@ -267,7 +264,6 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("reasoning"));
     }
 
-    // Reasoning channel tolerance
 
     @Test
     void reasoningParsedFromEveryKnownFieldName() {
@@ -346,7 +342,6 @@ class OpenAiStreamParsingTest {
         assertTrue(body.path("stream").asBoolean(), "extraBody must not override the stream flag");
     }
 
-    // Non-streaming
 
     @Test
     void nonStreamingReasoningStaysOutOfContent() {
@@ -401,7 +396,6 @@ class OpenAiStreamParsingTest {
         assertFalse(body.has("thinking"), "request-level AUTO must override client default");
     }
 
-    // Tool calls across chunks
 
     @Test
     void streamedToolCallArgumentsMergedByIndex() {

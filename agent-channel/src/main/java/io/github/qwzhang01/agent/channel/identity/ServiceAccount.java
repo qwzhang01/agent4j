@@ -33,7 +33,6 @@ public record ServiceAccount(
         Instant validUntil
 ) {
 
-    /** Sentinel for "no budget cap" (Stage 18 will wire real enforcement). */
     public static final long UNLIMITED_BUDGET = -1L;
 
     public ServiceAccount {

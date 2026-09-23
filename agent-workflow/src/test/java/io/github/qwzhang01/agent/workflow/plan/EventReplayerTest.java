@@ -67,7 +67,6 @@ class EventReplayerTest {
         assertEquals("42 hits found", history.get(1).content());
     }
 
-    // Anomalies
 
     @Test
     @DisplayName("history without Done: partial replay flagged, status stays IDLE")

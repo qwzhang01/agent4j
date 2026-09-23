@@ -156,7 +156,6 @@ class CharacterAgentFactoryTest {
         assertTrue(marcus.getConfig().getToolRegistry() != null);
     }
 
-    // Memory Through the Full Agent Path
 
     @Test
     @DisplayName("end-to-end: whitelist memories reach the model, foreign ones never do")

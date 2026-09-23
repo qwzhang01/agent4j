@@ -78,7 +78,6 @@ public class MultiAgentExample {
         InProcessA2AClient a2a = new InProcessA2AClient()
                 .registerAgent("reviewer", reviewer, "review");
 
-        // D5 trust downgrade: external output is untrusted input -> Stage 9 sanitizer.
         DefaultResultSanitizer stage9 = new DefaultResultSanitizer();
         ExternalAgentWorker reviewerWorker = new ExternalAgentWorker(
                 "reviewer", a2a,

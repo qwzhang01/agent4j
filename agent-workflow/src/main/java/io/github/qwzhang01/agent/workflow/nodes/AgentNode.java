@@ -84,7 +84,6 @@ public final class AgentNode implements WorkflowNode {
                 agentState = new AgentState();
             }
         }
-        // Stage 1.2: when the workflow run carries a unified RunContext,
         // derive a child context for the inner agent (parent/trace/tenant
         // preserved, own runId) and run through the ctx-aware overload.
         // Legacy path (no run context) is bit-for-bit unchanged.

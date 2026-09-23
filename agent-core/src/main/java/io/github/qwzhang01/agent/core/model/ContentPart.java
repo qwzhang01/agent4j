@@ -28,7 +28,6 @@ import java.util.Objects;
 })
 public sealed interface ContentPart {
 
-    // Part Types
 
     /**
      * A chunk of text.
@@ -61,7 +60,6 @@ public sealed interface ContentPart {
         }
     }
 
-    // Factory Methods
 
     static ContentPart text(String text) {
         return new TextPart(text);

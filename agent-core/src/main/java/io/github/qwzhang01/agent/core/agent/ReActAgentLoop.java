@@ -94,7 +94,6 @@ public class ReActAgentLoop implements AgentLoop {
         runLoop(config, state, sink, ReActAgentLoop::invokeStream);
     }
 
-    // Stage 1.2: ctx-aware execution
 
     /**
      * Execute with a {@link RunContext}: cancellation and deadline are
@@ -196,7 +195,6 @@ public class ReActAgentLoop implements AgentLoop {
         state.setStatus(AgentState.Status.RUNNING);
 
         while (state.hasStepsRemaining() && !state.isTerminal()) {
-            // Stage 1.4: cooperative cancellation + deadline check at the
             // step boundary. Structured signals, never free-text errors.
             if (ctx != null) {
                 try {
@@ -239,7 +237,6 @@ public class ReActAgentLoop implements AgentLoop {
 
             // 2. Call the model (via the CURRENT config's client)
             ModelResponse response;
-            // Stage 9: model-boundary facts. One Started/Finished pair per
             // model call, emitted around the invoker regardless of outcome.
             sink.accept(new AgentEvent.ModelCallStarted(currentConfig.getName(),
                     request.model(), request.messages().size(), state.getCurrentStep()));
@@ -297,7 +294,6 @@ public class ReActAgentLoop implements AgentLoop {
 
             // 3. Handle response: tool calls or final answer
             if (response.hasToolCalls()) {
-                // Add assistant message with tool calls to history
                 state.addMessage(ChatMessage.assistantWithTools(
                         response.content(), response.toolCalls()));
 
@@ -332,7 +328,6 @@ public class ReActAgentLoop implements AgentLoop {
                 }
 
                 if (parallelToolExecutor != null && plainCalls.size() > 1) {
-                    // Stage 9 Tool Parallelism: fan out plain calls, join
                     // in declaration order. Budget/cancel/order/merge
                     // semantics live in ParallelToolExecutor; the loop
                     // keeps the event pairing (Started before dispatch,
@@ -387,7 +382,6 @@ public class ReActAgentLoop implements AgentLoop {
                 }
 
                 if (pendingHandoffCall != null) {
-                    // Synthetic tool result must reference the model-generated
                     // tool_use id, so the assistant toolCall stays paired with a
                     // tool result (provider-required invariant).
                     state.addMessage(ChatMessage.tool(pendingHandoffCall.id(),
@@ -673,7 +667,6 @@ public class ReActAgentLoop implements AgentLoop {
         }
     }
 
-    /** Stage 1.2: stream via the ctx-aware ModelClient overload. */
     private static ModelResponse invokeStreamCtx(ModelClient modelClient, ModelRequest request,
                                                  AgentState state, Consumer<AgentEvent> sink,
                                                  RunContext ctx) throws Exception {
@@ -717,7 +710,6 @@ public class ReActAgentLoop implements AgentLoop {
         return response;
     }
 
-    // Private Helpers
 
     private ModelRequest buildRequest(AgentConfig config, AgentState state,
                                       AgentConfig handoffFrom, HandoffInputFilter inputFilter,
@@ -745,13 +737,11 @@ public class ReActAgentLoop implements AgentLoop {
         var builder = ModelRequest.builder()
                 .messages(messages);
 
-        // Attach tool schemas if registry has tools
         ToolRegistry registry = config.getToolRegistry();
         List<String> schemas = new ArrayList<>();
         if (registry != null && !registry.listTools().isEmpty()) {
             schemas.addAll(registry.getToolSchemas());
         }
-        // Handoff tools (Stage 19): expose declared transfer targets to the
         // model as no-arg tools, alongside plain tools.
         if (!config.getHandoffs().isEmpty()) {
             for (HandoffSpec spec : config.getHandoffs()) {

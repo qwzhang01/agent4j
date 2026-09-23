@@ -146,7 +146,6 @@ class JdbcTaskQueueTest {
         queue.claimNext("worker-a"); // fresh RUNNING: inside grace
 
         // Simulate a crashed worker: claim, then backdate the lease clock
-        // (batch 5: liveness is COALESCE(heartbeat_at, started_at), so the
         // simulation must age the lease marker the claim just stamped).
         JdbcTaskQueue.TaskRow orphan = queue.enqueue(null, "flow", TaskPriority.NORMAL, "o");
         queue.claimNext("worker-b");

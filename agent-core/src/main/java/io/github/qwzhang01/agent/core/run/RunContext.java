@@ -250,7 +250,6 @@ public record RunContext(
             return this;
         }
 
-        /** Lifecycle event sink (Stage 7.1): the loop pushes RunEvents here. */
         public Builder eventSink(java.util.function.Consumer<RunEvent> eventSink) {
             this.eventSink = eventSink;
             return this;

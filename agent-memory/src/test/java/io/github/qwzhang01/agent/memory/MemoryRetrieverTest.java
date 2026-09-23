@@ -67,7 +67,6 @@ class MemoryRetrieverTest {
         assertEquals("low", result.get(1).content());
     }
 
-    // Query-aware
 
     /**
      * A lower-importance entry that matches the query should rank above a

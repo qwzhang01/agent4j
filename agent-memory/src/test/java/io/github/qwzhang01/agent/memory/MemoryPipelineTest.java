@@ -39,7 +39,6 @@ class MemoryPipelineTest {
         retriever = new MemoryRetriever(store);
     }
 
-    // MemoryRetriever
 
     @Test
     void retriever_recallReturnsOnlyActive() {
@@ -73,7 +72,6 @@ class MemoryPipelineTest {
         assertEquals(2, retriever.recallForContext(List.of("user:u1"), 2).size());
     }
 
-    // MemoryPolicy
 
     @Test
     void policy_rejectsLowImportance() {
@@ -110,7 +108,6 @@ class MemoryPipelineTest {
 
     @Test
     void extractWrite_evolveMarksOldAsHistorical_notSuperseded() {
-        // Old fact stored first
         store.write(entry("user:u1", "home-city", "lives in Shenzhen", 0.8));
 
         // New candidate judged EVOLVE: old content was once true but changed
@@ -155,7 +152,6 @@ class MemoryPipelineTest {
                 .filter(e -> e.content().equals("allergic to peanuts")).findFirst().orElseThrow().status(),
                 "CONFLICT -> old entry becomes SUPERSEDED (audit-only)");
 
-        // SUPERSEDED never appears in the history view
         List<MemoryEntry> timeline = retriever.recallSubjectHistory(List.of("user:u1"), "diet");
         assertEquals(1, timeline.size(), "history view shows only the ACTIVE correction");
     }
@@ -190,7 +186,6 @@ class MemoryPipelineTest {
         assertTrue(policy.shouldStore(explicit, store));
     }
 
-    // MemoryExtractor
 
     @Test
     void extractor_findsPreferenceInUserMessage() {
@@ -280,7 +275,6 @@ class MemoryPipelineTest {
         assertEquals(1, store.listByScope("user:u1").size(), "identical content not re-stored");
     }
 
-    // ChatSession
 
     @Test
     void chatSession_roundTrip() {
@@ -293,7 +287,6 @@ class MemoryPipelineTest {
         assertEquals(ChatRole.USER, state.getMessages().get(0).role());
         assertEquals("hello", state.getMessages().get(0).content());
 
-        // Simulate agent adding a new message
         state.addMessage(ChatMessage.assistant("how can I help?"));
         session.syncFrom(state);
 
@@ -301,7 +294,6 @@ class MemoryPipelineTest {
         assertEquals("how can I help?", session.getHistory().get(2).content());
     }
 
-    // MemoryContextBuilder
 
     @Test
     void contextBuilder_prependsMemoriesWithoutPersistingThem() {
@@ -361,7 +353,6 @@ class MemoryPipelineTest {
         assertTrue(result.get(1).content().contains("summary"), "compaction summary present");
     }
 
-    // End-to-End Multi-Turn Memory Loop
 
     @Test
     void e2e_multiTurnMemory_rememberedAcrossRuns() {
@@ -398,7 +389,6 @@ class MemoryPipelineTest {
 
         List<ChatMessage> ctx2 = ctxBuilder.build(config1, state2);
 
-        // The context for turn 2 should contain the peanut allergy memory
         String ctx2Text = ctx2.stream()
                 .map(ChatMessage::content)
                 .reduce("", (a, b) -> a + " " + (b != null ? b : ""));

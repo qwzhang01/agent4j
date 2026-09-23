@@ -44,7 +44,6 @@ public class MockMcpTransport implements McpTransport {
     public void send(String json) {
         if (!open) throw new RuntimeException("Transport not open");
 
-        // Parse method from the request
         try {
             com.fasterxml.jackson.databind.JsonNode node =
                     new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
@@ -55,7 +54,6 @@ public class MockMcpTransport implements McpTransport {
                 return;  // fire-and-forget, no response queued
             }
 
-            // Look up pre-canned response for this method
             String resp = responses.get(method);
             if (resp != null) {
                 // If the canned response has a placeholder for id, replace it

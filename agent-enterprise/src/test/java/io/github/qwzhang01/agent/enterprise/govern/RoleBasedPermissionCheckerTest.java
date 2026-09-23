@@ -27,7 +27,6 @@ class RoleBasedPermissionCheckerTest {
 
     @BeforeEach
     void setUp() {
-        // the Stage 9 policy: what the world looks like WITHOUT any role grant
         fallback = new ToolPolicy(ToolPermission.AUTO)
                 .setPermission("refund_order", ToolPermission.REQUIRES_APPROVAL)
                 .setPermission("delete_order", ToolPermission.DENY);

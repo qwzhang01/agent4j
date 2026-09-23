@@ -77,7 +77,6 @@ class WorkflowDagCodecTest {
 
     @Test
     void unregisteredConditionRefusesExport() {
-        // A workflow with a lambda that was never registered must NOT silently
         // lose its conditional branch in the export.
         Workflow unregistered = Workflow.builder("wild")
                 .node(ActionNode.of("a", ctx -> "x"))
@@ -100,7 +99,6 @@ class WorkflowDagCodecTest {
         assertEquals(dag, parsed);   // record equality through JSON
     }
 
-    // Round-trip
 
     @Test
     void roundTripRebuildsEquivalentWorkflow() {
@@ -182,7 +180,6 @@ class WorkflowDagCodecTest {
                 () -> codec.fromDag(dag, id -> null, conditions));
     }
 
-    // Registry discipline
 
     @Test
     void conditionRegistryRejectsDuplicates() {
@@ -195,7 +192,6 @@ class WorkflowDagCodecTest {
         assertNull(conditions.predicateOf("ghost"));
     }
 
-    // Test doubles
 
     private record FakeTool(String name) implements Tool {
         @Override

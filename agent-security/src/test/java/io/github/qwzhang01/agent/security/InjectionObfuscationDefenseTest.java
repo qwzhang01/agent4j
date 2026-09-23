@@ -138,7 +138,6 @@ class InjectionObfuscationDefenseTest {
         assertEquals(List.of("regex-wall(normalized-view)", "semantic-judge(absent)"), layers);
     }
 
-    // Composition fits existing consumers
 
     @Test
     @DisplayName("LayeredResultSanitizer slots into SanitizerGuardrail's construction path")

@@ -32,7 +32,6 @@ public sealed interface BoundaryEvent permits
         BoundaryEvent.SandboxBoundaryEvent, BoundaryEvent.ModelBoundaryEvent,
         BoundaryEvent.McpBoundaryEvent, BoundaryEvent.A2ABoundaryEvent {
 
-    /** Boundary telemetry schema version (1 since harness 4.4). */
     int SCHEMA_VERSION = 1;
 
     /** Wall clock the boundary event occurred. */
@@ -178,7 +177,6 @@ public sealed interface BoundaryEvent permits
             implements ModelBoundaryEvent {
     }
 
-    // MCP boundary (harness batch 7: the emitter batch)
 
     /**
      * The MCP boundary called (or failed to call) a remote tool. One event
@@ -220,7 +218,6 @@ public sealed interface BoundaryEvent permits
             implements McpBoundaryEvent {
     }
 
-    // A2A boundary (harness batch 7: the emitter batch)
 
     /**
      * The A2A boundary delegated (or failed to delegate) a task. One event

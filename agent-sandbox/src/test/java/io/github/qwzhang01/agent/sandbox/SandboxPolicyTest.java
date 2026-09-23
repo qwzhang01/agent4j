@@ -57,7 +57,6 @@ class SandboxPolicyTest {
         assertEquals(SandboxTier.PROCESS, policy.tierFor(SandboxRiskLevel.ADVERSARIAL, true));
     }
 
-    // Optimistic escalation eligibility
 
     @Test
     @DisplayName("SEMI_TRUSTED + single-tenant enables optimistic escalation")

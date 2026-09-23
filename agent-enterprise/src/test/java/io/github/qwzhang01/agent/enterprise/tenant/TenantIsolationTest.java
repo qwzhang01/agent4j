@@ -117,7 +117,6 @@ class TenantIsolationTest {
         assertTrue(bobView.get(0).content().contains("loves"));
     }
 
-    // RequestContext Whitelist Semantics
 
     @Test
     @DisplayName("the whitelist from login retrieves exactly tenant + own user scopes")

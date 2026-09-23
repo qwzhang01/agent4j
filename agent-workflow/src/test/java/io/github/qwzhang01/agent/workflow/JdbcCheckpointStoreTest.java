@@ -163,7 +163,6 @@ class JdbcCheckpointStoreTest {
                 WorkflowState.restore("i", Map.of(), List.of()),
                 System.currentTimeMillis(), 0, null, 0L, List.of());
         store.save(future);
-        // A runtime that does not understand the newer schema must refuse
         // to load it, not silently misparse (same refusal as FileCheckpointStore).
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> otherInstance.load("run-f"));
@@ -174,7 +173,6 @@ class JdbcCheckpointStoreTest {
     @Test
     void fileAndJdbcShareCodecSemantics() throws SQLException, java.io.IOException {
         open();
-        // Same checkpoint through the file transport and the JDBC transport
         // must decode to the same blackboard — the codec is shared, not forked.
         Checkpoint cp = sample("run-shared", "charge");
         store.save(cp);

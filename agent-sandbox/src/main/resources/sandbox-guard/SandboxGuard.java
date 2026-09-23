@@ -233,7 +233,6 @@ public class SandboxGuard {
         }
 
         private void deny(Permission perm, String reason) {
-            // The denial message carries the policy tag so downstream
             // SandboxResult classification reads "policy refusal", not
             // "execution error". SecurityException lands in guest stderr;
             // the host captures it verbatim.

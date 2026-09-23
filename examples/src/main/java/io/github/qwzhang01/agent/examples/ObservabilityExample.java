@@ -134,7 +134,6 @@ public final class ObservabilityExample {
             }
         };
 
-        // Stage 12 placeholder cashed in (D5): the budget NUMBER travels, never the identity
         ServiceAccount engAccount = new ServiceAccount("svc-eng-bot-01",
                 new AgentIdentity("eng-bot", "Engineering Bot", "team-eng-leads"),
                 IdentityScope.capabilities("git.read"),
@@ -154,7 +153,6 @@ public final class ObservabilityExample {
                 .alarmSink(console)
                 .build();
 
-        // prompt as an asset (Stage 13 reused, not rebuilt): v1 stable
         PromptManager prompts = new PromptManager();
         prompts.publish("support-system", "You are a careful support agent. Answer concisely.");
 
@@ -180,7 +178,6 @@ public final class ObservabilityExample {
                         book.remainingOf(BudgetDimension.USER, USER_KEY),
                         book.limitOf(BudgetDimension.USER, USER_KEY)));
 
-        // governance (Stage 9) INSIDE the observing tool decorator: [DENIED] texts get observed
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         registry.register(tool("echo", "echoes its argument", "echo:"));
         registry.register(tool("dangerous_tool", "side-effect tool", "did something scary"));
@@ -372,13 +369,11 @@ public final class ObservabilityExample {
 
         // F-series: failure branches
         section("F1/F3/F6 branches (F2 reasons print at every [routing] line; F7 shown in T5)");
-        // F1: single-run budget gate - the economic twin of Stage 17's behavioral [LIMIT]
         book.recordUsage(BudgetDimension.RUN, "run-f1", 2_000);
         BudgetCheck runGate = book.requireBudget(BudgetDimension.RUN, "run-f1", 100);
         check("F1 RUN gate fails closed on projection (used 2000 + est 100 > limit 2000)",
                 runGate instanceof BudgetCheck.Denied);
 
-        // F3: cheap dies mid-tier -> the Stage 1 fallback chain catches, zero-change reuse
         backupMock.respondText("backup model answers after the cheap tier died");
         RoutingModelClient f3 = new RoutingModelClient(
                 Map.of("cheap", new FallbackModelClient(MockModelClient.scripted() /* dead: empty */, backupMock)),

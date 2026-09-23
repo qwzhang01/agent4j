@@ -50,15 +50,12 @@ public final class HumanApprovalNode implements WorkflowNode {
     @Override
     public NodeResult execute(NodeContext ctx) throws Exception {
         if (ctx.runId() != null) {
-            // ---- Stage 6: async pause-resume mode ----
             return executeAsync(ctx);
         } else {
-            // ---- Stage 5: sync blocking mode ----
             return executeSync(ctx);
         }
     }
 
-    // Sync (Stage 5)
 
     private NodeResult executeSync(NodeContext ctx) {
         boolean approved = approvalService.approve(
@@ -69,7 +66,6 @@ public final class HumanApprovalNode implements WorkflowNode {
         return NodeResult.of(ctx.input());
     }
 
-    // Async (Stage 6)
 
     private NodeResult executeAsync(NodeContext ctx) throws PauseException {
         if (ctx.isResuming()) {
@@ -79,7 +75,6 @@ public final class HumanApprovalNode implements WorkflowNode {
                 decision = approvalService.checkDecision(ctx.runId(), id);
             } catch (PersistentApprovalService.ApprovalExpiredException e) {
                 // Expiry is timeout-shaped, not a business rejection: fail
-                // the run with the distinct semantic (Stage 3.4).
                 throw new WorkflowException(
                         "Approval expired at node '" + id + "': " + e.getMessage());
             } catch (PersistentApprovalService.ApprovalRevokedException e) {

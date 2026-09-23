@@ -43,12 +43,10 @@ public class DecoratedModelClientExample {
         io.github.qwzhang01.agent.core.client.ModelClient baseClient;
 
         if (apiKey != null && !apiKey.isEmpty()) {
-            // Real LLM
             String url = baseURL != null ? baseURL : "https://api.openai.com/v1";
             baseClient = new OpenAiModelClient(url, apiKey, "gpt-4o-mini");
             System.out.println("Using OpenAI client: " + url);
         } else {
-            // Mock for demo without real API
             baseClient = MockModelClient.scripted()
                     .respondText("Hello! I am a decorated mock agent.");
             System.out.println("Using Mock client (set OPENAI_API_KEY for real LLM)");

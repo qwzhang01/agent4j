@@ -74,7 +74,6 @@ class CostMeterTest {
         assertThrows(IllegalArgumentException.class, () -> meter.costMicros("premium", -1, 0));
     }
 
-    // Stage 5.1: cache-aware pricing
 
     @Test
     @DisplayName("cache-aware split: cached 0.1x / written 1.25x / base 1x (Anthropic-style)")

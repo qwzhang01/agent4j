@@ -63,7 +63,6 @@ class ContextCompressorTest {
 
     @Test
     void compress_overBudget_summarizesAndKeepsRecent() {
-        // Model returns a fixed summary
         MockModelClient mc = MockModelClient.scripted().respondText("Summary of prior talk");
         ContextCompressor compressor = new ContextCompressor(mc, 10, 2); // tiny budget, keep 2
 
@@ -83,15 +82,12 @@ class ContextCompressorTest {
         // Result: [system, summary, recent1, recent2] = 4 messages
         assertEquals(4, result.compressed().size());
 
-        // System prompt preserved
         assertEquals(ChatRole.SYSTEM, result.compressed().get(0).role());
         assertEquals("system prompt", result.compressed().get(0).content());
 
-        // Summary message present
         assertEquals(ChatRole.USER, result.compressed().get(1).role());
         assertTrue(result.compressed().get(1).content().contains("Summary of prior talk"));
 
-        // Recent 2 preserved verbatim
         assertEquals("recent 1", result.compressed().get(2).content());
         assertEquals("recent 2", result.compressed().get(3).content());
     }
@@ -127,7 +123,6 @@ class ContextCompressorTest {
 
         var result = compressor.compress(msgs);
         assertTrue(result.didCompress(), "should still compress on model failure");
-        // Fallback summary contains a truncation marker
         assertTrue(result.compressed().get(1).content().contains("Compaction failed")
                 || result.compressed().get(1).content().contains("Summary"));
     }
@@ -148,11 +143,9 @@ class ContextCompressorTest {
         int originalSize = state.getMessages().size();
         List<ChatMessage> result = builder.build(null, state);
 
-        // State was rewritten in place
         assertNotEquals(originalSize, state.getMessages().size());
         assertEquals(result.size(), state.getMessages().size());
 
-        // Archive stored as SUMMARY
         List<MemoryEntry> summaries = store.query(MemoryQuery.builder()
                 .scopes(List.of("session:s1"))
                 .type(MemoryType.SUMMARY)

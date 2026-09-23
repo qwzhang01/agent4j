@@ -103,7 +103,6 @@ class JdbcApprovalStoreTest {
     @Test
     void decideRejectsStaleVersion() {
         ApprovalRequest submitted = store.submit(pending("run-4:step-1", "run-4", 0));
-        // A stale decision carrying base version 0 while the row is somehow
         // already at 1 (e.g. a concurrent decision landed): must conflict.
         // Simulate by landing one decision first, then trying the stale one.
         store.decide(submitted, decideAs("reviewer-a", 0L), ApprovalStatus.PENDING == null

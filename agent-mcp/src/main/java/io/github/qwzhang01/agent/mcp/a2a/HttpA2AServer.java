@@ -199,11 +199,9 @@ public class HttpA2AServer implements AutoCloseable {
         return started ? server.getAddress().getPort() : requestedPort;
     }
 
-    // HTTP routing
 
     private void handle(HttpExchange exchange) throws IOException {
         try {
-            // Stage 6.3: bearer gate before anything else (agent.json stays
             // public — it is the discovery surface, carrying no task data).
             if (bearerToken != null) {
                 String path0 = exchange.getRequestURI().getPath();
@@ -439,7 +437,6 @@ public class HttpA2AServer implements AutoCloseable {
         }
         AgentState state = deserializeState(begun.serializedState());
         try {
-            // Stage 1.2 (harness roadmap): every A2A task runs inside a
             // RunContext so trace/run correlation survives the protocol hop.
             // taskId becomes runId, contextId becomes traceId — an A2A task
             // continuation (same contextId) stays on the same trace.
@@ -553,7 +550,6 @@ public class HttpA2AServer implements AutoCloseable {
                 task.statusMessage(), task.artifacts());
     }
 
-    // Internal
 
     /**
      * AgentState is a plain Jackson POJO (no static toJson/fromJson) — the

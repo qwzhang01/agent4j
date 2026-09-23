@@ -95,7 +95,6 @@ class TrajectoryCodecTest {
         assertEquals("[ERROR] boom", observation);
     }
 
-    // Stage 5.3: export redaction
 
     @Test
     void maskedConstructor_redactsAllTextSurfaces() {

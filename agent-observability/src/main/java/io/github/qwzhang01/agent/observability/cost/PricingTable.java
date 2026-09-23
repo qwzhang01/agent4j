@@ -56,7 +56,6 @@ public final class PricingTable {
     public record Price(long inputMicrosPerMillion, long outputMicrosPerMillion,
                         long cacheReadMicrosPerMillion, long cacheWriteMicrosPerMillion) {
 
-        /** Legacy two-field constructor: no cache accounting (Stage 5.1 compat). */
         public Price(long inputMicrosPerMillion, long outputMicrosPerMillion) {
             this(inputMicrosPerMillion, outputMicrosPerMillion, 0, 0);
         }

@@ -47,7 +47,6 @@ public final class DockerSandboxAdapter implements Sandbox {
 
     private static final Logger log = LoggerFactory.getLogger(DockerSandboxAdapter.class);
 
-    /** Legal simple Java class identifier (same rule as ProcessSandbox, Stage 4.1). */
     static final Pattern CLASS_NAME_PATTERN =
             Pattern.compile("^[A-Za-z_$][A-Za-z0-9_$]*$");
 
@@ -91,7 +90,6 @@ public final class DockerSandboxAdapter implements Sandbox {
     public SandboxResult execute(String className, String code, SandboxSpec spec) {
         Objects.requireNonNull(spec, "spec");
 
-        // Same Stage 4.1 gate as ProcessSandbox: the className is bound
         // into container paths and commands, so it must be a legal Java
         // identifier BEFORE any docker invocation.
         if (className == null || !CLASS_NAME_PATTERN.matcher(className).matches()) {

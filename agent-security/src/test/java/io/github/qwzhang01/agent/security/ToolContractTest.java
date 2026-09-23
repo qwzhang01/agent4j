@@ -272,7 +272,6 @@ class ToolContractTest {
         InMemoryToolRegistry registry = new InMemoryToolRegistry();
         Tool tool = new EchoTool();
         registry.register(tool);
-        // Definition with a tiny input cap
         registry.unregister("echo");
         Tool capped = new Tool() {
             @Override public String getName() { return "echo"; }

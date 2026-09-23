@@ -28,7 +28,6 @@ class ApprovalTest {
         ExecutionResult result = new GraphRuntime().run(approvalFlow(service), "order#1001");
 
         assertTrue(result.isSucceeded());
-        // Approved node passes the payload through to downstream nodes
         assertEquals("refund executed for: order#1001", result.output());
         assertEquals(1, service.callCount());
     }
@@ -41,7 +40,6 @@ class ApprovalTest {
 
         assertFalse(result.isSucceeded());
         assertTrue(result.errorMessage().contains("rejected"));
-        // Downstream node never executed
         assertNull(result.state().get("execute"));
     }
 

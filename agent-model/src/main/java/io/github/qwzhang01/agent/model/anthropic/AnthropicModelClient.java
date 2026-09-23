@@ -137,7 +137,6 @@ public class AnthropicModelClient implements ModelClient {
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(extraBody));
         this.httpClient = httpClient;
-        // Key hygiene (roadmap 6.1): log the endpoint identity, never the
         // key. "Configured for <url>" is the audit line; the key itself must
         // not appear in any ordinary log statement.
         log.debug("AnthropicModelClient initialized: baseUrl={}, model={}, version={}",
@@ -155,7 +154,6 @@ public class AnthropicModelClient implements ModelClient {
         return defaultReasoning != null ? defaultReasoning : ReasoningConfig.auto();
     }
 
-    // ModelClient
 
     @Override
     public ModelResponse chat(ModelRequest request) {
@@ -218,7 +216,6 @@ public class AnthropicModelClient implements ModelClient {
         }
     }
 
-    // Request Building
 
     private ObjectNode buildRequestBody(ModelRequest request, String model, boolean stream) {
         ObjectNode body = mapper.createObjectNode();
@@ -232,7 +229,6 @@ public class AnthropicModelClient implements ModelClient {
 
         for (ChatMessage msg : request.messages()) {
             if (msg.role() == ChatRole.SYSTEM) {
-                // Collect system messages into top-level field
                 if (!systemPrompt.isEmpty()) {
                     systemPrompt.append("\n");
                 }
@@ -252,12 +248,10 @@ public class AnthropicModelClient implements ModelClient {
                             img.put("type", "image");
                             ObjectNode source = img.putObject("source");
                             if (ip.base64Data() != null && !ip.base64Data().isBlank()) {
-                                // Anthropic base64 source block
                                 source.put("type", "base64");
                                 source.put("media_type", ip.mimeType());
                                 source.put("data", ip.base64Data());
                             } else {
-                                // Anthropic URL source block
                                 source.put("type", "url");
                                 source.put("url", ip.url());
                             }
@@ -330,7 +324,6 @@ public class AnthropicModelClient implements ModelClient {
             }
         }
 
-        // Optional params
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }
@@ -392,7 +385,6 @@ public class AnthropicModelClient implements ModelClient {
         });
     }
 
-    // Response Parsing
 
     private ModelResponse parseResponse(String responseBody) {
         try {
@@ -436,7 +428,6 @@ public class AnthropicModelClient implements ModelClient {
             String stopReason = root.path("stop_reason").asText("end_turn");
             String finishReason = mapStopReason(stopReason);
 
-            // Parse usage
             // E3 billing shape: promptTokens = full billed input (input + cache_read
             // + cache_creation - all real prompt spend); cachedTokens = cache_read
             // only (the 0.1x portion). cache_creation is a WRITE premium (1.25x)
@@ -464,7 +455,6 @@ public class AnthropicModelClient implements ModelClient {
         }
     }
 
-    // SSE Streaming Parsing
     //
     // Anthropic SSE event types:
     //   event: message_start       -> message metadata
@@ -485,7 +475,6 @@ public class AnthropicModelClient implements ModelClient {
         // for the E3 billing shape (fullPrompt, cachedTokens).
         java.util.concurrent.atomic.AtomicReference<ModelResponse.TokenUsage> promptUsage =
                 new java.util.concurrent.atomic.AtomicReference<>();
-        // Streaming tool-use accumulation (Stage 6.1 review finding): Anthropic
         // streams a tool call as content_block_start(tool_use, id+name) ->
         // N x content_block_delta(input_json_delta.partial_json) ->
         // content_block_stop. Without per-index accumulation the fragments
@@ -534,7 +523,6 @@ public class AnthropicModelClient implements ModelClient {
                                     // as content.
                                     yield null;
                                 } else if ("input_json_delta".equals(deltaType)) {
-                                    // Accumulate partial JSON for tool input
                                     // (assembled in content_block_stop)
                                     ToolBlockAcc acc = activeToolBlocks.get(event.path("index").asInt(-1));
                                     if (acc != null) {
@@ -628,7 +616,6 @@ public class AnthropicModelClient implements ModelClient {
                 .filter(event -> event != null);
     }
 
-    // Error Handling
 
     private ModelException parseError(int statusCode, String body) {
         return switch (statusCode) {
@@ -672,7 +659,6 @@ public class AnthropicModelClient implements ModelClient {
         };
     }
 
-    // Stage 6.1 streaming tool-use accumulation
 
     /** Per-block accumulator for streaming tool calls, keyed by SSE index. */
     private record ToolBlockAcc(String id, String name, StringBuilder json) {

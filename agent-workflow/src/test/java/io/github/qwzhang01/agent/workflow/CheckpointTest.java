@@ -74,7 +74,6 @@ class CheckpointTest {
         assertNotNull(result.resumeToken());
         assertEquals("approval", result.resumeToken().pausedAtNode());
 
-        // Approval request was sent
         assertEquals(1, approval.asyncRequests().size());
         assertEquals("approval", approval.asyncRequests().get(0).nodeId());
     }
@@ -90,10 +89,8 @@ class CheckpointTest {
 
         String runId = r1.resumeToken().runId();
 
-        // Simulate human approval
         approval.setDecision(runId, "approval", true);
 
-        // Resume
         ExecutionResult r2 = mgr.resume(runId);
         assertTrue(r2.isSucceeded());
         assertEquals("refund executed for: prepared:refund#1001", r2.output());
@@ -148,7 +145,6 @@ class CheckpointTest {
         ExecutionResult r1 = mgr.start(wf, "refund#1002");
         assertTrue(r1.isPaused());
 
-        // Simulate human rejection
         approval.setDecision(r1.resumeToken().runId(), "approval", false);
 
         ExecutionResult r2 = mgr.resume(r1.resumeToken().runId());
@@ -166,7 +162,6 @@ class CheckpointTest {
         ExecutionResult r1 = mgr.start(wf, "refund#1003");
         assertTrue(r1.isPaused());
 
-        // Checkpoint should be in the store
         assertFalse(store.listRunIds().isEmpty());
         var cp = store.load(r1.resumeToken().runId());
         assertTrue(cp.isPresent());
@@ -246,10 +241,8 @@ class CheckpointTest {
 
         String runId = r1.resumeToken().runId();
 
-        // Cancel the paused run
         assertTrue(mgr.cancel(runId));
 
-        // Try to resume - should get CANCELLED
         approval.setDecision(runId, "approval", true);
         ExecutionResult r2 = mgr.resume(runId);
         assertTrue(r2.isCancelled());

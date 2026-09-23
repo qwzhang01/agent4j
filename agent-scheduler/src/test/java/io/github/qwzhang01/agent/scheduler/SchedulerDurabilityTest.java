@@ -41,7 +41,6 @@ class SchedulerDurabilityTest {
         assertEquals(1, queue.totalRejected());
         assertEquals(2, queue.size());
 
-        // Consuming frees capacity again
         queue.pollNext();
         assertDoesNotThrow(() -> queue.enqueue(task("t4")));
         assertEquals(1, queue.totalRejected(), "no further rejection after capacity freed");
