@@ -1,34 +1,34 @@
-# 快速开始
+# Getting Started
 
-一句话：一个**可持久化、可观测、可治理、可热插拔**的 Java Agent Runtime。
+In one sentence: a **durable, observable, governable, hot-pluggable** Java Agent Runtime.
 
-仓库：[github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)
-坐标：`io.github.qwzhang01` / `seven-agent` / `0.1.5`（Central 最新）
-Central 发布走 `./mvnw -DskipTests deploy`。
+Repository: [github.com/qwzhang01/agent4j](https://github.com/qwzhang01/agent4j)
+Coordinates: `io.github.qwzhang01` / `seven-agent` / `0.1.5` (latest on Central)
+Releases are published via `./mvnw -DskipTests deploy`.
 
-`notes/` 是学习笔记，**不是用户契约**。对外行为以本目录文档、公开 API 与测试为准。
+`notes/` contains learning notes — **not a user contract**. External behavior is defined by the docs in this directory, the public API, and the tests.
 
-## 前置条件
+## Prerequisites
 
 - **JDK 17+**
-- Maven 3.9+，或直接用仓库自带的 `./mvnw`
-- 运行时模块（`agent-core` / `agent-model` 等）**不依赖 Spring Framework**（独立 Maven parent，不是 `spring-boot-starter-parent`）。可选模块 `agent-spring-boot-starter` 是唯一依赖 Spring 的地方。
+- Maven 3.9+, or the bundled wrapper `./mvnw`
+- Runtime modules (`agent-core` / `agent-model`, etc.) **do not depend on Spring Framework** (standalone Maven parent, not `spring-boot-starter-parent`). The optional module `agent-spring-boot-starter` is the only place Spring appears.
 
-不需要真实 LLM 即可跑通第一个例子。
+You can run the first example without a real LLM.
 
-## 从源码构建
+## Build from source
 
 ```bash
 git clone https://github.com/qwzhang01/agent4j.git
 cd agent4j
 
-# 全量编译 + 全部测试
+# Full build + all tests
 ./mvnw -B verify
-# 或
+# or
 mvn -B verify
 ```
 
-首次跑示例前，先把模块装进本地 Maven 仓库：
+Before running examples for the first time, install the modules into your local Maven repository:
 
 ```bash
 mvn install -DskipTests
@@ -36,11 +36,11 @@ mvn -pl examples compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
 ```
 
-IDE 里直接运行 `MockAgentExample.main` 也可以。
+You can also run `MockAgentExample.main` directly from your IDE.
 
-## 最小可运行代码
+## Minimal runnable code
 
-下面这段与 `examples` 里的 `MockAgentExample` 一致：用脚本化 `MockModelClient` 驱动一次 tool call，再给出最终文本。**5 分钟上手走 Secure 路径**（未知工具拒绝、副作用工具 deny-on-absence）。
+The snippet below matches `MockAgentExample` in `examples`: a scripted `MockModelClient` drives one tool call, then produces the final text. **The 5-minute quick start uses the secure path** (unknown tools rejected, side-effect tools denied on absence).
 
 ```java
 MockModelClient modelClient = MockModelClient.scripted()
@@ -59,44 +59,44 @@ Agent agent = SecureAgentBuilder.secure("mock-agent-v1", modelClient, registry)
 String response = agent.run("What time is it now?");
 ```
 
-包名：
+Packages:
 
-| 类型 | 包 |
-|------|-----|
+| Type | Package |
+|------|---------|
 | `Agent` / `AgentConfig` / `SimpleAgent` | `io.github.qwzhang01.agent.core.agent` |
 | `SecureAgentBuilder` | `io.github.qwzhang01.agent.security` |
 | `InMemoryToolRegistry` | `io.github.qwzhang01.agent.core.tool` |
 | `ToolCall` | `io.github.qwzhang01.agent.core.model` |
 | `MockModelClient` / `CurrentTimeTool` / `EchoTool` | `io.github.qwzhang01.agent.model.mock` |
 
-`maxSteps` 是安全上限，防止无限 tool 循环。读形工具（`NONE` / `READ_ONLY`）自动执行；`SIDE_EFFECT` / `DESTRUCTIVE` / `UNKNOWN` 默认要审批，零配置则拒绝。裸奔装配走 `UnsafeAgentBuilder` 或直接 `new SimpleAgent(config)`。
+`maxSteps` is a safety bound that prevents infinite tool loops. Read-only tools (`NONE` / `READ_ONLY`) execute automatically; `SIDE_EFFECT` / `DESTRUCTIVE` / `UNKNOWN` require approval by default and are rejected with zero configuration. The ungoverned path requires `UnsafeAgentBuilder` or a direct `new SimpleAgent(config)`.
 
-## 换成真实模型（概念上）
+## Switching to a real model (conceptually)
 
-`SecureAgentBuilder` / `AgentConfig` 只认 `ModelClient`。把 `MockModelClient` 换成 `OpenAiModelClient`（或 `AnthropicModelClient`）即可，**不必改 `Tool` / Loop**。
+`SecureAgentBuilder` / `AgentConfig` only know the `ModelClient` interface. Replace `MockModelClient` with `OpenAiModelClient` (or `AnthropicModelClient`) — **your `Tool` definitions and the loop do not change**.
 
-`OpenAiModelClient` 走 Java `HttpClient`，兼容 OpenAI、Azure OpenAI、Ollama 等 OpenAI-compatible 端点，以及火山方舟的兼容接口。构造参数（`apiKey` / `baseUrl` / `defaultModel` / timeout）以 `agent-model` 里 `OpenAiModelClient` 的 javadoc 与测试为准，这里不展开以免过期。
+`OpenAiModelClient` uses the Java `HttpClient` and works with OpenAI, Azure OpenAI, Ollama, and any OpenAI-compatible endpoint, including Volcano Ark's compatible API. Constructor parameters (`apiKey` / `baseUrl` / `defaultModel` / timeout) are documented in the `OpenAiModelClient` javadoc and tests in `agent-model` — deliberately not repeated here to avoid staleness.
 
-### 推理模型（reasoning）
+### Reasoning models
 
-火山方舟 `doubao-seed-*`、DeepSeek-R1、Qwen3 思考模式这类模型，会把思维链放在与 `content` 分离的另一个字段里（`reasoning_content` / `reasoning` / `thinking`，各家叫法不同）。客户端**始终**把这条通道挡在答案之外。
+Reasoning models such as Volcano Ark `doubao-seed-*`, DeepSeek-R1, and Qwen3 thinking mode place their chain of thought in a field separate from `content` (`reasoning_content` / `reasoning` / `thinking` — vendors differ). The client **always** keeps this channel out of your answer.
 
-请求侧有两个正交的旋钮：
+Two orthogonal knobs on the request side:
 
-| 旋钮 | 用途 | 放哪 |
+| Knob | Purpose | Where |
 |---|---|---|
-| `ReasoningConfig` | 跨厂商通用的意图：`auto` / `enabled` / `disabled` + `effort` | `ModelRequest.reasoning()` 或客户端默认值 |
-| `extraBody` | 厂商特有字段，原样并入请求体 | 客户端构造参数 / `agent4j.model.extra-body` |
+| `ReasoningConfig` | Cross-vendor intent: `auto` / `enabled` / `disabled` + `effort` | `ModelRequest.reasoning()` or a client default |
+| `extraBody` | Vendor-specific fields, merged verbatim into the request body | Client constructor / `agent4j.model.extra-body` |
 
-框架不枚举供应商：响应侧靠容忍式读取（见 `ChatDelta`），请求侧靠逃生舱。这样每来一个新兼容端点都不需要改框架。某家不支持你请求的开关时会打 warning，而不是静默丢弃你的意图。
+The framework does not enumerate vendors: the response side relies on tolerant reading (see `ChatDelta`), the request side on the escape hatch. This means a new compatible endpoint requires no framework changes. If a vendor does not support a requested toggle, a warning is logged rather than silently dropping your intent.
 
-生产环境通常还会叠装饰器：`RetryModelClient`、`TimeoutModelClient`、`FallbackModelClient`、`StructuredOutputModelClient`。见 `DecoratedModelClientExample`。
+Production setups typically stack decorators: `RetryModelClient`, `TimeoutModelClient`, `FallbackModelClient`, `StructuredOutputModelClient`. See `DecoratedModelClientExample`.
 
-## 接到你自己的项目
+## Using it in your own project
 
-Central 上最新版本是 `0.1.5`，直接引用即可。
+The latest version on Central is `0.1.5` — reference it directly.
 
-用 BOM 对齐版本：
+Align versions with the BOM:
 
 ```xml
 <dependencyManagement>
@@ -123,11 +123,11 @@ Central 上最新版本是 `0.1.5`，直接引用即可。
 </dependencies>
 ```
 
-按需再加 `agent-workflow`、`agent-security` 等，见 [modules.md](modules.md)。
+Add `agent-workflow`, `agent-security`, etc. as needed — see [modules.md](modules.md).
 
 ## Spring Boot
 
-可选 starter，**不**把 Spring 引进 core。Moonlit 这类 Spring Boot 3.2 / Java 17 应用加依赖即可：
+The optional starter does **not** pull Spring into core. Spring Boot 3.2 / Java 17 apps like Moonlit just add the dependency:
 
 ```xml
 <dependency>
@@ -137,9 +137,9 @@ Central 上最新版本是 `0.1.5`，直接引用即可。
 </dependency>
 ```
 
-`0.1.5` 在 Central，直接引用。
+`0.1.5` is on Central — reference it directly.
 
-`application.yml`：
+`application.yml`:
 
 ```yaml
 agent4j:
@@ -150,10 +150,10 @@ agent4j:
     base-url: https://api.openai.com/v1
     name: gpt-4o-mini
     timeout: 60s
-    reasoning:          # 推理模型：只表达"意图"，各家 wire 格式由客户端翻译
+    reasoning:          # reasoning models: express "intent" only; wire formats are translated per vendor
       mode: disabled    # auto | enabled | disabled
-      effort: medium    # 可选：low | medium | high（仅部分厂商支持）
-    extra-body:         # 逃生舱：厂商特有字段，原样并入请求体
+      effort: medium    # optional: low | medium | high (only some vendors support it)
+    extra-body:         # escape hatch: vendor-specific fields, merged verbatim into the request body
       thinking:
         budget_tokens: 8000
   retry:
@@ -164,9 +164,9 @@ agent4j:
     duration: 30s
 ```
 
-`reasoning` 只放**跨厂商通用**的意图。某家独有的旋钮（Anthropic 的 `budget_tokens`、OpenAI 的 `include` 等）走 `extra-body`，不要塞进核心模型——这样下一个新厂商出现时不需要改框架。与标准字段冲突时以标准字段为准，`extra-body` 无法破坏协议。
+`reasoning` holds only **cross-vendor** intent. Vendor-specific knobs (Anthropic's `budget_tokens`, OpenAI's `include`, etc.) go through `extra-body` — don't stuff them into the core model, so the next new vendor requires no framework changes. On conflict with a standard field, the standard field wins; `extra-body` cannot break the protocol.
 
-注入 `ModelClient` 与 `AgentFactory`。**不要**指望有一个全局 `Agent` bean——角色各有 system prompt，用工厂按角色创建：
+Inject `ModelClient` and `AgentFactory`. **Do not** expect a global `Agent` bean — each character has its own system prompt; create agents per role with the factory:
 
 ```java
 import io.github.qwzhang01.agent.core.agent.Agent;
@@ -196,14 +196,14 @@ public class ChatService {
 }
 ```
 
-Bean 名：`modelClient`、`agentFactory`。已有 `ModelClient` bean 时 starter 不会覆盖。`agent4j.enabled=false` 关闭自动配置。
+Bean names: `modelClient`, `agentFactory`. The starter does not override an existing `ModelClient` bean. `agent4j.enabled=false` disables the autoconfiguration.
 
-## 下一步
+## Next steps
 
-| 想看什么 | 去哪 |
-|----------|------|
-| Agent / Loop / Memory / 治理 | [concepts.md](concepts.md) |
-| 模块怎么拆、依赖谁 | [modules.md](modules.md) |
-| 和 LangChain4j / Spring AI 的差异 | [comparison.md](comparison.md) |
-| v1 明确不做的事 | [limitations.md](limitations.md) |
-| 33 个可运行示例 | [../examples/README.md](../examples/README.md) |
+| What you want | Where |
+|---------------|-------|
+| Agent / Loop / Memory / Governance | [concepts.md](concepts.md) |
+| How modules split and depend on each other | [modules.md](modules.md) |
+| Differences vs LangChain4j / Spring AI | [comparison.md](comparison.md) |
+| What v1 explicitly does not do | [limitations.md](limitations.md) |
+| 33 runnable examples | [../examples/README.md](../examples/README.md) |

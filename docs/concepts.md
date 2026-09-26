@@ -1,94 +1,94 @@
-# 核心概念
+# Core Concepts
 
-本页只讲运行时怎么转。模块清单见 [modules.md](modules.md)。`notes/` 里的阶段笔记是学习材料，不是契约。
+This page covers only how the runtime works. For the module inventory, see [modules.md](modules.md). The stage notes in `notes/` are learning material, not a contract.
 
 ## Agent
 
-`Agent` 是调用入口，故意很薄：`run(userInput)` 一次跑完，`run(userInput, state)` 带着已有 `AgentState` 续跑。流式输出走 `stream(userInput, listener)`，边生成边回调 `AgentEvent`。多模态用户消息走 `run(ChatMessage)` / `stream(ChatMessage, listener)`。
+`Agent` is the entry point, deliberately thin: `run(userInput)` runs a full turn; `run(userInput, state)` resumes with an existing `AgentState`. Streaming goes through `stream(userInput, listener)`, emitting `AgentEvent` callbacks as generation proceeds. Multimodal user messages go through `run(ChatMessage)` / `stream(ChatMessage, listener)`.
 
-默认实现是 `SimpleAgent`。生产入口是 `SecureAgentBuilder`（校验在治理外：validate → permission → rate-limit → approval → execute）。静态蓝图是 `AgentConfig`：名字、system prompt、`ModelClient`、`ToolRegistry`、`maxSteps`，以及可选的 `ContextBuilder`（记忆注入；`null` 则透传）。`run(...)` 未传 `RunContext` 时自动 `RunContext.create()`；无 ctx 的副作用工具在校验层直接 `[DENIED]`。
+The default implementation is `SimpleAgent`. The production entry point is `SecureAgentBuilder` (validation sits outside governance: validate → permission → rate-limit → approval → execute). The static blueprint is `AgentConfig`: name, system prompt, `ModelClient`, `ToolRegistry`, `maxSteps`, plus an optional `ContextBuilder` (memory injection; `null` means pass-through). When `run(...)` is called without a `RunContext`, one is created automatically via `RunContext.create()`; side-effect tools without a context are denied `[DENIED]` at the validation layer.
 
-模块：`agent-core`。示例：`MockAgentExample` / `StreamingAgentExample`。
+Module: `agent-core`. Examples: `MockAgentExample` / `StreamingAgentExample`.
 
 ## Tool
 
-`Tool` 是模型可调用的动作。注册进 `ToolRegistry`（默认 `InMemoryToolRegistry`），由 `ToolExecutor` 执行。模型返回 `ToolCall`，Loop 调工具，把结果写回消息列表，再问模型。
+A `Tool` is an action the model can invoke. Tools register into a `ToolRegistry` (default `InMemoryToolRegistry`) and are executed by a `ToolExecutor`. The model returns a `ToolCall`; the loop invokes the tool, writes the result back into the message list, and asks the model again.
 
-工具可以是本地 Java（`CurrentTimeTool`）、SPI 插件、MCP 适配器、或沙箱里编译执行的代码。治理层（权限 / 审批 / 净化 / 审计）包在执行器外面，不改 `Tool` 接口。
+A tool can be a local Java class (`CurrentTimeTool`), an SPI plugin, an MCP adapter, or code compiled and executed inside a sandbox. The governance layer (permissions / approvals / sanitizer / audit) wraps the executor and never touches the `Tool` interface.
 
-模块：接口在 `agent-core`；插件 `agent-plugin`；治理 `agent-security`；MCP `agent-mcp`。
+Modules: interfaces in `agent-core`; plugins in `agent-plugin`; governance in `agent-security`; MCP in `agent-mcp`.
 
 ## Loop
 
-`AgentLoop` 是 ReAct 循环：在 `maxSteps` 内反复「组请求 → `ModelClient.chat` → 有 tool call 就执行 → 否则结束」。`stream` 走同一循环，但调用 `ModelClient.stream`，把 token / 工具起止推给 `AgentEvent` sink。Loop 是函数，不是线程：吃 `AgentConfig` + 可变 `AgentState`，返回更新后的 state。可测、可续跑。
+`AgentLoop` is the ReAct loop: within `maxSteps`, repeatedly "assemble request → `ModelClient.chat` → execute tool calls if any → otherwise finish". `stream` uses the same loop but calls `ModelClient.stream`, pushing token / tool lifecycle events to an `AgentEvent` sink. The loop is a function, not a thread: it takes an `AgentConfig` plus a mutable `AgentState` and returns the updated state. Testable and resumable.
 
-`maxSteps` 是**整段对话累计**的步数上限，`AgentConfig` 是 SSOT：每次 `run(input, state)` 都会把 `state.maxSteps` 同步成当前 config 的值，但 **不会**清零 `currentStep`。已经跑了 8 步、config 仍是 10，续跑只剩 2 步。要放宽或收紧上限，改 config，不要改 state。
+`maxSteps` is a bound **accumulated across the whole conversation**; `AgentConfig` is the SSOT: each `run(input, state)` syncs `state.maxSteps` to the current config value but does **not** reset `currentStep`. If 8 steps have already run and the config says 10, resuming leaves only 2 steps. To loosen or tighten the bound, change the config, not the state.
 
-默认实现是 `ReActAgentLoop`。`SimpleAgent` 把 `run` / `stream` 委托给它。
+The default implementation is `ReActAgentLoop`. `SimpleAgent` delegates `run` / `stream` to it.
 
-模块：`agent-core`。
+Module: `agent-core`.
 
 ## Workflow
 
-单次 `Agent.run` 解决不了分支、人工审批、并行和长等待时，上图引擎。`Workflow` 是不可变图；`GraphRuntime` 解释执行；状态写在黑板 `WorkflowState` 上。
+When a single `Agent.run` cannot handle branching, human approvals, parallelism, or long waits, use the graph engine. A `Workflow` is an immutable graph; `GraphRuntime` interprets it; state lives on the `WorkflowState` blackboard.
 
-v1 有 7 种节点（`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode`，以及并行汇合用的 `JoinPolicy`）。`Agent` 可以作为图上的一个节点，不必另造一套。
+v1 ships 7 node types (`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode`, plus the `JoinPolicy` for parallel joins). An `Agent` can be a node on the graph — no parallel framework needed.
 
-模块：`agent-workflow`。示例：`WorkflowSupportFlowExample`。
+Module: `agent-workflow`. Example: `WorkflowSupportFlowExample`.
 
 ## Memory
 
-三层记忆 + 一条 scope：
+Three memory tiers plus one scope axis:
 
-| 层 | 是什么 |
-|----|--------|
-| Working | 当前 `AgentState` 里的对话 |
-| Session | 一轮会话的连续上下文 |
-| Long-term | `MemoryStore` 里可检索的条目 |
+| Tier | What it is |
+|------|------------|
+| Working | The conversation inside the current `AgentState` |
+| Session | Continuous context within one session |
+| Long-term | Retrievable entries in a `MemoryStore` |
 
-`MemoryScope`（agent / user / session / task / channel）决定「谁能看见」。共享记忆不是第二套系统，只是 scope 取值不同。写入经 `MemoryExtractor`（`extract.KeywordMemoryExtractor` 或 `extract.LlmMemoryExtractor`）+ `MemoryPolicy`；读出经 `MemoryRetriever`（`recallForContext` 按 importance 再 recency 取 topN）+ `context.MemoryContextBuilder`。房间引擎走可选的 `MemorySource`（`ChatRoom.Builder.source`，默认不挂）。`dueAt` 是可选时间戳，`LlmMemoryExtractor` 可从 JSON 解析；查询可按区间过滤；框架不调度、不解释含义。抽取指令与 subject 词表由调用方决定。超预算时 `context.ContextCompressor` 做压缩。
+`MemoryScope` (agent / user / session / task / channel) decides "who can see what". Shared memory is not a second system — it is just a different scope value. Writes go through a `MemoryExtractor` (`extract.KeywordMemoryExtractor` or `extract.LlmMemoryExtractor`) plus a `MemoryPolicy`; reads go through a `MemoryRetriever` (`recallForContext` takes topN ranked by importance then recency) plus `context.MemoryContextBuilder`. The room engine uses an optional `MemorySource` (`ChatRoom.Builder.source`, not attached by default). `dueAt` is an optional timestamp that `LlmMemoryExtractor` can parse from JSON; queries can filter by range; the framework does not schedule it or interpret its meaning. Extraction instructions and the subject vocabulary are decided by the caller. When over budget, `context.ContextCompressor` compresses.
 
-包按流水线切，仍是一个 Maven 模块：根包是接线面（Store / Entry / Query / Scope / Extractor / Retriever / Policy / Admin）；`extract/` 写、`store/` 存、`context/` 读与压缩、`session/` 会话层、`tools/` 模型自管记忆。
+Packages are split along the pipeline, still a single Maven module: the root package is the wiring surface (Store / Entry / Query / Scope / Extractor / Retriever / Policy / Admin); `extract/` writes, `store/` persists, `context/` reads and compresses, `session/` is the session layer, `tools/` exposes model-managed memory.
 
-模块：`agent-memory`。示例：`MemoryExample` / `CompressionExample` / `ChannelMemoryExample`。
+Module: `agent-memory`. Examples: `MemoryExample` / `CompressionExample` / `ChannelMemoryExample`.
 
 ## ChatRoom
 
-房间对话引擎（`agent-chat`）与单次 `Agent.run` 不同：多 persona、选人策略、拼上下文、流式、业务 Listener。
+The room conversation engine (`agent-chat`) differs from a single `Agent.run`: multiple personas, speaker selection, context assembly, streaming, business listeners.
 
-| 概念 | 说明 |
-|------|------|
-| `ChatRoom` / `ChatEngine` | 一次 `say(userLine)`：选人 → 组 messages → `ModelClient.stream` → 通知 Listener |
-| `SpeakerPolicy` | 谁回：`SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker` / `DirectorSpeaker`（可组合） |
-| `ContextSource` | 拼 prompt 片段：`PersonaSource` / `HistorySource` / `ExtraTextSource` / 可选 `MemorySource` / `LoreSource` / `RelationSource` |
-| `ChatListener` | 落库、抽取、关系等业务回调；引擎不内置记忆写回。可选 `onConsistencyWarning` |
-| `ConsistencyGuard` | Done 后可选防漂：人设锚点 + 回复 → OK/告警。默认 no-op，不改写历史 |
-| `RoomIdentity` | 房间身份：opaque memory-scope 字符串。引擎不解析前缀、不依赖 channel |
-| `RelationSnapshot` | 关系快照：自由 stage + 槽。`RelationSource` 只注入，不算分 |
+| Concept | Description |
+|---------|-------------|
+| `ChatRoom` / `ChatEngine` | One `say(userLine)`: select speaker → assemble messages → `ModelClient.stream` → notify listeners |
+| `SpeakerPolicy` | Who replies: `SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker` / `DirectorSpeaker` (composable) |
+| `ContextSource` | Assembles prompt fragments: `PersonaSource` / `HistorySource` / `ExtraTextSource` / optional `MemorySource` / `LoreSource` / `RelationSource` |
+| `ChatListener` | Business callbacks: persistence, extraction, relations; the engine has no built-in memory write-back. Optional `onConsistencyWarning` |
+| `ConsistencyGuard` | Optional post-turn drift guard: persona anchor + reply → OK/warning. Default no-op; never rewrites history |
+| `RoomIdentity` | Room identity: an opaque memory-scope string. The engine parses no prefixes and depends on no channel |
+| `RelationSnapshot` | Relation snapshot: free-form stage plus slots. `RelationSource` only injects it; it does not score |
 
-默认 `ContextAssembler.defaults()` = Persona + History(20)。`MemorySource` / `LoreSource` / `RelationSource` **不默认挂**；自定义 `.source(...)` 时需自行带上 Persona + History。`RoomIdentity` 把 user/session/pair 等 scope 字符串挂在 Room 上，`MemorySource` 无显式 list 时继承。`LoreSource` 只扫本轮用户句（关键词/正则），词库在产品。`RelationSource` 注入 `RelationSnapshot`（stage + 槽），不算分；预渲染关系文案仍可走 `ExtraTextSource`。`ConsistencyGuard` 默认 no-op；告警不改写回复。抽取、subject 词表、主动提醒（`dueAt` 扫库）均在业务侧（Moonlit，T12 prompt 已含日常追问；T17 Job 已开口），见 `notes/architecture-agent-chat.md` §9。Moonlit 1:1 聊天已走 `ChatRoom.stream`（T15）。
+The default `ContextAssembler.defaults()` = Persona + History(20). `MemorySource` / `LoreSource` / `RelationSource` are **not attached by default**; when you customize `.source(...)` you must bring Persona + History yourself. `RoomIdentity` attaches user/session/pair scope strings to the room; `MemorySource` inherits them when no explicit list is given. `LoreSource` only scans the current user line (keywords/regex); the vocabulary lives in the product. `RelationSource` injects the `RelationSnapshot` (stage + slots) without scoring; pre-rendered relation text can still go through `ExtraTextSource`. `ConsistencyGuard` is no-op by default; warnings never rewrite replies. Extraction, subject vocabulary, and proactive reminders (`dueAt` scans) all live on the business side (Moonlit; the T12 prompt already includes daily follow-ups; the T17 Job is wired up) — see `notes/architecture-agent-chat.md` §9. Moonlit's 1:1 chat already runs on `ChatRoom.stream` (T15).
 
-模块：`agent-chat`（compile 依赖 `agent-memory` 仅用于可选 `MemorySource`）。示例：`ChatRoomExample`。角色向 eval：`CharacterEvalTest`（Mock，无 LLM-as-judge）。
+Module: `agent-chat` (its compile dependency on `agent-memory` exists only for the optional `MemorySource`). Example: `ChatRoomExample`. Character-oriented eval: `CharacterEvalTest` (mock-based, no LLM-as-judge).
 
 ## Governance
 
-工具默认不可信。5 分钟上手走 `SecureAgentBuilder`：校验在治理外（validate → permission → rate-limit → approval → execute），读形工具 AUTO，其余 REQUIRES_APPROVAL，零配置 `autoReject`。未决审批把 Agent 停在 `WAITING_APPROVAL`（`DurableToolApprovalService` 写 `ApprovalStore`，不阻塞线程）；`Agent.resume` 在决策落地后重试同一 tool call。裸奔必须点名 `UnsafeAgentBuilder`。
+Tools are untrusted by default. The 5-minute quick start uses `SecureAgentBuilder`: validation sits outside governance (validate → permission → rate-limit → approval → execute); read-only tools run AUTO, everything else is REQUIRES_APPROVAL, and zero configuration means `autoReject`. A pending approval parks the agent in `WAITING_APPROVAL` (`DurableToolApprovalService` writes an `ApprovalStore` without blocking threads); `Agent.resume` retries the same tool call after a decision lands. The ungoverned path requires naming `UnsafeAgentBuilder` explicitly.
 
-治理四件套挂在 `GovernedToolExecutor` 上：
+Four governance pieces hang on the `GovernedToolExecutor`:
 
 1. **Permission** — `AUTO` / `REQUIRES_APPROVAL` / `DENY`
-2. **Approval** — 人工、自动或持久化审批（`PENDING` → 暂停）
-3. **Sanitizer** — 工具回包注入防御（替换 / 截断 / 阻断）
-4. **Audit** — 允许、拒绝、执行、失败、净化都记
+2. **Approval** — manual, automatic, or durable approvals (`PENDING` → pause)
+3. **Sanitizer** — injection defense on tool outputs (replace / truncate / block)
+4. **Audit** — allow, deny, execute, failure, and sanitize decisions are all recorded
 
-MCP 工具注册后自动走同一套，不用再写一遍。
+MCP tools registered through the adapter go through the same stack — no duplicate wiring.
 
-模块：`agent-security`。示例：`SecurityExample` / `InjectionDefenseExample`。
+Module: `agent-security`. Examples: `SecurityExample` / `InjectionDefenseExample`.
 
 ## Checkpoint
 
-长流程会停：等人批、等事件、等定时。停下来要把图状态和 `AgentState` 存住，恢复时从断点继续，而不是重跑。
+Long-running flows stop: waiting for a person, an event, or a timer. On pause, the graph state and `AgentState` are persisted; on resume, execution continues from the breakpoint instead of rerunning.
 
-`Checkpoint` / `CheckpointStore`（内存或文件）属于 workflow runtime。调度器（`agent-scheduler`）在定时或事件到达后 `resume`。企业任务审批、频道接力也复用同一套「停 → 存 → 续」。
+`Checkpoint` / `CheckpointStore` (in-memory or file) belong to the workflow runtime. The scheduler (`agent-scheduler`) triggers `resume` after a timer or event arrives. Enterprise task approvals and channel handoffs reuse the same "stop → persist → resume" mechanism.
 
-模块：`agent-workflow`（存储）+ `agent-scheduler`（唤醒）。示例：`CheckpointExample` / `SchedulerExample`。
+Modules: `agent-workflow` (storage) + `agent-scheduler` (wake-up). Examples: `CheckpointExample` / `SchedulerExample`.

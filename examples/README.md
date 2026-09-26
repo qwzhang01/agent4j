@@ -1,93 +1,93 @@
-# 示例
+# Examples
 
-可运行 `main` 全部在 `io.github.qwzhang01.agent.examples`（另有 SPI 插件类，不是独立入口）。
+All runnable `main` classes live in `io.github.qwzhang01.agent.examples` (plus SPI plugin classes, which are not standalone entry points).
 
-**从这里开始：`MockAgentExample`。** 不需要 API Key、不需要外部进程。
+**Start here: `MockAgentExample`.** No API key, no external processes.
 
-## 怎么跑
+## How to run
 
-首次：
+First time:
 
 ```bash
-# 在仓库根目录（projects/java-agent-framework 或独立 clone 的 agent4j）
+# From the repo root (projects/java-agent-framework or a standalone clone of agent4j)
 mvn install -DskipTests
 ```
 
-之后（把 `NAME` 换成下表类名）：
+Then (replace `NAME` with a class from the table below):
 
 ```bash
 mvn -pl examples compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.NAME
 ```
 
-例如：
+For example:
 
 ```bash
 mvn -pl examples compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
 ```
 
-IDE 里直接跑对应 `main` 即可。
+You can also run the corresponding `main` directly from your IDE.
 
-## 零 LLM（优先跑这些）
+## Zero-LLM examples (run these first)
 
-用 `MockModelClient` 或纯本地组件，默认不访问外网。
+These use `MockModelClient` or purely local components and do not access the network by default.
 
-| 类名 | 看什么 |
-|------|--------|
-| **`MockAgentExample`** | **最小 Agent：注册工具 + 脚本化模型 + `run`** |
-| `StreamingAgentExample` | `stream`：边生成边打印 `ContentDelta` |
-| `DecoratedModelClientExample` | Retry / Timeout / Fallback / StructuredOutput 叠装饰器 |
-| `PluginExample` | SPI 发现、加载、卸载、重载 |
-| `PluginSelfModificationExample` | 模型在对话里管理插件（inspect / load / unload） |
-| `SandboxExample` | ClassLoader / Process 沙箱 |
-| `SandboxAgentExample` | 模型触发 `sandbox_execute` 的完整链路 |
-| `WorkflowSupportFlowExample` | 客服三路图：查询 / 退款审批 / 转人工 |
-| `CheckpointExample` | 图执行断点保存与恢复 |
-| `SchedulerExample` | 定时恢复、事件恢复、任务队列 |
-| `MemoryExample` | 多轮记忆写入与回注 |
-| `CompressionExample` | 超预算时压缩上下文 |
-| `ChannelMemoryExample` | 频道共享记忆 + 审批 / 覆盖 |
-| `SecurityExample` | 权限三档 + 审批 + 审计 |
-| `InjectionDefenseExample` | 工具回包注入：SANITIZE / TRUNCATE / BLOCK |
-| `McpExample` | 进程内 Mock MCP：发现工具 + 治理执行 |
-| `MultiAgentExample` | Supervisor 并行派发内部 Worker + 进程内 A2A |
-| `HttpA2AExample` | A2A 跨真实 HTTP：卡片发现 / `message/send` / 状态轮询 / 入站拒绝 / Supervisor 路由 |
-| `ChannelAgentExample` | 频道身份、共享会话、任务接力 |
-| `AmbientExample` | Ambient 主动推送 + 噪音闸 |
-| `TrajectoryExample` | 轨迹记录 → 奖励 → 采样 → JSONL → 回放 |
-| `PreferenceAnnotationExample` | 双 rollout 标注，写出 DPO preferences |
-| `EnterpriseAssistantExample` | 租户 / RAG / 审批断点 / 预算拒绝 |
-| `TavernGameExample` | 角色 / 世界 / 回合 / 回放 |
-| `ChatRoomExample` | 房间聊天：一对一流式 + 两人 `@` 点名（零 LLM） |
-| `CodingAgentExample` | 工作区、补丁、命令白名单、有界修复环 |
-| `ObservabilityExample` | 指标、五维预算、路由、评估、版本三元组 |
-| `DeclarativeAgentExample` | YAML 定义 Agent + 模板 / Prompt 版本 / DAG |
-| `WebhookExample` | HMAC + 幂等 Webhook 驱动 Agent |
+| Class | What to look at |
+|-------|-----------------|
+| **`MockAgentExample`** | **Minimal agent: register a tool + scripted model + `run`** |
+| `StreamingAgentExample` | `stream`: printing `ContentDelta` as it arrives |
+| `DecoratedModelClientExample` | Stacking Retry / Timeout / Fallback / StructuredOutput decorators |
+| `PluginExample` | SPI discovery, load, unload, reload |
+| `PluginSelfModificationExample` | The model manages plugins in-conversation (inspect / load / unload) |
+| `SandboxExample` | ClassLoader / process sandboxes |
+| `SandboxAgentExample` | The full chain of the model triggering `sandbox_execute` |
+| `WorkflowSupportFlowExample` | A three-way support graph: lookup / refund approval / escalate to human |
+| `CheckpointExample` | Saving and restoring graph execution at a breakpoint |
+| `SchedulerExample` | Timer-based resume, event resume, task queue |
+| `MemoryExample` | Multi-turn memory writes and re-injection |
+| `CompressionExample` | Compressing context when over budget |
+| `ChannelMemoryExample` | Channel-shared memory + approvals / overrides |
+| `SecurityExample` | Three permission levels + approvals + audit |
+| `InjectionDefenseExample` | Tool-output injection: SANITIZE / TRUNCATE / BLOCK |
+| `McpExample` | In-process mock MCP: tool discovery + governed execution |
+| `MultiAgentExample` | Supervisor dispatching internal workers in parallel + in-process A2A |
+| `HttpA2AExample` | A2A over real HTTP: card discovery / `message/send` / status polling / inbound rejection / supervisor routing |
+| `ChannelAgentExample` | Channel identity, shared sessions, task handoff |
+| `AmbientExample` | Ambient proactive push + noise gate |
+| `TrajectoryExample` | Trajectory recording → reward → sampling → JSONL → replay |
+| `PreferenceAnnotationExample` | Double-rollout annotation writing DPO preferences |
+| `EnterpriseAssistantExample` | Tenants / RAG / approval breakpoints / budget rejection |
+| `TavernGameExample` | Characters / world / turn engine / replay |
+| `ChatRoomExample` | Room chat: 1:1 streaming + two-person `@` mentions (zero LLM) |
+| `CodingAgentExample` | Workspace, patches, command allowlist, bounded fix loop |
+| `ObservabilityExample` | Metrics, five-dimension budgets, routing, evaluation, version triplets |
+| `DeclarativeAgentExample` | YAML-defined agent + templates / prompt versions / DAG |
+| `WebhookExample` | HMAC + idempotent webhooks driving an agent |
 
-## 需要额外环境 / 真实服务
+## Requires extra environment / real services
 
-跑之前看各类 javadoc 里的前置条件（Node / `npx`、模型端点、多模态服务等）。
+Check each class's javadoc for prerequisites (Node / `npx`, model endpoints, multimodal services, etc.) before running.
 
-| 类名 | 额外依赖 |
-|------|----------|
-| `LlmDrivenSchedulerExample` | 由模型输出驱动等待事件 / 延时（不是写死在图上的参数） |
-| `MultimodalExample` | 读图 / 生图 / 生视频相关客户端与治理默认值 |
-| `McpRealServerExample` | 官方 MCP filesystem server（`npx -y @modelcontextprotocol/server-filesystem`） |
-| `ManagedMcpExample` | 同上真实 stdio server，演示崩溃后按预算重启 |
+| Class | Extra dependency |
+|-------|------------------|
+| `LlmDrivenSchedulerExample` | Wait-events / delays driven by model output (not parameters hard-coded on the graph) |
+| `MultimodalExample` | Clients and governance defaults for image reading / generation / video generation |
+| `McpRealServerExample` | The official MCP filesystem server (`npx -y @modelcontextprotocol/server-filesystem`) |
+| `ManagedMcpExample` | Same real stdio server, demonstrating budget-bound restarts after crashes |
 
-`McpRealServerExample` / `ManagedMcpExample` 典型准备：
+Typical preparation for `McpRealServerExample` / `ManagedMcpExample`:
 
 ```bash
 mkdir -p /tmp/mcp-demo && echo "hello" > /tmp/mcp-demo/hello.txt
 ```
 
-## 建议顺序
+## Suggested order
 
-1. `MockAgentExample` — 确认 Loop 和 Tool 通了  
-2. `DecoratedModelClientExample` — 再换真实 `OpenAiModelClient`（构造见该类 javadoc / 测试）  
-3. `SecurityExample` — 工具默认要过治理  
-4. `WorkflowSupportFlowExample` + `CheckpointExample` — 图与断点  
-5. 按场景：企业 / 酒馆 / 编码 / 可观测 / 轨迹  
+1. `MockAgentExample` — confirm the loop and tools work  
+2. `DecoratedModelClientExample` — then swap in a real `OpenAiModelClient` (constructor in that class's javadoc / tests)  
+3. `SecurityExample` — tools pass governance by default  
+4. `WorkflowSupportFlowExample` + `CheckpointExample` — graphs and breakpoints  
+5. By scenario: enterprise / roleplay / coding / observability / trajectories  
 
-概念见 [../docs/concepts.md](../docs/concepts.md)，v1 做不到的事先看 [../docs/limitations.md](../docs/limitations.md)。
+For concepts see [../docs/concepts.md](../docs/concepts.md); for what v1 cannot do, read [../docs/limitations.md](../docs/limitations.md) first.
