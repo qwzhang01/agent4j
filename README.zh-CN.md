@@ -5,7 +5,9 @@
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
 [![Maven](https://img.shields.io/badge/Maven-0.1.5-blue.svg)](https://github.com/qwzhang01/agent4j)
 
-> A persistent, observable, governable, hot-pluggable Java Agent Runtime.
+> A Java agent runtime for runs that pause, call tools with side effects, and have to survive a restart.
+
+English: [README.md](README.md).
 
 可持久化、可观测、可治理、可热插拔的 Java Agent Runtime。JDK 17，**不依赖 Spring**。Central 最新版本 `0.1.5`。Central 发布走 `./mvnw -DskipTests deploy`（见 [RELEASING.md](RELEASING.md)）。
 

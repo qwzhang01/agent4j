@@ -1,5 +1,7 @@
 # Learning notes
 
+> **English:** design notes and essays, mostly in Chinese. They are not an API contract. Start with the [README](../README.md) and [docs/](../docs/).
+
 本目录是 18 周设计蓝图与学习文章，**不是用户契约**。
 
 对外行为以公开 API、测试和 [`docs/`](../docs/) 为准。

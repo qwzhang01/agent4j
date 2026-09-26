@@ -16,7 +16,7 @@ LangChain4j 覆盖面广：模型适配、RAG 组件、记忆、工具绑定、�
 
 Spring AI 跟 Spring 生态绑在一起：自动配置、Advisor、评测与可观测的起步成本低。如果你的系统已经是 Spring Boot，它是默认选项。
 
-本库的 **core / model / 运行时模块不依赖 Spring Framework**。`Agent` / `Tool` / Loop 是普通 Java。可选模块 `agent-spring-boot-starter` 提供 `application.yml` 绑定、`ModelClient` bean 和 `AgentFactory`（不自动创建单个 `Agent` bean，也不带 Actuator）。v1 也没有 OpenTelemetry SDK。
+本库的 **core / model / 运行时模块不依赖 Spring Framework**。`Agent` / `Tool` / Loop 是普通 Java。可选模块 `agent-spring-boot-starter` 提供 `application.yml` 绑定、`ModelClient` bean 和 `AgentFactory`（不自动创建单个 `Agent` bean，也不带 Actuator）。OpenTelemetry 在独立模块 `agent-otel-export`，SDK 不进核心。
 
 要「Spring 里快速接模型」选 Spring AI。要「Spring 可有可无、治理和断点恢复是一等公民」再看这里。
 
@@ -24,7 +24,7 @@ Spring AI 跟 Spring 生态绑在一起：自动配置、Advisor、评测与可�
 
 AgentScope（含 Java 实现）强调多 Agent 消息传递、会话与研究型编排，和「搭一个对话系统 / 多智能体实验」更近。
 
-本项目的编排（`agent-orchestrator`）是 Supervisor / Worker 并行派发 + 进程内 A2A，不是通用消息总线。频道层解决的是身份交集、共享会话、任务接力、Ambient 推送。MCP 在 v1 只有 stdio。
+本项目的编排（`agent-orchestrator`）是 Supervisor / Worker 并行派发 + 进程内 A2A，不是通用消息总线。`agent-mcp` 另有 HTTP A2A。频道层解决的是身份交集、共享会话、任务接力、主动推送。MCP 在本版是 stdio + HTTP/SSE，不是 Streamable HTTP。
 
 两者都「能跑多 Agent」，但本项目把多 Agent 放在可治理 Runtime 之上，而不是以对话框架为中心。
 
@@ -32,8 +32,9 @@ AgentScope（含 Java 实现）强调多 Agent 消息传递、会话与研究型
 
 - 只要一个 chat completion 封装，或只要 Spring 自动配置。
 - 需要丰富的现成 RAG / 向量库 / 评估平台，且不想自己装。
-- 需要 Docker/WASM 沙箱、MCP SSE、HTTP A2A、真 Git、OTel、训练闭环——这些是 [v1 非目标](limitations.md)。
-- Portal 完成 Publish 之前，只能从源码 `mvn install`，没有 Central 稳定版。
+- 需要 Docker/WASM 沙箱、MCP Streamable HTTP、真 Git、训练闭环、LLM-as-judge——这些是 [本版非目标](limitations.md)。HTTP A2A 和 `agent-otel-export` 已经有。
+
+`0.1.5` 已在 Maven Central，试用不必先从源码安装。
 
 ## 什么时候值得试
 

@@ -1,35 +1,21 @@
 # Examples
 
-All runnable `main` classes live in `io.github.qwzhang01.agent.examples` (plus SPI plugin classes, which are not standalone entry points).
+Runnable `main` classes live in `io.github.qwzhang01.agent.examples`. SPI plugin classes in the same tree are not entry points.
 
-**Start here: `MockAgentExample`.** No API key, no external processes.
+**Start with `MockAgentExample`.** No API key, no external processes. It shows a scripted model, one tool, and `SecureAgentBuilder`.
 
 ## How to run
 
-First time:
+From the repository root. `-am` builds the modules the example needs, so you do not have to `install` first.
 
 ```bash
-# From the repo root (projects/java-agent-framework or a standalone clone of agent4j)
-mvn install -DskipTests
-```
-
-Then (replace `NAME` with a class from the table below):
-
-```bash
-mvn -pl examples compile exec:java \
-  -Dexec.mainClass=io.github.qwzhang01.agent.examples.NAME
-```
-
-For example:
-
-```bash
-mvn -pl examples compile exec:java \
+./mvnw -pl examples -am compile exec:java \
   -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
 ```
 
-You can also run the corresponding `main` directly from your IDE.
+Replace `MockAgentExample` with any class in the tables below. You can also run the `main` method from an IDE after importing the reactor.
 
-## Zero-LLM examples (run these first)
+## Examples that need no API key
 
 These use `MockModelClient` or purely local components and do not access the network by default.
 

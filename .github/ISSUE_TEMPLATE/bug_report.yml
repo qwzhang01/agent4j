@@ -31,6 +31,8 @@ body:
         - agent-chat
         - agent-coding
         - agent-observability
+        - agent-otel-export
+        - agent-spring-boot-starter
         - examples
         - build / CI
         - unknown

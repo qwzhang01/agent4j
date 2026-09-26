@@ -1,94 +1,119 @@
-# Core Concepts
+# Core concepts
 
-This page covers only how the runtime works. For the module inventory, see [modules.md](modules.md). The stage notes in `notes/` are learning material, not a contract.
+This page is how the runtime behaves. The module list is in [modules.md](modules.md). Files under `notes/` are design notes, not a contract.
 
 ## Agent
 
-`Agent` is the entry point, deliberately thin: `run(userInput)` runs a full turn; `run(userInput, state)` resumes with an existing `AgentState`. Streaming goes through `stream(userInput, listener)`, emitting `AgentEvent` callbacks as generation proceeds. Multimodal user messages go through `run(ChatMessage)` / `stream(ChatMessage, listener)`.
+`Agent` is a thin entry point.
 
-The default implementation is `SimpleAgent`. The production entry point is `SecureAgentBuilder` (validation sits outside governance: validate → permission → rate-limit → approval → execute). The static blueprint is `AgentConfig`: name, system prompt, `ModelClient`, `ToolRegistry`, `maxSteps`, plus an optional `ContextBuilder` (memory injection; `null` means pass-through). When `run(...)` is called without a `RunContext`, one is created automatically via `RunContext.create()`; side-effect tools without a context are denied `[DENIED]` at the validation layer.
+- `run(userInput)` completes one turn.
+- `run(userInput, state)` continues from an existing `AgentState`.
+- `stream(userInput, listener)` emits `AgentEvent` values as tokens arrive.
+- Multimodal input uses `run(ChatMessage)` and `stream(ChatMessage, listener)`.
 
-Module: `agent-core`. Examples: `MockAgentExample` / `StreamingAgentExample`.
+`SimpleAgent` is the default implementation. `SecureAgentBuilder` is the production entry point. It orders the gates as: validate, permission, rate limit, approval, execute. Validation sits outside the governance stack.
+
+`AgentConfig` is the static blueprint: name, system prompt, `ModelClient`, `ToolRegistry`, `maxSteps`, and an optional `ContextBuilder`. A null context builder passes messages through unchanged. `run` without a `RunContext` creates one. A side-effect tool that still has no context is denied at validation.
+
+Module: `agent-core`. Examples: `MockAgentExample`, `StreamingAgentExample`.
 
 ## Tool
 
-A `Tool` is an action the model can invoke. Tools register into a `ToolRegistry` (default `InMemoryToolRegistry`) and are executed by a `ToolExecutor`. The model returns a `ToolCall`; the loop invokes the tool, writes the result back into the message list, and asks the model again.
+A `Tool` is an action the model can call. Tools live in a `ToolRegistry` (default `InMemoryToolRegistry`) and run through a `ToolExecutor`. The model returns a `ToolCall`. The loop runs the tool, appends the result to the message list, and calls the model again.
 
-A tool can be a local Java class (`CurrentTimeTool`), an SPI plugin, an MCP adapter, or code compiled and executed inside a sandbox. The governance layer (permissions / approvals / sanitizer / audit) wraps the executor and never touches the `Tool` interface.
+A tool can be a local Java class (`CurrentTimeTool`), an SPI plugin, an MCP adapter, or code compiled inside a sandbox. Permissions, approvals, the sanitizer, and audit wrap the executor. They do not change the `Tool` interface.
 
-Modules: interfaces in `agent-core`; plugins in `agent-plugin`; governance in `agent-security`; MCP in `agent-mcp`.
+Interfaces live in `agent-core`. Plugins are `agent-plugin`. Governance is `agent-security`. MCP is `agent-mcp`.
 
 ## Loop
 
-`AgentLoop` is the ReAct loop: within `maxSteps`, repeatedly "assemble request → `ModelClient.chat` → execute tool calls if any → otherwise finish". `stream` uses the same loop but calls `ModelClient.stream`, pushing token / tool lifecycle events to an `AgentEvent` sink. The loop is a function, not a thread: it takes an `AgentConfig` plus a mutable `AgentState` and returns the updated state. Testable and resumable.
+`AgentLoop` is the ReAct loop. Until `maxSteps`, it builds a request, calls `ModelClient.chat`, executes any tool calls, and otherwise finishes. `stream` uses the same loop with `ModelClient.stream`, and pushes token and tool events to an `AgentEvent` sink.
 
-`maxSteps` is a bound **accumulated across the whole conversation**; `AgentConfig` is the SSOT: each `run(input, state)` syncs `state.maxSteps` to the current config value but does **not** reset `currentStep`. If 8 steps have already run and the config says 10, resuming leaves only 2 steps. To loosen or tighten the bound, change the config, not the state.
+The loop is a function, not a thread. It takes an `AgentConfig` and a mutable `AgentState`, and returns the updated state. That is what makes it testable and resumable.
 
-The default implementation is `ReActAgentLoop`. `SimpleAgent` delegates `run` / `stream` to it.
+`maxSteps` is a budget for the whole conversation, not for a single turn. `AgentConfig` owns the number. Each `run(input, state)` copies the current config value onto the state and does not reset `currentStep`. If 8 steps have already run and the config says 10, a resume has 2 steps left. Change the config to raise or lower the cap. Do not edit the state to do it.
+
+The default implementation is `ReActAgentLoop`. `SimpleAgent` delegates `run` and `stream` to it.
 
 Module: `agent-core`.
 
 ## Workflow
 
-When a single `Agent.run` cannot handle branching, human approvals, parallelism, or long waits, use the graph engine. A `Workflow` is an immutable graph; `GraphRuntime` interprets it; state lives on the `WorkflowState` blackboard.
+Use the graph when one `Agent.run` is not enough: branches, human approval, parallel work, or a wait that should outlive the process.
 
-v1 ships 7 node types (`ActionNode` / `AgentNode` / `ToolNode` / `RouterNode` / `HumanApprovalNode` / `ParallelNode`, plus the `JoinPolicy` for parallel joins). An `Agent` can be a node on the graph — no parallel framework needed.
+A `Workflow` is an immutable graph. `GraphRuntime` interprets it. State sits on a `WorkflowState` blackboard.
+
+This release has six node types: `ActionNode`, `AgentNode`, `ToolNode`, `RouterNode`, `HumanApprovalNode`, and `ParallelNode`. `JoinPolicy` decides how parallel branches join. An `Agent` can be a node. You do not need a second framework for that.
 
 Module: `agent-workflow`. Example: `WorkflowSupportFlowExample`.
 
 ## Memory
 
-Three memory tiers plus one scope axis:
+Three tiers, plus a scope that decides who can read an entry.
 
-| Tier | What it is |
-|------|------------|
+| Tier | What it holds |
+|------|----------------|
 | Working | The conversation inside the current `AgentState` |
-| Session | Continuous context within one session |
-| Long-term | Retrievable entries in a `MemoryStore` |
+| Session | Context that lasts for one session |
+| Long-term | Entries in a `MemoryStore` that can be retrieved later |
 
-`MemoryScope` (agent / user / session / task / channel) decides "who can see what". Shared memory is not a second system — it is just a different scope value. Writes go through a `MemoryExtractor` (`extract.KeywordMemoryExtractor` or `extract.LlmMemoryExtractor`) plus a `MemoryPolicy`; reads go through a `MemoryRetriever` (`recallForContext` takes topN ranked by importance then recency) plus `context.MemoryContextBuilder`. The room engine uses an optional `MemorySource` (`ChatRoom.Builder.source`, not attached by default). `dueAt` is an optional timestamp that `LlmMemoryExtractor` can parse from JSON; queries can filter by range; the framework does not schedule it or interpret its meaning. Extraction instructions and the subject vocabulary are decided by the caller. When over budget, `context.ContextCompressor` compresses.
+`MemoryScope` is one of agent, user, session, task, or channel. Shared memory is a different scope value, not a second store.
 
-Packages are split along the pipeline, still a single Maven module: the root package is the wiring surface (Store / Entry / Query / Scope / Extractor / Retriever / Policy / Admin); `extract/` writes, `store/` persists, `context/` reads and compresses, `session/` is the session layer, `tools/` exposes model-managed memory.
+Writes go through a `MemoryExtractor` (`KeywordMemoryExtractor` or `LlmMemoryExtractor`) and a `MemoryPolicy`. Reads go through a `MemoryRetriever`. `recallForContext` returns the top N entries, ranked by importance and then recency. `MemoryContextBuilder` turns them into prompt text. `ContextCompressor` shrinks context when it is over budget.
 
-Module: `agent-memory`. Examples: `MemoryExample` / `CompressionExample` / `ChannelMemoryExample`.
+`dueAt` is an optional timestamp. `LlmMemoryExtractor` can parse it from JSON, and queries can filter on a range. The framework does not schedule it and does not decide what it means. What to extract, and the vocabulary of subjects, is the caller's choice.
 
-## ChatRoom
+Packages follow the pipeline and stay in one Maven module. The root package is the wiring surface: store, entry, query, scope, extractor, retriever, policy, admin. `extract/` writes. `store/` persists. `context/` reads and compresses. `session/` is the session layer. `tools/` exposes memory the model can manage itself.
 
-The room conversation engine (`agent-chat`) differs from a single `Agent.run`: multiple personas, speaker selection, context assembly, streaming, business listeners.
+Module: `agent-memory`. Examples: `MemoryExample`, `CompressionExample`, `ChannelMemoryExample`.
 
-| Concept | Description |
-|---------|-------------|
-| `ChatRoom` / `ChatEngine` | One `say(userLine)`: select speaker → assemble messages → `ModelClient.stream` → notify listeners |
-| `SpeakerPolicy` | Who replies: `SoloSpeaker` / `MentionSpeaker` / `RoundRobinSpeaker` / `DirectorSpeaker` (composable) |
-| `ContextSource` | Assembles prompt fragments: `PersonaSource` / `HistorySource` / `ExtraTextSource` / optional `MemorySource` / `LoreSource` / `RelationSource` |
-| `ChatListener` | Business callbacks: persistence, extraction, relations; the engine has no built-in memory write-back. Optional `onConsistencyWarning` |
-| `ConsistencyGuard` | Optional post-turn drift guard: persona anchor + reply → OK/warning. Default no-op; never rewrites history |
-| `RoomIdentity` | Room identity: an opaque memory-scope string. The engine parses no prefixes and depends on no channel |
-| `RelationSnapshot` | Relation snapshot: free-form stage plus slots. `RelationSource` only injects it; it does not score |
+## Chat room
 
-The default `ContextAssembler.defaults()` = Persona + History(20). `MemorySource` / `LoreSource` / `RelationSource` are **not attached by default**; when you customize `.source(...)` you must bring Persona + History yourself. `RoomIdentity` attaches user/session/pair scope strings to the room; `MemorySource` inherits them when no explicit list is given. `LoreSource` only scans the current user line (keywords/regex); the vocabulary lives in the product. `RelationSource` injects the `RelationSnapshot` (stage + slots) without scoring; pre-rendered relation text can still go through `ExtraTextSource`. `ConsistencyGuard` is no-op by default; warnings never rewrite replies. Extraction, subject vocabulary, and proactive reminders (`dueAt` scans) all live on the business side (Moonlit; the T12 prompt already includes daily follow-ups; the T17 Job is wired up) — see `notes/architecture-agent-chat.md` §9. Moonlit's 1:1 chat already runs on `ChatRoom.stream` (T15).
+`agent-chat` is a room, not a single `Agent.run`. Several personas share a turn. Someone has to choose the speaker, assemble the prompt, stream the reply, and notify your application.
 
-Module: `agent-chat` (its compile dependency on `agent-memory` exists only for the optional `MemorySource`). Example: `ChatRoomExample`. Character-oriented eval: `CharacterEvalTest` (mock-based, no LLM-as-judge).
+| Type | Role |
+|------|------|
+| `ChatRoom`, `ChatEngine` | One `say(userLine)`: pick a speaker, build messages, call `ModelClient.stream`, notify listeners |
+| `SpeakerPolicy` | Who replies. `SoloSpeaker`, `MentionSpeaker`, `RoundRobinSpeaker`, `DirectorSpeaker`. They compose |
+| `ContextSource` | Prompt fragments: `PersonaSource`, `HistorySource`, `ExtraTextSource`, and the optional `MemorySource`, `LoreSource`, `RelationSource` |
+| `ChatListener` | Your callbacks: persist, extract, update relations. The engine does not write memory for you |
+| `ConsistencyGuard` | Optional check after a turn: persona anchor plus reply, then OK or warning. The default does nothing. It never rewrites history |
+| `RoomIdentity` | An opaque string for the memory scope. The engine does not parse prefixes |
+| `RelationSnapshot` | A free-form stage plus slots. `RelationSource` injects it. It does not score the relationship |
+
+`ContextAssembler.defaults()` is persona plus the last 20 history messages. `MemorySource`, `LoreSource`, and `RelationSource` are not attached unless you add them. If you replace `.source(...)`, you must include persona and history yourself.
+
+`RoomIdentity` puts user, session, and pair scope strings on the room. `MemorySource` inherits them when you do not pass an explicit list. `LoreSource` scans only the current user line, by keyword or regex. The word list lives in your application. `RelationSource` injects the snapshot and does not score it. Pre-rendered relationship text can still go through `ExtraTextSource`.
+
+`ConsistencyGuard` is a no-op unless you set one. A warning never rewrites the reply. Extraction, the subject vocabulary, and reminders (including scans of `dueAt`) belong in the host application, usually a listener and a scheduled job.
+
+`agent-chat` depends on `agent-memory` only so the optional `MemorySource` can compile. Example: `ChatRoomExample`. Character-style checks live in `CharacterEvalTest`, which uses a mock model, not an LLM judge.
 
 ## Governance
 
-Tools are untrusted by default. The 5-minute quick start uses `SecureAgentBuilder`: validation sits outside governance (validate → permission → rate-limit → approval → execute); read-only tools run AUTO, everything else is REQUIRES_APPROVAL, and zero configuration means `autoReject`. A pending approval parks the agent in `WAITING_APPROVAL` (`DurableToolApprovalService` writes an `ApprovalStore` without blocking threads); `Agent.resume` retries the same tool call after a decision lands. The ungoverned path requires naming `UnsafeAgentBuilder` explicitly.
+Tools are untrusted unless you say otherwise. `SecureAgentBuilder` is the default for new code.
 
-Four governance pieces hang on the `GovernedToolExecutor`:
+The order is fixed: validate, then permission, then rate limit, then approval, then execute. Read-only tools are `AUTO`. Everything else is `REQUIRES_APPROVAL`. With no approval policy, the call is rejected. It is not executed.
 
-1. **Permission** — `AUTO` / `REQUIRES_APPROVAL` / `DENY`
-2. **Approval** — manual, automatic, or durable approvals (`PENDING` → pause)
-3. **Sanitizer** — injection defense on tool outputs (replace / truncate / block)
-4. **Audit** — allow, deny, execute, failure, and sanitize decisions are all recorded
+A pending approval parks the agent in `WAITING_APPROVAL`. `DurableToolApprovalService` writes an `ApprovalStore` and does not block a thread. `Agent.resume` retries the same tool call after a decision.
 
-MCP tools registered through the adapter go through the same stack — no duplicate wiring.
+Four pieces sit on `GovernedToolExecutor`:
 
-Module: `agent-security`. Examples: `SecurityExample` / `InjectionDefenseExample`.
+1. **Permission** — `AUTO`, `REQUIRES_APPROVAL`, or `DENY`.
+2. **Approval** — manual, automatic, or durable. `PENDING` pauses the run.
+3. **Sanitizer** — injection defense on tool output: replace, truncate, or block.
+4. **Audit** — allow, deny, execute, failure, and sanitize decisions are recorded.
+
+MCP tools registered through the adapter use the same stack. There is no second policy path.
+
+The ungoverned path is `UnsafeAgentBuilder`. The name is intentional.
+
+Module: `agent-security`. Examples: `SecurityExample`, `InjectionDefenseExample`.
 
 ## Checkpoint
 
-Long-running flows stop: waiting for a person, an event, or a timer. On pause, the graph state and `AgentState` are persisted; on resume, execution continues from the breakpoint instead of rerunning.
+Long runs stop. They wait for a person, an event, or a timer. On pause, graph state and `AgentState` are stored. On resume, execution continues from that breakpoint.
 
-`Checkpoint` / `CheckpointStore` (in-memory or file) belong to the workflow runtime. The scheduler (`agent-scheduler`) triggers `resume` after a timer or event arrives. Enterprise task approvals and channel handoffs reuse the same "stop → persist → resume" mechanism.
+`Checkpoint` and `CheckpointStore` (in-memory, file, or JDBC) belong to the workflow runtime. `agent-scheduler` calls `resume` when a timer or event arrives. Enterprise approvals and channel handoffs use the same stop, persist, resume sequence.
 
-Modules: `agent-workflow` (storage) + `agent-scheduler` (wake-up). Examples: `CheckpointExample` / `SchedulerExample`.
+Modules: `agent-workflow` for storage, `agent-scheduler` for wake-up. Examples: `CheckpointExample`, `SchedulerExample`.

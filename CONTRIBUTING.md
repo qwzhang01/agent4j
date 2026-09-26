@@ -1,74 +1,64 @@
 # Contributing to agent4j
 
-## 中文摘要
+Thank you for contributing to [agent4j](https://github.com/qwzhang01/agent4j), a Java 17 agent runtime.
 
-欢迎贡献。请先用 JDK 17+ 和 `./mvnw -B verify` 跑通测试。行为变更必须带测试，不要削弱沙箱 / 权限 / 注入防御的 fail-closed 用例。一次 PR 只做一件事；大重构请先开 Issue。`notes/` 是学习笔记，不是 API 契约。社区渠道是 GitHub Issues 与 Discussions。
+Read this file before you open a pull request. The community channels are [GitHub Issues](https://github.com/qwzhang01/agent4j/issues) and [GitHub Discussions](https://github.com/qwzhang01/agent4j/discussions). Vulnerability reports go through [SECURITY.md](SECURITY.md), not a public issue. The [code of conduct](CODE_OF_CONDUCT.md) applies to every channel.
 
----
+## What counts as the contract
 
-Thank you for contributing to [agent4j](https://github.com/qwzhang01/agent4j), a Java 17 Maven multi-module Agent runtime.
-
-Community channels: [GitHub Issues](https://github.com/qwzhang01/agent4j/issues) and [GitHub Discussions](https://github.com/qwzhang01/agent4j/discussions).
+User-facing behavior lives in javadoc and in [`docs/`](docs/). [`notes/`](notes/) is a design journal, mostly in Chinese. Do not treat it as a specification, and do not move a contract into it.
 
 ## Prerequisites
 
-- JDK 17 or later
-- Maven 3.9+ or the bundled wrapper (`./mvnw`)
+- JDK 17 or later. A JDK 8 `JAVA_HOME` fails the enforcer and the javadoc `--release 17` flag.
+- Maven 3.9+, or the bundled wrapper (`./mvnw`). Prefer the wrapper.
 
 ## Build
-
-Prefer the wrapper:
 
 ```bash
 ./mvnw -B verify
 ```
 
-Fallback if the wrapper is unavailable:
-
-```bash
-mvn -B verify
-```
-
-The suite spans all 22 modules. `./mvnw verify` and `mvn test` should stay green.
+The suite covers all 22 reactor modules and should stay green. `mvn -B verify` is fine when the wrapper is not available.
 
 ## Run one example
 
-Install modules once (skip tests if you already verified):
+From a fresh clone, build the example and the modules it needs:
 
 ```bash
-mvn install -DskipTests
+./mvnw -pl examples -am compile exec:java \
+  -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
 ```
 
-Then run:
-
-```bash
-mvn -pl examples compile exec:java -Dexec.mainClass=io.github.qwzhang01.agent.examples.MockAgentExample
-```
-
-Most examples use mock clients and do not need a real LLM.
+Most examples use `MockModelClient` and do not call a live model. The index is [examples/README.md](examples/README.md).
 
 ## Code style
 
-- Java 17; keep new code in `io.github.qwzhang01.agent.*`
-- Do not add a new Spring dependency
-- Follow existing decorator and module boundaries
-- Library modules (do not invent names): `agent-core`, `agent-model`, `agent-plugin`, `agent-sandbox`, `agent-workflow`, `agent-scheduler`, `agent-memory`, `agent-security`, `agent-mcp`, `agent-orchestrator`, `agent-channel`, `agent-product`, `agent-trace-export`, `agent-enterprise`, `agent-tavern`, `agent-chat`, `agent-coding`, `agent-observability`, plus `examples`
+- Java 17. New code stays in `io.github.qwzhang01.agent.*`.
+- Do not add a Spring dependency outside `agent-spring-boot-starter`.
+- Follow the existing decorator and module boundaries. Do not invent module names.
+
+Library modules:
+
+`agent-core`, `agent-model`, `agent-plugin`, `agent-sandbox`, `agent-workflow`, `agent-scheduler`, `agent-memory`, `agent-security`, `agent-mcp`, `agent-orchestrator`, `agent-channel`, `agent-product`, `agent-trace-export`, `agent-enterprise`, `agent-tavern`, `agent-chat`, `agent-coding`, `agent-observability`, `agent-otel-export`, `agent-spring-boot-starter`.
+
+`seven-agent-bom` aligns their versions. `examples` is not published.
 
 ## Tests
 
-- Behavior changes require tests
-- Do not weaken fail-closed security or sandbox tests (permissions, injection sanitizer, sandbox isolation)
-- Prefer mock clients unless the change truly needs a live model
+- A behavior change needs a test.
+- Do not weaken fail-closed tests: sandbox isolation, permissions, injection sanitizer.
+- Prefer a mock client unless the change truly needs a live model.
 
 ## Pull requests
 
-- One concern per PR
-- Open an issue before large refactors
-- Keep user-facing contract in javadoc and `docs/` — not in `notes/`
-- `notes/` is learning material, not a specification
-- If the change is user-visible, add a note under `[Unreleased]` in `CHANGELOG.md`
-- Never commit secrets, API keys, or credentials
-
-## License
+- One concern per pull request.
+- Open an issue before a large refactor.
+- If the change is user-visible, add a note under `[Unreleased]` in `CHANGELOG.md`, and update `docs/` or javadoc when the contract changed.
+- Never commit secrets, API keys, or credentials.
 
 By contributing, you agree that your contributions are licensed under the Apache License 2.0.
+
+## 中文摘要
+
+欢迎贡献。请先用 JDK 17+ 和 `./mvnw -B verify` 跑通测试。行为变更必须带测试，不要削弱沙箱 / 权限 / 注入防御的 fail-closed 用例。一次 PR 只做一件事；大重构请先开 Issue。`notes/` 是学习笔记，不是 API 契约。社区渠道是 GitHub Issues 与 Discussions。安全漏洞走 [SECURITY.md](SECURITY.md)，不要开公开 Issue。

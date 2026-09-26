@@ -7,7 +7,7 @@
 | `0.1.x` | Yes |
 | `main` branch | Yes |
 
-The current Maven version is `0.1.0`. Security fixes land on `main` and ship in the next `0.1.x` release.
+The current release is `0.1.5`. Security fixes land on `main` and ship in the next `0.1.x` release.
 
 ## Reporting a vulnerability
 

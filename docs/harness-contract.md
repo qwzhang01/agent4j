@@ -1,3 +1,5 @@
+> **English:** this file is an internal engineering contract, written in Chinese. It is not a user guide. Behavior you can rely on is in [getting-started.md](getting-started.md), [concepts.md](concepts.md), [modules.md](modules.md), and [limitations.md](limitations.md).
+
 # Harness Contract：agent4j 标准 Harness 最小契约
 
 > 版本：`0.1.5`（发布版，2026-09-17 去 SNAPSHOT，deploy 待手动执行）｜状态：Draft（Stage 0.2 产出，2026-09-16）
