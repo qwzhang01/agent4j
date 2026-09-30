@@ -5,6 +5,7 @@ import io.github.qwzhang01.agent.rag.ChunkIndex;
 import io.github.qwzhang01.agent.rag.FusionStrategy;
 import io.github.qwzhang01.agent.rag.Retriever;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
+import io.github.qwzhang01.agent.rag.model.SearchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,41 +67,51 @@ public final class HybridRetriever implements Retriever {
 
     @Override
     public List<ScoredChunk> retrieve(String query, int topK, Map<String, String> filters) {
-        return retrieveWithStages(query, topK, filters).hits();
+        return retrieveWithStages(query, topK, SearchFilter.of(filters)).hits();
     }
 
     @Override
     public Result retrieveWithStages(String query, int topK, Map<String, String> filters) {
-        if (query == null || query.isBlank() || topK <= 0) {
+        return retrieveWithStages(query, topK, SearchFilter.of(filters));
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Both sub-searches receive the filter, so every stage ranks allowed chunks only.
+     */
+    @Override
+    public Result retrieveWithStages(String query, int topK, SearchFilter filter) {
+        SearchFilter f = filter == null ? SearchFilter.none() : filter;
+        if (query == null || query.isBlank() || topK <= 0 || f.matchesNothing()) {
             return new Result(List.of(), Map.of(), List.of());
         }
-        Map<String, String> safeFilters = filters == null ? Map.of() : filters;
         return switch (mode) {
-            case KEYWORD -> keywordOnly(query, topK, safeFilters, List.of());
-            case VECTOR -> vectorOnly(query, topK, safeFilters);
-            case HYBRID -> hybrid(query, topK, safeFilters);
+            case KEYWORD -> keywordOnly(query, topK, f, List.of());
+            case VECTOR -> vectorOnly(query, topK, f);
+            case HYBRID -> hybrid(query, topK, f);
         };
     }
 
-    private Result keywordOnly(String query, int topK, Map<String, String> filters, List<String> degradations) {
-        List<ScoredChunk> bm25 = index.keywordSearch(query, topK, filters);
+    private Result keywordOnly(String query, int topK, SearchFilter filter, List<String> degradations) {
+        List<ScoredChunk> bm25 = index.keywordSearch(query, topK, filter);
         return new Result(bm25, Map.of(ScoredChunk.BM25, bm25), degradations);
     }
 
-    private Result vectorOnly(String query, int topK, Map<String, String> filters) {
-        List<ScoredChunk> vector = tryVectorSearch(query, topK, filters);
+    private Result vectorOnly(String query, int topK, SearchFilter filter) {
+        List<ScoredChunk> vector = tryVectorSearch(query, topK, filter);
         if (vector == null) {
-            return keywordOnly(query, topK, filters, List.of(ScoredChunk.VECTOR));
+            return keywordOnly(query, topK, filter, List.of(ScoredChunk.VECTOR));
         }
         return new Result(vector, Map.of(ScoredChunk.VECTOR, vector), List.of());
     }
 
-    private Result hybrid(String query, int topK, Map<String, String> filters) {
+    private Result hybrid(String query, int topK, SearchFilter filter) {
         int pool = Math.max(candidatePoolSize, topK);
-        List<ScoredChunk> vector = tryVectorSearch(query, pool, filters);
+        List<ScoredChunk> vector = tryVectorSearch(query, pool, filter);
         List<ScoredChunk> bm25;
         try {
-            bm25 = index.keywordSearch(query, pool, filters);
+            bm25 = index.keywordSearch(query, pool, filter);
         } catch (RuntimeException e) {
             if (vector == null) {
                 throw e;
@@ -122,13 +133,13 @@ public final class HybridRetriever implements Retriever {
     }
 
     /** Returns null when the query cannot be embedded or the vector search fails. */
-    private List<ScoredChunk> tryVectorSearch(String query, int topK, Map<String, String> filters) {
+    private List<ScoredChunk> tryVectorSearch(String query, int topK, SearchFilter filter) {
         try {
             float[] vector = embeddings.embed(query);
             if (vector == null) {
                 throw new IllegalStateException("embedding provider returned null");
             }
-            return index.vectorSearch(vector, topK, filters);
+            return index.vectorSearch(vector, topK, filter);
         } catch (RuntimeException e) {
             log.warn("Vector retrieval failed; degrading to keyword search: {}", e.toString());
             return null;

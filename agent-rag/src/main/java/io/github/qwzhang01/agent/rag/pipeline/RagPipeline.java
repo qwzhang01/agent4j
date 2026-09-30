@@ -35,6 +35,11 @@ import java.util.function.Function;
  * Only a retrieval failure fails the call with {@link RagException}, because answering
  * "no material" would then be a lie.
  * <p>
+ * Access: {@link RagQuery#searchFilter()} goes to
+ * {@link Retriever#retrieveWithStages(String, int, io.github.qwzhang01.agent.rag.model.SearchFilter)},
+ * so rerank and generation only ever see chunks the filter allows. A retriever that cannot enforce
+ * a document-id restriction fails the call instead of ignoring it.
+ * <p>
  * {@link RagAnswer#contexts()} and {@link RagTrace#contextChunkIds()} hold the chunks the generator
  * reports it actually showed the model ({@link GeneratedAnswer#usedChunkIds()}).
  */
@@ -83,7 +88,7 @@ public final class RagPipeline {
         t = clock.millis();
         Retriever.Result retrieved;
         try {
-            retrieved = retriever.retrieveWithStages(retrievalQuery, candidateK, query.filters());
+            retrieved = retriever.retrieveWithStages(retrievalQuery, candidateK, query.searchFilter());
         } catch (RuntimeException e) {
             throw new RagException("Retrieval failed: " + e.getMessage(), e);
         }

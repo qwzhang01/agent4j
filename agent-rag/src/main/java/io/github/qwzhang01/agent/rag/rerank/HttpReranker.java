@@ -12,13 +12,14 @@ import io.github.qwzhang01.agent.rag.model.ScoredChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,6 +28,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -37,6 +46,9 @@ import java.util.function.Function;
  * {@code Authorization: Bearer <apiKey>}; expects
  * {@code {"results": [{"index": i, "relevance_score": s}, ..]}} in any order.
  * Works against cloud providers and self-hosted services exposing the same shape.
+ * <p>
+ * Every call finishes within {@link Builder#timeout}, body read included; responses above
+ * 4 MiB are rejected while streaming.
  */
 public final class HttpReranker implements Reranker {
 
@@ -102,20 +114,9 @@ public final class HttpReranker implements Reranker {
         HttpRequest request = rb.build();
 
         long start = System.nanoTime();
-        int status;
-        String body;
-        try {
-            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            status = response.statusCode();
-            body = readBody(response.body());
-        } catch (HttpTimeoutException e) {
-            throw new RerankException("rerank timed out after " + timeout.toMillis() + "ms: " + endpoint, e);
-        } catch (IOException e) {
-            throw new RerankException("rerank request failed: " + endpoint + ": " + e, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RerankException("rerank interrupted: " + endpoint, e);
-        }
+        HttpResponse<byte[]> response = send(request);
+        int status = response.statusCode();
+        String body = new String(response.body(), StandardCharsets.UTF_8);
         if (status < 200 || status >= 300) {
             throw new RerankException("rerank HTTP " + status + " from " + endpoint + ": " + snippet(body));
         }
@@ -144,13 +145,120 @@ public final class HttpReranker implements Reranker {
         }
     }
 
-    private String readBody(InputStream in) throws IOException {
-        try (in) {
-            byte[] bytes = in.readNBytes(MAX_RESPONSE_BYTES + 1);
-            if (bytes.length > MAX_RESPONSE_BYTES) {
-                throw new RerankException("rerank response exceeds " + MAX_RESPONSE_BYTES + " bytes: " + endpoint);
+    /**
+     * Sends and reads the whole body within {@code timeout}. The request timeout alone only bounds
+     * the wait for response headers; a server dripping the body slowly would otherwise hold the
+     * caller indefinitely.
+     */
+    private HttpResponse<byte[]> send(HttpRequest request) {
+        AtomicReference<LimitedBodySubscriber> body = new AtomicReference<>();
+        CompletableFuture<HttpResponse<byte[]>> future = httpClient.sendAsync(request, info -> {
+            LimitedBodySubscriber subscriber = new LimitedBodySubscriber(MAX_RESPONSE_BYTES);
+            body.set(subscriber);
+            return subscriber;
+        });
+        try {
+            return future.get(timeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (TimeoutException e) {
+            abort(future, body);
+            throw new RerankException("rerank timed out after " + timeout.toMillis() + "ms: " + endpoint, e);
+        } catch (InterruptedException e) {
+            abort(future, body);
+            Thread.currentThread().interrupt();
+            throw new RerankException("rerank interrupted: " + endpoint, e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            while (cause instanceof CompletionException && cause.getCause() != null) {
+                cause = cause.getCause();
             }
-            return new String(bytes, StandardCharsets.UTF_8);
+            for (Throwable t = cause; t != null; t = t.getCause()) {
+                if (t instanceof ResponseTooLargeException) {
+                    throw new RerankException("rerank response exceeds " + MAX_RESPONSE_BYTES + " bytes: " + endpoint, t);
+                }
+            }
+            if (cause instanceof HttpTimeoutException) {
+                throw new RerankException("rerank timed out after " + timeout.toMillis() + "ms: " + endpoint, cause);
+            }
+            throw new RerankException("rerank request failed: " + endpoint + ": " + cause, cause);
+        }
+    }
+
+    private static void abort(CompletableFuture<?> future, AtomicReference<LimitedBodySubscriber> body) {
+        future.cancel(true);
+        LimitedBodySubscriber subscriber = body.get();
+        if (subscriber != null) {
+            subscriber.abort();
+        }
+    }
+
+    /** Signals that the body passed {@link #MAX_RESPONSE_BYTES}. */
+    private static final class ResponseTooLargeException extends IOException {
+        ResponseTooLargeException() {
+            super("response body too large");
+        }
+    }
+
+    /** Buffers the body up to a limit; cancelling the subscription releases the connection. */
+    private static final class LimitedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> {
+        private final int limit;
+        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        private final CompletableFuture<byte[]> result = new CompletableFuture<>();
+        private volatile Flow.Subscription subscription;
+        private volatile boolean aborted;
+
+        LimitedBodySubscriber(int limit) {
+            this.limit = limit;
+        }
+
+        void abort() {
+            aborted = true;
+            Flow.Subscription s = subscription;
+            if (s != null) {
+                s.cancel();
+            }
+            result.cancel(false);
+        }
+
+        @Override
+        public CompletionStage<byte[]> getBody() {
+            return result;
+        }
+
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+            this.subscription = subscription;
+            if (aborted) {
+                subscription.cancel();
+                return;
+            }
+            subscription.request(Long.MAX_VALUE);
+        }
+
+        @Override
+        public void onNext(List<ByteBuffer> items) {
+            if (result.isDone()) {
+                return;
+            }
+            for (ByteBuffer item : items) {
+                if (buffer.size() + item.remaining() > limit) {
+                    subscription.cancel();
+                    result.completeExceptionally(new ResponseTooLargeException());
+                    return;
+                }
+                byte[] bytes = new byte[item.remaining()];
+                item.get(bytes);
+                buffer.write(bytes, 0, bytes.length);
+            }
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            result.completeExceptionally(throwable);
+        }
+
+        @Override
+        public void onComplete() {
+            result.complete(buffer.toByteArray());
         }
     }
 
@@ -243,7 +351,10 @@ public final class HttpReranker implements Reranker {
             return this;
         }
 
-        /** Per-request (and connect) timeout; default 10s. */
+        /**
+         * Deadline for one rerank call: connect, response headers and the whole body must arrive
+         * within it (also used as connect timeout); default 10s.
+         */
         public Builder timeout(Duration timeout) {
             this.timeout = timeout;
             return this;

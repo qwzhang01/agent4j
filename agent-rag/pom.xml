@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.qwzhang01</groupId>
         <artifactId>seven-agent</artifactId>
-        <version>0.1.5</version>
+        <version>0.1.6-SNAPSHOT</version>
     </parent>
 
     <artifactId>agent-rag</artifactId>
@@ -79,4 +79,23 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- test-jar carries ChunkIndexContractTest, TestChunks and FakeEmbeddingClient, so
+                 every ChunkIndex backend (e.g. agent-rag-pgvector) runs the same contract. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

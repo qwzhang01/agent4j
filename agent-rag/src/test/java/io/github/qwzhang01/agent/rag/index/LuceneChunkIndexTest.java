@@ -207,7 +207,7 @@ class LuceneChunkIndexTest {
         assertTrue(index.keywordSearch(null, 5, Map.of()).isEmpty());
         assertTrue(index.keywordSearch("foo", 0, Map.of()).isEmpty());
         assertTrue(index.keywordSearch("，。！", 5, Map.of()).isEmpty());
-        assertEquals(1, index.keywordSearch("foo " + "x ".repeat(2000), 5, null).size());
+        assertEquals(1, index.keywordSearch("foo " + "x ".repeat(2000), 5, (Map<String, String>) null).size());
     }
 
     @Test
@@ -222,7 +222,7 @@ class LuceneChunkIndexTest {
         assertEquals(List.of("v1.md#0"), ids(index.vectorSearch(new float[]{1, 0, 0}, 5, Map.of("version", "1"))));
         assertEquals(List.of("v2.md#0"), ids(index.keywordSearch("install", 5, Map.of("version", "2", "lang", "en"))));
         assertTrue(index.keywordSearch("install", 5, Map.of("version", "3")).isEmpty());
-        assertEquals(2, index.vectorSearch(new float[]{1, 0, 0}, 5, null).size());
+        assertEquals(2, index.vectorSearch(new float[]{1, 0, 0}, 5, (Map<String, String>) null).size());
     }
 
     @Test

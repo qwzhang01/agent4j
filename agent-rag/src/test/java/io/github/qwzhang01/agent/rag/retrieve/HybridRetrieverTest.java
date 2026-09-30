@@ -6,6 +6,7 @@ import io.github.qwzhang01.agent.rag.index.FakeEmbeddingClient;
 import io.github.qwzhang01.agent.rag.index.LuceneChunkIndex;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
+import io.github.qwzhang01.agent.rag.model.SearchFilter;
 import io.github.qwzhang01.agent.rag.retrieve.HybridRetriever.Mode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -169,7 +170,7 @@ class HybridRetrieverTest {
 
         assertTrue(retriever.retrieveWithStages(" ", 5, Map.of()).hits().isEmpty());
         assertTrue(retriever.retrieveWithStages(null, 5, Map.of()).stages().isEmpty());
-        assertTrue(retriever.retrieve("citation", 0, null).isEmpty());
+        assertTrue(retriever.retrieve("citation", 0, (Map<String, String>) null).isEmpty());
         assertEquals(0, embedder.singleCalls());
     }
 
@@ -177,7 +178,7 @@ class HybridRetrieverTest {
     void nullFiltersAreTreatedAsNone() {
         HybridRetriever retriever = HybridRetriever.builder(index).embeddings(embedder).build();
 
-        assertEquals("kb#0", retriever.retrieve("citation tracing", 3, null).get(0).chunk().chunkId());
+        assertEquals("kb#0", retriever.retrieve("citation tracing", 3, (Map<String, String>) null).get(0).chunk().chunkId());
     }
 
     @Test
@@ -199,7 +200,55 @@ class HybridRetrieverTest {
         assertEquals(Mode.KEYWORD, HybridRetriever.builder(index).embeddings(embedder).mode(Mode.KEYWORD).build().mode());
     }
 
-    private static final class FailingKeywordIndex implements ChunkIndex {
+    @Test
+    void docIdPrefixesRestrictEveryModeAndStage() {
+        List<Chunk> other = List.of(chunk("team-b/kb", 0, "citation tracing for team b", Map.of("lang", "en")));
+        index.upsert("team-b/kb", "h", other, embedder.embedAll(other.stream().map(Chunk::contextualText).toList()));
+        SearchFilter onlyB = SearchFilter.none().withDocIdPrefixes(List.of("team-b/"));
+
+        Result hybrid = HybridRetriever.builder(index).embeddings(embedder).build()
+                .retrieveWithStages("citation tracing", 5, onlyB);
+        List<ScoredChunk> keyword = HybridRetriever.builder(index).mode(Mode.KEYWORD).build()
+                .retrieve("citation tracing", 5, onlyB);
+        List<ScoredChunk> vector = HybridRetriever.builder(index).embeddings(embedder).mode(Mode.VECTOR).build()
+                .retrieve("citation tracing", 5, onlyB);
+
+        assertEquals(List.of("team-b/kb#0"), ids(hybrid.hits()));
+        hybrid.stages().values().forEach(stage -> assertEquals(List.of("team-b/kb#0"), ids(stage)));
+        assertEquals(List.of("team-b/kb#0"), ids(keyword));
+        assertEquals(List.of("team-b/kb#0"), ids(vector));
+        assertEquals(List.of("kb#0"), ids(HybridRetriever.builder(index).embeddings(embedder).build()
+                .retrieve("citation tracing", 1, SearchFilter.of(Map.of("lang", "en"))
+                        .withDocIdPrefixes(List.of("kb")))));
+    }
+
+    @Test
+    void emptyAllowedSetSkipsTheIndexAndEmbedder() {
+        HybridRetriever retriever = HybridRetriever.builder(index).embeddings(embedder).build();
+
+        Result result = retriever.retrieveWithStages("citation", 5, SearchFilter.none().withDocIdPrefixes(List.of()));
+
+        assertTrue(result.hits().isEmpty());
+        assertEquals(0, embedder.singleCalls());
+    }
+
+    @Test
+    void indexWithoutPrefixSupportFailsClosed() {
+        ChunkIndex legacy = new FailingKeywordIndex(index) {
+            @Override
+            public List<ScoredChunk> keywordSearch(String query, int topK, Map<String, String> filters) {
+                return index.keywordSearch(query, topK, filters);
+            }
+        };
+        HybridRetriever retriever = HybridRetriever.builder(legacy).embeddings(embedder).build();
+        SearchFilter restricted = SearchFilter.none().withDocIdPrefixes(List.of("kb"));
+
+        assertThrows(UnsupportedOperationException.class, () -> retriever.retrieveWithStages("citation", 5, restricted));
+        assertEquals("kb#0", retriever.retrieve("citation tracing", 3, SearchFilter.of(Map.of("lang", "en")))
+                .get(0).chunk().chunkId());
+    }
+
+    private static class FailingKeywordIndex implements ChunkIndex {
         private final ChunkIndex delegate;
 
         FailingKeywordIndex(ChunkIndex delegate) {

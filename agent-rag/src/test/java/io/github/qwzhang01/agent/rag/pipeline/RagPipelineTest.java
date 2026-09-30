@@ -20,6 +20,7 @@ import io.github.qwzhang01.agent.rag.model.RagAnswer;
 import io.github.qwzhang01.agent.rag.model.RagQuery;
 import io.github.qwzhang01.agent.rag.model.RagTrace;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
+import io.github.qwzhang01.agent.rag.model.SearchFilter;
 import io.github.qwzhang01.agent.rag.model.SupportVerdict;
 import io.github.qwzhang01.agent.rag.generate.LlmAnswerGenerator;
 import io.github.qwzhang01.agent.rag.rerank.FallbackReranker;
@@ -53,7 +54,7 @@ class RagPipelineTest {
         return out;
     }
 
-    private static final class StubRetriever implements Retriever {
+    private static class StubRetriever implements Retriever {
         String lastQuery;
         RuntimeException failure;
         List<ScoredChunk> result = hits("a.md#0", "a.md#1", "b.md#0");
@@ -117,6 +118,57 @@ class RagPipelineTest {
         assertEquals(1, trace.verdictCounts().get(SupportVerdict.SUPPORTED));
         assertTrue(trace.degradations().isEmpty());
         assertTrue(trace.stageLatencyMs().containsKey("total"));
+    }
+
+    @Test
+    void searchFilterReachesTheRetriever() {
+        AtomicReference<SearchFilter> seen = new AtomicReference<>();
+        Retriever retriever = new StubRetriever() {
+            @Override
+            public Result retrieveWithStages(String query, int topK, SearchFilter filter) {
+                seen.set(filter);
+                return new Result(result, Map.of(), List.of());
+            }
+        };
+        SearchFilter access = SearchFilter.of(Map.of("v", "2")).withDocIdPrefixes(List.of("a.md"));
+
+        RagPipeline.builder().retriever(retriever).generator(new StubGenerator()).build()
+                .ask(RagQuery.of("q", access));
+
+        assertEquals(access, seen.get());
+    }
+
+    @Test
+    void retrieverWithoutPrefixSupportFailsTheCallInsteadOfIgnoringTheRestriction() {
+        StubRetriever retriever = new StubRetriever();
+        StubGenerator generator = new StubGenerator();
+        RagPipeline pipeline = RagPipeline.builder().retriever(retriever).generator(generator).build();
+
+        RagException e = assertThrows(RagException.class,
+                () -> pipeline.ask(RagQuery.of("q").withDocIdPrefixes(List.of("a.md"))));
+
+        assertTrue(e.getCause() instanceof UnsupportedOperationException, e.toString());
+        assertEquals(null, generator.lastContexts);
+        assertEquals(null, retriever.lastQuery);
+        assertEquals("a.md#0", pipeline.ask(new RagQuery("q", List.of(), Map.of("v", "2")))
+                .contexts().get(0).chunk().chunkId());
+    }
+
+    @Test
+    void emptyAllowedSetNeverCallsALegacyRetriever() {
+        StubRetriever retriever = new StubRetriever();
+        List<List<ScoredChunk>> contexts = new ArrayList<>();
+        AnswerGenerator generator = (q, h, c) -> {
+            contexts.add(c);
+            return new GeneratedAnswer("no material", List.of(), true, 0, 0);
+        };
+
+        RagAnswer answer = RagPipeline.builder().retriever(retriever).generator(generator).build()
+                .ask(RagQuery.of("q").withDocIdPrefixes(List.of()));
+
+        assertEquals(null, retriever.lastQuery);
+        assertEquals(List.of(List.of()), contexts);
+        assertTrue(answer.refused());
     }
 
     @Test

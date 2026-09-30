@@ -69,15 +69,15 @@ public final class IncrementalIndexer {
 
     /**
      * Indexes new and changed files under {@code root} and removes documents whose file is gone.
-     * With a {@link LuceneChunkIndex} the whole pass runs in one {@link LuceneChunkIndex#bulk},
-     * so it commits once at the end instead of once per document.
+     * The whole pass runs in one {@link ChunkIndex#bulk}; with a {@link LuceneChunkIndex} that
+     * commits once at the end instead of once per document.
      */
     public synchronized SyncReport sync(Path root) {
         Path base = CorpusScanner.normalizeRoot(root);
         long start = System.nanoTime();
         Accumulator acc = new Accumulator();
         List<Path> files = scanner.list(base);
-        inBulk(() -> {
+        index.bulk(() -> {
             Set<String> present = new HashSet<>();
             for (Path file : files) {
                 String docId = CorpusScanner.docId(base, file);
@@ -141,14 +141,6 @@ public final class IncrementalIndexer {
             }
         } catch (IOException | RuntimeException e) {
             fail(docId, e, acc);
-        }
-    }
-
-    private void inBulk(Runnable work) {
-        if (index instanceof LuceneChunkIndex lucene) {
-            lucene.bulk(work);
-        } else {
-            work.run();
         }
     }
 

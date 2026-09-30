@@ -1,12 +1,12 @@
 package io.github.qwzhang01.agent.rag.index;
 
 import io.github.qwzhang01.agent.rag.ChunkIndex;
+import io.github.qwzhang01.agent.rag.internal.KeywordAnalysis;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
+import io.github.qwzhang01.agent.rag.model.SearchFilter;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -18,6 +18,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherManager;
@@ -71,6 +72,13 @@ public final class LuceneChunkIndex implements ChunkIndex {
     /** Upper bound on vector dimensions (Lucene's codec default is 1024). */
     public static final int MAX_DIMENSIONS = 4096;
 
+    /**
+     * Most document-id prefixes one {@link SearchFilter} may carry here. Each prefix is a query
+     * clause and Lucene caps clauses per query ({@link IndexSearcher#getMaxClauseCount()}, 1024 by
+     * default), shared with the query terms of keyword search.
+     */
+    public static final int MAX_DOC_ID_PREFIXES = 512;
+
     /** Writes after which a {@link #bulk} run commits even though it has not ended. */
     public static final int BULK_COMMIT_INTERVAL = 256;
 
@@ -90,7 +98,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
         this.directory = directory;
         this.dimensions = dimensions;
         checkStoredDimensions(directory, dimensions);
-        Analyzer a = new SmartChineseAnalyzer();
+        Analyzer a = KeywordAnalysis.newAnalyzer();
         IndexWriter w = null;
         try {
             IndexWriterConfig config = new IndexWriterConfig(a)
@@ -155,6 +163,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
      * at that commit. Writes from other threads are unaffected and commit immediately (taking
      * pending bulk writes with them). Nested calls join the outer bulk.
      */
+    @Override
     public void bulk(Runnable work) {
         Objects.requireNonNull(work, "work");
         ensureOpen();
@@ -280,39 +289,70 @@ public final class LuceneChunkIndex implements ChunkIndex {
 
     @Override
     public List<ScoredChunk> keywordSearch(String query, int topK, Map<String, String> filters) {
-        if (query == null || query.isBlank() || topK <= 0) {
+        return keywordSearch(query, topK, SearchFilter.of(filters));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException when the filter has more than {@link #MAX_DOC_ID_PREFIXES}
+     *                                  prefixes, or so many clauses that no query term fits
+     */
+    @Override
+    public List<ScoredChunk> keywordSearch(String query, int topK, SearchFilter filter) {
+        SearchFilter f = filter == null ? SearchFilter.none() : filter;
+        if (query == null || query.isBlank() || topK <= 0 || f.matchesNothing()) {
             return List.of();
         }
-        int filterCount = filters == null ? 0 : filters.size();
         // Lucene rejects queries with more than getMaxClauseCount() leaf clauses in total.
-        Query textQuery = textQuery(query, IndexSearcher.getMaxClauseCount() - 2 - filterCount);
+        int termBudget = IndexSearcher.getMaxClauseCount() - 2 - filterClauseCount(f);
+        if (termBudget < 1) {
+            throw new IllegalArgumentException("filter has too many clauses (" + filterClauseCount(f)
+                    + "), max clause count is " + IndexSearcher.getMaxClauseCount());
+        }
+        Query textQuery = textQuery(query, termBudget);
         if (textQuery == null) {
             return List.of();
         }
         BooleanQuery.Builder builder = new BooleanQuery.Builder()
                 .add(textQuery, Occur.MUST)
                 .add(CHUNKS, Occur.FILTER);
-        addFilters(builder, filters);
+        addFilters(builder, f);
         return search(builder.build(), topK, ScoredChunk.BM25);
     }
 
     @Override
     public List<ScoredChunk> vectorSearch(float[] queryVector, int topK, Map<String, String> filters) {
+        return vectorSearch(queryVector, topK, SearchFilter.of(filters));
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The filter is the KNN pre-filter: HNSW explores only allowed chunks (Lucene falls back to an
+     * exact scan when few documents pass), so {@code topK} is filled whenever enough allowed chunks
+     * have vectors.
+     *
+     * @throws IllegalArgumentException when the filter has more than {@link #MAX_DOC_ID_PREFIXES} prefixes
+     */
+    @Override
+    public List<ScoredChunk> vectorSearch(float[] queryVector, int topK, SearchFilter filter) {
         Objects.requireNonNull(queryVector, "queryVector");
         if (queryVector.length != dimensions) {
             throw new IllegalArgumentException("query vector has " + queryVector.length
                     + " dimensions, index expects " + dimensions);
         }
-        if (topK <= 0 || ChunkDocuments.isZero(queryVector)) {
+        SearchFilter f = filter == null ? SearchFilter.none() : filter;
+        if (topK <= 0 || ChunkDocuments.isZero(queryVector) || f.matchesNothing()) {
             return List.of();
         }
-        Query filter = null;
-        if (filters != null && !filters.isEmpty()) {
+        Query preFilter = null;
+        if (!f.isUnrestricted()) {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            addFilters(builder, filters);
-            filter = builder.build();
+            addFilters(builder, f);
+            preFilter = builder.build();
         }
-        Query query = new KnnFloatVectorQuery(F_VECTOR, queryVector.clone(), topK, filter);
+        Query query = new KnnFloatVectorQuery(F_VECTOR, queryVector.clone(), topK, preFilter);
         return search(query, topK, ScoredChunk.VECTOR);
     }
 
@@ -338,20 +378,15 @@ public final class LuceneChunkIndex implements ChunkIndex {
     /** Analyzed OR query over at most {@code maxTerms} terms; null when nothing survives analysis. */
     private Query textQuery(String query, int maxTerms) {
         String text = query.length() > MAX_QUERY_CHARS ? query.substring(0, MAX_QUERY_CHARS) : query;
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        int terms = 0;
-        try (TokenStream tokens = analyzer.tokenStream(F_CONTENT, text)) {
-            CharTermAttribute term = tokens.addAttribute(CharTermAttribute.class);
-            tokens.reset();
-            while (terms < maxTerms && tokens.incrementToken()) {
-                builder.add(new TermQuery(new Term(F_CONTENT, term.toString())), Occur.SHOULD);
-                terms++;
-            }
-            tokens.end();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        List<String> terms = KeywordAnalysis.tokens(analyzer, text, maxTerms);
+        if (terms.isEmpty()) {
+            return null;
         }
-        return terms == 0 ? null : builder.build();
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (String term : terms) {
+            builder.add(new TermQuery(new Term(F_CONTENT, term)), Occur.SHOULD);
+        }
+        return builder.build();
     }
 
     private List<ScoredChunk> search(Query query, int topK, String signal) {
@@ -409,13 +444,31 @@ public final class LuceneChunkIndex implements ChunkIndex {
         }
     }
 
-    private static void addFilters(BooleanQuery.Builder builder, Map<String, String> filters) {
-        if (filters == null) {
+    /** Leaf clauses the filter adds to a query; validates the prefix count. */
+    private static int filterClauseCount(SearchFilter filter) {
+        int prefixes = filter.docIdPrefixes().map(Set::size).orElse(0);
+        if (prefixes > MAX_DOC_ID_PREFIXES) {
+            throw new IllegalArgumentException("at most " + MAX_DOC_ID_PREFIXES
+                    + " docId prefixes are supported, got " + prefixes);
+        }
+        return filter.metadata().size() + prefixes;
+    }
+
+    private static void addFilters(BooleanQuery.Builder builder, SearchFilter filter) {
+        filterClauseCount(filter);
+        filter.metadata().forEach((key, value) ->
+                builder.add(ChunkDocuments.metadataFilter(key, value), Occur.FILTER));
+        Set<String> prefixes = filter.docIdPrefixes().orElse(Set.of());
+        if (prefixes.isEmpty()) {
             return;
         }
-        filters.forEach((key, value) -> builder.add(ChunkDocuments.metadataFilter(
-                Objects.requireNonNull(key, "filter key"), Objects.requireNonNull(value, "filter value")),
-                Occur.FILTER));
+        // One nested disjunction instead of a clause per prefix at the top level; every prefix
+        // still counts as one leaf towards IndexSearcher.getMaxClauseCount().
+        BooleanQuery.Builder anyPrefix = new BooleanQuery.Builder().setMinimumNumberShouldMatch(1);
+        for (String prefix : prefixes) {
+            anyPrefix.add(new PrefixQuery(new Term(F_DOC_ID, prefix)), Occur.SHOULD);
+        }
+        builder.add(anyPrefix.build(), Occur.FILTER);
     }
 
     private static void checkDimensions(int dimensions) {
