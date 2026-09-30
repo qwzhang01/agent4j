@@ -120,6 +120,36 @@ class LlmCitationVerifierTest {
     }
 
     @Test
+    void oneBasedNumberingIsNotShiftedOntoTheWrongSentence() {
+        Verification v = new LlmCitationVerifier(new StubModelClient(r -> reply(
+                "{\"results\":[{\"i\":1,\"verdict\":\"CONTRADICTED\"},{\"i\":2,\"verdict\":\"SUPPORTED\"}]}")))
+                .verify(List.of(s("x", "a.md#1"), s("y", "b.md#2")), CHUNKS);
+        assertEquals(List.of(SupportVerdict.CONTRADICTED, SupportVerdict.SUPPORTED),
+                v.sentences().stream().map(AnswerSentence::verdict).toList());
+        assertFalse(v.degraded());
+    }
+
+    @Test
+    void extraAndOutOfRangeEntriesAreIgnored() {
+        Verification v = new LlmCitationVerifier(new StubModelClient(r -> reply(
+                "{\"results\":[{\"i\":0,\"verdict\":\"SUPPORTED\"},{\"i\":7,\"verdict\":\"CONTRADICTED\"},"
+                        + "{\"i\":-1,\"verdict\":\"CONTRADICTED\"},\"junk\"]}")))
+                .verify(List.of(s("x", "a.md#1")), CHUNKS);
+        assertEquals(SupportVerdict.SUPPORTED, v.sentences().get(0).verdict());
+        assertFalse(v.degraded());
+    }
+
+    @Test
+    void lenientIndexAndVerdictSpelling() {
+        Verification v = new LlmCitationVerifier(new StubModelClient(r -> reply(
+                "以下是结果 [{\"i\":\"0\",\"verdict\":\"not found\"},{\"i\":1,\"verdict\":\"Not-Found\"}] 完毕")))
+                .verify(List.of(s("x", "a.md#1"), s("y", "b.md#2")), CHUNKS);
+        assertEquals(List.of(SupportVerdict.NOT_FOUND, SupportVerdict.NOT_FOUND),
+                v.sentences().stream().map(AnswerSentence::verdict).toList());
+        assertFalse(v.degraded());
+    }
+
+    @Test
     void evidenceIsCappedPerSentence() {
         Map<String, Chunk> big = Map.of("a.md#1", chunk("a.md#1", "z".repeat(10_000)));
         StubModelClient client = new StubModelClient(r -> reply("{\"results\":[{\"i\":0,\"verdict\":\"SUPPORTED\"}]}"));

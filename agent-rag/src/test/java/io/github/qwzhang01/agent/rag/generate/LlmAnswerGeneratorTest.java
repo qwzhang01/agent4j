@@ -72,6 +72,64 @@ class LlmAnswerGeneratorTest {
     }
 
     @Test
+    void refusalWithPreambleIsDetected() {
+        StubModelClient client = StubModelClient.replying("抱歉，资料中没有相关内容。", 5, 5);
+        GeneratedAnswer a = new LlmAnswerGenerator(client).generate("q", List.of(), List.of(chunk("a.md#1", "x", 1)));
+        assertTrue(a.refused());
+        assertTrue(a.sentences().isEmpty());
+    }
+
+    @Test
+    void citedAnswerMentioningRefusalTextIsNotARefusal() {
+        StubModelClient client = StubModelClient.replying("A 部分资料中没有相关内容，但 B 是 C[a.md#1]。", 5, 5);
+        GeneratedAnswer a = new LlmAnswerGenerator(client).generate("q", List.of(), List.of(chunk("a.md#1", "x", 1)));
+        assertFalse(a.refused());
+        assertEquals(List.of("a.md#1"), a.sentences().get(0).citedChunkIds());
+    }
+
+    @Test
+    void promptForbidsTranslatingTheRefusal() {
+        StubModelClient client = StubModelClient.replying("ok[a.md#1].", 1, 1);
+        new LlmAnswerGenerator(client).generate("What is RAG?", List.of(), List.of(chunk("a.md#1", "x", 1)));
+        String system = client.requests.get(0).messages().get(0).content();
+        assertTrue(system.contains("不要翻译它"));
+    }
+
+    @Test
+    void reportsPackedChunkIdsAndStripsHallucinatedMarkers() {
+        String body = "x".repeat(300);
+        StubModelClient client = StubModelClient.replying("答[a.md#1][c.md#3]。", 1, 1);
+        GeneratedAnswer a = new LlmAnswerGenerator(client, new LlmAnswerGenerator.Options(null, 700, null, 6))
+                .generate("q", List.of(), List.of(chunk("a.md#1", body, 0.9), chunk("b.md#2", body, 0.8),
+                        chunk("c.md#3", body, 0.7)));
+        assertEquals(List.of("a.md#1", "b.md#2"), a.usedChunkIds());
+        assertEquals("答[a.md#1]。", a.rawText());
+    }
+
+    @Test
+    void emptyContextsReportNoUsedChunks() {
+        GeneratedAnswer a = new LlmAnswerGenerator(StubModelClient.failing()).generate("q", List.of(), List.of());
+        assertEquals(List.of(), a.usedChunkIds());
+    }
+
+    @Test
+    void blankModelOutputIsAFailure() {
+        StubModelClient client = StubModelClient.replying("  \n", 1, 1);
+        LlmAnswerGenerator gen = new LlmAnswerGenerator(client);
+        assertThrows(IllegalStateException.class,
+                () -> gen.generate("q", List.of(), List.of(chunk("a.md#1", "x", 1))));
+    }
+
+    @Test
+    void oversizedTopChunkTruncationKeepsSurrogatePairs() {
+        String header = LlmAnswerGenerator.header(chunk("a.md#1", "", 1).chunk());
+        int room = 200 - header.length() - 3;
+        String text = "y".repeat(room - 1) + "😀" + "z".repeat(100);
+        List<Chunk> packed = LlmAnswerGenerator.pack(List.of(chunk("a.md#1", text, 1)), 200);
+        assertEquals("y".repeat(room - 1), packed.get(0).text());
+    }
+
+    @Test
     void customRefusalText() {
         StubModelClient client = StubModelClient.replying("NO_ANSWER", 1, 1);
         LlmAnswerGenerator gen = new LlmAnswerGenerator(client,

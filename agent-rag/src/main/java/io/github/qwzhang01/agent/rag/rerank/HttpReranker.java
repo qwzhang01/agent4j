@@ -6,12 +6,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.qwzhang01.agent.rag.RerankException;
 import io.github.qwzhang01.agent.rag.Reranker;
+import io.github.qwzhang01.agent.rag.internal.Texts;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -41,6 +43,7 @@ public final class HttpReranker implements Reranker {
     private static final Logger log = LoggerFactory.getLogger(HttpReranker.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int BODY_SNIPPET_CHARS = 300;
+    static final int MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 
     private final URI endpoint;
     private final String model;
@@ -99,9 +102,12 @@ public final class HttpReranker implements Reranker {
         HttpRequest request = rb.build();
 
         long start = System.nanoTime();
-        HttpResponse<String> response;
+        int status;
+        String body;
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            status = response.statusCode();
+            body = readBody(response.body());
         } catch (HttpTimeoutException e) {
             throw new RerankException("rerank timed out after " + timeout.toMillis() + "ms: " + endpoint, e);
         } catch (IOException e) {
@@ -110,11 +116,10 @@ public final class HttpReranker implements Reranker {
             Thread.currentThread().interrupt();
             throw new RerankException("rerank interrupted: " + endpoint, e);
         }
-        int status = response.statusCode();
         if (status < 200 || status >= 300) {
-            throw new RerankException("rerank HTTP " + status + " from " + endpoint + ": " + snippet(response.body()));
+            throw new RerankException("rerank HTTP " + status + " from " + endpoint + ": " + snippet(body));
         }
-        List<ScoredChunk> results = parse(response.body(), candidates, n);
+        List<ScoredChunk> results = parse(body, candidates, n);
         log.debug("rerank {} candidates -> {} in {}ms", candidates.size(), results.size(),
                 (System.nanoTime() - start) / 1_000_000);
         return results;
@@ -129,7 +134,7 @@ public final class HttpReranker implements Reranker {
         ArrayNode docs = body.putArray("documents");
         for (ScoredChunk candidate : candidates) {
             String text = documentText.apply(candidate.chunk());
-            docs.add(truncate(text == null ? "" : text));
+            docs.add(Texts.truncate(text == null ? "" : text, maxDocumentChars));
         }
         body.put("top_n", topN);
         try {
@@ -139,15 +144,14 @@ public final class HttpReranker implements Reranker {
         }
     }
 
-    private String truncate(String text) {
-        if (text.length() <= maxDocumentChars) {
-            return text;
+    private String readBody(InputStream in) throws IOException {
+        try (in) {
+            byte[] bytes = in.readNBytes(MAX_RESPONSE_BYTES + 1);
+            if (bytes.length > MAX_RESPONSE_BYTES) {
+                throw new RerankException("rerank response exceeds " + MAX_RESPONSE_BYTES + " bytes: " + endpoint);
+            }
+            return new String(bytes, StandardCharsets.UTF_8);
         }
-        int end = maxDocumentChars;
-        if (Character.isHighSurrogate(text.charAt(end - 1))) {
-            end--;
-        }
-        return text.substring(0, end);
     }
 
     private List<ScoredChunk> parse(String body, List<ScoredChunk> candidates, int topN) {
@@ -174,8 +178,12 @@ public final class HttpReranker implements Reranker {
             if (i < 0 || i >= candidates.size()) {
                 throw new RerankException("rerank result index " + i + " out of range [0," + candidates.size() + ")");
             }
+            double value = score.doubleValue();
+            if (!Double.isFinite(value)) {
+                throw new RerankException("rerank result " + i + " has non-finite relevance_score: " + score);
+            }
             if (seen.add(i)) {
-                scored.add(candidates.get(i).withStage(ScoredChunk.RERANK, score.doubleValue()));
+                scored.add(candidates.get(i).withStage(ScoredChunk.RERANK, value));
             }
         }
         scored.sort(Comparator.comparingDouble(ScoredChunk::score).reversed());
@@ -186,8 +194,10 @@ public final class HttpReranker implements Reranker {
         if (body == null || body.isEmpty()) {
             return "<empty body>";
         }
-        String flat = body.replaceAll("\\s+", " ").strip();
-        return flat.length() <= BODY_SNIPPET_CHARS ? flat : flat.substring(0, BODY_SNIPPET_CHARS) + "...";
+        String head = Texts.truncate(body, BODY_SNIPPET_CHARS * 4);
+        String flat = head.replaceAll("\\s+", " ").strip();
+        return flat.length() <= BODY_SNIPPET_CHARS && head.length() == body.length()
+                ? flat : Texts.truncate(flat, BODY_SNIPPET_CHARS) + "...";
     }
 
     @Override

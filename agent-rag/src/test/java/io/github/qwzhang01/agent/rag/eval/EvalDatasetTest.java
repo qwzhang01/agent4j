@@ -27,6 +27,14 @@ class EvalDatasetTest {
     }
 
     @Test
+    void toleratesBomAndCrlf() throws IOException {
+        List<EvalCase> cases = EvalDataset.load(write(
+                "\uFEFF{\"id\":\"q1\",\"question\":\"召回\"}\r\n\r\n{\"id\":\"q2\",\"question\":\"重排\"}\r\n"));
+        assertEquals(List.of("q1", "q2"), cases.stream().map(EvalCase::id).toList());
+        assertEquals("召回", cases.get(0).question());
+    }
+
+    @Test
     void loadsAllFieldsSkippingBlankAndCommentLines() throws IOException {
         Path file = write("""
                 // eval set v1

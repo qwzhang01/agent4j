@@ -13,31 +13,30 @@ import java.util.regex.Pattern;
 /**
  * Splits generator output into sentences and extracts inline citation markers.
  * <p>
- * A marker is {@code [id]}, {@code [id1, id2]} or {@code 【id】}; adjacent markers accumulate.
- * Bracket text counts as a marker only when every comma-separated token is free of whitespace and
- * either contains {@code #} or is an allowed id, so {@code [x]}, {@code [0]} and Markdown links
- * stay as text. Both {@code 句子[id]。} and {@code 句子。[id]} attach the ids to that sentence;
- * a line holding only markers attaches them to the previous sentence. Fenced code blocks become
- * one sentence each and are never split or scanned for markers.
+ * A marker is {@code [id]}, {@code [id1, id2]}, {@code 【id】} or {@code ［id］}; adjacent markers
+ * accumulate. Bracket text counts as a marker only when every comma-separated token is an allowed id
+ * or has the chunk-id shape {@code <docId>#<ordinal>} (and is not a URL), so {@code [x]}, {@code [0]},
+ * {@code [C#]} and Markdown links stay as text. Both {@code 句子[id]。} and {@code 句子。[id]} attach
+ * the ids to that sentence; a line holding only markers attaches them to the previous sentence.
+ * Fenced code blocks become one sentence each and, like inline code spans, are never scanned for markers.
  */
 public final class CitationParser {
 
-    private static final Pattern LEADING_MARKUP = Pattern.compile("^(?:>\\s*)*(?:#{1,6}\\s+|[-*+]\\s+|\\d+[.)]\\s+)?");
-    private static final Pattern LIST_NUMBER = Pattern.compile("^\\s*(?:[-*+]\\s*)?\\d+$");
-    private static final Pattern SPACE_BEFORE_PUNCT = Pattern.compile("\\s+([。！？，；：、.!?,;:])");
-    private static final Pattern MULTI_SPACE = Pattern.compile("[ \\t]{2,}");
+    private static final Pattern CHUNK_ID_SHAPE = Pattern.compile("\\S+#\\d+");
     private static final int MAX_MARKER_LENGTH = 400;
 
     private CitationParser() {
     }
 
     /**
-     * @param sentences      non-empty sentences in output order, verdict {@link SupportVerdict#UNVERIFIED}
+     * @param sentences        non-empty sentences in output order, verdict {@link SupportVerdict#UNVERIFIED}
      * @param unknownCitations cited ids dropped because they were not in the allowed set
+     * @param text             the input with dropped ids removed from its markers, for display
      */
-    public record ParseResult(List<AnswerSentence> sentences, int unknownCitations) {
+    public record ParseResult(List<AnswerSentence> sentences, int unknownCitations, String text) {
         public ParseResult {
             sentences = List.copyOf(sentences);
+            text = text == null ? "" : text;
         }
     }
 
@@ -48,9 +47,23 @@ public final class CitationParser {
     public static ParseResult parse(String text, Set<String> allowedIds) {
         Objects.requireNonNull(allowedIds, "allowedIds");
         if (text == null || text.isBlank()) {
-            return new ParseResult(List.of(), 0);
+            return new ParseResult(List.of(), 0, text);
         }
         return new Run(allowedIds).parse(text);
+    }
+
+    /** Closing counterpart of a marker's opening bracket, or 0 when {@code open} opens no marker. */
+    static char closingBracket(char open) {
+        return switch (open) {
+            case '[' -> ']';
+            case '【' -> '】';
+            case '［' -> '］';
+            default -> 0;
+        };
+    }
+
+    private static boolean isBracket(char c) {
+        return closingBracket(c) != 0 || c == ']' || c == '】' || c == '］';
     }
 
     private static final class Segment {
@@ -69,15 +82,21 @@ public final class CitationParser {
 
         String clean() {
             if (cleaned == null) {
-                cleaned = code ? stripBlankEdges(text.toString()) : cleanProse(text.toString());
+                cleaned = code ? SentenceText.stripBlankEdges(text.toString()) : SentenceText.cleanProse(text.toString());
             }
             return cleaned;
+        }
+
+        void append(CharSequence s) {
+            text.append(s);
+            cleaned = null;
         }
     }
 
     private static final class Run {
         private final Set<String> allowed;
         private final List<Segment> out = new ArrayList<>();
+        private final StringBuilder display = new StringBuilder();
         private int unknown;
 
         Run(Set<String> allowed) {
@@ -87,21 +106,29 @@ public final class CitationParser {
         ParseResult parse(String text) {
             String[] lines = text.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
             Segment code = null;
-            for (String line : lines) {
+            for (int n = 0; n < lines.length; n++) {
+                String line = lines[n];
+                if (n > 0) {
+                    display.append('\n');
+                }
                 String trimmed = line.trim();
                 if (code != null) {
                     if (trimmed.startsWith("```")) {
                         emit(code);
                         code = null;
                         String rest = trimmed.substring(3).trim();
+                        display.append(line, 0, line.indexOf("```") + 3);
                         if (!rest.isEmpty()) {
+                            display.append(' ');
                             processLine(rest);
                         }
                     } else {
-                        code.text.append(line).append('\n');
+                        code.append(line + "\n");
+                        display.append(line);
                     }
                 } else if (trimmed.startsWith("```")) {
                     code = new Segment(true);
+                    display.append(line);
                 } else {
                     processLine(line);
                 }
@@ -113,7 +140,7 @@ public final class CitationParser {
             for (Segment s : out) {
                 sentences.add(new AnswerSentence(s.clean(), List.copyOf(s.ids), SupportVerdict.UNVERIFIED, ""));
             }
-            return new ParseResult(sentences, unknown);
+            return new ParseResult(sentences, unknown, display.toString());
         }
 
         private void processLine(String line) {
@@ -123,23 +150,32 @@ public final class CitationParser {
             int n = line.length();
             while (i < n) {
                 char c = line.charAt(i);
-                if (c == '[' || c == '【') {
+                if (closingBracket(c) != 0) {
                     int end = markerEnd(line, i);
                     if (end > 0) {
-                        List<String> ids = acceptIds(line.substring(i + 1, end));
+                        List<String> ids = acceptIds(line, i, end);
                         Segment target = lastClosed != null && !cur.hasText() && cur.ids.isEmpty() ? lastClosed : cur;
                         target.ids.addAll(ids);
-                        cur.cleaned = null;
                         i = end + 1;
                         continue;
                     }
                 }
-                cur.text.append(c);
-                cur.cleaned = null;
+                if (c == '`') {
+                    int end = inlineCodeEnd(line, i);
+                    if (end > 0) {
+                        cur.append(line.substring(i, end));
+                        display.append(line, i, end);
+                        i = end;
+                        continue;
+                    }
+                }
+                cur.append(String.valueOf(c));
+                display.append(c);
                 i++;
-                if (isTerminal(line, i - 1, cur)) {
-                    while (i < n && isClosingQuote(line.charAt(i))) {
-                        cur.text.append(line.charAt(i));
+                if (SentenceText.isTerminal(line, i - 1, cur.text)) {
+                    while (i < n && SentenceText.isClosingQuote(line.charAt(i))) {
+                        cur.append(String.valueOf(line.charAt(i)));
+                        display.append(line.charAt(i));
                         i++;
                     }
                     if (cur.hasText()) {
@@ -174,9 +210,9 @@ public final class CitationParser {
             }
         }
 
-        /** Index of the closing bracket when {@code [..]} at {@code start} is a citation marker, else -1. */
+        /** Index of the closing bracket when the bracket at {@code start} opens a citation marker, else -1. */
         private int markerEnd(String line, int start) {
-            char close = line.charAt(start) == '[' ? ']' : '】';
+            char close = closingBracket(line.charAt(start));
             int limit = Math.min(line.length(), start + MAX_MARKER_LENGTH);
             for (int j = start + 1; j < limit; j++) {
                 char c = line.charAt(j);
@@ -186,7 +222,7 @@ public final class CitationParser {
                     }
                     return isMarkerBody(line.substring(start + 1, j)) ? j : -1;
                 }
-                if (c == '[' || c == ']' || c == '【' || c == '】') {
+                if (isBracket(c)) {
                     return -1;
                 }
             }
@@ -195,89 +231,60 @@ public final class CitationParser {
 
         private boolean isMarkerBody(String body) {
             List<String> tokens = tokens(body);
-            if (tokens.isEmpty()) {
-                return false;
-            }
             for (String t : tokens) {
-                if (t.isEmpty() || t.chars().anyMatch(Character::isWhitespace)) {
-                    return false;
-                }
-                if (t.indexOf('#') < 0 && !allowed.contains(t)) {
+                boolean idShaped = CHUNK_ID_SHAPE.matcher(t).matches() && !t.contains("://");
+                if (!allowed.contains(t) && !idShaped) {
                     return false;
                 }
             }
-            return true;
+            return !tokens.isEmpty();
         }
 
-        private List<String> acceptIds(String body) {
+        /** Allowed ids of the marker at {@code [start, end]}; writes the marker minus unknown ids to the display text. */
+        private List<String> acceptIds(String line, int start, int end) {
+            List<String> tokens = tokens(line.substring(start + 1, end));
             List<String> kept = new ArrayList<>();
-            for (String t : tokens(body)) {
+            for (String t : tokens) {
                 if (allowed.contains(t)) {
                     kept.add(t);
                 } else {
                     unknown++;
                 }
             }
+            if (kept.size() == tokens.size()) {
+                display.append(line, start, end + 1);
+            } else if (kept.isEmpty()) {
+                while (!display.isEmpty() && (display.charAt(display.length() - 1) == ' '
+                        || display.charAt(display.length() - 1) == '\t')) {
+                    display.setLength(display.length() - 1);
+                }
+            } else {
+                kept.forEach(id -> display.append('[').append(id).append(']'));
+            }
             return kept;
         }
+    }
+
+    /** End (exclusive) of the inline code span opened by the backtick run at {@code start}, or -1 if unclosed. */
+    private static int inlineCodeEnd(String line, int start) {
+        int ticks = 0;
+        while (start + ticks < line.length() && line.charAt(start + ticks) == '`') {
+            ticks++;
+        }
+        String fence = "`".repeat(ticks);
+        int close = line.indexOf(fence, start + ticks);
+        return close < 0 ? -1 : close + ticks;
     }
 
     private static List<String> tokens(String body) {
         List<String> tokens = new ArrayList<>();
         for (String raw : body.split("[,，;；]")) {
-            tokens.add(raw.trim());
+            String t = raw.trim();
+            if (t.isEmpty()) {
+                return List.of();
+            }
+            tokens.add(t);
         }
         return tokens;
-    }
-
-    private static boolean isTerminal(String line, int idx, Segment cur) {
-        char c = line.charAt(idx);
-        if (c == '。' || c == '！' || c == '？') {
-            return true;
-        }
-        if (c != '.' && c != '!' && c != '?') {
-            return false;
-        }
-        int next = idx + 1;
-        while (next < line.length() && isClosingQuote(line.charAt(next))) {
-            next++;
-        }
-        boolean boundary = next >= line.length()
-                || Character.isWhitespace(line.charAt(next))
-                || line.charAt(next) == '['
-                || line.charAt(next) == '【';
-        if (!boundary) {
-            return false;
-        }
-        if (c == '.') {
-            String before = cur.text.substring(0, cur.text.length() - 1);
-            return !LIST_NUMBER.matcher(before).matches();
-        }
-        return true;
-    }
-
-    private static boolean isClosingQuote(char c) {
-        return c == '"' || c == '\'' || c == '”' || c == '’' || c == ')' || c == '）' || c == '」' || c == '』';
-    }
-
-    private static String cleanProse(String raw) {
-        String s = raw.strip();
-        s = LEADING_MARKUP.matcher(s).replaceFirst("");
-        s = MULTI_SPACE.matcher(s).replaceAll(" ");
-        s = SPACE_BEFORE_PUNCT.matcher(s).replaceAll("$1");
-        s = s.strip();
-        return hasLetterOrDigit(s) ? s : "";
-    }
-
-    private static String stripBlankEdges(String raw) {
-        String s = raw.stripTrailing();
-        while (s.startsWith("\n")) {
-            s = s.substring(1);
-        }
-        return hasLetterOrDigit(s) ? s : "";
-    }
-
-    private static boolean hasLetterOrDigit(String s) {
-        return s.codePoints().anyMatch(Character::isLetterOrDigit);
     }
 }

@@ -199,6 +199,50 @@ class HttpRerankerTest {
     }
 
     @Test
+    void nonFiniteScoreFails() {
+        responseBody = "{\"results\":[{\"index\":0,\"relevance_score\":1e999}]}";
+        RerankException e = assertThrows(RerankException.class,
+                () -> HttpReranker.builder().baseUrl(baseUrl).build().rerank("q", candidates(), 2));
+        assertTrue(e.getMessage().contains("non-finite"), e.getMessage());
+    }
+
+    @Test
+    void duplicateIndicesKeepFirstOccurrence() {
+        responseBody = """
+                {"results":[{"index":1,"relevance_score":0.2},{"index":1,"relevance_score":0.9},
+                            {"index":0,"relevance_score":0.5}]}""";
+        List<ScoredChunk> out = HttpReranker.builder().baseUrl(baseUrl).build().rerank("q", candidates(), 4);
+        assertEquals(List.of("d#0", "d#1"), out.stream().map(c -> c.chunk().chunkId()).toList());
+        assertEquals(0.2, out.get(1).score(), 1e-9);
+    }
+
+    @Test
+    void oversizedBodyFailsWithoutBufferingIt() {
+        responseBody = "{\"results\":[],\"pad\":\"" + "x".repeat(HttpReranker.MAX_RESPONSE_BYTES) + "\"}";
+        RerankException e = assertThrows(RerankException.class,
+                () -> HttpReranker.builder().baseUrl(baseUrl).build().rerank("q", candidates(), 2));
+        assertTrue(e.getMessage().contains("exceeds"), e.getMessage());
+    }
+
+    @Test
+    void errorSnippetIsBoundedForHugeBodies() {
+        status = 502;
+        responseBody = "<html>" + " bad gateway ".repeat(10_000) + "</html>";
+        RerankException e = assertThrows(RerankException.class,
+                () -> HttpReranker.builder().baseUrl(baseUrl).build().rerank("q", candidates(), 2));
+        assertTrue(e.getMessage().length() < 500, e.getMessage());
+        assertTrue(e.getMessage().endsWith("..."), e.getMessage());
+    }
+
+    @Test
+    void truncationDoesNotSplitSurrogatePairs() throws Exception {
+        responseBody = "{\"results\":[{\"index\":0,\"relevance_score\":0.5}]}";
+        HttpReranker.builder().baseUrl(baseUrl).maxDocumentChars(2).documentText(c -> "a😀b").build()
+                .rerank("q", List.of(candidate(0, "x")), 1);
+        assertEquals("a", MAPPER.readTree(requestBody.get()).get("documents").get(0).asText());
+    }
+
+    @Test
     void baseUrlRequired() {
         assertThrows(NullPointerException.class, () -> HttpReranker.builder().build());
     }

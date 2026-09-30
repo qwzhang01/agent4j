@@ -76,6 +76,7 @@ agent-sandbox        ClassLoader + 进程隔离（无 Docker / WASM）
 agent-workflow       图引擎 · 7 种节点 · Checkpoint
 agent-scheduler      定时 / 事件恢复 · 任务队列
 agent-memory         工作 / 会话 / 长期记忆 + MemoryScope
+agent-rag            文档问答：结构切块 · BM25+向量混合检索 · 重排序 · 引用与校验 · 评测
 agent-security       权限 · 审批 · 注入净化 · 审计
 agent-mcp            MCP stdio + A2A（进程内 / HTTP 双向）
 agent-orchestrator   Supervisor / Worker 并行派发

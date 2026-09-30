@@ -9,6 +9,10 @@ The current Maven version is `0.1.5` (Central latest release: `0.1.5`).
 
 ## [未发布]
 
+### Added
+
+- **`agent-rag`: document retrieval-augmented generation.** New module, separate storage from `agent-memory`. Contract: `DocumentLoader`, `Chunker`, `ChunkIndex`, `Retriever`, `FusionStrategy`, `Reranker`, `QueryRewriter`, `AnswerGenerator`, `CitationVerifier`, `RagTraceListener`. Implementations: `MarkdownLoader` / `PdfLoader` (flexmark, PDFBox) and `StructureAwareChunker` (never crosses a heading or a PDF page; tables and code kept whole); `LuceneChunkIndex` (Lucene 9.12, BM25 with `SmartChineseAnalyzer` + HNSW cosine vectors in one index, atomic per-document replace) and `IncrementalIndexer` (content-hash sync, keyword-only fallback when embedding fails); `HybridRetriever` + `ReciprocalRankFusion`; `HttpReranker` (Cohere-compatible `/v1/rerank`) + `FallbackReranker`; `LlmQueryRewriter`; `LlmAnswerGenerator` (inline `[chunkId]` citations, refusal text) + `CitationParser`; `LlmCitationVerifier` (each sentence checked only against the chunks it cites); `RagPipeline` (rewrite → retrieve → rerank → generate → verify, one `RagTrace` per call; only a retrieval failure fails the call); `eval` package (JSONL dataset, Recall@k / Hit@k / MRR, refusal accuracy, citation support rate, comparison report).
+
 ## [0.1.5] - 2026-09-17
 
 ### Added

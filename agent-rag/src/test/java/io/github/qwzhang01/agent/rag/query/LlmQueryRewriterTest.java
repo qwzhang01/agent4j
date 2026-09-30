@@ -102,6 +102,21 @@ class LlmQueryRewriterTest {
     }
 
     @Test
+    void labelOnItsOwnLineAndThinkBlocksAreSkipped() {
+        assertEquals("RAG 引用溯源方案", LlmQueryRewriter.clean("改写后的查询：\nRAG 引用溯源方案"));
+        assertEquals("RAG citation tracing",
+                LlmQueryRewriter.clean("<think>\nThe user asks about...\n</think>\nRAG citation tracing"));
+        assertEquals("", LlmQueryRewriter.clean("<think>still thinking when cut off"));
+    }
+
+    @Test
+    void historyTruncationKeepsSurrogatePairs() {
+        LlmQueryRewriter rewriter = new LlmQueryRewriter(new ScriptedClient(), null, 6, 2);
+        String prompt = rewriter.userPrompt("q", List.of(ConversationTurn.user("a😀b")));
+        assertTrue(prompt.contains("用户: a…\n"), prompt);
+    }
+
+    @Test
     void modelFailureDegrades() {
         Rewrite r = new LlmQueryRewriter(new ScriptedClient().fail()).rewrite("那引用呢", HISTORY);
         assertEquals(new Rewrite("那引用呢", 0, 0, true), r);

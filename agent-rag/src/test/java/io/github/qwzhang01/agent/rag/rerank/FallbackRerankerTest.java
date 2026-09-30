@@ -71,6 +71,25 @@ class FallbackRerankerTest {
     }
 
     @Test
+    void degradationIsVisibleThroughTheRerankerInterface() {
+        Reranker asInterface = new FallbackReranker((q, c, n) -> {
+            throw new RerankException("HTTP 503");
+        });
+        Reranker.Outcome out = asInterface.rerankWithOutcome("q", candidates(), 2);
+        assertTrue(out.degraded());
+        assertEquals(List.of("d#0", "d#1"), ids(out.results()));
+    }
+
+    @Test
+    void defaultOutcomeWrapsRerankAndRejectsNull() {
+        Reranker.Outcome ok = REVERSE.rerankWithOutcome("q", candidates(), 1);
+        assertFalse(ok.degraded());
+        assertEquals(List.of("d#2"), ids(ok.results()));
+        Reranker returnsNull = (q, c, n) -> null;
+        assertThrows(RerankException.class, () -> returnsNull.rerankWithOutcome("q", candidates(), 1));
+    }
+
+    @Test
     void emptyCandidatesSkipDelegate() {
         FallbackReranker reranker = new FallbackReranker((q, c, n) -> fail("must not be called"));
         assertEquals(List.of(), reranker.rerank("q", List.of(), 3));

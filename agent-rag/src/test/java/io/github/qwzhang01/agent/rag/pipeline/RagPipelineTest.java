@@ -1,5 +1,11 @@
 package io.github.qwzhang01.agent.rag.pipeline;
 
+import io.github.qwzhang01.agent.core.client.ModelClient;
+import io.github.qwzhang01.agent.core.model.ChatMessage;
+import io.github.qwzhang01.agent.core.model.ChatRole;
+import io.github.qwzhang01.agent.core.model.ModelRequest;
+import io.github.qwzhang01.agent.core.model.ModelResponse;
+import io.github.qwzhang01.agent.core.model.StreamEvent;
 import io.github.qwzhang01.agent.rag.AnswerGenerator;
 import io.github.qwzhang01.agent.rag.CitationVerifier;
 import io.github.qwzhang01.agent.rag.QueryRewriter;
@@ -15,12 +21,15 @@ import io.github.qwzhang01.agent.rag.model.RagQuery;
 import io.github.qwzhang01.agent.rag.model.RagTrace;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
 import io.github.qwzhang01.agent.rag.model.SupportVerdict;
+import io.github.qwzhang01.agent.rag.generate.LlmAnswerGenerator;
+import io.github.qwzhang01.agent.rag.rerank.FallbackReranker;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -177,9 +186,180 @@ class RagPipelineTest {
         assertEquals("answer [a.md#0]", answer.answer());
     }
 
+    private static final class ScriptedModel implements ModelClient {
+        final List<ModelRequest> requests = new ArrayList<>();
+        final String reply;
+
+        ScriptedModel(String reply) {
+            this.reply = reply;
+        }
+
+        @Override
+        public ModelResponse chat(ModelRequest request) {
+            requests.add(request);
+            return new ModelResponse(reply, null, "stop", null);
+        }
+
+        @Override
+        public Stream<StreamEvent> stream(ModelRequest request) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static final Reranker FAILING = (q, c, n) -> {
+        throw new RerankException("HTTP 503");
+    };
+
+    @Test
+    void fallbackRerankerDegradationIsTraced() {
+        StubGenerator generator = new StubGenerator();
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever())
+                .reranker(new FallbackReranker(FAILING)).generator(generator).contextK(2).build()
+                .ask(RagQuery.of("q"));
+
+        assertEquals(List.of(ScoredChunk.RERANK), answer.trace().degradations());
+        assertFalse(answer.trace().stageHits().containsKey(ScoredChunk.RERANK));
+        assertEquals(List.of("a.md#0", "a.md#1"),
+                generator.lastContexts.stream().map(c -> c.chunk().chunkId()).toList());
+    }
+
+    @Test
+    void rerankThresholdRemovingEverythingRefusesWithoutModelCall() {
+        Reranker lowScores = (q, c, n) -> c.stream().map(x -> x.withStage(ScoredChunk.RERANK, 0.01)).toList();
+        ScriptedModel model = new ScriptedModel("unused");
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever())
+                .reranker(new FallbackReranker(lowScores, 0.5)).generator(new LlmAnswerGenerator(model)).build()
+                .ask(RagQuery.of("q"));
+
+        assertTrue(answer.refused());
+        assertTrue(answer.trace().refused());
+        assertTrue(answer.contexts().isEmpty());
+        assertTrue(answer.trace().contextChunkIds().isEmpty());
+        assertEquals(List.of(), answer.trace().stageHits().get(ScoredChunk.RERANK));
+        assertTrue(answer.trace().degradations().isEmpty());
+        assertTrue(model.requests.isEmpty());
+    }
+
+    @Test
+    void rerankerReturningNullFallsBackToFirstStage() {
+        StubGenerator generator = new StubGenerator();
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever())
+                .reranker((q, c, n) -> null).generator(generator).contextK(2).build()
+                .ask(RagQuery.of("q"));
+
+        assertEquals(2, generator.lastContexts.size());
+        assertFalse(answer.refused());
+        assertEquals(List.of(ScoredChunk.RERANK), answer.trace().degradations());
+    }
+
+    @Test
+    void rerankerSeesAtMostCandidateK() {
+        StubRetriever retriever = new StubRetriever();
+        retriever.result = hits("a.md#0", "a.md#1", "a.md#2", "a.md#3");
+        List<Integer> seen = new ArrayList<>();
+        Reranker recording = (q, c, n) -> {
+            seen.add(c.size());
+            return c.subList(0, n);
+        };
+        RagPipeline.builder().retriever(retriever).reranker(recording).generator(new StubGenerator())
+                .candidateK(3).contextK(2).build().ask(RagQuery.of("q"));
+        assertEquals(List.of(3), seen);
+    }
+
+    @Test
+    void contextsAreTheChunksTheModelSaw() {
+        AnswerGenerator partial = (q, h, contexts) -> new GeneratedAnswer("answer [a.md#0]",
+                List.of(new AnswerSentence("answer", List.of("a.md#0"), null, null)), false, 1, 1,
+                List.of("a.md#0"));
+        List<Map<String, Chunk>> verified = new ArrayList<>();
+        CitationVerifier verifier = (s, byId) -> {
+            verified.add(byId);
+            return new CitationVerifier.Verification(s, 0, 0, false);
+        };
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever()).generator(partial)
+                .verifier(verifier).contextK(3).build().ask(RagQuery.of("q"));
+
+        assertEquals(List.of("a.md#0"), answer.contexts().stream().map(c -> c.chunk().chunkId()).toList());
+        assertEquals(List.of("a.md#0"), answer.trace().contextChunkIds());
+        assertEquals(List.of("a.md#0"), List.copyOf(verified.get(0).keySet()));
+    }
+
+    @Test
+    void llmGeneratorBudgetDropsUnseenChunksFromContexts() {
+        StubRetriever retriever = new StubRetriever();
+        ScriptedModel model = new ScriptedModel("答[a.md#0]。");
+        RagAnswer answer = RagPipeline.builder().retriever(retriever)
+                .generator(new LlmAnswerGenerator(model, new LlmAnswerGenerator.Options(null, 60, null, 6)))
+                .contextK(3).build().ask(RagQuery.of("q"));
+
+        assertEquals(List.of("a.md#0"), answer.trace().contextChunkIds());
+        assertEquals(List.of("a.md#0"), answer.sentences().get(0).citedChunkIds());
+    }
+
+    @Test
+    void generatorSeesHistoryAndOriginalQuestion() {
+        ScriptedModel model = new ScriptedModel("答[a.md#0]。");
+        QueryRewriter rewriter = (q, h) -> new QueryRewriter.Rewrite("RAG 引用溯源怎么做", 0, 0, false);
+        RagPipeline.builder().queryRewriter(rewriter).retriever(new StubRetriever())
+                .generator(new LlmAnswerGenerator(model)).build()
+                .ask(new RagQuery("那引用溯源呢", List.of(ConversationTurn.user("介绍 RAG"),
+                        ConversationTurn.assistant("RAG 是检索增强生成。")), Map.of()));
+
+        List<ChatMessage> messages = model.requests.get(0).messages();
+        assertEquals("介绍 RAG", messages.get(1).content());
+        assertEquals(ChatRole.ASSISTANT, messages.get(2).role());
+        assertTrue(messages.get(3).content().endsWith("那引用溯源呢"));
+    }
+
+    @Test
+    void refusedAnswerSkipsVerifier() {
+        CitationVerifier verifier = (s, byId) -> {
+            throw new AssertionError("must not be called");
+        };
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever())
+                .generator(new LlmAnswerGenerator(new ScriptedModel("资料中没有相关内容。")))
+                .verifier(verifier).build().ask(RagQuery.of("q"));
+        assertTrue(answer.trace().refused());
+        assertTrue(answer.sentences().isEmpty());
+        assertTrue(answer.trace().verdictCounts().isEmpty());
+    }
+
+    @Test
+    void verifierReturningWrongSentenceCountDegrades() {
+        CitationVerifier dropsAll = (s, byId) -> new CitationVerifier.Verification(List.of(), 4, 2, false);
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever()).generator(new StubGenerator())
+                .verifier(dropsAll).build().ask(RagQuery.of("q"));
+        assertEquals(1, answer.sentences().size());
+        assertEquals(SupportVerdict.UNVERIFIED, answer.sentences().get(0).verdict());
+        assertEquals(List.of("verify"), answer.trace().degradations());
+        assertEquals(14, answer.trace().promptTokens());
+    }
+
+    @Test
+    void blankRewriteRetrievesWithOriginalQuestion() {
+        StubRetriever retriever = new StubRetriever();
+        QueryRewriter blank = (q, h) -> new QueryRewriter.Rewrite(" ", 3, 1, false);
+        RagAnswer answer = RagPipeline.builder().queryRewriter(blank).retriever(retriever)
+                .generator(new StubGenerator()).build()
+                .ask(new RagQuery("原问题", List.of(ConversationTurn.user("h")), Map.of()));
+        assertEquals("原问题", retriever.lastQuery);
+        assertEquals(List.of("rewrite"), answer.trace().degradations());
+        assertEquals(13, answer.trace().promptTokens());
+    }
+
+    @Test
+    void emptyModelOutputFallsBackToPassages() {
+        RagAnswer answer = RagPipeline.builder().retriever(new StubRetriever())
+                .generator(new LlmAnswerGenerator(new ScriptedModel("  "))).contextK(2).build()
+                .ask(RagQuery.of("q"));
+        assertEquals(List.of("generate"), answer.trace().degradations());
+        assertTrue(answer.answer().contains("[a.md#0]"));
+        assertEquals(List.of("a.md#0", "a.md#1"), answer.trace().contextChunkIds());
+    }
+
     @Test
     void fallbackTextWithoutContexts() {
-        assertTrue(RagPipeline.defaultGenerationFallback(List.of()).contains("没有检索到"));
+        assertTrue(PassageListFallback.render(List.of()).contains("没有检索到"));
     }
 
     @Test

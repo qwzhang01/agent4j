@@ -1,33 +1,19 @@
 package io.github.qwzhang01.agent.rag.index;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.qwzhang01.agent.rag.ChunkIndex;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.KnnVectorsReader;
-import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.KnnFloatVectorField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,9 +27,6 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.QueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -59,6 +42,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.CHUNKS;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.F_CHUNK_ID;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.F_CONTENT;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.F_DOC_ID;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.F_HASH;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.F_VECTOR;
+import static io.github.qwzhang01.agent.rag.index.ChunkDocuments.MARKERS;
+
 /**
  * {@link ChunkIndex} backed by a single Lucene index holding BM25 text and HNSW vectors.
  * <p>
@@ -71,69 +62,49 @@ import java.util.TreeSet;
  * {@code (1 + cos) / 2}, i.e. in {@code [0, 1]}, and that value is the {@code vector} score.
  * Zero vectors cannot be scored by cosine and are indexed as keyword-only.
  * <p>
- * Every write commits, which makes writes durable but costs an fsync per document on disk.
+ * Durability: outside {@link #bulk} every write commits (one fsync per document on disk) and is
+ * visible to readers when the call returns. Inside {@link #bulk} commits are deferred, see there.
  * Thread-safe: writes are serialized, reads go through a {@link SearcherManager}.
  */
 public final class LuceneChunkIndex implements ChunkIndex {
 
-    private static final Logger log = LoggerFactory.getLogger(LuceneChunkIndex.class);
-
     /** Upper bound on vector dimensions (Lucene's codec default is 1024). */
     public static final int MAX_DIMENSIONS = 4096;
 
-    static final String F_KIND = "kind";
-    static final String KIND_CHUNK = "chunk";
-    static final String KIND_DOC = "doc";
-    static final String F_DOC_ID = "docId";
-    static final String F_CHUNK_ID = "chunkId";
-    static final String F_HASH = "contentHash";
-    static final String F_TITLE = "docTitle";
-    static final String F_SOURCE = "source";
-    static final String F_SECTION = "sectionPath";
-    static final String F_TEXT = "text";
-    static final String F_START = "startLine";
-    static final String F_END = "endLine";
-    static final String F_PAGE = "page";
-    static final String F_META = "metadata";
-    static final String F_CONTENT = "content";
-    static final String F_VECTOR = "vector";
-    static final String META_PREFIX = "meta.";
+    /** Writes after which a {@link #bulk} run commits even though it has not ended. */
+    public static final int BULK_COMMIT_INTERVAL = 256;
 
     private static final String COMMIT_DIMENSIONS = "agent-rag.dimensions";
-    // Keeps analyzed SHOULD clauses below BooleanQuery's default 1024-clause limit.
     private static final int MAX_QUERY_CHARS = 1000;
-    private static final ObjectMapper JSON = new ObjectMapper();
-    private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {
-    };
-    private static final TypeReference<Map<String, String>> STRING_MAP = new TypeReference<>() {
-    };
-    private static final Query CHUNKS = new TermQuery(new Term(F_KIND, KIND_CHUNK));
-    private static final Query MARKERS = new TermQuery(new Term(F_KIND, KIND_DOC));
 
     private final Directory directory;
     private final int dimensions;
     private final Analyzer analyzer;
     private final IndexWriter writer;
     private final SearcherManager searcherManager;
+    private final ThreadLocal<Boolean> inBulk = ThreadLocal.withInitial(() -> false);
+    private int uncommittedWrites;
     private volatile boolean closed;
 
     private LuceneChunkIndex(Directory directory, int dimensions) throws IOException {
         this.directory = directory;
         this.dimensions = dimensions;
-        this.analyzer = new SmartChineseAnalyzer();
         checkStoredDimensions(directory, dimensions);
-        IndexWriterConfig config = new IndexWriterConfig(analyzer)
-                .setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND)
-                .setCodec(new HighDimensionCodec(Codec.getDefault()));
-        IndexWriter w = new IndexWriter(directory, config);
+        Analyzer a = new SmartChineseAnalyzer();
+        IndexWriter w = null;
         try {
+            IndexWriterConfig config = new IndexWriterConfig(a)
+                    .setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND)
+                    .setCodec(new HighDimensionCodec(Codec.getDefault(), MAX_DIMENSIONS));
+            w = new IndexWriter(directory, config);
             w.setLiveCommitData(Map.of(COMMIT_DIMENSIONS, String.valueOf(dimensions)).entrySet());
             w.commit();
             this.searcherManager = new SearcherManager(w, null);
         } catch (IOException | RuntimeException e) {
-            IOUtils.closeWhileHandlingException(w);
+            IOUtils.closeWhileHandlingException(w, a);
             throw e;
         }
+        this.analyzer = a;
         this.writer = w;
     }
 
@@ -174,6 +145,43 @@ public final class LuceneChunkIndex implements ChunkIndex {
         return dimensions;
     }
 
+    /**
+     * Runs {@code work} with commits deferred for writes made by the calling thread: they are
+     * committed and made visible to readers together when {@code work} ends (normally or not),
+     * and every {@value #BULK_COMMIT_INTERVAL} writes in between. Each document is still replaced
+     * atomically, so readers see the pre-bulk or post-bulk version of a document, never a mix.
+     * <p>
+     * A crash inside a bulk loses the writes since its last commit; the index stays consistent
+     * at that commit. Writes from other threads are unaffected and commit immediately (taking
+     * pending bulk writes with them). Nested calls join the outer bulk.
+     */
+    public void bulk(Runnable work) {
+        Objects.requireNonNull(work, "work");
+        ensureOpen();
+        if (inBulk.get()) {
+            work.run();
+            return;
+        }
+        inBulk.set(true);
+        Throwable failure = null;
+        try {
+            work.run();
+        } catch (Throwable t) {
+            failure = t;
+            throw t;
+        } finally {
+            inBulk.remove();
+            try {
+                commitPending();
+            } catch (RuntimeException e) {
+                if (failure == null) {
+                    throw e;
+                }
+                failure.addSuppressed(e);
+            }
+        }
+    }
+
     @Override
     public synchronized void upsert(String docId, String contentHash, List<Chunk> chunks, List<float[]> vectors) {
         Objects.requireNonNull(docId, "docId");
@@ -185,13 +193,17 @@ public final class LuceneChunkIndex implements ChunkIndex {
         }
         ensureOpen();
         List<Document> docs = new ArrayList<>(chunks.size() + 1);
-        docs.add(markerDocument(docId, contentHash));
+        docs.add(ChunkDocuments.marker(docId, contentHash));
         Set<String> chunkIds = new HashSet<>();
         for (int i = 0; i < chunks.size(); i++) {
             Chunk chunk = Objects.requireNonNull(chunks.get(i), "chunk");
             if (!docId.equals(chunk.docId())) {
                 throw new IllegalArgumentException("chunk " + chunk.chunkId() + " belongs to "
                         + chunk.docId() + ", not " + docId);
+            }
+            if (!chunk.chunkId().startsWith(docId + "#")) {
+                throw new IllegalArgumentException("chunkId " + chunk.chunkId()
+                        + " must start with " + docId + "#");
             }
             if (!chunkIds.add(chunk.chunkId())) {
                 throw new IllegalArgumentException("duplicate chunkId " + chunk.chunkId());
@@ -201,11 +213,11 @@ public final class LuceneChunkIndex implements ChunkIndex {
                 throw new IllegalArgumentException("vector of " + chunk.chunkId() + " has "
                         + vector.length + " dimensions, index expects " + dimensions);
             }
-            docs.add(chunkDocument(chunk, vector));
+            docs.add(ChunkDocuments.chunk(chunk, vector));
         }
         try {
-            writer.updateDocuments(new Term(F_DOC_ID, docId), docs);
-            commit();
+            writer.updateDocuments(ChunkDocuments.docTerm(docId), docs);
+            afterWrite();
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot upsert " + docId, e);
         }
@@ -216,8 +228,8 @@ public final class LuceneChunkIndex implements ChunkIndex {
         Objects.requireNonNull(docId, "docId");
         ensureOpen();
         try {
-            writer.deleteDocuments(new Term(F_DOC_ID, docId));
-            commit();
+            writer.deleteDocuments(ChunkDocuments.docTerm(docId));
+            afterWrite();
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot delete " + docId, e);
         }
@@ -228,7 +240,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
         Objects.requireNonNull(docId, "docId");
         Query query = new BooleanQuery.Builder()
                 .add(MARKERS, Occur.FILTER)
-                .add(new TermQuery(new Term(F_DOC_ID, docId)), Occur.FILTER)
+                .add(new TermQuery(ChunkDocuments.docTerm(docId)), Occur.FILTER)
                 .build();
         return withSearcher(s -> {
             TopDocs top = s.search(query, 1);
@@ -262,7 +274,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
             TopDocs top = s.search(query, 1);
             return top.scoreDocs.length == 0
                     ? Optional.empty()
-                    : Optional.of(toChunk(s, top.scoreDocs[0].doc));
+                    : Optional.of(ChunkDocuments.toChunk(s.storedFields().document(top.scoreDocs[0].doc)));
         });
     }
 
@@ -271,8 +283,9 @@ public final class LuceneChunkIndex implements ChunkIndex {
         if (query == null || query.isBlank() || topK <= 0) {
             return List.of();
         }
-        String text = query.length() > MAX_QUERY_CHARS ? query.substring(0, MAX_QUERY_CHARS) : query;
-        Query textQuery = new QueryBuilder(analyzer).createBooleanQuery(F_CONTENT, text, Occur.SHOULD);
+        int filterCount = filters == null ? 0 : filters.size();
+        // Lucene rejects queries with more than getMaxClauseCount() leaf clauses in total.
+        Query textQuery = textQuery(query, IndexSearcher.getMaxClauseCount() - 2 - filterCount);
         if (textQuery == null) {
             return List.of();
         }
@@ -290,7 +303,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
             throw new IllegalArgumentException("query vector has " + queryVector.length
                     + " dimensions, index expects " + dimensions);
         }
-        if (topK <= 0 || isZero(queryVector)) {
+        if (topK <= 0 || ChunkDocuments.isZero(queryVector)) {
             return List.of();
         }
         Query filter = null;
@@ -308,7 +321,7 @@ public final class LuceneChunkIndex implements ChunkIndex {
         return withSearcher(s -> (long) s.count(CHUNKS));
     }
 
-    /** Commits pending state and releases files; idempotent. */
+    /** Commits pending state (including an unfinished {@link #bulk}) and releases files; idempotent. */
     @Override
     public synchronized void close() {
         if (closed) {
@@ -322,19 +335,57 @@ public final class LuceneChunkIndex implements ChunkIndex {
         }
     }
 
+    /** Analyzed OR query over at most {@code maxTerms} terms; null when nothing survives analysis. */
+    private Query textQuery(String query, int maxTerms) {
+        String text = query.length() > MAX_QUERY_CHARS ? query.substring(0, MAX_QUERY_CHARS) : query;
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        int terms = 0;
+        try (TokenStream tokens = analyzer.tokenStream(F_CONTENT, text)) {
+            CharTermAttribute term = tokens.addAttribute(CharTermAttribute.class);
+            tokens.reset();
+            while (terms < maxTerms && tokens.incrementToken()) {
+                builder.add(new TermQuery(new Term(F_CONTENT, term.toString())), Occur.SHOULD);
+                terms++;
+            }
+            tokens.end();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return terms == 0 ? null : builder.build();
+    }
+
     private List<ScoredChunk> search(Query query, int topK, String signal) {
         return withSearcher(s -> {
             TopDocs top = s.search(query, topK);
             List<ScoredChunk> hits = new ArrayList<>(top.scoreDocs.length);
             for (ScoreDoc hit : top.scoreDocs) {
-                hits.add(ScoredChunk.of(toChunk(s, hit.doc), signal, hit.score));
+                hits.add(ScoredChunk.of(ChunkDocuments.toChunk(s.storedFields().document(hit.doc)), signal, hit.score));
             }
             return List.copyOf(hits);
         });
     }
 
+    private void afterWrite() throws IOException {
+        uncommittedWrites++;
+        if (!inBulk.get() || uncommittedWrites >= BULK_COMMIT_INTERVAL) {
+            commit();
+        }
+    }
+
+    private synchronized void commitPending() {
+        if (closed || uncommittedWrites == 0) {
+            return;
+        }
+        try {
+            commit();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot commit index", e);
+        }
+    }
+
     private void commit() throws IOException {
         writer.commit();
+        uncommittedWrites = 0;
         searcherManager.maybeRefreshBlocking();
     }
 
@@ -362,92 +413,9 @@ public final class LuceneChunkIndex implements ChunkIndex {
         if (filters == null) {
             return;
         }
-        filters.forEach((key, value) -> builder.add(
-                new TermQuery(new Term(META_PREFIX + Objects.requireNonNull(key, "filter key"),
-                        Objects.requireNonNull(value, "filter value"))),
+        filters.forEach((key, value) -> builder.add(ChunkDocuments.metadataFilter(
+                Objects.requireNonNull(key, "filter key"), Objects.requireNonNull(value, "filter value")),
                 Occur.FILTER));
-    }
-
-    private static Document markerDocument(String docId, String contentHash) {
-        Document doc = new Document();
-        doc.add(new StringField(F_KIND, KIND_DOC, Field.Store.NO));
-        doc.add(new StringField(F_DOC_ID, docId, Field.Store.YES));
-        doc.add(new StoredField(F_HASH, contentHash));
-        return doc;
-    }
-
-    private static Document chunkDocument(Chunk chunk, float[] vector) {
-        Document doc = new Document();
-        doc.add(new StringField(F_KIND, KIND_CHUNK, Field.Store.NO));
-        doc.add(new StringField(F_CHUNK_ID, chunk.chunkId(), Field.Store.YES));
-        doc.add(new StringField(F_DOC_ID, chunk.docId(), Field.Store.YES));
-        doc.add(new StoredField(F_TITLE, chunk.docTitle()));
-        if (chunk.source() != null) {
-            doc.add(new StoredField(F_SOURCE, chunk.source()));
-        }
-        doc.add(new StoredField(F_SECTION, writeJson(chunk.sectionPath())));
-        doc.add(new StoredField(F_TEXT, chunk.text()));
-        doc.add(new StoredField(F_START, chunk.startLine()));
-        doc.add(new StoredField(F_END, chunk.endLine()));
-        if (chunk.page() != null) {
-            doc.add(new StoredField(F_PAGE, chunk.page()));
-        }
-        doc.add(new StoredField(F_META, writeJson(chunk.metadata())));
-        doc.add(new TextField(F_CONTENT, chunk.contextualText(), Field.Store.NO));
-        chunk.metadata().forEach((key, value) ->
-                doc.add(new StringField(META_PREFIX + key, value, Field.Store.NO)));
-        if (vector != null) {
-            if (isZero(vector)) {
-                log.debug("Zero vector for chunk {}; indexing keyword-only", chunk.chunkId());
-            } else {
-                doc.add(new KnnFloatVectorField(F_VECTOR, vector.clone(), VectorSimilarityFunction.COSINE));
-            }
-        }
-        return doc;
-    }
-
-    private static Chunk toChunk(IndexSearcher searcher, int docNumber) throws IOException {
-        Document doc = searcher.storedFields().document(docNumber);
-        IndexableField page = doc.getField(F_PAGE);
-        return new Chunk(
-                doc.get(F_CHUNK_ID),
-                doc.get(F_DOC_ID),
-                doc.get(F_TITLE),
-                doc.get(F_SOURCE),
-                readJson(doc.get(F_SECTION), STRING_LIST),
-                doc.get(F_TEXT),
-                doc.getField(F_START).numericValue().intValue(),
-                doc.getField(F_END).numericValue().intValue(),
-                page == null ? null : page.numericValue().intValue(),
-                readJson(doc.get(F_META), STRING_MAP));
-    }
-
-    private static boolean isZero(float[] vector) {
-        for (float v : vector) {
-            if (v != 0f) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static String writeJson(Object value) {
-        try {
-            return JSON.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Cannot serialize " + value, e);
-        }
-    }
-
-    private static <T> T readJson(String json, TypeReference<T> type) {
-        if (json == null) {
-            return null;
-        }
-        try {
-            return JSON.readValue(json, type);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Corrupt stored field: " + json, e);
-        }
     }
 
     private static void checkDimensions(int dimensions) {
@@ -470,49 +438,5 @@ public final class LuceneChunkIndex implements ChunkIndex {
     @FunctionalInterface
     private interface SearcherFunction<T> {
         T apply(IndexSearcher searcher) throws IOException;
-    }
-
-    /**
-     * Default codec with a higher vector dimension limit. Keeps the delegate's name, so the
-     * index stays readable by a stock Lucene codec; the limit only applies at write time.
-     */
-    private static final class HighDimensionCodec extends FilterCodec {
-
-        private final KnnVectorsFormat vectors;
-
-        HighDimensionCodec(Codec delegate) {
-            super(delegate.getName(), delegate);
-            this.vectors = new MaxDimensionsFormat(delegate.knnVectorsFormat());
-        }
-
-        @Override
-        public KnnVectorsFormat knnVectorsFormat() {
-            return vectors;
-        }
-    }
-
-    private static final class MaxDimensionsFormat extends KnnVectorsFormat {
-
-        private final KnnVectorsFormat delegate;
-
-        MaxDimensionsFormat(KnnVectorsFormat delegate) {
-            super(delegate.getName());
-            this.delegate = delegate;
-        }
-
-        @Override
-        public KnnVectorsWriter fieldsWriter(SegmentWriteState state) throws IOException {
-            return delegate.fieldsWriter(state);
-        }
-
-        @Override
-        public KnnVectorsReader fieldsReader(SegmentReadState state) throws IOException {
-            return delegate.fieldsReader(state);
-        }
-
-        @Override
-        public int getMaxDimensions(String fieldName) {
-            return MAX_DIMENSIONS;
-        }
     }
 }

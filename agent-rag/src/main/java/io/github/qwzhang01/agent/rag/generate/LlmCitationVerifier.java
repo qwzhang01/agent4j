@@ -7,6 +7,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.rag.CitationVerifier;
+import io.github.qwzhang01.agent.rag.internal.Texts;
 import io.github.qwzhang01.agent.rag.model.AnswerSentence;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.SupportVerdict;
@@ -15,10 +16,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * {@link CitationVerifier} that asks a chat model whether each sentence is backed by the chunks it
@@ -189,11 +192,13 @@ public final class LlmCitationVerifier implements CitationVerifier {
             }
             sb.append('[').append(id).append("]\n").append(c.text()).append('\n');
         }
-        String ev = sb.toString().strip();
-        return ev.length() <= options.maxEvidenceChars() ? ev : ev.substring(0, options.maxEvidenceChars());
+        return Texts.truncate(sb.toString().strip(), options.maxEvidenceChars());
     }
 
-    /** Local index to verdict-filled sentence; null when the output is not usable JSON. */
+    /**
+     * Local index to verdict-filled sentence; null when the output is not usable JSON. Numbering
+     * exactly {@code 1..n} is read as 1-based, since the model sometimes ignores the 0-based input.
+     */
     static Map<Integer, AnswerSentence> parseVerdicts(String raw, List<Integer> idx, AnswerSentence[] result) {
         JsonNode root = readJson(raw);
         if (root == null) {
@@ -203,12 +208,19 @@ public final class LlmCitationVerifier implements CitationVerifier {
         if (array == null || !array.isArray()) {
             return null;
         }
-        Map<Integer, AnswerSentence> out = new HashMap<>();
+        List<JsonNode> entries = new ArrayList<>();
+        Set<Integer> numbers = new HashSet<>();
         for (JsonNode node : array) {
-            if (node == null || !node.isObject() || !node.hasNonNull("i") || !node.get("i").canConvertToInt()) {
-                continue;
+            if (node != null && node.isObject()) {
+                entries.add(node);
+                numbers.add(index(node.get("i")));
             }
-            int local = node.get("i").asInt();
+        }
+        boolean oneBased = !numbers.contains(0) && numbers.contains(idx.size())
+                && numbers.stream().allMatch(n -> n >= 1 && n <= idx.size());
+        Map<Integer, AnswerSentence> out = new HashMap<>();
+        for (JsonNode node : entries) {
+            int local = index(node.get("i")) - (oneBased ? 1 : 0);
             if (local < 0 || local >= idx.size()) {
                 continue;
             }
@@ -221,8 +233,22 @@ public final class LlmCitationVerifier implements CitationVerifier {
         return out;
     }
 
+    /** Sentence index from a numeric or numeric-string node; -1 when absent or not an integer. */
+    private static int index(JsonNode node) {
+        if (node == null) {
+            return -1;
+        }
+        if (node.isIntegralNumber() && node.canConvertToInt()) {
+            return node.intValue();
+        }
+        if (node.isTextual() && node.asText().strip().matches("\\d{1,9}")) {
+            return Integer.parseInt(node.asText().strip());
+        }
+        return -1;
+    }
+
     private static SupportVerdict parseVerdict(String raw) {
-        String v = raw.strip().toUpperCase(Locale.ROOT);
+        String v = raw.strip().toUpperCase(Locale.ROOT).replace(' ', '_').replace('-', '_');
         return switch (v) {
             case "SUPPORTED" -> SupportVerdict.SUPPORTED;
             case "CONTRADICTED" -> SupportVerdict.CONTRADICTED;
@@ -239,16 +265,22 @@ public final class LlmCitationVerifier implements CitationVerifier {
         try {
             return MAPPER.readTree(s);
         } catch (Exception ignored) {
-            int start = s.indexOf('{');
-            int end = s.lastIndexOf('}');
-            if (start < 0 || end <= start) {
-                return null;
-            }
-            try {
-                return MAPPER.readTree(s.substring(start, end + 1));
-            } catch (Exception e) {
-                return null;
-            }
+            boolean arrayFirst = s.indexOf('[') >= 0 && (s.indexOf('{') < 0 || s.indexOf('[') < s.indexOf('{'));
+            JsonNode first = arrayFirst ? readBetween(s, '[', ']') : readBetween(s, '{', '}');
+            return first != null ? first : (arrayFirst ? readBetween(s, '{', '}') : readBetween(s, '[', ']'));
+        }
+    }
+
+    private static JsonNode readBetween(String s, char open, char close) {
+        int start = s.indexOf(open);
+        int end = s.lastIndexOf(close);
+        if (start < 0 || end <= start) {
+            return null;
+        }
+        try {
+            return MAPPER.readTree(s.substring(start, end + 1));
+        } catch (Exception e) {
+            return null;
         }
     }
 

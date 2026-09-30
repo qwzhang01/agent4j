@@ -8,7 +8,7 @@ import java.util.Objects;
  *
  * @param answer    answer text with citation markers, as shown to the user
  * @param sentences verified sentences
- * @param contexts  chunks given to the generator, in order; the targets of citation click-through
+ * @param contexts  chunks the generator showed the model, in order; the targets of citation click-through
  * @param refused   true when the material does not cover the question
  * @param trace     trace of this call
  */

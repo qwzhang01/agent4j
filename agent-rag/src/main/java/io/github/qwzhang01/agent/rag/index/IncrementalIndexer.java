@@ -10,25 +10,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeSet;
+import java.util.Set;
 
 /**
  * Keeps a {@link ChunkIndex} in sync with a corpus directory.
@@ -39,9 +35,11 @@ import java.util.TreeSet;
  * previous version, if any, stays indexed); when embedding fails the document is indexed
  * keyword-only and reported as degraded.
  * <p>
- * File selection: hidden files and directories are skipped; a file must be supported by the
- * loader, match an include glob (when any are set) and match no exclude glob. Globs containing
- * {@code /} are matched against the root-relative path, others against the file name.
+ * File selection: hidden files and directories are skipped, and symbolic links below the root are
+ * not followed (the root itself may be a link); a file must be supported by the loader, match an
+ * include glob (when any are set) and match no exclude glob. Globs containing {@code /} are matched
+ * against the root-relative path, others against the file name. A file that disappears while being
+ * indexed is treated as deleted.
  */
 public final class IncrementalIndexer {
 
@@ -54,8 +52,7 @@ public final class IncrementalIndexer {
     private final Chunker chunker;
     private final EmbeddingClient embeddings;
     private final int embedBatchSize;
-    private final List<Glob> includes;
-    private final List<Glob> excludes;
+    private final CorpusScanner scanner;
 
     private IncrementalIndexer(Builder b) {
         this.index = Objects.requireNonNull(b.index, "index");
@@ -63,31 +60,36 @@ public final class IncrementalIndexer {
         this.chunker = Objects.requireNonNull(b.chunker, "chunker");
         this.embeddings = b.embeddings;
         this.embedBatchSize = b.embedBatchSize;
-        this.includes = b.includes.stream().map(Glob::new).toList();
-        this.excludes = b.excludes.stream().map(Glob::new).toList();
+        this.scanner = new CorpusScanner(loader, b.includes, b.excludes);
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    /** Indexes new and changed files under {@code root} and removes documents whose file is gone. */
+    /**
+     * Indexes new and changed files under {@code root} and removes documents whose file is gone.
+     * With a {@link LuceneChunkIndex} the whole pass runs in one {@link LuceneChunkIndex#bulk},
+     * so it commits once at the end instead of once per document.
+     */
     public synchronized SyncReport sync(Path root) {
-        Path base = normalizeRoot(root);
+        Path base = CorpusScanner.normalizeRoot(root);
         long start = System.nanoTime();
         Accumulator acc = new Accumulator();
-        List<Path> files = listFiles(base);
-        TreeSet<String> present = new TreeSet<>();
-        for (Path file : files) {
-            String docId = docId(base, file);
-            present.add(docId);
-            process(file, docId, acc);
-        }
-        for (String docId : index.docIds()) {
-            if (!present.contains(docId)) {
-                deleteDoc(docId, acc);
+        List<Path> files = scanner.list(base);
+        inBulk(() -> {
+            Set<String> present = new HashSet<>();
+            for (Path file : files) {
+                String docId = CorpusScanner.docId(base, file);
+                present.add(docId);
+                process(file, docId, acc);
             }
-        }
+            for (String docId : index.docIds()) {
+                if (!present.contains(docId) && !acc.deleted.contains(docId)) {
+                    deleteDoc(docId, acc);
+                }
+            }
+        });
         return acc.toReport(start);
     }
 
@@ -98,7 +100,7 @@ public final class IncrementalIndexer {
      * @param file absolute, or relative to {@code root}; must lie under {@code root}
      */
     public synchronized SyncReport syncFile(Path root, Path file) {
-        Path base = normalizeRoot(root);
+        Path base = CorpusScanner.normalizeRoot(root);
         Objects.requireNonNull(file, "file");
         Path resolved = base.resolve(file).toAbsolutePath().normalize();
         if (!resolved.startsWith(base) || resolved.equals(base)) {
@@ -106,8 +108,8 @@ public final class IncrementalIndexer {
         }
         long start = System.nanoTime();
         Accumulator acc = new Accumulator();
-        String docId = docId(base, resolved);
-        if (Files.isRegularFile(resolved) && accepts(base, resolved)) {
+        String docId = CorpusScanner.docId(base, resolved);
+        if (scanner.selects(base, resolved)) {
             process(resolved, docId, acc);
         } else if (index.contentHash(docId).isPresent()) {
             deleteDoc(docId, acc);
@@ -116,9 +118,10 @@ public final class IncrementalIndexer {
     }
 
     private void process(Path file, String docId, Accumulator acc) {
+        Optional<String> previous = Optional.empty();
         try {
             String hash = sha256(Files.readAllBytes(file));
-            Optional<String> previous = index.contentHash(docId);
+            previous = index.contentHash(docId);
             if (previous.isPresent() && previous.get().equals(hash)) {
                 acc.unchanged.add(docId);
                 return;
@@ -126,12 +129,26 @@ public final class IncrementalIndexer {
             ParsedDocument parsed = loader.load(file, docId);
             List<Chunk> chunks = chunker.chunk(parsed);
             List<float[]> vectors = embed(docId, chunks, acc);
-            index.upsert(docId, hash, chunks, vectors);
+            // The file may have changed after hashing; record the hash of what the loader parsed.
+            index.upsert(docId, parsed.contentHash(), chunks, vectors);
             acc.chunksWritten += chunks.size();
             (previous.isPresent() ? acc.updated : acc.added).add(docId);
             log.debug("Indexed {} ({} chunks)", docId, chunks.size());
+        } catch (NoSuchFileException e) {
+            log.debug("{} vanished during sync", docId);
+            if (previous.isPresent() || index.contentHash(docId).isPresent()) {
+                deleteDoc(docId, acc);
+            }
         } catch (IOException | RuntimeException e) {
             fail(docId, e, acc);
+        }
+    }
+
+    private void inBulk(Runnable work) {
+        if (index instanceof LuceneChunkIndex lucene) {
+            lucene.bulk(work);
+        } else {
+            work.run();
         }
     }
 
@@ -181,72 +198,6 @@ public final class IncrementalIndexer {
     private static void fail(String docId, Exception e, Accumulator acc) {
         log.warn("Failed to index {}: {}", docId, e.toString());
         acc.failed.put(docId, message(e));
-    }
-
-    private List<Path> listFiles(Path base) {
-        List<Path> files = new ArrayList<>();
-        try {
-            Files.walkFileTree(base, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return !dir.equals(base) && isHidden(dir) ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (attrs.isRegularFile() && accepts(base, file)) {
-                        files.add(file);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException e) {
-                    log.warn("Cannot visit {}: {}", file, e.toString());
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot walk " + base, e);
-        }
-        files.sort(null);
-        return files;
-    }
-
-    private boolean accepts(Path base, Path file) {
-        Path relative = base.relativize(file);
-        for (Path part : relative) {
-            if (isHidden(part)) {
-                return false;
-            }
-        }
-        if (!loader.supports(file)) {
-            return false;
-        }
-        if (!includes.isEmpty() && includes.stream().noneMatch(g -> g.matches(relative))) {
-            return false;
-        }
-        return excludes.stream().noneMatch(g -> g.matches(relative));
-    }
-
-    private static boolean isHidden(Path path) {
-        Path name = path.getFileName();
-        return name != null && name.toString().startsWith(".");
-    }
-
-    private static Path normalizeRoot(Path root) {
-        Objects.requireNonNull(root, "root");
-        Path base = root.toAbsolutePath().normalize();
-        if (!Files.isDirectory(base)) {
-            throw new IllegalArgumentException("not a directory: " + root);
-        }
-        return base;
-    }
-
-    private static String docId(Path base, Path file) {
-        List<String> parts = new ArrayList<>();
-        base.relativize(file).forEach(p -> parts.add(p.toString()));
-        return String.join("/", parts);
     }
 
     static String sha256(byte[] bytes) {
@@ -311,20 +262,6 @@ public final class IncrementalIndexer {
         SyncReport toReport(long startNanos) {
             return new SyncReport(added, updated, unchanged, deleted, failed, degraded, chunksWritten,
                     (System.nanoTime() - startNanos) / 1_000_000);
-        }
-    }
-
-    private static final class Glob {
-        private final PathMatcher matcher;
-        private final boolean matchPath;
-
-        Glob(String pattern) {
-            this.matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
-            this.matchPath = pattern.contains("/");
-        }
-
-        boolean matches(Path relative) {
-            return matchPath ? matcher.matches(relative) : matcher.matches(relative.getFileName());
         }
     }
 

@@ -8,6 +8,9 @@ import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.DocumentBlock;
 import io.github.qwzhang01.agent.rag.model.ParsedDocument;
 import io.github.qwzhang01.agent.rag.index.IncrementalIndexer.SyncReport;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -312,6 +316,104 @@ class IncrementalIndexerTest {
     }
 
     @Test
+    void symlinkedRootIsIndexedNotWiped(@TempDir Path elsewhere) throws IOException {
+        write("a.txt", "alpha");
+        builder().build().sync(root);
+        Path link = Files.createSymbolicLink(elsewhere.resolve("corpus-link"), root);
+
+        SyncReport report = builder().build().sync(link);
+
+        assertEquals(List.of("a.txt"), report.unchanged());
+        assertTrue(report.deleted().isEmpty());
+        assertEquals(Set.of("a.txt"), index.docIds());
+    }
+
+    @Test
+    void syncFileSkipsSymlinksLikeSync(@TempDir Path elsewhere) throws IOException {
+        Path target = Files.writeString(elsewhere.resolve("outside.txt"), "outside");
+        Files.createSymbolicLink(root.resolve("link.txt"), target);
+        Files.createDirectories(elsewhere.resolve("dir"));
+        Files.writeString(elsewhere.resolve("dir/inner.txt"), "inner");
+        Files.createSymbolicLink(root.resolve("linkdir"), elsewhere.resolve("dir"));
+        IncrementalIndexer indexer = builder().build();
+
+        assertTrue(indexer.sync(root).added().isEmpty());
+        assertTrue(indexer.syncFile(root, Path.of("link.txt")).added().isEmpty());
+        assertTrue(indexer.syncFile(root, Path.of("linkdir/inner.txt")).added().isEmpty());
+        assertTrue(index.docIds().isEmpty());
+    }
+
+    @Test
+    void storedHashIsOfTheBytesActuallyLoaded() throws IOException {
+        Path file = write("a.txt", "version A");
+        DocumentLoader racing = new ParagraphLoader() {
+            boolean raced;
+
+            @Override
+            public ParsedDocument load(Path f, String docId) throws IOException {
+                if (!raced) {
+                    raced = true;
+                    Files.writeString(f, "version B");
+                }
+                return super.load(f, docId);
+            }
+        };
+        IncrementalIndexer indexer = builder().loader(racing).build();
+        indexer.sync(root);
+        Files.writeString(file, "version A");
+
+        SyncReport report = indexer.sync(root);
+
+        assertEquals(List.of("a.txt"), report.updated());
+        assertEquals("version A", index.get("a.txt#0").orElseThrow().text());
+    }
+
+    @Test
+    void fileVanishingDuringSyncIsDeletedNotFailed() throws IOException {
+        write("a.txt", "alpha");
+        write("b.txt", "bravo");
+        IncrementalIndexer indexer = builder().build();
+        indexer.sync(root);
+        write("a.txt", "alpha changed");
+        DocumentLoader vanishing = new ParagraphLoader() {
+            @Override
+            public ParsedDocument load(Path f, String docId) throws IOException {
+                Files.delete(f);
+                throw new NoSuchFileException(f.toString());
+            }
+        };
+
+        SyncReport report = builder().loader(vanishing).build().sync(root);
+
+        assertEquals(List.of("a.txt"), report.deleted());
+        assertTrue(report.failed().isEmpty());
+        assertEquals(List.of("b.txt"), report.unchanged());
+        assertEquals(Set.of("b.txt"), index.docIds());
+    }
+
+    @Test
+    void fullSyncCommitsOnceNotPerDocument(@TempDir Path indexDir) throws IOException {
+        for (int i = 0; i < 5; i++) {
+            write("doc" + i + ".txt", "content " + i);
+        }
+        index.close();
+        index = LuceneChunkIndex.open(indexDir, DIMS);
+        long before = commitGeneration(indexDir);
+
+        SyncReport report = builder().build().sync(root);
+
+        assertEquals(5, report.added().size());
+        assertEquals(before + 1, commitGeneration(indexDir));
+        assertEquals(5, index.docIds().size());
+    }
+
+    private static long commitGeneration(Path dir) throws IOException {
+        try (Directory d = FSDirectory.open(dir)) {
+            return SegmentInfos.readLatestCommit(d).getGeneration();
+        }
+    }
+
+    @Test
     void builderValidatesArguments() {
         assertThrows(NullPointerException.class, () -> IncrementalIndexer.builder().build());
         assertThrows(IllegalArgumentException.class, () -> IncrementalIndexer.builder().embedBatchSize(0));
@@ -319,7 +421,7 @@ class IncrementalIndexerTest {
     }
 
     /** Supports {@code *.txt}; one paragraph block per blank-line-separated section. */
-    private static final class ParagraphLoader implements DocumentLoader {
+    private static class ParagraphLoader implements DocumentLoader {
         @Override
         public boolean supports(Path file) {
             return file.getFileName().toString().endsWith(".txt");

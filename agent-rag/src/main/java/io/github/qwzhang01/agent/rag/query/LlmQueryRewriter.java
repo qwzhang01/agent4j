@@ -5,6 +5,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.rag.QueryRewriter;
+import io.github.qwzhang01.agent.rag.internal.Texts;
 import io.github.qwzhang01.agent.rag.model.ConversationTurn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public final class LlmQueryRewriter implements QueryRewriter {
             "^(?:改写后的查询|改写后查询|改写后|改写结果|改写|查询|检索查询|独立查询"
                     + "|rewritten query|standalone query|search query|rewritten|query|output|answer)\\s*[:：]\\s*",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern THINK_BLOCK = Pattern.compile("(?s)<think>.*?(?:</think>|$)");
     // Only a pair wrapping the whole line is stripped; 《》 is kept because it marks titles.
     private static final String QUOTE_OPEN = "\"'`“‘「『";
     private static final String QUOTE_CLOSE = "\"'`”’」』";
@@ -114,20 +116,23 @@ public final class LlmQueryRewriter implements QueryRewriter {
     }
 
     private String truncate(String text) {
-        return text.length() <= maxHistoryCharsPerTurn ? text : text.substring(0, maxHistoryCharsPerTurn) + "…";
+        return text.length() <= maxHistoryCharsPerTurn ? text : Texts.truncate(text, maxHistoryCharsPerTurn) + "…";
     }
 
     static String clean(String raw) {
         if (raw == null) {
             return "";
         }
-        String line = "";
-        for (String l : raw.strip().split("\\R")) {
-            if (!l.isBlank()) {
-                line = l.strip();
-                break;
+        for (String line : THINK_BLOCK.matcher(raw).replaceAll("").strip().split("\\R")) {
+            String cleaned = cleanLine(line.strip());
+            if (!cleaned.isEmpty()) {
+                return cleaned;
             }
         }
+        return "";
+    }
+
+    private static String cleanLine(String line) {
         String previous;
         do {
             previous = line;

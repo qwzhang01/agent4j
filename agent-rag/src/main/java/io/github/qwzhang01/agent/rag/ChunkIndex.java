@@ -22,7 +22,7 @@ public interface ChunkIndex extends AutoCloseable {
      *
      * @param docId       document identity
      * @param contentHash hash of the source; returned later by {@link #contentHash}
-     * @param chunks      chunks of the document, all with this {@code docId}
+     * @param chunks      chunks of the document, all with this {@code docId} and ids prefixed {@code docId + "#"}
      * @param vectors     one embedding per chunk, index-aligned; null entries allowed (keyword-only chunk)
      */
     void upsert(String docId, String contentHash, List<Chunk> chunks, List<float[]> vectors);

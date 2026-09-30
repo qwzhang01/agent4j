@@ -37,25 +37,13 @@ public final class FallbackReranker implements Reranker {
         this.minScore = minScore;
     }
 
-    /**
-     * Result of a protected rerank.
-     *
-     * @param results  reranked (or fallback) results, best first
-     * @param degraded true when the delegate failed and first-stage order was kept
-     * @param error    failure description when degraded, null otherwise
-     */
-    public record Outcome(List<ScoredChunk> results, boolean degraded, String error) {
-        public Outcome {
-            results = results == null ? List.of() : List.copyOf(results);
-        }
-    }
-
     @Override
     public List<ScoredChunk> rerank(String query, List<ScoredChunk> candidates, int topN) {
         return rerankWithOutcome(query, candidates, topN).results();
     }
 
-    /** Like {@link #rerank} but also reports whether the call degraded. */
+    /** Never throws; {@link Outcome#degraded()} is true when the delegate failed. */
+    @Override
     public Outcome rerankWithOutcome(String query, List<ScoredChunk> candidates, int topN) {
         Objects.requireNonNull(candidates, "candidates");
         if (candidates.isEmpty() || topN <= 0) {

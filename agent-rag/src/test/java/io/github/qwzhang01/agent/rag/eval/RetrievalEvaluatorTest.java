@@ -109,6 +109,14 @@ class RetrievalEvaluatorTest {
     }
 
     @Test
+    void markdownEscapesPipesAndNewlinesInCells() {
+        List<EvalCase> cases = List.of(new EvalCase("q|1", "single_hop", "a | b\nc",
+                null, List.of(new GoldRef("a.md", null)), "", true));
+        String md = new RetrievalEvaluator(retriever()).evaluate(cases).toMarkdown(null);
+        assertTrue(md.contains("| q\\|1 | single_hop | a \\| b c |"), md);
+    }
+
+    @Test
     void compareTableHasRowPerConfigAndTypeColumns() {
         RetrievalReport bm25 = new RetrievalEvaluator(retriever()).evaluate(CASES);
         RetrievalReport empty = new RetrievalEvaluator(new FakeRetriever(Map.of())).evaluate(CASES);

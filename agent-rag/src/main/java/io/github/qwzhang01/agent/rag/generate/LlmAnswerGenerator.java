@@ -5,6 +5,7 @@ import io.github.qwzhang01.agent.core.model.ChatMessage;
 import io.github.qwzhang01.agent.core.model.ModelRequest;
 import io.github.qwzhang01.agent.core.model.ModelResponse;
 import io.github.qwzhang01.agent.rag.AnswerGenerator;
+import io.github.qwzhang01.agent.rag.internal.Texts;
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ConversationTurn;
 import io.github.qwzhang01.agent.rag.model.GeneratedAnswer;
@@ -16,17 +17,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * {@link AnswerGenerator} that prompts a chat model to answer only from the given chunks and to
  * end every sentence with {@code [chunkId]} markers.
  * <p>
  * Contexts are packed in rank order into {@link Options#maxContextChars()}; lower-ranked chunks
- * that do not fit are dropped whole (the top chunk is truncated if it alone exceeds the budget).
- * Only ids of packed chunks are accepted as citations. With no contexts the refusal text is
- * returned without a model call. An output starting with the refusal text is {@code refused} and
- * carries no sentences. Model exceptions propagate unchanged; the caller decides how to degrade.
+ * that do not fit are dropped whole (the top chunk is truncated if it alone exceeds the budget) and
+ * are left out of {@link GeneratedAnswer#usedChunkIds()}. Only ids of packed chunks are accepted as
+ * citations; markers naming other ids are removed from the returned text. With no contexts the
+ * refusal text is returned without a model call. A refusal (see {@link #isRefusal}) carries no
+ * sentences. Model exceptions propagate unchanged; the caller decides how to degrade.
  */
 public final class LlmAnswerGenerator implements AnswerGenerator {
 
@@ -76,33 +77,46 @@ public final class LlmAnswerGenerator implements AnswerGenerator {
     }
 
     /**
-     * @throws RuntimeException whatever the model client throws; nothing is swallowed here
+     * @throws RuntimeException whatever the model client throws, or {@link IllegalStateException}
+     *                          when the model returns blank output
      */
     @Override
     public GeneratedAnswer generate(String question, List<ConversationTurn> history, List<ScoredChunk> contexts) {
         Objects.requireNonNull(question, "question");
         List<Chunk> packed = pack(contexts == null ? List.of() : contexts, options.maxContextChars());
         if (packed.isEmpty()) {
-            return new GeneratedAnswer(options.refusalText(), List.of(), true, 0, 0);
+            return new GeneratedAnswer(options.refusalText(), List.of(), true, 0, 0, List.of());
         }
+        List<String> used = packed.stream().map(Chunk::chunkId).toList();
         ModelResponse response = modelClient.chat(buildRequest(question, history, packed));
         String raw = response == null || response.content() == null ? "" : response.content();
+        if (raw.isBlank()) {
+            throw new IllegalStateException("model returned an empty answer"
+                    + (response == null ? "" : " (finishReason=" + response.finishReason() + ")"));
+        }
         int promptTokens = response == null || response.usage() == null ? 0 : response.usage().promptTokens();
         int completionTokens = response == null || response.usage() == null ? 0 : response.usage().completionTokens();
-        if (isRefusal(raw)) {
-            return new GeneratedAnswer(raw, List.of(), true, promptTokens, completionTokens);
+        CitationParser.ParseResult parsed = CitationParser.parse(raw, new LinkedHashSet<>(used));
+        if (isRefusal(raw, parsed)) {
+            return new GeneratedAnswer(raw.strip(), List.of(), true, promptTokens, completionTokens, used);
         }
-        Set<String> allowed = new LinkedHashSet<>();
-        packed.forEach(c -> allowed.add(c.chunkId()));
-        CitationParser.ParseResult parsed = CitationParser.parse(raw, allowed);
         if (parsed.unknownCitations() > 0) {
             log.warn("Generator cited {} id(s) not present in the context; dropped", parsed.unknownCitations());
         }
-        return new GeneratedAnswer(raw, parsed.sentences(), false, promptTokens, completionTokens);
+        return new GeneratedAnswer(parsed.text(), parsed.sentences(), false, promptTokens, completionTokens, used);
     }
 
-    boolean isRefusal(String raw) {
-        return raw.strip().startsWith(options.refusalText());
+    /**
+     * Output starting with the refusal text, or containing it without citing anything
+     * (e.g. "抱歉，资料中没有相关内容。").
+     */
+    boolean isRefusal(String raw, CitationParser.ParseResult parsed) {
+        String text = raw.strip();
+        if (text.startsWith(options.refusalText())) {
+            return true;
+        }
+        return text.contains(options.refusalText())
+                && parsed.sentences().stream().allMatch(s -> s.citedChunkIds().isEmpty());
     }
 
     ModelRequest buildRequest(String question, List<ConversationTurn> history, List<Chunk> packed) {
@@ -131,9 +145,9 @@ public final class LlmAnswerGenerator implements AnswerGenerator {
                 1. 只能使用【资料】中的内容回答，不得使用资料以外的知识，不得猜测。
                 2. 每一句话的末尾都必须标注一个或多个来源标记，格式为 [chunkId]，chunkId 必须原样取自资料每段开头的方括号；多个来源写成 [id1][id2]。
                 3. 绝不能编造资料中不存在的 chunkId。
-                4. 如果资料不足以回答问题，只输出这句话，不要输出任何其他内容：%s
+                4. 如果资料不足以回答问题，只输出这句话，不要输出任何其他内容，也不要翻译它：%s
                 5. 代码、配置、命令、参数名保持原样，放在代码块中照抄，不要改写。
-                6. 使用与问题相同的语言回答，简洁准确。
+                6. 使用与问题相同的语言回答（规则 4 的那句话除外），简洁准确。
                 """.formatted(options.refusalText());
     }
 
@@ -170,8 +184,7 @@ public final class LlmAnswerGenerator implements AnswerGenerator {
             } else if (packed.isEmpty()) {
                 int room = Math.max(0, maxChars - header(c).length() - 3);
                 packed.add(new Chunk(c.chunkId(), c.docId(), c.docTitle(), c.source(), c.sectionPath(),
-                        c.text().substring(0, Math.min(room, c.text().length())),
-                        c.startLine(), c.endLine(), c.page(), c.metadata()));
+                        Texts.truncate(c.text(), room), c.startLine(), c.endLine(), c.page(), c.metadata()));
                 break;
             } else {
                 break;

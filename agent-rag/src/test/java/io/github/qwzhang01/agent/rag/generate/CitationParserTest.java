@@ -142,6 +142,51 @@ class CitationParserTest {
     }
 
     @Test
+    void hashBracketsThatAreNotChunkIdsStayAsText() {
+        CitationParser.ParseResult r = CitationParser.parse(
+                "用 [C#] 或 [F#] 写，见 [#1] 与 [https://x.io/a#12] 选项[docs/a.md#1]。", IDS);
+        assertEquals("用 [C#] 或 [F#] 写，见 [#1] 与 [https://x.io/a#12] 选项。", r.sentences().get(0).text());
+        assertEquals(List.of("docs/a.md#1"), r.sentences().get(0).citedChunkIds());
+        assertEquals(0, r.unknownCitations());
+    }
+
+    @Test
+    void numericFootnotesStayAsText() {
+        CitationParser.ParseResult r = CitationParser.parse("见论文[1]和[2, 3]。", IDS);
+        assertEquals("见论文[1]和[2, 3]。", r.sentences().get(0).text());
+        assertEquals(0, r.unknownCitations());
+    }
+
+    @Test
+    void inlineCodeIsNotScannedForMarkersOrSentenceEnds() {
+        List<AnswerSentence> s = parse("调用 `index[docs/a.md#2]. next()` 即可[docs/a.md#1]。");
+        assertEquals(1, s.size());
+        assertEquals("调用 `index[docs/a.md#2]. next()` 即可。", s.get(0).text());
+        assertEquals(List.of("docs/a.md#1"), s.get(0).citedChunkIds());
+    }
+
+    @Test
+    void fullWidthSquareBrackets() {
+        List<AnswerSentence> s = parse("召回分两路［docs/a.md#1］。");
+        assertEquals("召回分两路。", s.get(0).text());
+        assertEquals(List.of("docs/a.md#1"), s.get(0).citedChunkIds());
+    }
+
+    @Test
+    void allowedIdsMayContainSpaces() {
+        CitationParser.ParseResult r = CitationParser.parse("句子[my notes.md#3]。", Set.of("my notes.md#3"));
+        assertEquals(List.of("my notes.md#3"), r.sentences().get(0).citedChunkIds());
+    }
+
+    @Test
+    void displayTextDropsUnknownIdsAndKeepsEverythingElse() {
+        CitationParser.ParseResult r = CitationParser.parse(
+                "句子 [ghost.md#9]。二句[x.md#1, docs/a.md#2]。三句[docs/a.md#1]。\n```\ncode [ghost.md#9]\n```", IDS);
+        assertEquals("句子。二句[docs/a.md#2]。三句[docs/a.md#1]。\n```\ncode [ghost.md#9]\n```", r.text());
+        assertEquals(2, r.unknownCitations());
+    }
+
+    @Test
     void emptyAndArtifactOnlyInputs() {
         assertTrue(parse("").isEmpty());
         assertTrue(parse(null).isEmpty());

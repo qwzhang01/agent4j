@@ -126,7 +126,7 @@ Start with `Agent.run`. Move to the workflow graph when one call is not enough: 
 
 ## Modules
 
-Twenty library modules, plus a BOM and `examples` (22 reactor modules). `examples` is not published.
+Twenty-one library modules, plus a BOM and `examples` (23 reactor modules). `examples` is not published.
 
 | Module | Use it for |
 |--------|------------|
@@ -136,6 +136,7 @@ Twenty library modules, plus a BOM and `examples` (22 reactor modules). `example
 | `agent-workflow` | Graph runtime, checkpoints, durable runs |
 | `agent-scheduler` | Timer and event wake-ups, task queue |
 | `agent-memory` | Working, session, and long-term memory |
+| `agent-rag` | Document Q&A: chunking, hybrid BM25 + vector retrieval, rerank, cited and checked answers, evaluation |
 | `agent-sandbox` | ClassLoader and process isolation |
 | `agent-plugin` | SPI plugins and external JARs |
 | `agent-mcp` | MCP over stdio and HTTP/SSE, plus HTTP agent-to-agent (A2A) |

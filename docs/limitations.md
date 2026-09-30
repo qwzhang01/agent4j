@@ -90,7 +90,7 @@ Honest limits:
 - **Memory on Postgres.** `PgMemoryStore` takes a `DataSource` you supply. No pool, no ORM, no migrations managed by the framework. The schema is created idempotently. `InMemoryMemoryStore` is for one machine and for tests.
 - **Checkpoints.** In-memory, file, or JDBC. `JdbcCheckpointStore` uses the same codec and can share the blackboard across instances. There is no hosted workflow product.
 - **More than one process.** Cancel, resume, and approval callbacks can cross instances by watching database rows, with heartbeat renewal. The JDBC queue has no capacity cap and no tenant column, so backpressure and tenant isolation are not there. A PostgreSQL integration test is opt-in (tag `postgres`). Lease contention gives up after three retries. It is not starvation-free. Redis and RabbitMQ are not integrated.
-- **Tests.** A green `./mvnw -B verify` across all 22 reactor modules is the regression contract. CI is the source of truth. Essays in `notes/` are not.
+- **Tests.** A green `./mvnw -B verify` across all 23 reactor modules is the regression contract. CI is the source of truth. Essays in `notes/` are not.
 - **A learning project.** Part of the point is to see the edges of a runtime. Read this page and [comparison.md](comparison.md) before you depend on it in production.
 
 ## Related

@@ -130,6 +130,16 @@ class StructureAwareChunkerTest {
     }
 
     @Test
+    void oversizeTableWithoutBodyRowsIsKept() {
+        String header = "| " + "wide column | ".repeat(10) + "\n|" + " --- |".repeat(10);
+        ParsedDocument doc = doc(block(BlockType.TABLE, header, SEC, 1, 2));
+
+        List<Chunk> chunks = new StructureAwareChunker(new ChunkerOptions(20, 40, 0)).chunk(doc);
+
+        assertEquals(List.of(header), chunks.stream().map(Chunk::text).toList());
+    }
+
+    @Test
     void oversizeCodeSplitsByLinesAndHardCutsLongLines() {
         String code = "x".repeat(25) + "\n" + "short\n".repeat(5) + "y".repeat(50);
         ParsedDocument doc = doc(block(BlockType.CODE, code, SEC, 1, 7));

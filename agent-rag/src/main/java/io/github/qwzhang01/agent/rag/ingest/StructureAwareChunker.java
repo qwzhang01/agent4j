@@ -106,6 +106,9 @@ public final class StructureAwareChunker implements Chunker {
     private List<String> splitTable(String text) {
         List<String> lines = new ArrayList<>(List.of(text.split("\n")));
         int headerSize = lines.size() > 1 && TABLE_SEPARATOR.matcher(lines.get(1)).matches() ? 2 : 1;
+        if (lines.size() <= headerSize) {
+            return List.of(text);
+        }
         String header = String.join("\n", lines.subList(0, headerSize));
         return packLines(header, lines.subList(headerSize, lines.size()), options.maxChars());
     }

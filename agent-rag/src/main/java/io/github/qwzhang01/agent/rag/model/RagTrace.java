@@ -13,9 +13,10 @@ import java.util.Objects;
  * @param timestamp        call start
  * @param question         original user question
  * @param rewrittenQuery   query actually used for retrieval
- * @param stageHits        chunk ids with scores per stage, keyed by stage name
- *                         ({@code bm25}, {@code vector}, {@code rrf}, {@code rerank})
- * @param contextChunkIds  chunk ids finally given to the generator, in order
+ * @param stageHits        chunk ids with scores per stage, keyed by stage name ({@code bm25}, {@code vector},
+ *                         {@code rrf}, {@code rerank}; {@code retrieve} for retrievers that report no stages);
+ *                         {@code rerank} is absent when reranking degraded
+ * @param contextChunkIds  chunk ids the generator showed the model, in order
  * @param stageLatencyMs   wall time per stage ({@code rewrite}, {@code retrieve}, {@code rerank},
  *                         {@code generate}, {@code verify}, {@code total})
  * @param promptTokens     generator + verifier + rewriter prompt tokens

@@ -131,6 +131,41 @@ class MarkdownLoaderTest {
         assertEquals(List.of(), blocks.get(0).sectionPath());
     }
 
+    @Test
+    void setextHeadingsAndSkippedLevelsBuildSectionPath() {
+        List<DocumentBlock> blocks = loader.parse("Top\n===\n\n### Deep\n\nbody\n\nSub\n---\n\nmore\n");
+
+        assertEquals(List.of(BlockType.HEADING, BlockType.HEADING, BlockType.PARAGRAPH, BlockType.HEADING,
+                BlockType.PARAGRAPH), blocks.stream().map(DocumentBlock::type).toList());
+        assertBlock(blocks.get(0), 1, List.of("Top"), 1, 2);
+        assertBlock(blocks.get(2), 0, List.of("Top", "Deep"), 6, 6);
+        assertBlock(blocks.get(3), 2, List.of("Top", "Sub"), 8, 9);
+        assertBlock(blocks.get(4), 0, List.of("Top", "Sub"), 11, 11);
+    }
+
+    @Test
+    void frontMatterWithCrlfKeepsLineNumbers(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("fm.md");
+        Files.writeString(file, "---\r\nversion: 3\r\n---\r\n\r\n# T\r\n\r\nbody\r\n", StandardCharsets.UTF_8);
+
+        ParsedDocument doc = loader.load(file, "fm.md");
+
+        assertEquals(Map.of("version", "3"), doc.metadata());
+        assertEquals(5, doc.blocks().get(0).startLine());
+        assertEquals(7, doc.blocks().get(1).startLine());
+    }
+
+    @Test
+    void emptyAndFrontMatterOnlyFilesYieldNoBlocks(@TempDir Path dir) throws Exception {
+        Path empty = Files.writeString(dir.resolve("empty.md"), "");
+        Path fmOnly = Files.writeString(dir.resolve("fm-only.md"), "---\ntitle: X\n---\n");
+
+        assertTrue(loader.load(empty, "empty.md").blocks().isEmpty());
+        assertEquals("empty", loader.load(empty, "empty.md").title());
+        assertTrue(loader.load(fmOnly, "fm-only.md").blocks().isEmpty());
+        assertEquals("X", loader.load(fmOnly, "fm-only.md").title());
+    }
+
     private static void assertBlock(DocumentBlock block, int level, List<String> path, int start, int end) {
         assertEquals(level, block.headingLevel(), block::toString);
         assertEquals(path, block.sectionPath(), block::toString);

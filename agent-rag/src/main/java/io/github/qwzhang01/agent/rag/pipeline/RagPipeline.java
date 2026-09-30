@@ -13,28 +13,30 @@ import io.github.qwzhang01.agent.rag.model.RagAnswer;
 import io.github.qwzhang01.agent.rag.model.RagQuery;
 import io.github.qwzhang01.agent.rag.model.RagTrace;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
-import io.github.qwzhang01.agent.rag.model.SupportVerdict;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
  * Rewrite, retrieve, rerank, generate, verify, trace.
  * <p>
  * Failure policy: rewrite, rerank and verify failures are bypassed and recorded as
- * degradations. A generator failure returns the retrieved passages instead of an answer
- * (degradation {@code generate}). Only a retrieval failure fails the call with
- * {@link RagException}, because answering "no material" would then be a lie.
+ * degradations; so is a reranker that reports a degraded {@link Reranker.Outcome}. A generator
+ * failure returns the retrieved passages instead of an answer (degradation {@code generate}).
+ * Only a retrieval failure fails the call with {@link RagException}, because answering
+ * "no material" would then be a lie.
+ * <p>
+ * {@link RagAnswer#contexts()} and {@link RagTrace#contextChunkIds()} hold the chunks the generator
+ * reports it actually showed the model ({@link GeneratedAnswer#usedChunkIds()}).
  */
 public final class RagPipeline {
 
@@ -68,31 +70,15 @@ public final class RagPipeline {
         return new Builder();
     }
 
+    /** @throws RagException when retrieval fails */
     public RagAnswer ask(RagQuery query) {
         Objects.requireNonNull(query, "query");
         long start = clock.millis();
-        Map<String, Long> latency = new LinkedHashMap<>();
-        List<String> degradations = new ArrayList<>();
-        int promptTokens = 0;
-        int completionTokens = 0;
+        CallRecord call = new CallRecord();
 
         long t = clock.millis();
-        String retrievalQuery = query.question();
-        if (rewriter != null && !query.history().isEmpty()) {
-            try {
-                QueryRewriter.Rewrite rewrite = rewriter.rewrite(query.question(), query.history());
-                retrievalQuery = rewrite.query();
-                promptTokens += rewrite.promptTokens();
-                completionTokens += rewrite.completionTokens();
-                if (rewrite.degraded()) {
-                    degradations.add("rewrite");
-                }
-            } catch (RuntimeException e) {
-                log.warn("Query rewrite failed, retrieving with the original question: {}", e.getMessage());
-                degradations.add("rewrite");
-            }
-        }
-        latency.put("rewrite", clock.millis() - t);
+        String retrievalQuery = rewrite(query, call);
+        call.latency("rewrite", clock.millis() - t);
 
         t = clock.millis();
         Retriever.Result retrieved;
@@ -101,74 +87,112 @@ public final class RagPipeline {
         } catch (RuntimeException e) {
             throw new RagException("Retrieval failed: " + e.getMessage(), e);
         }
-        degradations.addAll(retrieved.degradations());
-        latency.put("retrieve", clock.millis() - t);
-
-        Map<String, List<RagTrace.Hit>> stageHits = new LinkedHashMap<>();
-        retrieved.stages().forEach((stage, hits) -> stageHits.put(stage, toHits(hits)));
+        call.degraded(retrieved.degradations());
+        retrieved.stages().forEach(call::stage);
+        call.latency("retrieve", clock.millis() - t);
 
         t = clock.millis();
-        List<ScoredChunk> contexts = topN(retrieved.hits(), contextK);
-        if (reranker != null && !retrieved.hits().isEmpty()) {
-            try {
-                contexts = reranker.rerank(retrievalQuery, retrieved.hits(), contextK);
-                stageHits.put(ScoredChunk.RERANK, toHits(contexts));
-            } catch (RuntimeException e) {
-                log.warn("Rerank failed, using first-stage order: {}", e.getMessage());
-                degradations.add("rerank");
-            }
-        }
-        latency.put("rerank", clock.millis() - t);
+        List<ScoredChunk> contexts = rerank(retrievalQuery, topN(retrieved.hits(), candidateK), call);
+        call.latency("rerank", clock.millis() - t);
 
         t = clock.millis();
         GeneratedAnswer generated;
         try {
             generated = generator.generate(query.question(), query.history(), contexts);
-            promptTokens += generated.promptTokens();
-            completionTokens += generated.completionTokens();
+            call.tokens(generated.promptTokens(), generated.completionTokens());
         } catch (RuntimeException e) {
             log.warn("Generation failed, returning retrieved passages: {}", e.getMessage());
-            degradations.add("generate");
+            call.degraded("generate");
             generated = new GeneratedAnswer(generationFallback.apply(contexts), List.of(), false, 0, 0);
         }
-        latency.put("generate", clock.millis() - t);
+        List<ScoredChunk> shown = shown(contexts, generated.usedChunkIds());
+        call.latency("generate", clock.millis() - t);
 
         t = clock.millis();
-        List<AnswerSentence> sentences = generated.sentences();
-        if (verifier != null && !generated.refused() && !sentences.isEmpty()) {
-            Map<String, Chunk> byId = new LinkedHashMap<>();
-            contexts.forEach(c -> byId.put(c.chunk().chunkId(), c.chunk()));
-            try {
-                CitationVerifier.Verification v = verifier.verify(sentences, byId);
-                sentences = v.sentences();
-                promptTokens += v.promptTokens();
-                completionTokens += v.completionTokens();
-                if (v.degraded()) {
-                    degradations.add("verify");
-                }
-            } catch (RuntimeException e) {
-                log.warn("Verification failed, sentences left unverified: {}", e.getMessage());
-                degradations.add("verify");
-            }
-        }
-        latency.put("verify", clock.millis() - t);
-        latency.put("total", clock.millis() - start);
+        List<AnswerSentence> sentences = generated.refused() ? List.of() : generated.sentences();
+        sentences = verify(sentences, shown, call);
+        call.latency("verify", clock.millis() - t);
+        call.latency("total", clock.millis() - start);
 
-        RagTrace trace = new RagTrace(
-                UUID.randomUUID().toString(),
-                Instant.ofEpochMilli(start),
-                query.question(),
-                retrievalQuery,
-                stageHits,
-                contexts.stream().map(c -> c.chunk().chunkId()).toList(),
-                latency,
-                promptTokens,
-                completionTokens,
-                generated.refused(),
-                countVerdicts(sentences),
-                degradations);
+        RagTrace trace = call.toTrace(start, query.question(), retrievalQuery, shown, generated.refused(), sentences);
         publish(trace);
-        return new RagAnswer(generated.rawText(), sentences, contexts, generated.refused(), trace);
+        return new RagAnswer(generated.rawText(), sentences, shown, generated.refused(), trace);
+    }
+
+    private String rewrite(RagQuery query, CallRecord call) {
+        if (rewriter == null || query.history().isEmpty()) {
+            return query.question();
+        }
+        try {
+            QueryRewriter.Rewrite rewrite = rewriter.rewrite(query.question(), query.history());
+            call.tokens(rewrite.promptTokens(), rewrite.completionTokens());
+            if (rewrite.query() == null || rewrite.query().isBlank()) {
+                log.warn("Query rewrite returned a blank query, retrieving with the original question");
+                call.degraded("rewrite");
+                return query.question();
+            }
+            if (rewrite.degraded()) {
+                call.degraded("rewrite");
+            }
+            return rewrite.query();
+        } catch (RuntimeException e) {
+            log.warn("Query rewrite failed, retrieving with the original question: {}", e.getMessage());
+            call.degraded("rewrite");
+            return query.question();
+        }
+    }
+
+    private List<ScoredChunk> rerank(String query, List<ScoredChunk> candidates, CallRecord call) {
+        if (reranker == null || candidates.isEmpty()) {
+            return topN(candidates, contextK);
+        }
+        try {
+            Reranker.Outcome outcome = Objects.requireNonNull(
+                    reranker.rerankWithOutcome(query, candidates, contextK), "reranker returned null");
+            if (outcome.degraded()) {
+                log.warn("Rerank degraded, using first-stage order: {}", outcome.error());
+                call.degraded(ScoredChunk.RERANK);
+            } else {
+                call.stage(ScoredChunk.RERANK, outcome.results());
+            }
+            return topN(outcome.results(), contextK);
+        } catch (RuntimeException e) {
+            log.warn("Rerank failed, using first-stage order: {}", e.getMessage());
+            call.degraded(ScoredChunk.RERANK);
+            return topN(candidates, contextK);
+        }
+    }
+
+    private List<AnswerSentence> verify(List<AnswerSentence> sentences, List<ScoredChunk> shown, CallRecord call) {
+        if (verifier == null || sentences.isEmpty()) {
+            return sentences;
+        }
+        Map<String, Chunk> byId = new LinkedHashMap<>();
+        shown.forEach(c -> byId.put(c.chunk().chunkId(), c.chunk()));
+        try {
+            CitationVerifier.Verification v = verifier.verify(sentences, byId);
+            call.tokens(v.promptTokens(), v.completionTokens());
+            if (v.sentences().size() != sentences.size()) {
+                throw new IllegalStateException("verifier returned " + v.sentences().size()
+                        + " sentences for " + sentences.size());
+            }
+            if (v.degraded()) {
+                call.degraded("verify");
+            }
+            return v.sentences();
+        } catch (RuntimeException e) {
+            log.warn("Verification failed, sentences left unverified: {}", e.getMessage());
+            call.degraded("verify");
+            return sentences;
+        }
+    }
+
+    private static List<ScoredChunk> shown(List<ScoredChunk> contexts, List<String> usedChunkIds) {
+        if (usedChunkIds == null) {
+            return contexts;
+        }
+        Set<String> used = new HashSet<>(usedChunkIds);
+        return contexts.stream().filter(c -> used.contains(c.chunk().chunkId())).toList();
     }
 
     private void publish(RagTrace trace) {
@@ -185,33 +209,6 @@ public final class RagPipeline {
         return hits.size() <= n ? hits : hits.subList(0, n);
     }
 
-    private static List<RagTrace.Hit> toHits(List<ScoredChunk> chunks) {
-        return chunks.stream().map(c -> new RagTrace.Hit(c.chunk().chunkId(), c.score())).toList();
-    }
-
-    private static Map<SupportVerdict, Integer> countVerdicts(List<AnswerSentence> sentences) {
-        Map<SupportVerdict, Integer> counts = new EnumMap<>(SupportVerdict.class);
-        sentences.forEach(s -> counts.merge(s.verdict(), 1, Integer::sum));
-        return counts;
-    }
-
-    /** Lists the passages by title and section; used when the generator is unavailable. */
-    static String defaultGenerationFallback(List<ScoredChunk> contexts) {
-        if (contexts.isEmpty()) {
-            return "回答服务暂时不可用，也没有检索到相关资料。";
-        }
-        StringBuilder sb = new StringBuilder("回答服务暂时不可用。以下是检索到的相关资料：");
-        for (ScoredChunk c : contexts) {
-            Chunk chunk = c.chunk();
-            sb.append("\n- 《").append(chunk.docTitle()).append('》');
-            if (!chunk.sectionPath().isEmpty()) {
-                sb.append(' ').append(chunk.sectionLabel());
-            }
-            sb.append(" [").append(chunk.chunkId()).append(']');
-        }
-        return sb.toString();
-    }
-
     public static final class Builder {
         private QueryRewriter rewriter;
         private Retriever retriever;
@@ -221,7 +218,7 @@ public final class RagPipeline {
         private final List<RagTraceListener> listeners = new ArrayList<>();
         private int candidateK = 30;
         private int contextK = 6;
-        private Function<List<ScoredChunk>, String> generationFallback = RagPipeline::defaultGenerationFallback;
+        private Function<List<ScoredChunk>, String> generationFallback = PassageListFallback::render;
         private Clock clock = Clock.systemUTC();
 
         private Builder() {

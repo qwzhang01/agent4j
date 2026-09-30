@@ -47,11 +47,20 @@ public record Chunk(
     /**
      * Text used for embedding and BM25: document title and section path prepended to the body,
      * so a chunk that says "set it to 30" still matches a query naming the feature in its heading.
+     * The title is omitted when it equals the first heading (the usual Markdown H1), so it is not
+     * counted twice by BM25.
      */
     public String contextualText() {
-        StringBuilder sb = new StringBuilder(docTitle);
+        boolean titleIsFirstHeading = !sectionPath.isEmpty() && sectionPath.get(0).equals(docTitle);
+        StringBuilder sb = new StringBuilder();
+        if (!titleIsFirstHeading) {
+            sb.append(docTitle);
+        }
         if (!sectionPath.isEmpty()) {
-            sb.append(" | ").append(sectionLabel());
+            if (!sb.isEmpty()) {
+                sb.append(" | ");
+            }
+            sb.append(sectionLabel());
         }
         return sb.append('\n').append(text).toString();
     }

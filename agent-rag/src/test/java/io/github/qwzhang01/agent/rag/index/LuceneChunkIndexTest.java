@@ -2,13 +2,19 @@ package io.github.qwzhang01.agent.rag.index;
 
 import io.github.qwzhang01.agent.rag.model.Chunk;
 import io.github.qwzhang01.agent.rag.model.ScoredChunk;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -279,6 +285,9 @@ class LuceneChunkIndexTest {
                 List.of(chunk("other.md", 0, "x")), nulls(1)));
         assertThrows(IllegalArgumentException.class, () -> index.upsert("a.md", "v2",
                 List.of(chunk("a.md", 0, "x"), chunk("a.md", 0, "y")), nulls(2)));
+        Chunk foreignId = new Chunk("b.md#0", "a.md", "A", null, List.of(), "x", 0, 0, null, Map.of());
+        assertThrows(IllegalArgumentException.class, () -> index.upsert("a.md", "v2",
+                List.of(foreignId), nulls(1)));
         assertThrows(IllegalArgumentException.class, () -> index.vectorSearch(new float[]{1, 0}, 3, Map.of()));
 
         assertEquals(Optional.of("v1"), index.contentHash("a.md"));
@@ -331,6 +340,117 @@ class LuceneChunkIndexTest {
             chunks.add(chunk("a.md", i, "marker v" + version + " part" + i));
         }
         return chunks;
+    }
+
+    @Test
+    void bulkDefersCommitAndVisibilityUntilItEnds(@TempDir Path dir) {
+        index = LuceneChunkIndex.open(dir, 3);
+        index.upsert("old.md", "h", List.of(chunk("old.md", 0, "old")), nulls(1));
+        long before = commitGeneration(dir);
+
+        index.bulk(() -> {
+            index.upsert("a.md", "ha", List.of(chunk("a.md", 0, "alpha")), nulls(1));
+            index.delete("old.md");
+            index.upsert("b.md", "hb", List.of(chunk("b.md", 0, "bravo")), nulls(1));
+            assertEquals(Set.of("old.md"), index.docIds());
+            assertEquals(before, commitGeneration(dir));
+        });
+
+        assertEquals(before + 1, commitGeneration(dir));
+        assertEquals(Set.of("a.md", "b.md"), index.docIds());
+        index.close();
+        index = LuceneChunkIndex.open(dir, 3);
+        assertEquals(Set.of("a.md", "b.md"), index.docIds());
+    }
+
+    @Test
+    void bulkCommitsWhatWasWrittenWhenWorkThrows() {
+        index = LuceneChunkIndex.inMemory(3);
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> index.bulk(() -> {
+            index.upsert("a.md", "ha", List.of(chunk("a.md", 0, "alpha")), nulls(1));
+            throw new IllegalStateException("boom");
+        }));
+
+        assertEquals("boom", e.getMessage());
+        assertEquals(Set.of("a.md"), index.docIds());
+    }
+
+    @Test
+    void bulkCommitsPeriodicallyAndNests() {
+        index = LuceneChunkIndex.inMemory(3);
+        int n = LuceneChunkIndex.BULK_COMMIT_INTERVAL;
+
+        index.bulk(() -> {
+            for (int i = 0; i < n - 1; i++) {
+                index.upsert("d" + i, "h", List.of(), List.of());
+            }
+            index.bulk(() -> index.upsert("nested", "h", List.of(), List.of()));
+            assertEquals(n, index.docIds().size());
+            index.upsert("tail", "h", List.of(), List.of());
+            assertEquals(n, index.docIds().size());
+        });
+
+        assertEquals(n + 1, index.docIds().size());
+    }
+
+    @Test
+    void writesFromOtherThreadsDuringBulkCommitImmediately() throws Exception {
+        index = LuceneChunkIndex.inMemory(3);
+
+        index.bulk(() -> {
+            index.upsert("mine.md", "h", List.of(), List.of());
+            Thread other = new Thread(() -> index.upsert("theirs.md", "h", List.of(), List.of()));
+            other.start();
+            try {
+                other.join();
+            } catch (InterruptedException ex) {
+                throw new IllegalStateException(ex);
+            }
+            assertTrue(index.contentHash("theirs.md").isPresent());
+        });
+
+        assertEquals(Set.of("mine.md", "theirs.md"), index.docIds());
+    }
+
+    @Test
+    void chunkIdsWithSeparatorsAndUnicodeRoundTrip() {
+        index = LuceneChunkIndex.inMemory(3);
+        String docId = "文档/子目录/a b#c.md";
+        Chunk c = chunk(docId, 0, "内容 🚀 content");
+
+        index.upsert(docId, "h", List.of(c), nulls(1));
+
+        assertEquals(Optional.of(c), index.get(docId + "#0"));
+        assertTrue(index.get("文档/子目录/a b#c.md").isEmpty());
+        assertEquals(Set.of(docId), index.docIds());
+        index.delete(docId);
+        assertTrue(index.docIds().isEmpty());
+    }
+
+    @Test
+    void longCjkQueryWithFiltersStaysUnderClauseLimit() {
+        index = LuceneChunkIndex.inMemory(3);
+        Map<String, String> filters = new HashMap<>();
+        for (int i = 0; i < 40; i++) {
+            filters.put("k" + i, "v");
+        }
+        index.upsert("a.md", "h", List.of(chunk("a.md", 0, "字 foo", filters)), nulls(1));
+
+        StringBuilder query = new StringBuilder("foo ");
+        for (int i = 0; i < 3000; i++) {
+            query.append((char) ('一' + i));
+        }
+
+        assertEquals(1, index.keywordSearch(query.toString(), 5, filters).size());
+    }
+
+    private static long commitGeneration(Path dir) {
+        try (Directory d = FSDirectory.open(dir)) {
+            return SegmentInfos.readLatestCommit(d).getGeneration();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Test

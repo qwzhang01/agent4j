@@ -15,6 +15,7 @@ Import `seven-agent-bom` (`type=pom`, `scope=import`) so versions stay aligned, 
 | `agent-workflow` | Graph runtime, six node types, checkpoints, and durable run storage (in-memory and JDBC) |
 | `agent-scheduler` | Timer and event wake-ups, in-memory and JDBC task queues |
 | `agent-memory` | Working, session, and long-term memory, plus `MemoryScope` |
+| `agent-rag` | Document RAG: Markdown/PDF loaders, heading-aware chunking, one Lucene index for BM25 + HNSW vectors with incremental sync, RRF hybrid retrieval, HTTP rerank (Cohere-compatible), query rewriting, cited answers, per-sentence citation checks, retrieval/answer evaluation |
 | `agent-security` | Permissions, approvals, sanitizer, audit |
 | `agent-mcp` | MCP client (stdio and HTTP/SSE) and bidirectional HTTP agent-to-agent (A2A) |
 | `agent-orchestrator` | Supervisor / worker dispatch |
